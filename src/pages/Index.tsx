@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -162,7 +161,6 @@ const Index = () => {
             open={showAddScore}
             onOpenChange={setShowAddScore}
             game={selectedGame}
-            playerId={currentPlayerId}
             onAddScore={handleAddScore}
           />
         )}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronLeft, CalendarDays, ListChecks, Trophy } from 'lucide-react';
@@ -281,7 +280,6 @@ const GameDetail = () => {
           open={showAddScore}
           onOpenChange={setShowAddScore}
           game={game}
-          playerId={currentPlayerId}
           onAddScore={handleAddScore}
         />
       )}
