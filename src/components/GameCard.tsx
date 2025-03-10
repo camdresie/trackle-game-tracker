@@ -37,6 +37,12 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     }
   };
 
+  // Format the date properly using the browser's locale
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  };
+
   return (
     <Link 
       to={`/game/${game.id}`}
@@ -49,7 +55,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         {latestScore && (
           <div className="text-xs bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
             <CalendarDays className="w-3 h-3" />
-            <span>{new Date(latestScore.date).toLocaleDateString()}</span>
+            <span>{formatDate(latestScore.date)}</span>
           </div>
         )}
       </div>

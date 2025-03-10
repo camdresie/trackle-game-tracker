@@ -129,7 +129,7 @@ export const quordleAchievements: Achievement[] = [
     title: 'Quadruple Threat',
     description: 'Complete your first Quordle puzzle',
     icon: 'grid',
-    criteria: (scores: Score[]) => scores.length > 0,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length > 0,
     category: 'quordle',
     gameId: 'quordle'
   },
@@ -147,7 +147,7 @@ export const quordleAchievements: Achievement[] = [
     title: 'Quordle Expert',
     description: 'Complete 10 Quordle puzzles',
     icon: 'badge-check',
-    criteria: (scores: Score[]) => scores.length >= 10,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length >= 10,
     category: 'quordle',
     gameId: 'quordle'
   }
@@ -160,7 +160,7 @@ export const tightropeAchievements: Achievement[] = [
     title: 'Balancing Act',
     description: 'Complete your first Tightrope puzzle',
     icon: 'gem',
-    criteria: (scores: Score[]) => scores.length > 0,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length > 0,
     category: 'tightrope',
     gameId: 'tightrope'
   },
@@ -178,7 +178,7 @@ export const tightropeAchievements: Achievement[] = [
     title: 'Tightrope Adept',
     description: 'Complete 15 Tightrope puzzles',
     icon: 'star',
-    criteria: (scores: Score[]) => scores.length >= 15,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length >= 15,
     category: 'tightrope',
     gameId: 'tightrope'
   }
@@ -191,7 +191,7 @@ export const crosswordAchievements: Achievement[] = [
     title: 'Crossing Words',
     description: 'Complete your first Mini Crossword',
     icon: 'pen-tool',
-    criteria: (scores: Score[]) => scores.length > 0,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length > 0,
     category: 'mini-crossword',
     gameId: 'mini-crossword'
   },
@@ -209,7 +209,7 @@ export const crosswordAchievements: Achievement[] = [
     title: 'Crossword Expert',
     description: 'Complete 20 Mini Crosswords',
     icon: 'award',
-    criteria: (scores: Score[]) => scores.length >= 20,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length >= 20,
     category: 'mini-crossword',
     gameId: 'mini-crossword'
   },
@@ -261,6 +261,8 @@ export const getPlayerAchievements = async (playerId: string): Promise<Achieveme
     }));
   }
 
+  console.log('Fetched scores for achievements:', scores);
+
   return allAchievements.map(achievement => {
     const achievementScores = achievement.gameId
       ? scores.filter(score => score.game_id === achievement.gameId)
@@ -275,6 +277,8 @@ export const getPlayerAchievements = async (playerId: string): Promise<Achieveme
       date: score.date,
       notes: score.notes
     })));
+
+    console.log(`Achievement ${achievement.id} unlocked:`, unlocked);
 
     return {
       ...achievement,
