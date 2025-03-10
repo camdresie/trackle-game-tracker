@@ -24,6 +24,14 @@ export const games: Game[] = [
     icon: 'grid',
     color: 'bg-purple-500',
     maxScore: 9
+  },
+  {
+    id: 'mini-crossword',
+    name: 'Mini Crossword',
+    description: 'Complete the NYT Mini Crossword puzzle as fast as you can.',
+    icon: 'grid-3x3',
+    color: 'bg-rose-500',
+    maxScore: 600  // 10 minutes in seconds
   }
 ];
 
@@ -50,7 +58,6 @@ export const generateSampleScores = (): Score[] => {
   const scores: Score[] = [];
   const now = new Date();
   
-  // For each game and player, generate scores for the last 30 days
   games.forEach(game => {
     players.forEach(player => {
       for (let i = 0; i < 30; i++) {
@@ -60,11 +67,19 @@ export const generateSampleScores = (): Score[] => {
         // Randomly skip some days (not every player plays every game every day)
         if (Math.random() > 0.7) continue;
         
+        let value: number;
+        if (game.id === 'mini-crossword') {
+          // Generate random completion time between 45 seconds and 8 minutes
+          value = Math.floor(Math.random() * (480 - 45) + 45);
+        } else {
+          value = Math.floor(Math.random() * game.maxScore);
+        }
+        
         scores.push({
           id: `score-${game.id}-${player.id}-${i}`,
           gameId: game.id,
           playerId: player.id,
-          value: Math.floor(Math.random() * game.maxScore),
+          value,
           date: date.toISOString().split('T')[0]
         });
       }
@@ -203,4 +218,16 @@ export const addConnection = (playerId: string, friendId: string): Connection =>
   
   connections.push(newConnection);
   return newConnection;
+};
+
+// Update getLabelByGame in GameCard to handle time-based scores
+export const getLabelByGame = (gameId: string): string => {
+  switch (gameId) {
+    case 'wordle':
+      return 'tries';
+    case 'mini-crossword':
+      return 'seconds';
+    default:
+      return 'points';
+  }
 };
