@@ -38,6 +38,24 @@ const AddScoreModal = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Calculate values for the slider labels
+  const getSliderMarkers = () => {
+    if (game.id === 'wordle') {
+      // For Wordle with fixed positions (1-6)
+      return [1, 2, 3, 4, 5, 6];
+    } else {
+      // For other games, calculate evenly spaced values
+      const step = game.maxScore / 4;
+      return [
+        0,
+        Math.round(step),
+        Math.round(step * 2),
+        Math.round(step * 3),
+        game.maxScore
+      ];
+    }
+  };
+  
   const handleSubmit = async () => {
     if (!user) {
       toast.error('You must be logged in to add scores');
@@ -141,18 +159,15 @@ const AddScoreModal = ({
               className="py-2"
             />
             
-            <div className="grid grid-cols-5 gap-1 text-xs text-muted-foreground pt-1">
-              {[...Array(5)].map((_, i) => {
-                const value = game.id === 'wordle' 
-                  ? Math.max(1, Math.round((i + 1) * game.maxScore / 5))
-                  : Math.round(i * game.maxScore / 4);
-                  
-                return (
-                  <div key={i} className="text-center">
-                    {value}
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-5 text-xs text-muted-foreground mt-1 px-1">
+              {getSliderMarkers().map((markerValue, i) => (
+                <div 
+                  key={i} 
+                  className={i === 0 ? "text-left" : i === 4 ? "text-right" : "text-center"}
+                >
+                  {markerValue}
+                </div>
+              ))}
             </div>
           </div>
           
