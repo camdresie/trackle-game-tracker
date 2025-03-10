@@ -1,20 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, UserRound } from 'lucide-react';
+import { UserRound } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { games } from '@/utils/gameData';
 import { toast } from 'sonner';
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
   const [username, setUsername] = useState('');
-  const [selectedGames, setSelectedGames] = useState<string[]>([]);
+  const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,7 +22,7 @@ const OnboardingFlow = () => {
     if (profile) {
       console.log('Initializing form with profile data:', profile);
       setUsername(profile.username || '');
-      setSelectedGames(profile.selected_games || []);
+      setFullName(profile.full_name || '');
       setIsLoading(false);
     } else {
       setIsLoading(false);
@@ -33,11 +32,11 @@ const OnboardingFlow = () => {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      console.log('Updating profile with:', { username, selected_games: selectedGames });
+      console.log('Updating profile with:', { username, full_name: fullName });
       
       await updateProfile({
         username,
-        selected_games: selectedGames,
+        full_name: fullName,
       });
       
       toast.success('Profile updated successfully');
@@ -48,14 +47,6 @@ const OnboardingFlow = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const toggleGame = (gameId: string) => {
-    setSelectedGames(prev => 
-      prev.includes(gameId) 
-        ? prev.filter(id => id !== gameId)
-        : [...prev, gameId]
-    );
   };
 
   if (isLoading) {
@@ -73,7 +64,7 @@ const OnboardingFlow = () => {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>Set up your profile to start tracking your games</CardDescription>
+          <CardDescription>Tell us a bit about yourself to get started</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -83,42 +74,24 @@ const OnboardingFlow = () => {
                   <UserRound className="h-8 w-8" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block">Username</label>
-                <Input 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                />
+              <div className="flex-1 space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Your Name</label>
+                  <Input 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Username</label>
+                  <Input 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a username"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Games You Play</h3>
-            <p className="text-sm text-muted-foreground">
-              Choose the games you want to track. You can change this later.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {games.map(game => (
-                <button
-                  key={game.id}
-                  type="button"
-                  onClick={() => toggleGame(game.id)}
-                  className={`p-3 rounded-lg border transition-colors flex flex-col items-center gap-2 hover:bg-secondary ${
-                    selectedGames.includes(game.id) 
-                      ? 'border-primary bg-primary/10' 
-                      : 'border-border'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center`}>
-                    {selectedGames.includes(game.id) && (
-                      <Check className="w-5 h-5 text-white" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">{game.name}</span>
-                </button>
-              ))}
             </div>
           </div>
         </CardContent>
@@ -126,7 +99,7 @@ const OnboardingFlow = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full"
-            disabled={!username || selectedGames.length === 0 || isSubmitting}
+            disabled={!username || !fullName || isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Complete Setup'}
           </Button>

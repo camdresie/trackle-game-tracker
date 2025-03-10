@@ -9,6 +9,7 @@ type Profile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
+  full_name: string | null;
   selected_games: string[] | null;
 };
 

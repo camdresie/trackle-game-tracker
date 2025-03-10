@@ -35,8 +35,10 @@ import {
 import { getPlayerAchievements, getAchievementsByCategory } from '@/utils/achievements';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
+  const { profile } = useAuth();
   const [currentPlayerId, setCurrentPlayerId] = useState('p1');
   const [playerScores, setPlayerScores] = useState<Score[]>([]);
   const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
@@ -92,6 +94,14 @@ const Profile = () => {
     const IconComponent = iconMap[iconName] || Award;
     return <IconComponent className="w-6 h-6" />;
   };
+
+  // Get games played by the user (for now, we'll simulate this)
+  const getPlayedGames = () => {
+    const playedGameIds = Array.from(new Set(playerScores.map(score => score.gameId)));
+    return games.filter(game => playedGameIds.includes(game.id));
+  };
+  
+  const playedGames = getPlayedGames();
   
   return (
     <div className="min-h-screen bg-background">
@@ -112,8 +122,8 @@ const Profile = () => {
               </div>
               
               <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-2xl font-bold">Alex Chen</h1>
-                <p className="text-muted-foreground mb-4">Joined Jan 2023</p>
+                <h1 className="text-2xl font-bold">{profile?.full_name || profile?.username || 'User'}</h1>
+                <p className="text-muted-foreground mb-4">Joined {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
                 
                 <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4">
                   <div className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">
@@ -255,24 +265,32 @@ const Profile = () => {
             </div>
             
             <TabsContent value="games" className="animate-fade-in mt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {games.map(game => {
-                  const gameScores = playerScores.filter(score => score.gameId === game.id);
-                  const latestScore = getLatestScoreByGameAndPlayer(game.id, currentPlayerId);
-                  const averageScore = calculateAverageScore(gameScores);
-                  const bestScore = calculateBestScore(gameScores, game);
-                  
-                  return (
-                    <GameCard 
-                      key={game.id}
-                      game={game}
-                      latestScore={latestScore}
-                      averageScore={averageScore}
-                      bestScore={bestScore}
-                    />
-                  );
-                })}
-              </div>
+              {playedGames.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {playedGames.map(game => {
+                    const gameScores = playerScores.filter(score => score.gameId === game.id);
+                    const latestScore = getLatestScoreByGameAndPlayer(game.id, currentPlayerId);
+                    const averageScore = calculateAverageScore(gameScores);
+                    const bestScore = calculateBestScore(gameScores, game);
+                    
+                    return (
+                      <GameCard 
+                        key={game.id}
+                        game={game}
+                        latestScore={latestScore}
+                        averageScore={averageScore}
+                        bestScore={bestScore}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="glass-card rounded-xl p-8 text-center">
+                  <h3 className="text-lg font-semibold mb-2">No games played yet</h3>
+                  <p className="text-muted-foreground mb-4">Add your first game score to start tracking your progress</p>
+                  <Button variant="default">Add Your First Score</Button>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="activity" className="animate-fade-in mt-0">
