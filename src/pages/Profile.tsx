@@ -11,11 +11,18 @@ import {
   Award, 
   Star,
   Settings,
-  Clock
+  Clock,
+  Medal,
+  Target,
+  Crown,
+  Sparkles,
+  Flag,
+  Grid,
+  GemIcon as Gem
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import GameCard from '@/components/GameCard';
-import { Game, Score } from '@/utils/types';
+import { Game, Score, Achievement } from '@/utils/types';
 import { 
   games, 
   sampleScores, 
@@ -25,19 +32,37 @@ import {
   calculateBestScore,
   calculatePlayerRanking
 } from '@/utils/gameData';
+import { getPlayerAchievements, getAchievementsByCategory } from '@/utils/achievements';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Profile = () => {
   const [currentPlayerId, setCurrentPlayerId] = useState('p1');
   const [playerScores, setPlayerScores] = useState<Score[]>([]);
+  const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
+  const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
   
   useEffect(() => {
     setPlayerScores(getScoresByPlayerId(currentPlayerId));
+    setPlayerAchievements(getPlayerAchievements(currentPlayerId));
   }, [currentPlayerId]);
   
   // Calculate some stats
   const totalGamesPlayed = playerScores.length;
   const uniqueGamesPlayed = new Set(playerScores.map(score => score.gameId)).size;
   const playerRank = calculatePlayerRanking(currentPlayerId);
+  
+  // Filter achievements by category
+  const filteredAchievements = activeAchievementCategory === 'all'
+    ? playerAchievements
+    : playerAchievements.filter(achievement => achievement.category === activeAchievementCategory);
+  
+  // Calculate unlocked achievements count
+  const unlockedAchievements = playerAchievements.filter(a => a.unlockedAt).length;
+  const totalAchievements = playerAchievements.length;
+  
+  // Get achievements for display
+  const displayAchievements = filteredAchievements.slice(0, 8);
   
   // Calculate scores for today
   const getTodaysScores = () => {
@@ -46,6 +71,27 @@ const Profile = () => {
   };
   
   const todaysScores = getTodaysScores();
+  
+  // Get icon component based on string name
+  const getIconByName = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      trophy: Trophy,
+      star: Star,
+      award: Award,
+      medal: Medal,
+      target: Target,
+      crown: Crown,
+      sparkles: Sparkles,
+      flag: Flag,
+      calendar: Calendar,
+      grid: Grid,
+      gem: Gem,
+      clock: Clock
+    };
+    
+    const IconComponent = iconMap[iconName] || Award;
+    return <IconComponent className="w-6 h-6" />;
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -100,57 +146,96 @@ const Profile = () => {
         </div>
         
         <div className="mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5 text-accent" />
-            Your Achievements
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Award className="w-5 h-5 text-accent" />
+              Your Achievements ({unlockedAchievements}/{totalAchievements})
+            </h2>
+            
+            <div className="flex gap-2">
+              <Badge 
+                className={`cursor-pointer ${activeAchievementCategory === 'all' ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`} 
+                onClick={() => setActiveAchievementCategory('all')}
+              >
+                All
+              </Badge>
+              <Badge 
+                className={`cursor-pointer ${activeAchievementCategory === 'general' ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
+                onClick={() => setActiveAchievementCategory('general')}
+              >
+                General
+              </Badge>
+              <Badge 
+                className={`cursor-pointer ${activeAchievementCategory === 'wordle' ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
+                onClick={() => setActiveAchievementCategory('wordle')}
+              >
+                Wordle
+              </Badge>
+              <Badge 
+                className={`cursor-pointer ${activeAchievementCategory === 'quordle' ? 'bg-primary' : 'bg-secondary hover:bg-secondary/80'}`}
+                onClick={() => setActiveAchievementCategory('quordle')}
+              >
+                Quordle
+              </Badge>
+            </div>
+            
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">View All</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>All Achievements</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  {filteredAchievements.map((achievement) => (
+                    <div 
+                      key={achievement.id}
+                      className={`glass-card rounded-xl p-5 flex items-center gap-4 ${!achievement.unlockedAt ? 'opacity-40' : ''}`}
+                    >
+                      <div className={`p-3 rounded-full ${achievement.unlockedAt ? 'bg-primary/10' : 'bg-secondary'}`}>
+                        {getIconByName(achievement.icon)}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{achievement.title}</h3>
+                        <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                        {achievement.unlockedAt && (
+                          <div className="text-xs flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3" />
+                            <span>Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="glass-card rounded-xl p-5 flex flex-col items-center text-center">
-              <div className="p-3 rounded-full bg-blue-500/10 mb-4">
-                <Trophy className="w-6 h-6 text-blue-500" />
+            {displayAchievements.map((achievement) => (
+              <div 
+                key={achievement.id}
+                className={`glass-card rounded-xl p-5 flex flex-col items-center text-center ${!achievement.unlockedAt ? 'opacity-40 hover:opacity-100 transition-opacity' : ''}`}
+              >
+                <div className={`p-3 rounded-full ${achievement.unlockedAt ? `bg-${games.find(g => g.id === achievement.gameId)?.color || 'primary'}/10` : 'bg-secondary'} mb-4`}>
+                  {getIconByName(achievement.icon)}
+                </div>
+                <h3 className="font-semibold mb-1">{achievement.title}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{achievement.description}</p>
+                <div className="mt-auto text-xs flex items-center gap-1 bg-secondary px-2 py-1 rounded-full">
+                  {achievement.unlockedAt ? (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      <span>Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}</span>
+                    </>
+                  ) : (
+                    <span>Not yet unlocked</span>
+                  )}
+                </div>
               </div>
-              <h3 className="font-semibold mb-1">Perfect Streak</h3>
-              <p className="text-sm text-muted-foreground mb-3">Maintained a 7-day streak in Wordle</p>
-              <div className="mt-auto text-xs flex items-center gap-1 bg-secondary px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3" />
-                <span>Unlocked 3 days ago</span>
-              </div>
-            </div>
-            
-            <div className="glass-card rounded-xl p-5 flex flex-col items-center text-center">
-              <div className="p-3 rounded-full bg-purple-500/10 mb-4">
-                <Star className="w-6 h-6 text-purple-500" />
-              </div>
-              <h3 className="font-semibold mb-1">Word Master</h3>
-              <p className="text-sm text-muted-foreground mb-3">Solved Wordle in 2 attempts</p>
-              <div className="mt-auto text-xs flex items-center gap-1 bg-secondary px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3" />
-                <span>Unlocked 1 week ago</span>
-              </div>
-            </div>
-            
-            <div className="glass-card rounded-xl p-5 flex flex-col items-center text-center opacity-40 hover:opacity-100 transition-opacity">
-              <div className="p-3 rounded-full bg-secondary mb-4">
-                <Award className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold mb-1">Chess Prodigy</h3>
-              <p className="text-sm text-muted-foreground mb-3">Solve 10 chess puzzles</p>
-              <div className="mt-auto text-xs flex items-center gap-1 bg-secondary px-2 py-1 rounded-full">
-                <span>2/10 completed</span>
-              </div>
-            </div>
-            
-            <div className="glass-card rounded-xl p-5 flex flex-col items-center text-center opacity-40 hover:opacity-100 transition-opacity">
-              <div className="p-3 rounded-full bg-secondary mb-4">
-                <Award className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <h3 className="font-semibold mb-1">Game Master</h3>
-              <p className="text-sm text-muted-foreground mb-3">Play all 4 games in a single day</p>
-              <div className="mt-auto text-xs flex items-center gap-1 bg-secondary px-2 py-1 rounded-full">
-                <span>1/4 completed today</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
         

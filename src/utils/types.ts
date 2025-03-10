@@ -40,6 +40,9 @@ export interface Achievement {
   description: string;
   icon: string;
   unlockedAt?: string;
+  category: string;
+  gameId?: string;
+  criteria: (scores: Score[]) => boolean;
 }
 
 export interface Connection {
