@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, UserRound } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,9 +13,22 @@ import { toast } from 'sonner';
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
-  const [username, setUsername] = useState(profile?.username || '');
-  const [selectedGames, setSelectedGames] = useState<string[]>(profile?.selected_games || []);
+  const [username, setUsername] = useState('');
+  const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize form with profile data when available
+  useEffect(() => {
+    if (profile) {
+      console.log('Initializing form with profile data:', profile);
+      setUsername(profile.username || '');
+      setSelectedGames(profile.selected_games || []);
+      setIsLoading(false);
+    } else {
+      setIsLoading(false);
+    }
+  }, [profile]);
 
   const handleSubmit = async () => {
     try {
@@ -44,6 +57,16 @@ const OnboardingFlow = () => {
         : [...prev, gameId]
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <p>Loading profile data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

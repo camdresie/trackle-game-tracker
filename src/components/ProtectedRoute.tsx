@@ -42,8 +42,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   
   // Redirect to onboarding if profile is not set up
   // Skip this check on the onboarding page itself to avoid infinite redirects
-  if (location.pathname !== '/onboarding' && (!profile?.username || !profile?.selected_games?.length)) {
-    console.log('Redirecting to onboarding - incomplete profile');
+  const hasSelectedGames = Array.isArray(profile?.selected_games) && profile.selected_games.length > 0;
+  
+  if (location.pathname !== '/onboarding' && (!profile?.username || !hasSelectedGames)) {
+    console.log('Redirecting to onboarding - incomplete profile. Username:', profile?.username, 'Selected games:', profile?.selected_games);
     return <Navigate to="/onboarding" replace />;
   }
 
