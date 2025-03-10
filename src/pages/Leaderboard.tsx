@@ -9,7 +9,8 @@ import {
   User,
   ChevronsUpDown,
   UserPlus,
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -42,28 +43,83 @@ const Leaderboard = () => {
   const [sortBy, setSortBy] = useState<string>('totalScore');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today'>('all');
   
-  // Fetch leaderboard data
-  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useQuery({
-    queryKey: ['leaderboard', selectedGame],
+  // Fetch game stats data - this is what we'll use instead of the missing leaderboard function
+  const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
+    queryKey: ['game_stats', selectedGame, timeFilter],
     queryFn: async () => {
       try {
-        if (selectedGame === 'all') {
-          const { data, error } = await supabase
-            .rpc('get_leaderboard');
-            
-          if (error) throw error;
-          return data as LeaderboardPlayer[];
-        } else {
-          const { data, error } = await supabase
-            .rpc('get_leaderboard', { game_id_param: selectedGame });
-            
-          if (error) throw error;
-          return data as LeaderboardPlayer[];
+        console.log('Fetching game stats data...');
+        
+        let query = supabase
+          .from('game_stats')
+          .select(`
+            id,
+            user_id,
+            game_id,
+            best_score,
+            average_score,
+            total_plays,
+            current_streak,
+            longest_streak,
+            created_at,
+            updated_at,
+            profiles(id, username, full_name, avatar_url)
+          `);
+        
+        if (selectedGame !== 'all') {
+          query = query.eq('game_id', selectedGame);
         }
+        
+        if (timeFilter === 'today') {
+          // For today filter, we need to join with scores to filter by date
+          query = query.filter('updated_at', 'gte', new Date().toISOString().split('T')[0]);
+        }
+        
+        const { data, error } = await query;
+            
+        if (error) throw error;
+        
+        console.log('Game stats data:', data);
+        return data;
       } catch (error) {
-        console.error('Error fetching leaderboard:', error);
-        toast.error('Failed to load leaderboard data');
+        console.error('Error fetching game stats data:', error);
+        toast.error('Failed to load game statistics');
+        return [];
+      }
+    },
+    enabled: !!user
+  });
+  
+  // Fetch scores data to properly display latest scores and calculate today's data
+  const { data: scoresData, isLoading: isLoadingScores } = useQuery({
+    queryKey: ['scores', selectedGame, timeFilter],
+    queryFn: async () => {
+      try {
+        console.log('Fetching scores data...');
+        
+        let query = supabase
+          .from('scores')
+          .select('*');
+        
+        if (selectedGame !== 'all') {
+          query = query.eq('game_id', selectedGame);
+        }
+        
+        if (timeFilter === 'today') {
+          query = query.eq('date', new Date().toISOString().split('T')[0]);
+        }
+        
+        const { data, error } = await query;
+            
+        if (error) throw error;
+        
+        console.log('Scores data:', data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching scores data:', error);
+        toast.error('Failed to load score data');
         return [];
       }
     },
@@ -75,11 +131,32 @@ const Leaderboard = () => {
     queryKey: ['friends'],
     queryFn: async () => {
       try {
+        console.log('Fetching friends data...');
+        
+        // Since the RPC function might not be working, let's use a direct query
         const { data, error } = await supabase
-          .rpc('get_friend_players', { user_id_param: user!.id });
+          .from('connections')
+          .select(`
+            id,
+            user_id,
+            friend_id,
+            status,
+            friend:friend_id(id, username, full_name, avatar_url),
+            user:user_id(id, username, full_name, avatar_url)
+          `)
+          .eq('status', 'accepted')
+          .or(`user_id.eq.${user!.id},friend_id.eq.${user!.id}`);
           
         if (error) throw error;
-        return data.map(friend => friend.player_id);
+        
+        // Extract the friend IDs
+        const friendIds = data.map(connection => {
+          // If the user is the user_id, return the friend_id, otherwise return the user_id
+          return connection.user_id === user!.id ? connection.friend_id : connection.user_id;
+        });
+        
+        console.log('Friends data:', friendIds);
+        return friendIds;
       } catch (error) {
         console.error('Error fetching friends:', error);
         toast.error('Failed to load friends data');
@@ -89,40 +166,61 @@ const Leaderboard = () => {
     enabled: !!user && showFriendsOnly
   });
   
-  // Get scores for a specific player
-  const getScoresForPlayer = async (playerId: string): Promise<Score[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('scores')
-        .select('*')
-        .eq('user_id', playerId)
-        .order('date', { ascending: false });
-        
-      if (error) throw error;
+  // Transform game stats data into leaderboard players format
+  const getLeaderboardData = () => {
+    if (!gameStatsData || !scoresData) return [];
+    
+    // Group by user_id
+    const userStatsMap = new Map();
+    
+    gameStatsData.forEach(stat => {
+      const userId = stat.user_id;
+      const profile = stat.profiles;
       
-      return data.map(score => ({
-        id: score.id,
-        gameId: score.game_id,
-        playerId: score.user_id,
-        value: score.value,
-        date: score.date,
-        notes: score.notes || undefined
-      }));
-    } catch (error) {
-      console.error('Error fetching player scores:', error);
-      return [];
-    }
-  };
-  
-  // Get relevant game info
-  const getSelectedGameObject = (): Game | undefined => {
-    if (selectedGame === 'all') return undefined;
-    return games.find(game => game.id === selectedGame);
+      if (!userStatsMap.has(userId)) {
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: profile.username,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          latest_play: null
+        });
+      }
+      
+      const userStats = userStatsMap.get(userId);
+      
+      // For Wordle, a lower score is better
+      const scoreValue = stat.game_id === 'wordle' ? -stat.best_score : stat.best_score;
+      
+      userStats.total_score += scoreValue;
+      userStats.best_score = Math.max(userStats.best_score, Math.abs(stat.best_score));
+      userStats.total_games += stat.total_plays;
+      userStats.average_score = userStats.total_games > 0 
+        ? userStats.total_score / userStats.total_games 
+        : 0;
+      
+      // Find the latest play date for this user
+      const userScores = scoresData.filter(score => score.user_id === userId);
+      if (userScores.length > 0) {
+        const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
+        if (!userStats.latest_play || new Date(userStats.latest_play) < latestScoreDate) {
+          userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
+        }
+      }
+    });
+    
+    // Convert map to array
+    return Array.from(userStatsMap.values());
   };
   
   // Filter and sort players
   const getFilteredAndSortedPlayers = () => {
-    if (!leaderboardData) return [];
+    const leaderboardData = getLeaderboardData();
+    if (!leaderboardData.length) return [];
     
     let filteredPlayers = [...leaderboardData];
     
@@ -159,6 +257,7 @@ const Leaderboard = () => {
   };
   
   const filteredAndSortedPlayers = getFilteredAndSortedPlayers();
+  const isLoading = isLoadingGameStats || isLoadingScores || (showFriendsOnly && isLoadingFriends);
   
   return (
     <div className="min-h-screen bg-background">
@@ -202,6 +301,21 @@ const Leaderboard = () => {
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="w-full sm:w-auto">
                 <Select 
+                  value={timeFilter} 
+                  onValueChange={(value) => setTimeFilter(value as 'all' | 'today')}
+                >
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="Time Period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="w-full sm:w-auto">
+                <Select 
                   value={selectedGame} 
                   onValueChange={setSelectedGame}
                 >
@@ -239,7 +353,7 @@ const Leaderboard = () => {
           </div>
           
           <div className="space-y-4">
-            {isLoadingLeaderboard || (showFriendsOnly && isLoadingFriends) ? (
+            {isLoading ? (
               <div className="text-center py-12">
                 <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin mb-4" />
                 <p className="text-muted-foreground">Loading leaderboard data...</p>
@@ -255,7 +369,13 @@ const Leaderboard = () => {
                   }}
                   rank={index + 1}
                   scores={[]} // We'll load these on demand
-                  game={getSelectedGameObject()}
+                  game={selectedGame !== 'all' ? games.find(game => game.id === selectedGame) : undefined}
+                  stats={{
+                    bestScore: player.best_score,
+                    totalScore: player.total_score,
+                    averageScore: player.average_score,
+                    totalGames: player.total_games
+                  }}
                   className="hover:scale-[1.01] transition-transform duration-200"
                 />
               ))
@@ -272,13 +392,34 @@ const Leaderboard = () => {
                     View all players
                   </Button>
                 )}
+                {timeFilter === 'today' && (
+                  <Button 
+                    variant="link" 
+                    className="mt-2" 
+                    onClick={() => setTimeFilter('all')}
+                  >
+                    View all-time stats
+                  </Button>
+                )}
               </div>
             )}
           </div>
         </div>
         
         <div className="glass-card rounded-xl p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
-          <h2 className="text-lg font-semibold mb-4">Stats Overview</h2>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            {timeFilter === 'all' ? (
+              <>
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <span>All-Time Stats</span>
+              </>
+            ) : (
+              <>
+                <Calendar className="w-5 h-5 text-green-500" />
+                <span>Today's Stats</span>
+              </>
+            )}
+          </h2>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-secondary/50 rounded-lg p-4 text-center">
@@ -286,20 +427,22 @@ const Leaderboard = () => {
                 <Users className="w-5 h-5 text-blue-500" />
               </div>
               <div className="text-2xl font-semibold">
-                {isLoadingLeaderboard ? (
+                {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : (
-                  leaderboardData?.length || 0
+                  filteredAndSortedPlayers.length || 0
                 )}
               </div>
-              <div className="text-sm text-muted-foreground">Total Players</div>
+              <div className="text-sm text-muted-foreground">Active Players</div>
             </div>
             
             <div className="bg-secondary/50 rounded-lg p-4 text-center">
               <div className="flex items-center justify-center mb-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
               </div>
-              <div className="text-2xl font-semibold">{games.length}</div>
+              <div className="text-2xl font-semibold">
+                {selectedGame === 'all' ? games.length : 1}
+              </div>
               <div className="text-sm text-muted-foreground">Games Tracked</div>
             </div>
             
@@ -308,10 +451,10 @@ const Leaderboard = () => {
                 <ChevronsUpDown className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="text-2xl font-semibold">
-                {isLoadingLeaderboard ? (
+                {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : (
-                  leaderboardData?.reduce((sum, player) => sum + player.total_games, 0) || 0
+                  scoresData?.length || 0
                 )}
               </div>
               <div className="text-sm text-muted-foreground">Total Scores</div>
@@ -322,7 +465,7 @@ const Leaderboard = () => {
                 <User className="w-5 h-5 text-purple-500" />
               </div>
               <div className="text-2xl font-semibold">
-                {isLoadingLeaderboard ? (
+                {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : (
                   filteredAndSortedPlayers[0]?.username || '-'
