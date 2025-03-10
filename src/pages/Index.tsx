@@ -1,41 +1,102 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trophy, Calendar, Plus, UsersRound } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import GameCard from '@/components/GameCard';
 import AddScoreModal from '@/components/AddScoreModal';
 import AddGameModal from '@/components/AddGameModal';
 import ConnectionsModal from '@/components/ConnectionsModal';
 import { Game, Score } from '@/utils/types';
-import { games, sampleScores, getLatestScoreByGameAndPlayer, calculateAverageScore, calculateBestScore, addGame } from '@/utils/gameData';
+import { games, addGame, calculateAverageScore, calculateBestScore } from '@/utils/gameData';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { getUserGameStats, getGameScores } from '@/services/gameStatsService';
 
 const Index = () => {
-  const [currentPlayerId, setCurrentPlayerId] = useState('p1'); // Default to first player
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showAddScore, setShowAddScore] = useState(false);
   const [showAddGame, setShowAddGame] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
-  const [scores, setScores] = useState<Score[]>(sampleScores);
+  const [scores, setScores] = useState<Score[]>([]);
   const [gamesList, setGamesList] = useState<Game[]>(games);
+  const [isLoading, setIsLoading] = useState(true);
+  const [todaysGames, setTodaysGames] = useState<Score[]>([]);
+  
+  // Fetch user's scores and today's games
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // Fetch today's games
+        const today = new Date().toISOString().split('T')[0];
+        const { data: todayScores, error: todayError } = await supabase
+          .from('scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .order('created_at', { ascending: false });
+          
+        if (todayError) throw todayError;
+        
+        // Transform to match our Score type
+        const formattedTodayScores = todayScores.map(score => ({
+          id: score.id,
+          gameId: score.game_id,
+          playerId: score.user_id,
+          value: score.value,
+          date: score.date,
+          notes: score.notes
+        }));
+        
+        setTodaysGames(formattedTodayScores);
+        
+        // Fetch all user scores for stats
+        const allUserScores: Score[] = [];
+        
+        for (const game of gamesList) {
+          const gameScores = await getGameScores(game.id, user.id);
+          allUserScores.push(...gameScores);
+        }
+        
+        setScores(allUserScores);
+      } catch (error: any) {
+        console.error('Error fetching user data:', error);
+        toast({
+          title: 'Error fetching your data',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserData();
+  }, [user, gamesList, toast]);
   
   const handleAddScore = (newScore: Score) => {
     setScores((prevScores) => [...prevScores, newScore]);
+    // Also update today's games if the score is from today
+    const today = new Date().toISOString().split('T')[0];
+    if (newScore.date === today) {
+      setTodaysGames((prevGames) => [...prevGames, newScore]);
+    }
   };
   
   const handleAddGame = (newGameData: Omit<Game, 'id' | 'isCustom'>) => {
     const newGame = addGame(newGameData);
     setGamesList([...gamesList]);
   };
-  
-  const getTodaysGames = () => {
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    return scores.filter(score => score.date === today && score.playerId === currentPlayerId);
-  };
-  
-  const todaysGames = getTodaysGames();
   
   return (
     <div className="min-h-screen bg-background">
@@ -70,8 +131,16 @@ const Index = () => {
               
               <Button 
                 onClick={() => {
-                  setSelectedGame(gamesList[0]);
-                  setShowAddScore(true);
+                  if (gamesList.length > 0) {
+                    setSelectedGame(gamesList[0]);
+                    setShowAddScore(true);
+                  } else {
+                    toast({
+                      title: "No games available",
+                      description: "Please add a game first",
+                      variant: "destructive"
+                    });
+                  }
                 }}
                 className="flex items-center gap-2"
               >
@@ -81,7 +150,11 @@ const Index = () => {
             </div>
           </div>
           
-          {todaysGames.length > 0 ? (
+          {isLoading ? (
+            <div className="glass-card rounded-xl p-4 flex items-center gap-4">
+              <div className="animate-pulse h-4 bg-muted rounded w-full"></div>
+            </div>
+          ) : todaysGames.length > 0 ? (
             <div className="glass-card rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="p-2 bg-accent/20 rounded-lg">
                 <Calendar className="w-5 h-5 text-accent" />
@@ -102,7 +175,8 @@ const Index = () => {
                     return (
                       <div 
                         key={score.id}
-                        className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-full min-w-max"
+                        className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-full min-w-max cursor-pointer hover:bg-secondary/80"
+                        onClick={() => navigate(`/game/${game.id}`)}
                       >
                         <div className={`w-2 h-2 rounded-full ${game.color}`}></div>
                         <span className="text-sm font-medium">{game.name}</span>
@@ -135,24 +209,30 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {gamesList.map(game => {
-              const gameScores = scores.filter(
-                score => score.gameId === game.id && score.playerId === currentPlayerId
-              );
-              const latestScore = getLatestScoreByGameAndPlayer(game.id, currentPlayerId);
-              const averageScore = calculateAverageScore(gameScores);
-              const bestScore = calculateBestScore(gameScores, game);
-              
-              return (
-                <GameCard 
-                  key={game.id}
-                  game={game}
-                  latestScore={latestScore}
-                  averageScore={averageScore}
-                  bestScore={bestScore}
-                />
-              );
-            })}
+            {isLoading ? (
+              Array(4).fill(0).map((_, index) => (
+                <div key={index} className="animate-pulse h-40 bg-muted rounded-xl"></div>
+              ))
+            ) : (
+              gamesList.map(game => {
+                const gameScores = scores.filter(score => score.gameId === game.id);
+                const latestScore = gameScores.length > 0 
+                  ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+                  : undefined;
+                const averageScore = calculateAverageScore(gameScores);
+                const bestScore = calculateBestScore(gameScores, game);
+                
+                return (
+                  <GameCard 
+                    key={game.id}
+                    game={game}
+                    latestScore={latestScore}
+                    averageScore={averageScore}
+                    bestScore={bestScore}
+                  />
+                );
+              })
+            )}
           </div>
         </section>
         
@@ -174,7 +254,6 @@ const Index = () => {
         <ConnectionsModal
           open={showConnections}
           onOpenChange={setShowConnections}
-          currentPlayerId={currentPlayerId}
         />
       </main>
     </div>
