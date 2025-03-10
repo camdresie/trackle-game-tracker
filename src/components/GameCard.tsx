@@ -1,0 +1,87 @@
+
+import { Link } from 'react-router-dom';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays } from 'lucide-react';
+import { Game, Score } from '@/utils/types';
+import { cn } from '@/lib/utils';
+
+interface GameCardProps {
+  game: Game;
+  latestScore?: Score;
+  averageScore?: number;
+  bestScore?: number;
+}
+
+const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps) => {
+  const getIcon = () => {
+    switch (game.icon) {
+      case 'puzzle':
+        return <Puzzle className="w-5 h-5" />;
+      case 'grid':
+        return <Grid className="w-5 h-5" />;
+      case 'layout-grid':
+        return <LayoutGrid className="w-5 h-5" />;
+      case 'sword':
+        return <Sword className="w-5 h-5" />;
+      default:
+        return <Dices className="w-5 h-5" />;
+    }
+  };
+
+  const getLabelByGame = (game: Game) => {
+    if (game.id === 'wordle') {
+      return 'tries';
+    } else if (game.id === 'chess') {
+      return 'moves';
+    } else {
+      return 'points';
+    }
+  };
+
+  return (
+    <Link 
+      to={`/game/${game.id}`}
+      className="card-hover rounded-xl glass-card p-5 w-full max-w-xs flex flex-col"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className={cn("p-2.5 rounded-lg", game.color)}>
+          {getIcon()}
+        </div>
+        {latestScore && (
+          <div className="text-xs bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" />
+            <span>{new Date(latestScore.date).toLocaleDateString()}</span>
+          </div>
+        )}
+      </div>
+      
+      <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
+      <p className="text-sm text-muted-foreground mb-4">{game.description}</p>
+      
+      <div className="mt-auto grid grid-cols-3 gap-2">
+        <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
+          <Trophy className="w-4 h-4 text-amber-500 mb-1" />
+          <span className="text-xs text-muted-foreground">Best</span>
+          <span className="font-medium">{bestScore || '-'}</span>
+        </div>
+        
+        <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
+          <CalendarDays className="w-4 h-4 text-blue-500 mb-1" />
+          <span className="text-xs text-muted-foreground">Last</span>
+          <span className="font-medium">{latestScore?.value || '-'}</span>
+        </div>
+        
+        <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
+          <Star className="w-4 h-4 text-purple-500 mb-1" />
+          <span className="text-xs text-muted-foreground">Avg</span>
+          <span className="font-medium">{averageScore || '-'}</span>
+        </div>
+      </div>
+      
+      <div className="mt-2 text-right">
+        <span className="text-xs opacity-70">{getLabelByGame(game)}</span>
+      </div>
+    </Link>
+  );
+};
+
+export default GameCard;
