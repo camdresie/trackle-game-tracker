@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Dialog, 
@@ -159,12 +158,9 @@ const AddScoreModal = ({
               className="py-2"
             />
             
-            <div className="grid grid-cols-5 text-xs text-muted-foreground mt-1 px-1">
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
               {getSliderMarkers().map((markerValue, i) => (
-                <div 
-                  key={i} 
-                  className={i === 0 ? "text-left" : i === 4 ? "text-right" : "text-center"}
-                >
+                <div key={i} className="flex-shrink-0">
                   {markerValue}
                 </div>
               ))}
