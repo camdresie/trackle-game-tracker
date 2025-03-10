@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -12,7 +13,7 @@ export const games: Game[] = [
   {
     id: 'tightrope',
     name: 'Tightrope',
-    description: 'Balance between two categories in this Britannica word game.',
+    description: 'Walk the trivia tightrope to make it to the other side!',
     icon: 'layout-grid',
     color: 'bg-blue-500',
     maxScore: 7
