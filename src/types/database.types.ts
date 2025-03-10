@@ -17,6 +17,7 @@ export interface Database {
           avatar_url: string | null
           created_at: string
           updated_at: string
+          selected_games: string[] | null
         }
         Insert: {
           id: string
@@ -24,6 +25,7 @@ export interface Database {
           avatar_url?: string | null
           created_at?: string
           updated_at?: string
+          selected_games?: string[] | null
         }
         Update: {
           id?: string
@@ -31,6 +33,7 @@ export interface Database {
           avatar_url?: string | null
           created_at?: string
           updated_at?: string
+          selected_games?: string[] | null
         }
       }
       connections: {
@@ -109,6 +112,7 @@ export interface Database {
           avatar_url: string | null
           created_at: string
           updated_at: string
+          selected_games: string[] | null
         }
       }
     }
