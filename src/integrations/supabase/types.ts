@@ -9,13 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      connections: {
+        Row: {
+          created_at: string | null
+          friend_id: string | null
+          id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string | null
+          id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_stats: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          created_at: string | null
+          current_streak: number | null
+          game_id: string
+          id: string
+          longest_streak: number | null
+          total_plays: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          average_score?: number | null
+          best_score?: number | null
+          created_at?: string | null
+          current_streak?: number | null
+          game_id: string
+          id?: string
+          longest_streak?: number | null
+          total_plays?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          average_score?: number | null
+          best_score?: number | null
+          created_at?: string | null
+          current_streak?: number | null
+          game_id?: string
+          id?: string
+          longest_streak?: number | null
+          total_plays?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_profile: {
+        Args: {
+          profile_id: string
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+      }
     }
     Enums: {
       [_ in never]: never

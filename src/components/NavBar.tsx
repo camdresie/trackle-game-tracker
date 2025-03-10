@@ -1,14 +1,18 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Award, BarChart3, User, Home, Menu, X } from 'lucide-react';
+import { Award, BarChart3, User, Home, Menu, X, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { user, profile, signOut } = useAuth();
   
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
@@ -19,6 +23,10 @@ const NavBar = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   // If screen is mobile, use a hamburger menu
   if (isMobile) {
@@ -55,6 +63,14 @@ const NavBar = () => {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-3 py-3 px-4 rounded-lg transition-colors w-full text-left text-rose-500 hover:bg-secondary/50"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Sign Out</span>
+              </button>
             </div>
           )}
         </div>
@@ -71,22 +87,55 @@ const NavBar = () => {
           <span className="font-semibold text-lg">Game Tracker</span>
         </Link>
         
-        <div className="flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-2 py-1.5 px-3 rounded-lg transition-colors",
-                isActive(item.path) 
-                  ? "bg-secondary text-primary font-medium" 
-                  : "hover:bg-secondary/50"
-              )}
-            >
-              {item.icon}
-              <span>{item.name}</span>
-            </Link>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-2 py-1.5 px-3 rounded-lg transition-colors",
+                  isActive(item.path) 
+                    ? "bg-secondary text-primary font-medium" 
+                    : "hover:bg-secondary/50"
+                )}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt={profile.username || user?.email} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{profile?.username || user?.email}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut} className="text-rose-500 focus:text-rose-500">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>
