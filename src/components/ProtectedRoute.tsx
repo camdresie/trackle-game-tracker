@@ -38,9 +38,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
+  console.log('Protected route check - profile:', profile);
+  
   // Redirect to onboarding if profile is not set up
   // Skip this check on the onboarding page itself to avoid infinite redirects
   if (location.pathname !== '/onboarding' && (!profile?.username || !profile?.selected_games?.length)) {
+    console.log('Redirecting to onboarding - incomplete profile');
     return <Navigate to="/onboarding" replace />;
   }
 

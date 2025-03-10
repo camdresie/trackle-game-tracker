@@ -8,22 +8,32 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { games } from '@/utils/gameData';
+import { toast } from 'sonner';
 
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
   const [username, setUsername] = useState(profile?.username || '');
   const [selectedGames, setSelectedGames] = useState<string[]>(profile?.selected_games || []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
+      console.log('Updating profile with:', { username, selected_games: selectedGames });
+      
       await updateProfile({
         username,
         selected_games: selectedGames,
       });
+      
+      toast.success('Profile updated successfully');
       navigate('/profile');
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error('Error updating profile');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -70,6 +80,7 @@ const OnboardingFlow = () => {
               {games.map(game => (
                 <button
                   key={game.id}
+                  type="button"
                   onClick={() => toggleGame(game.id)}
                   className={`p-3 rounded-lg border transition-colors flex flex-col items-center gap-2 hover:bg-secondary ${
                     selectedGames.includes(game.id) 
@@ -92,9 +103,9 @@ const OnboardingFlow = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full"
-            disabled={!username || selectedGames.length === 0}
+            disabled={!username || selectedGames.length === 0 || isSubmitting}
           >
-            Complete Setup
+            {isSubmitting ? 'Saving...' : 'Complete Setup'}
           </Button>
         </CardFooter>
       </Card>

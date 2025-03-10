@@ -1,13 +1,15 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, signInWithGoogle, signInWithApple } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type Profile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
-  selected_games?: string[];
+  selected_games: string[] | null;
 };
 
 type AuthContextType = {
@@ -30,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     // Get initial session
@@ -67,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -74,9 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
+        console.error('Error fetching profile details:', error);
         throw error;
       }
 
+      console.log('Fetched profile data:', data);
       setProfile(data);
       setIsLoading(false);
     } catch (error) {
@@ -90,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await signInWithGoogle();
       if (error) throw error;
     } catch (error: any) {
-      toast({
+      uiToast({
         title: 'Google sign in failed',
         description: error.message,
         variant: 'destructive',
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await signInWithApple();
       if (error) throw error;
     } catch (error: any) {
-      toast({
+      uiToast({
         title: 'Apple sign in failed',
         description: error.message,
         variant: 'destructive',
@@ -118,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     } catch (error: any) {
-      toast({
+      uiToast({
         title: 'Sign in failed',
         description: error.message,
         variant: 'destructive',
@@ -140,12 +146,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       
-      toast({
+      uiToast({
         title: 'Account created',
         description: 'Check your email to confirm your account',
       });
     } catch (error: any) {
-      toast({
+      uiToast({
         title: 'Sign up failed',
         description: error.message,
         variant: 'destructive',
@@ -159,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error: any) {
-      toast({
+      uiToast({
         title: 'Sign out failed',
         description: error.message,
         variant: 'destructive',
@@ -171,30 +177,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      console.log('Updating profile with:', updates);
+      
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating profile from Supabase:', error);
+        throw error;
+      }
 
-      setProfile({
-        ...profile!,
-        ...updates,
-      });
+      console.log('Profile updated successfully:', data);
+      
+      // Update the local profile state
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
 
-      toast({
-        title: 'Profile updated',
-        description: 'Your profile has been updated successfully',
-      });
+      toast.success('Profile updated successfully');
     } catch (error: any) {
-      toast({
-        title: 'Update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      console.error('Failed to update profile:', error);
+      toast.error('Failed to update profile');
+      throw error;
     }
   };
 
