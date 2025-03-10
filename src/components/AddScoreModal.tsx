@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Dialog, 
@@ -165,7 +164,7 @@ const AddScoreModal = ({
             <Slider
               min={game.id === 'wordle' ? 1 : 0}
               max={game.maxScore}
-              step={game.id === 'tightrope' ? 20 : 1} // Use larger step for Tightrope
+              step={1} // Changed from 20 to 1 for all games including Tightrope
               value={[value]}
               onValueChange={(val) => setValue(val[0])}
               className="py-2"
