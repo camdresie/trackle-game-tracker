@@ -6,6 +6,7 @@ export interface Game {
   icon: string;
   color: string;
   maxScore: number;
+  isCustom?: boolean;
 }
 
 export interface Score {
@@ -39,4 +40,12 @@ export interface Achievement {
   description: string;
   icon: string;
   unlockedAt?: string;
+}
+
+export interface Connection {
+  id: string;
+  playerId: string;
+  friendId: string;
+  status: 'pending' | 'accepted';
+  createdAt: string;
 }

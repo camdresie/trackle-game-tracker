@@ -1,354 +1,281 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ChevronLeft, CalendarDays, ListChecks, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Trophy, 
-  Calendar, 
-  ChevronLeft, 
-  Plus, 
-  BarChart3, 
-  Users,
-  Star,
-  Puzzle,
-  Grid,
-  LayoutGrid,
-  Sword,
-  Dices
-} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import NavBar from '@/components/NavBar';
 import ScoreChart from '@/components/ScoreChart';
-import PlayerCard from '@/components/PlayerCard';
 import AddScoreModal from '@/components/AddScoreModal';
-import { Game, Score, Player } from '@/utils/types';
-import { 
-  games, 
-  players, 
-  sampleScores,
-  getScoresByGameId, 
-  getScoresByGameAndPlayer,
-  calculateAverageScore,
-  calculateBestScore
-} from '@/utils/gameData';
+import { getGameById, getScoresByGameId, getScoresByGameAndPlayer, getPlayerById, getPlayerFriends } from '@/utils/gameData';
+import { Score, Game, Player } from '@/utils/types';
 
 const GameDetail = () => {
   const { gameId } = useParams<{ gameId: string }>();
+  const [currentPlayerId, setCurrentPlayerId] = useState('p1'); // Default player
   const [game, setGame] = useState<Game | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
-  const [currentPlayerId, setCurrentPlayerId] = useState('p1');
+  const [playerScores, setPlayerScores] = useState<Score[]>([]);
   const [showAddScore, setShowAddScore] = useState(false);
+  const [activeTab, setActiveTab] = useState('scores');
+  const [friends, setFriends] = useState<Player[]>([]);
   
   useEffect(() => {
-    if (!gameId) return;
-    
-    const foundGame = games.find(g => g.id === gameId);
-    if (foundGame) {
-      setGame(foundGame);
-      setScores(getScoresByGameId(gameId));
+    if (gameId) {
+      const gameData = getGameById(gameId);
+      if (gameData) {
+        setGame(gameData);
+        
+        // Get all scores for this game
+        const allScores = getScoresByGameId(gameId);
+        setScores(allScores);
+        
+        // Get current player's scores
+        const currentPlayerScores = getScoresByGameAndPlayer(gameId, currentPlayerId);
+        setPlayerScores(currentPlayerScores);
+        
+        // Get friends
+        setFriends(getPlayerFriends(currentPlayerId));
+      }
     }
-  }, [gameId]);
+  }, [gameId, currentPlayerId]);
   
+  const handleAddScore = (newScore: Score) => {
+    setScores(prev => [...prev, newScore]);
+    setPlayerScores(prev => [...prev, newScore]);
+  };
+  
+  // If game is not found
   if (!game) {
     return (
       <div className="min-h-screen bg-background">
         <NavBar />
-        <main className="pt-24 px-4 text-center">
-          <p>Game not found</p>
-          <Link to="/" className="text-accent underline mt-4 inline-block">
-            Back to home
+        <div className="pt-24 pb-12 px-4 max-w-4xl mx-auto text-center">
+          <h1 className="text-2xl font-bold mb-4">Game not found</h1>
+          <p className="mb-6">The game you're looking for doesn't exist or has been removed.</p>
+          <Link to="/">
+            <Button>Back to Home</Button>
           </Link>
-        </main>
+        </div>
       </div>
     );
   }
   
-  const getIcon = () => {
-    switch (game.icon) {
-      case 'puzzle':
-        return <Puzzle className="w-6 h-6 text-white" />;
-      case 'grid':
-        return <Grid className="w-6 h-6 text-white" />;
-      case 'layout-grid':
-        return <LayoutGrid className="w-6 h-6 text-white" />;
-      case 'sword':
-        return <Sword className="w-6 h-6 text-white" />;
-      default:
-        return <Dices className="w-6 h-6 text-white" />;
-    }
+  const bestScore = playerScores.length > 0
+    ? game.id === 'wordle' 
+      ? Math.min(...playerScores.map(s => s.value))
+      : Math.max(...playerScores.map(s => s.value))
+    : null;
+  
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
-  
-  const handleAddScore = (newScore: Score) => {
-    setScores((prevScores) => [...prevScores, newScore]);
-  };
-  
-  const currentPlayerScores = getScoresByGameAndPlayer(game.id, currentPlayerId);
-  
-  // Calculate player ranks based on their performance
-  const getPlayerRanks = (): { player: Player; rank: number; totalScore: number }[] => {
-    const playerScores = players.map(player => {
-      const playerGameScores = getScoresByGameAndPlayer(game.id, player.id);
-      
-      // Different games have different scoring systems
-      let totalScore = 0;
-      if (game.id === 'wordle') {
-        // For Wordle, lower is better
-        totalScore = playerGameScores.length > 0 
-          ? playerGameScores.reduce((sum, s) => sum + s.value, 0) / playerGameScores.length
-          : Infinity;
-      } else {
-        // For other games, higher is better
-        totalScore = playerGameScores.reduce((sum, s) => sum + s.value, 0);
-      }
-      
-      return { player, totalScore };
-    });
-    
-    // Sort players by score
-    const sortedPlayers = [...playerScores].sort((a, b) => {
-      if (game.id === 'wordle') {
-        // For Wordle, lower is better
-        return a.totalScore - b.totalScore;
-      } else {
-        // For other games, higher is better
-        return b.totalScore - a.totalScore;
-      }
-    });
-    
-    // Assign ranks
-    return sortedPlayers.map((ps, index) => ({
-      player: ps.player,
-      rank: index + 1,
-      totalScore: ps.totalScore
-    }));
-  };
-  
-  const playerRanks = getPlayerRanks();
-  
+
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="mb-6 animate-slide-up">
-          <Link to="/" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors mb-4">
-            <ChevronLeft className="w-4 h-4" />
-            <span>Back to Games</span>
+      <main className="pt-20 pb-12 px-4 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Back to Games
           </Link>
+        </div>
+        
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`p-2.5 rounded-lg ${game.color}`}>
+                {/* Icon would be here */}
+              </div>
+              <h1 className="text-3xl font-bold">{game.name}</h1>
+            </div>
+            <p className="text-muted-foreground max-w-lg mb-4">{game.description}</p>
+          </div>
           
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-            <div className={`p-4 rounded-xl ${game.color} w-16 h-16 flex items-center justify-center`}>
-              {getIcon()}
+          <Button onClick={() => setShowAddScore(true)}>Add Today's Score</Button>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+              <Trophy className="w-4 h-4" />
+              <span>Best Score</span>
             </div>
-            
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold">{game.name}</h1>
-              <p className="text-muted-foreground">{game.description}</p>
+            <div className="text-3xl font-bold">
+              {bestScore !== null ? bestScore : '-'}
             </div>
-            
-            <Button 
-              onClick={() => setShowAddScore(true)}
-              className="sm:self-start"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Score
-            </Button>
+          </div>
+          
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+              <CalendarDays className="w-4 h-4" />
+              <span>Played</span>
+            </div>
+            <div className="text-3xl font-bold">
+              {playerScores.length}
+            </div>
+          </div>
+          
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+              <ListChecks className="w-4 h-4" />
+              <span>Difficulty</span>
+            </div>
+            <div className="text-3xl font-bold">
+              {/* Simple difficulty calculation based on scores */}
+              {playerScores.length > 0 
+                ? (game.id === 'wordle' && bestScore === 1) || 
+                  (!['wordle', 'tightrope', 'quordle'].includes(game.id) && 
+                  playerScores.some(s => s.value >= game.maxScore * 0.9))
+                  ? 'Master'
+                  : 'Regular'
+                : '-'}
+            </div>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up" style={{animationDelay: '100ms'}}>
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="stats" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="stats" className="flex items-center gap-1">
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Your Stats</span>
-                </TabsTrigger>
-                <TabsTrigger value="leaderboard" className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4" />
-                  <span>Leaderboard</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="stats" className="animate-fade-in mt-0">
-                <div className="glass-card rounded-xl p-5 mb-6">
-                  <h2 className="text-lg font-semibold mb-4">Performance History</h2>
-                  <ScoreChart 
-                    scores={currentPlayerScores} 
-                    color={game.color.replace('bg-', '')} 
-                    gameId={game.id}
-                  />
-                </div>
-                
-                <div className="glass-card rounded-xl p-5">
-                  <h2 className="text-lg font-semibold mb-4">Recent Scores</h2>
-                  
-                  {currentPlayerScores.length > 0 ? (
-                    <div className="space-y-3">
-                      {[...currentPlayerScores]
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .slice(0, 10)
-                        .map(score => (
-                          <div 
-                            key={score.id}
-                            className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center`}>
-                                <span className="font-semibold text-white">{score.value}</span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium">
-                                  {new Date(score.date).toLocaleDateString('en-US', { 
-                                    weekday: 'short', 
-                                    month: 'short', 
-                                    day: 'numeric' 
-                                  })}
-                                </div>
-                                {score.notes && (
-                                  <p className="text-xs text-muted-foreground">{score.notes}</p>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(score.date).toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-                        ))
-                      }
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">No scores recorded yet</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-4"
-                        onClick={() => setShowAddScore(true)}
-                      >
-                        Add Your First Score
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="leaderboard" className="animate-fade-in mt-0">
-                <div className="glass-card rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold">Player Rankings</h2>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
-                      <Users className="w-3 h-3" />
-                      <span>{players.length} Players</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {playerRanks.map(({ player, rank }) => (
-                      <PlayerCard 
-                        key={player.id}
-                        player={player}
-                        rank={rank}
-                        scores={getScoresByGameAndPlayer(game.id, player.id)}
-                        game={game}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+        {playerScores.length > 0 && (
+          <div className="glass-card rounded-xl p-4 mb-8 overflow-hidden">
+            <h2 className="text-xl font-semibold mb-4">Your Performance</h2>
+            <div className="h-60">
+              <ScoreChart 
+                scores={playerScores.slice(-30)} 
+                game={game} 
+              />
+            </div>
           </div>
+        )}
+        
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="glass-card rounded-xl p-4"
+        >
+          <TabsList className="mb-4">
+            <TabsTrigger value="scores">Your Scores</TabsTrigger>
+            <TabsTrigger value="friends">Friend Scores</TabsTrigger>
+          </TabsList>
           
-          <div>
-            <div className="glass-card rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-semibold mb-3">Your Stats</h2>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-medium">Best Score</span>
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {currentPlayerScores.length > 0 
-                      ? calculateBestScore(currentPlayerScores, game) 
-                      : '-'}
-                  </div>
-                </div>
-                
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Star className="w-4 h-4 text-purple-500" />
-                    <span className="text-sm font-medium">Average</span>
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {currentPlayerScores.length > 0 
-                      ? calculateAverageScore(currentPlayerScores) 
-                      : '-'}
-                  </div>
-                </div>
-                
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-medium">Total Plays</span>
-                  </div>
-                  <div className="text-2xl font-semibold">{currentPlayerScores.length}</div>
-                </div>
-                
-                <div className="bg-secondary/50 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart3 className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm font-medium">Your Rank</span>
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {playerRanks.find(pr => pr.player.id === currentPlayerId)?.rank || '-'}
-                  </div>
-                </div>
-              </div>
-            </div>
+          <TabsContent value="scores" className="space-y-4">
+            <h2 className="text-xl font-semibold mb-2">Your Score History</h2>
             
-            <div className="glass-card rounded-xl p-5">
-              <h2 className="text-lg font-semibold mb-3">Top Players</h2>
-              
-              <div className="space-y-3">
-                {playerRanks.slice(0, 3).map(({ player, rank }) => (
-                  <div 
-                    key={player.id} 
-                    className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50"
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                      rank === 1 ? 'bg-amber-100 text-amber-600' :
-                      rank === 2 ? 'bg-slate-100 text-slate-600' :
-                      'bg-amber-50 text-amber-800'
-                    }`}>
-                      {rank}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="font-medium">{player.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {getScoresByGameAndPlayer(game.id, player.id).length} games played
+            {playerScores.length > 0 ? (
+              <ScrollArea className="h-[300px] w-full rounded-md border p-4">
+                <div className="space-y-4">
+                  {[...playerScores]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((score) => (
+                      <div 
+                        key={score.id}
+                        className="flex justify-between items-center p-3 rounded-lg hover:bg-secondary/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-secondary rounded-md p-2 w-12 h-12 flex items-center justify-center">
+                            <span className="text-xl font-bold">{score.value}</span>
+                          </div>
+                          <div>
+                            <div className="font-medium">{formatDate(score.date)}</div>
+                            {score.notes && (
+                              <div className="text-sm text-muted-foreground">{score.notes}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className={
+                          (game.id === 'wordle' && score.value <= 3) || 
+                          (!['wordle', 'tightrope', 'quordle'].includes(game.id) && score.value >= game.maxScore * 0.8)
+                            ? 'text-emerald-500' 
+                            : 'text-amber-500'
+                        }>
+                          {(game.id === 'wordle' && score.value <= 2)
+                            ? 'Excellent'
+                            : (game.id === 'wordle' && score.value <= 4) || 
+                              (!['wordle', 'tightrope', 'quordle'].includes(game.id) && score.value >= game.maxScore * 0.7)
+                              ? 'Good'
+                              : 'Fair'}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="font-semibold">
-                      {calculateBestScore(getScoresByGameAndPlayer(game.id, player.id), game)}
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  }
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">You haven't recorded any scores for this game yet</p>
+                <Button onClick={() => setShowAddScore(true)}>Add Your First Score</Button>
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="friends">
+            <h2 className="text-xl font-semibold mb-4">Friend Scores</h2>
+            
+            {friends.length > 0 ? (
+              <div className="space-y-6">
+                {friends.map(friend => {
+                  const friendScores = getScoresByGameAndPlayer(game.id, friend.id);
+                  const bestFriendScore = friendScores.length > 0
+                    ? game.id === 'wordle'
+                      ? Math.min(...friendScores.map(s => s.value))
+                      : Math.max(...friendScores.map(s => s.value))
+                    : null;
+                  
+                  return (
+                    <div key={friend.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={friend.avatar} />
+                            <AvatarFallback>{friend.name.substring(0, 2)}</AvatarFallback>
+                          </Avatar>
+                          <h3 className="font-medium">{friend.name}</h3>
+                        </div>
+                        
+                        <div className="text-sm">
+                          Best: <span className="font-semibold">
+                            {bestFriendScore !== null ? bestFriendScore : '-'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {friendScores.length > 0 ? (
+                        <div className="h-32">
+                          <ScoreChart 
+                            scores={friendScores.slice(-20)} 
+                            game={game}
+                            simplified
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-sm text-muted-foreground bg-secondary/20 rounded-lg">
+                          No scores recorded
+                        </div>
+                      )}
+                      
+                      <Separator />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="mb-2">You haven't added any friends yet</p>
+                <Link to="/">
+                  <Button variant="outline">Add Friends</Button>
+                </Link>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
       
-      {game && (
-        <AddScoreModal 
+      {showAddScore && (
+        <AddScoreModal
           open={showAddScore}
           onOpenChange={setShowAddScore}
           game={game}

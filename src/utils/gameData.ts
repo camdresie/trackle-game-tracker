@@ -1,5 +1,4 @@
-
-import { Game, Player, Score } from './types';
+import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
   {
@@ -11,28 +10,20 @@ export const games: Game[] = [
     maxScore: 6
   },
   {
-    id: 'crossword',
-    name: 'Daily Crossword',
-    description: 'Complete the crossword puzzle with clues.',
-    icon: 'grid',
-    color: 'bg-blue-500',
-    maxScore: 100
-  },
-  {
-    id: 'sudoku',
-    name: 'Sudoku',
-    description: 'Fill the 9×9 grid with digits.',
+    id: 'tightrope',
+    name: 'Tightrope',
+    description: 'Balance between two categories in this Britannica word game.',
     icon: 'layout-grid',
-    color: 'bg-purple-500',
-    maxScore: 100
+    color: 'bg-blue-500',
+    maxScore: 7
   },
   {
-    id: 'chess',
-    name: 'Chess Puzzle',
-    description: 'Solve the daily chess puzzle.',
-    icon: 'sword',
-    color: 'bg-amber-500',
-    maxScore: 10
+    id: 'quordle',
+    name: 'Quordle',
+    description: 'Solve four Wordle-style puzzles at once.',
+    icon: 'grid',
+    color: 'bg-purple-500',
+    maxScore: 9
   }
 ];
 
@@ -84,6 +75,31 @@ export const generateSampleScores = (): Score[] => {
 };
 
 export const sampleScores = generateSampleScores();
+
+// Sample connections between players
+export const connections: Connection[] = [
+  {
+    id: 'conn1',
+    playerId: 'p1',
+    friendId: 'p2',
+    status: 'accepted',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'conn2',
+    playerId: 'p1',
+    friendId: 'p3',
+    status: 'accepted',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'conn3',
+    playerId: 'p2',
+    friendId: 'p3',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  }
+];
 
 // Helper functions for working with the data
 export const getGameById = (gameId: string): Game | undefined => {
@@ -143,4 +159,48 @@ export const calculatePlayerRanking = (playerId: string): number => {
   };
   
   return rankings[playerId as keyof typeof rankings] || 0;
+};
+
+// Get player connections
+export const getPlayerConnections = (playerId: string): Connection[] => {
+  return connections.filter(conn => 
+    (conn.playerId === playerId || conn.friendId === playerId) && 
+    conn.status === 'accepted'
+  );
+};
+
+// Get player friends
+export const getPlayerFriends = (playerId: string): Player[] => {
+  const playerConnections = getPlayerConnections(playerId);
+  const friendIds = playerConnections.map(conn => 
+    conn.playerId === playerId ? conn.friendId : conn.playerId
+  );
+  
+  return players.filter(player => friendIds.includes(player.id));
+};
+
+// Add a new game
+export const addGame = (game: Omit<Game, 'id'>): Game => {
+  const newGame = {
+    ...game,
+    id: `game-${Date.now()}`,
+    isCustom: true
+  };
+  
+  games.push(newGame);
+  return newGame;
+};
+
+// Add a new connection
+export const addConnection = (playerId: string, friendId: string): Connection => {
+  const newConnection = {
+    id: `conn-${Date.now()}`,
+    playerId,
+    friendId,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  } as Connection;
+  
+  connections.push(newConnection);
+  return newConnection;
 };

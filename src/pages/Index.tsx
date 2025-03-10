@@ -3,21 +3,31 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Trophy, Calendar, Plus } from 'lucide-react';
+import { Trophy, Calendar, Plus, UsersRound } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import GameCard from '@/components/GameCard';
 import AddScoreModal from '@/components/AddScoreModal';
+import AddGameModal from '@/components/AddGameModal';
+import ConnectionsModal from '@/components/ConnectionsModal';
 import { Game, Score } from '@/utils/types';
-import { games, sampleScores, getLatestScoreByGameAndPlayer, calculateAverageScore, calculateBestScore } from '@/utils/gameData';
+import { games, sampleScores, getLatestScoreByGameAndPlayer, calculateAverageScore, calculateBestScore, addGame } from '@/utils/gameData';
 
 const Index = () => {
   const [currentPlayerId, setCurrentPlayerId] = useState('p1'); // Default to first player
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showAddScore, setShowAddScore] = useState(false);
+  const [showAddGame, setShowAddGame] = useState(false);
+  const [showConnections, setShowConnections] = useState(false);
   const [scores, setScores] = useState<Score[]>(sampleScores);
+  const [gamesList, setGamesList] = useState<Game[]>(games);
   
   const handleAddScore = (newScore: Score) => {
     setScores((prevScores) => [...prevScores, newScore]);
+  };
+  
+  const handleAddGame = (newGameData: Omit<Game, 'id' | 'isCustom'>) => {
+    const newGame = addGame(newGameData);
+    setGamesList([...gamesList]);
   };
   
   const getTodaysGames = () => {
@@ -40,16 +50,36 @@ const Index = () => {
               <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
             </div>
             
-            <Button 
-              onClick={() => {
-                setSelectedGame(games[0]);
-                setShowAddScore(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Score
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowConnections(true)}
+                className="flex items-center gap-2"
+              >
+                <UsersRound className="w-4 h-4" />
+                Friends
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => setShowAddGame(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Game
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  setSelectedGame(gamesList[0]);
+                  setShowAddScore(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Score
+              </Button>
+            </div>
           </div>
           
           {todaysGames.length > 0 ? (
@@ -67,7 +97,7 @@ const Index = () => {
               <ScrollArea className="w-full sm:w-auto max-w-full">
                 <div className="flex gap-2 pb-1">
                   {todaysGames.map(score => {
-                    const game = games.find(g => g.id === score.gameId);
+                    const game = gamesList.find(g => g.id === score.gameId);
                     if (!game) return null;
                     
                     return (
@@ -106,7 +136,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {games.map(game => {
+            {gamesList.map(game => {
               const gameScores = scores.filter(
                 score => score.gameId === game.id && score.playerId === currentPlayerId
               );
@@ -136,6 +166,18 @@ const Index = () => {
             onAddScore={handleAddScore}
           />
         )}
+        
+        <AddGameModal
+          open={showAddGame}
+          onOpenChange={setShowAddGame}
+          onAddGame={handleAddGame}
+        />
+        
+        <ConnectionsModal
+          open={showConnections}
+          onOpenChange={setShowConnections}
+          currentPlayerId={currentPlayerId}
+        />
       </main>
     </div>
   );
