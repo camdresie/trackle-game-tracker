@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -77,10 +76,14 @@ const Profile = () => {
   const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
   
   useEffect(() => {
-    if (user) {
-      // In a real implementation, this would use the actual stats
-      setPlayerAchievements(getPlayerAchievements(user.id));
-    }
+    const fetchAchievements = async () => {
+      if (user) {
+        const achievements = await getPlayerAchievements(user.id);
+        setPlayerAchievements(achievements);
+      }
+    };
+    
+    fetchAchievements();
   }, [user, gameStats]);
   
   // Filter achievements by category

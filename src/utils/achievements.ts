@@ -1,6 +1,6 @@
-
 import { Game, Score, Achievement } from './types';
-import { getScoresByGameAndPlayer, getScoresByPlayerId, games } from './gameData';
+import { getGameById, games } from './gameData';
+import { supabase } from '@/lib/supabase';
 
 // General achievements
 export const generalAchievements: Achievement[] = [
@@ -29,8 +29,25 @@ export const generalAchievements: Achievement[] = [
     description: 'Play games for 7 consecutive days',
     icon: 'calendar',
     criteria: (scores: Score[]) => {
-      // Implementation would track date sequences
-      return false; // Placeholder - real implementation would check date continuity
+      // Sort scores by date
+      const sortedScores = [...scores].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      let currentStreak = 1;
+      let maxStreak = 1;
+
+      for (let i = 1; i < sortedScores.length; i++) {
+        const prevDate = new Date(sortedScores[i - 1].date);
+        const currDate = new Date(sortedScores[i].date);
+        const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (dayDiff === 1) {
+          currentStreak++;
+          maxStreak = Math.max(maxStreak, currentStreak);
+        } else if (dayDiff > 1) {
+          currentStreak = 1;
+        }
+      }
+
+      return maxStreak >= 7;
     },
     category: 'general'
   },
@@ -51,7 +68,7 @@ export const wordleAchievements: Achievement[] = [
     title: 'Word Beginner',
     description: 'Complete your first Wordle puzzle',
     icon: 'bookmark',
-    criteria: (scores: Score[]) => scores.length > 0,
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').length > 0,
     category: 'wordle',
     gameId: 'wordle'
   },
@@ -60,7 +77,7 @@ export const wordleAchievements: Achievement[] = [
     title: 'Word Master',
     description: 'Solve Wordle in 2 attempts or fewer',
     icon: 'star',
-    criteria: (scores: Score[]) => scores.some(score => score.value <= 2),
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value <= 2),
     category: 'wordle',
     gameId: 'wordle'
   },
@@ -70,8 +87,26 @@ export const wordleAchievements: Achievement[] = [
     description: 'Maintain a 7-day streak in Wordle',
     icon: 'trophy',
     criteria: (scores: Score[]) => {
-      // Implementation would track date sequences
-      return false; // Placeholder - real implementation would check date continuity
+      const wordleScores = scores.filter(s => s.gameId === 'wordle')
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      let currentStreak = 1;
+      let maxStreak = 1;
+
+      for (let i = 1; i < wordleScores.length; i++) {
+        const prevDate = new Date(wordleScores[i - 1].date);
+        const currDate = new Date(wordleScores[i].date);
+        const dayDiff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (dayDiff === 1) {
+          currentStreak++;
+          maxStreak = Math.max(maxStreak, currentStreak);
+        } else if (dayDiff > 1) {
+          currentStreak = 1;
+        }
+      }
+
+      return maxStreak >= 7;
     },
     category: 'wordle',
     gameId: 'wordle'
@@ -81,7 +116,7 @@ export const wordleAchievements: Achievement[] = [
     title: 'Persistence Pays Off',
     description: 'Complete Wordle in exactly 6 attempts',
     icon: 'target',
-    criteria: (scores: Score[]) => scores.some(score => score.value === 6),
+    criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value === 6),
     category: 'wordle',
     gameId: 'wordle'
   }
@@ -212,49 +247,103 @@ export const getAchievementsByGame = (gameId: string): Achievement[] => {
 };
 
 // Function to get all achievements for a player based on their scores
-export const getPlayerAchievements = (playerId: string): Achievement[] => {
-  const playerScores = getScoresByPlayerId(playerId);
-  
+export const getPlayerAchievements = async (playerId: string): Promise<Achievement[]> => {
+  const { data: scores, error } = await supabase
+    .from('scores')
+    .select('*')
+    .eq('user_id', playerId);
+
+  if (error) {
+    console.error('Error fetching scores:', error);
+    return allAchievements.map(achievement => ({
+      ...achievement,
+      unlockedAt: undefined
+    }));
+  }
+
   return allAchievements.map(achievement => {
-    let achievementScores = playerScores;
-    
-    // Filter scores by game if this is a game-specific achievement
-    if (achievement.gameId) {
-      achievementScores = achievementScores.filter(score => score.gameId === achievement.gameId);
-    }
-    
+    const achievementScores = achievement.gameId
+      ? scores.filter(score => score.game_id === achievement.gameId)
+      : scores;
+
     // Check if the player has met the criteria for this achievement
-    const unlockedAt = achievement.criteria(achievementScores) 
-      ? new Date().toISOString() // In a real app, this would be when they actually achieved it
-      : undefined;
-    
+    const unlocked = achievement.criteria(achievementScores.map(score => ({
+      id: score.id,
+      gameId: score.game_id,
+      playerId: score.user_id,
+      value: score.value,
+      date: score.date,
+      notes: score.notes
+    })));
+
     return {
       ...achievement,
-      unlockedAt
+      unlockedAt: unlocked ? new Date().toISOString() : undefined
     };
   });
 };
 
 // Get a player's progress towards an achievement
-export const getAchievementProgress = (
+export const getAchievementProgress = async (
   playerId: string, 
   achievementId: string
-): { current: number; target: number; percentage: number } => {
-  // This is a simplified implementation
-  // A real implementation would calculate actual progress values
-  const playerAchievements = getPlayerAchievements(playerId);
-  const achievement = playerAchievements.find(a => a.id === achievementId);
+): Promise<{ current: number; target: number; percentage: number }> => {
+  const { data: scores, error } = await supabase
+    .from('scores')
+    .select('*')
+    .eq('user_id', playerId);
+
+  if (error) {
+    console.error('Error fetching scores:', error);
+    return { current: 0, target: 1, percentage: 0 };
+  }
+
+  const achievement = allAchievements.find(a => a.id === achievementId);
   
   if (!achievement) {
     return { current: 0, target: 1, percentage: 0 };
   }
-  
-  // If unlocked, return 100% progress
-  if (achievement.unlockedAt) {
-    return { current: 1, target: 1, percentage: 100 };
+
+  const mappedScores = scores.map(score => ({
+    id: score.id,
+    gameId: score.game_id,
+    playerId: score.user_id,
+    value: score.value,
+    date: score.date,
+    notes: score.notes
+  }));
+
+  // Calculate progress based on achievement type
+  switch (achievementId) {
+    case 'first-play':
+      return {
+        current: mappedScores.length,
+        target: 1,
+        percentage: mappedScores.length > 0 ? 100 : 0
+      };
+    
+    case 'all-games':
+      const uniqueGames = new Set(mappedScores.map(score => score.gameId));
+      return {
+        current: uniqueGames.size,
+        target: games.length,
+        percentage: Math.round((uniqueGames.size / games.length) * 100)
+      };
+    
+    case 'game-enthusiast':
+      return {
+        current: mappedScores.length,
+        target: 50,
+        percentage: Math.min(Math.round((mappedScores.length / 50) * 100), 100)
+      };
+    
+    default:
+      // For achievements that are either unlocked or not
+      const unlocked = achievement.criteria(mappedScores);
+      return {
+        current: unlocked ? 1 : 0,
+        target: 1,
+        percentage: unlocked ? 100 : 0
+      };
   }
-  
-  // Return a placeholder progress
-  // In a real app, this would be more sophisticated
-  return { current: 0, target: 1, percentage: 0 };
 };
