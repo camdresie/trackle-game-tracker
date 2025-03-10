@@ -33,7 +33,7 @@ const AddScoreModal = ({
   const { user } = useAuth();
   const [value, setValue] = useState(
     game.id === 'wordle' ? 3 : 
-    game.id === 'tightrope' ? 2500 : // Default to middle value for Tightrope
+    game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
     Math.floor(game.maxScore / 2)
   );
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,8 +46,8 @@ const AddScoreModal = ({
       // For Wordle with fixed positions (1-6)
       return [1, 2, 3, 4, 5, 6];
     } else if (game.id === 'tightrope') {
-      // For Tightrope with range 0-5000
-      return [0, 1250, 2500, 3750, 5000];
+      // For Tightrope with range 0-2340
+      return [0, 585, 1170, 1755, 2340];
     } else {
       // For other games, calculate evenly spaced values
       const step = game.maxScore / 4;
@@ -165,7 +165,7 @@ const AddScoreModal = ({
             <Slider
               min={game.id === 'wordle' ? 1 : 0}
               max={game.maxScore}
-              step={game.id === 'tightrope' ? 50 : 1} // Use larger step for Tightrope
+              step={game.id === 'tightrope' ? 20 : 1} // Use larger step for Tightrope
               value={[value]}
               onValueChange={(val) => setValue(val[0])}
               className="py-2"

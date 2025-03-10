@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -15,7 +16,7 @@ export const games: Game[] = [
     description: 'Walk the trivia tightrope to make it to the other side!',
     icon: 'layout-grid',
     color: 'bg-blue-500',
-    maxScore: 5000  // Updated from 7 to 5000
+    maxScore: 2340  // Updated from 5000 to 2340
   },
   {
     id: 'quordle',
@@ -72,8 +73,8 @@ export const generateSampleScores = (): Score[] => {
           // Generate random completion time between 45 seconds and 8 minutes
           value = Math.floor(Math.random() * (480 - 45) + 45);
         } else if (game.id === 'tightrope') {
-          // Generate random score between 0 and 5000 for Tightrope
-          value = Math.floor(Math.random() * 5001);
+          // Generate random score between 0 and 2340 for Tightrope
+          value = Math.floor(Math.random() * 2341);
         } else {
           value = Math.floor(Math.random() * game.maxScore);
         }

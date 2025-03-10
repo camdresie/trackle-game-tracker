@@ -32,6 +32,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
       return 'tries';
     } else if (game.id === 'chess') {
       return 'moves';
+    } else if (game.id === 'mini-crossword') {
+      return 'seconds';
     } else {
       return 'points';
     }
