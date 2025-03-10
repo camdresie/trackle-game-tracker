@@ -32,7 +32,9 @@ const AddScoreModal = ({
 }: AddScoreModalProps) => {
   const { user } = useAuth();
   const [value, setValue] = useState(
-    game.id === 'wordle' ? 3 : Math.floor(game.maxScore / 2)
+    game.id === 'wordle' ? 3 : 
+    game.id === 'tightrope' ? 2500 : // Default to middle value for Tightrope
+    Math.floor(game.maxScore / 2)
   );
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -43,6 +45,9 @@ const AddScoreModal = ({
     if (game.id === 'wordle') {
       // For Wordle with fixed positions (1-6)
       return [1, 2, 3, 4, 5, 6];
+    } else if (game.id === 'tightrope') {
+      // For Tightrope with range 0-5000
+      return [0, 1250, 2500, 3750, 5000];
     } else {
       // For other games, calculate evenly spaced values
       const step = game.maxScore / 4;
@@ -85,7 +90,11 @@ const AddScoreModal = ({
       onOpenChange(false);
       
       // Reset form
-      setValue(game.id === 'wordle' ? 3 : Math.floor(game.maxScore / 2));
+      setValue(
+        game.id === 'wordle' ? 3 : 
+        game.id === 'tightrope' ? 2500 : 
+        Math.floor(game.maxScore / 2)
+      );
       setDate(new Date().toISOString().split('T')[0]);
       setNotes('');
     } catch (error) {
@@ -100,6 +109,9 @@ const AddScoreModal = ({
   const getScoreLabel = () => {
     if (game.id === 'wordle') {
       return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+    } else if (game.id === 'tightrope') {
+      const percentage = (value / game.maxScore) * 100;
+      return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
     } else {
       const percentage = (value / game.maxScore) * 100;
       return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -153,7 +165,7 @@ const AddScoreModal = ({
             <Slider
               min={game.id === 'wordle' ? 1 : 0}
               max={game.maxScore}
-              step={1}
+              step={game.id === 'tightrope' ? 50 : 1} // Use larger step for Tightrope
               value={[value]}
               onValueChange={(val) => setValue(val[0])}
               className="py-2"

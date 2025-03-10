@@ -40,7 +40,12 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   // Format the date properly using the browser's locale
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    // Use specific options to ensure consistent formatting
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   return (

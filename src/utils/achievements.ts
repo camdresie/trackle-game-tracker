@@ -1,3 +1,4 @@
+
 import { Game, Score, Achievement } from './types';
 import { getGameById, games } from './gameData';
 import { supabase } from '@/lib/supabase';
@@ -167,9 +168,9 @@ export const tightropeAchievements: Achievement[] = [
   {
     id: 'tightrope-master',
     title: 'Perfect Balance',
-    description: 'Score 7 points in Tightrope',
+    description: 'Score 4000+ points in Tightrope',
     icon: 'badge-check',
-    criteria: (scores: Score[]) => scores.some(score => score.value === 7),
+    criteria: (scores: Score[]) => scores.some(score => score.gameId === 'tightrope' && score.value >= 4000),
     category: 'tightrope',
     gameId: 'tightrope'
   },
@@ -339,6 +340,16 @@ export const getAchievementProgress = async (
         current: mappedScores.length,
         target: 50,
         percentage: Math.min(Math.round((mappedScores.length / 50) * 100), 100)
+      };
+    
+    case 'tightrope-master':
+      const highestTightropeScore = mappedScores
+        .filter(score => score.gameId === 'tightrope')
+        .reduce((max, score) => Math.max(max, score.value), 0);
+      return {
+        current: highestTightropeScore,
+        target: 4000,
+        percentage: Math.min(Math.round((highestTightropeScore / 4000) * 100), 100)
       };
     
     default:
