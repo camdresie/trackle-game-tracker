@@ -25,13 +25,16 @@ export interface Player {
 }
 
 export interface GameStats {
+  id: string;
   gameId: string;
-  playerId: string;
+  userId: string;
   bestScore: number;
   averageScore: number;
   totalPlays: number;
   currentStreak: number;
   longestStreak: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Achievement {

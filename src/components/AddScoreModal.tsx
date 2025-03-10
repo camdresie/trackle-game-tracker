@@ -13,53 +13,69 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { Game, Score } from '@/utils/types';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
+import { addGameScore } from '@/services/gameStatsService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddScoreModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   game: Game;
-  playerId: string;
   onAddScore: (score: Score) => void;
 }
 
 const AddScoreModal = ({ 
   open, 
   onOpenChange, 
-  game, 
-  playerId,
+  game,
   onAddScore 
 }: AddScoreModalProps) => {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const [value, setValue] = useState(
     game.id === 'wordle' ? 3 : Math.floor(game.maxScore / 2)
   );
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSubmit = () => {
-    const newScore: Score = {
-      id: `score-${Date.now()}`,
-      gameId: game.id,
-      playerId,
-      value,
-      date,
-      notes: notes || undefined
-    };
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error('You must be logged in to add scores');
+      return;
+    }
     
-    onAddScore(newScore);
-    toast({
-      title: 'Score added',
-      description: `Your ${game.name} score has been saved.`,
-      duration: 3000
-    });
+    setIsSubmitting(true);
     
-    onOpenChange(false);
-    
-    // Reset form
-    setValue(game.id === 'wordle' ? 3 : Math.floor(game.maxScore / 2));
-    setDate(new Date().toISOString().split('T')[0]);
-    setNotes('');
+    try {
+      const newScore = {
+        gameId: game.id,
+        playerId: user.id,
+        value,
+        date,
+        notes: notes || undefined
+      };
+      
+      const { stats, score } = await addGameScore(newScore);
+      
+      // Update local UI with the new score
+      onAddScore({
+        id: score.id,
+        ...newScore
+      });
+      
+      toast.success(`Your ${game.name} score has been saved.`);
+      onOpenChange(false);
+      
+      // Reset form
+      setValue(game.id === 'wordle' ? 3 : Math.floor(game.maxScore / 2));
+      setDate(new Date().toISOString().split('T')[0]);
+      setNotes('');
+    } catch (error) {
+      console.error('Error adding score:', error);
+      toast.error('Failed to save score. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // Logic for what "good score" means varies by game
@@ -156,7 +172,12 @@ const AddScoreModal = ({
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>Save Score</Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Saving...' : 'Save Score'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

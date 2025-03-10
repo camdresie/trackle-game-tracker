@@ -22,37 +22,66 @@ import {
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import GameCard from '@/components/GameCard';
-import { Game, Score, Achievement } from '@/utils/types';
+import { Game, Score, Achievement, GameStats } from '@/utils/types';
 import { 
   games, 
-  sampleScores, 
-  getScoresByPlayerId,
-  getLatestScoreByGameAndPlayer,
-  calculateAverageScore,
-  calculateBestScore,
-  calculatePlayerRanking
+  getGameById
 } from '@/utils/gameData';
 import { getPlayerAchievements, getAchievementsByCategory } from '@/utils/achievements';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserGameStats, getPlayedGames } from '@/services/gameStatsService';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const { profile, user } = useAuth();
-  const [currentPlayerId, setCurrentPlayerId] = useState('p1');
-  const [playerScores, setPlayerScores] = useState<Score[]>([]);
-  const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
   const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
   
+  // Use React Query to fetch game stats
+  const { 
+    data: gameStats = [], 
+    isLoading: isLoadingStats, 
+    error: statsError 
+  } = useQuery({
+    queryKey: ['gameStats', user?.id],
+    queryFn: () => user ? getUserGameStats(user.id) : Promise.resolve([]),
+    enabled: !!user,
+  });
+
+  // Use React Query to fetch played games
+  const { 
+    data: playedGameIds = [], 
+    isLoading: isLoadingGames, 
+    error: gamesError 
+  } = useQuery({
+    queryKey: ['playedGames', user?.id],
+    queryFn: () => user ? getPlayedGames(user.id) : Promise.resolve([]),
+    enabled: !!user,
+  });
+
+  // Show error if needed
   useEffect(() => {
-    setPlayerScores(getScoresByPlayerId(currentPlayerId));
-    setPlayerAchievements(getPlayerAchievements(currentPlayerId));
-  }, [currentPlayerId]);
+    if (statsError) {
+      console.error('Error loading game stats:', statsError);
+      toast.error('Failed to load your game statistics');
+    }
+    if (gamesError) {
+      console.error('Error loading played games:', gamesError);
+      toast.error('Failed to load your games');
+    }
+  }, [statsError, gamesError]);
   
-  // Calculate some stats
-  const totalGamesPlayed = playerScores.length;
-  const uniqueGamesPlayed = new Set(playerScores.map(score => score.gameId)).size;
-  const playerRank = calculatePlayerRanking(currentPlayerId);
+  // Get achievements based on stats
+  const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
+  
+  useEffect(() => {
+    if (user) {
+      // In a real implementation, this would use the actual stats
+      setPlayerAchievements(getPlayerAchievements(user.id));
+    }
+  }, [user, gameStats]);
   
   // Filter achievements by category
   const filteredAchievements = activeAchievementCategory === 'all'
@@ -66,13 +95,10 @@ const Profile = () => {
   // Get achievements for display
   const displayAchievements = filteredAchievements.slice(0, 8);
   
-  // Calculate scores for today
-  const getTodaysScores = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return playerScores.filter(score => score.date === today);
-  };
-  
-  const todaysScores = getTodaysScores();
+  // Calculate profile statistics
+  const totalGamesPlayed = gameStats.reduce((total, stat) => total + stat.total_plays, 0);
+  const uniqueGamesPlayed = playedGameIds.length;
+  const playerRank = 1; // We'll implement proper ranking later
   
   // Get icon component based on string name
   const getIconByName = (iconName: string) => {
@@ -95,13 +121,22 @@ const Profile = () => {
     return <IconComponent className="w-6 h-6" />;
   };
 
-  // Get games played by the user (for now, we'll simulate this)
-  const getPlayedGames = () => {
-    const playedGameIds = Array.from(new Set(playerScores.map(score => score.gameId)));
-    return games.filter(game => playedGameIds.includes(game.id));
-  };
+  // Get played games data
+  const playedGames = games.filter(game => playedGameIds.includes(game.id));
   
-  const playedGames = getPlayedGames();
+  // Loading state
+  if (isLoadingStats || isLoadingGames) {
+    return (
+      <div className="min-h-screen bg-background">
+        <NavBar />
+        <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+          <div className="h-[80vh] flex items-center justify-center">
+            <p className="text-muted-foreground">Loading your profile data...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-background">
@@ -268,18 +303,21 @@ const Profile = () => {
               {playedGames.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {playedGames.map(game => {
-                    const gameScores = playerScores.filter(score => score.gameId === game.id);
-                    const latestScore = getLatestScoreByGameAndPlayer(game.id, currentPlayerId);
-                    const averageScore = calculateAverageScore(gameScores);
-                    const bestScore = calculateBestScore(gameScores, game);
+                    const gameStat = gameStats.find(stat => stat.game_id === game.id);
                     
                     return (
                       <GameCard 
                         key={game.id}
                         game={game}
-                        latestScore={latestScore}
-                        averageScore={averageScore}
-                        bestScore={bestScore}
+                        latestScore={gameStat ? {
+                          id: `latest-${game.id}`,
+                          gameId: game.id,
+                          playerId: user?.id || '',
+                          value: gameStat.best_score || 0,
+                          date: new Date().toISOString()
+                        } : undefined}
+                        averageScore={gameStat?.average_score}
+                        bestScore={gameStat?.best_score}
                       />
                     );
                   })}
@@ -297,44 +335,37 @@ const Profile = () => {
               <div className="glass-card rounded-xl p-5">
                 <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
                 
-                {playerScores.length > 0 ? (
+                {gameStats.length > 0 ? (
                   <div className="space-y-4">
-                    {[...playerScores]
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    {gameStats
+                      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                       .slice(0, 10)
-                      .map(score => {
-                        const game = games.find(g => g.id === score.gameId);
+                      .map(stat => {
+                        const game = getGameById(stat.game_id);
                         if (!game) return null;
                         
                         return (
                           <div 
-                            key={score.id}
+                            key={stat.id}
                             className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
                           >
                             <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center`}>
-                              <span className="font-semibold text-white">{score.value}</span>
+                              <span className="font-semibold text-white">{stat.best_score}</span>
                             </div>
                             
                             <div className="flex-1">
                               <div className="font-medium">{game.name}</div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(score.date).toLocaleDateString('en-US', { 
-                                  weekday: 'long', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                })}
+                                {stat.total_plays} plays | {stat.current_streak} day streak
                               </div>
                             </div>
                             
                             <div className="text-right">
                               <div className="text-sm font-medium">
-                                {score.value} {game.id === 'wordle' ? 'tries' : 'points'}
+                                Best: {stat.best_score}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(score.date).toLocaleTimeString('en-US', { 
-                                  hour: 'numeric', 
-                                  minute: '2-digit'
-                                })}
+                                Avg: {Math.round(stat.average_score * 10) / 10}
                               </div>
                             </div>
                           </div>
