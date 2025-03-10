@@ -7,6 +7,7 @@ type Profile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
+  selected_games?: string[];
 };
 
 type AuthContextType = {
@@ -77,9 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setProfile(data);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching profile:', error);
-    } finally {
       setIsLoading(false);
     }
   };

@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -9,8 +9,9 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     // Check if this is a redirect with error
@@ -35,6 +36,12 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect to onboarding if profile is not set up
+  // Skip this check on the onboarding page itself to avoid infinite redirects
+  if (location.pathname !== '/onboarding' && (!profile?.username || !profile?.selected_games?.length)) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
