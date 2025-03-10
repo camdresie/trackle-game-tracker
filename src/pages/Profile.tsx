@@ -38,7 +38,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [currentPlayerId, setCurrentPlayerId] = useState('p1');
   const [playerScores, setPlayerScores] = useState<Score[]>([]);
   const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);

@@ -15,6 +15,7 @@ export interface Database {
           id: string
           username: string | null
           avatar_url: string | null
+          full_name: string | null
           created_at: string
           updated_at: string
           selected_games: string[] | null
@@ -23,6 +24,7 @@ export interface Database {
           id: string
           username?: string | null
           avatar_url?: string | null
+          full_name?: string | null
           created_at?: string
           updated_at?: string
           selected_games?: string[] | null
@@ -31,6 +33,7 @@ export interface Database {
           id?: string
           username?: string | null
           avatar_url?: string | null
+          full_name?: string | null
           created_at?: string
           updated_at?: string
           selected_games?: string[] | null
@@ -110,6 +113,7 @@ export interface Database {
           id: string
           username: string | null
           avatar_url: string | null
+          full_name: string | null
           created_at: string
           updated_at: string
           selected_games: string[] | null

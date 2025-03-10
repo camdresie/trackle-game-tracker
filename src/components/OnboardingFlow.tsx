@@ -12,8 +12,8 @@ import { toast } from 'sonner';
 const OnboardingFlow = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile } = useAuth();
-  const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
