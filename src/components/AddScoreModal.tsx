@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -91,7 +92,7 @@ const AddScoreModal = ({
       // Reset form
       setValue(
         game.id === 'wordle' ? 3 : 
-        game.id === 'tightrope' ? 2500 : 
+        game.id === 'tightrope' ? 1170 : 
         Math.floor(game.maxScore / 2)
       );
       setDate(new Date().toISOString().split('T')[0]);
@@ -126,6 +127,26 @@ const AddScoreModal = ({
       return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
     }
   };
+  
+  // Handle direct input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = parseInt(e.target.value);
+    
+    if (isNaN(inputValue)) {
+      return;
+    }
+    
+    // Ensure value is within valid range
+    let newValue = inputValue;
+    
+    if (game.id === 'wordle') {
+      newValue = Math.max(1, Math.min(game.maxScore, inputValue));
+    } else {
+      newValue = Math.max(0, Math.min(game.maxScore, inputValue));
+    }
+    
+    setValue(newValue);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -149,9 +170,14 @@ const AddScoreModal = ({
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Score</label>
               <div className="flex items-center gap-2">
-                <span className={`text-lg font-semibold ${getScoreColor()}`}>
-                  {value}
-                </span>
+                <Input
+                  type="number"
+                  value={value}
+                  onChange={handleInputChange}
+                  className="w-20 text-right"
+                  min={game.id === 'wordle' ? 1 : 0}
+                  max={game.maxScore}
+                />
                 <span className="text-xs text-muted-foreground">
                   / {game.maxScore}
                 </span>
