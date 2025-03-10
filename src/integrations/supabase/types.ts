@@ -128,6 +128,39 @@ export type Database = {
         }
         Relationships: []
       }
+      scores: {
+        Row: {
+          created_at: string | null
+          date: string
+          game_id: string
+          id: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          game_id: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          game_id?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -145,6 +178,43 @@ export type Database = {
           selected_games: string[] | null
           updated_at: string | null
           username: string | null
+        }
+      }
+      get_user_game_stats: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: {
+          average_score: number | null
+          best_score: number | null
+          created_at: string | null
+          current_streak: number | null
+          game_id: string
+          id: string
+          longest_streak: number | null
+          total_plays: number | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
+      update_game_stats: {
+        Args: {
+          p_user_id: string
+          p_game_id: string
+          p_score: number
+          p_date: string
+        }
+        Returns: {
+          average_score: number | null
+          best_score: number | null
+          created_at: string | null
+          current_streak: number | null
+          game_id: string
+          id: string
+          longest_streak: number | null
+          total_plays: number | null
+          updated_at: string | null
+          user_id: string | null
         }
       }
     }

@@ -80,3 +80,32 @@ export async function getPlayedGames(userId: string) {
     throw error;
   }
 }
+
+export async function getGameScores(gameId: string, userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .order('date', { ascending: false });
+
+    if (error) {
+      console.error('Error getting game scores:', error);
+      throw error;
+    }
+
+    // Transform to match our Score type
+    return data.map(score => ({
+      id: score.id,
+      gameId: score.game_id,
+      playerId: score.user_id,
+      value: score.value,
+      date: score.date,
+      notes: score.notes
+    }));
+  } catch (error) {
+    console.error('Error in getGameScores:', error);
+    throw error;
+  }
+}
