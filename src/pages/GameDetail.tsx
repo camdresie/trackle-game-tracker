@@ -146,7 +146,8 @@ const GameDetail = () => {
             <div className="h-60">
               <ScoreChart 
                 scores={playerScores.slice(-30)} 
-                game={game} 
+                gameId={game.id} 
+                color={game.color.replace('bg-', '')}
               />
             </div>
           </div>
@@ -247,8 +248,9 @@ const GameDetail = () => {
                         <div className="h-32">
                           <ScoreChart 
                             scores={friendScores.slice(-20)} 
-                            game={game}
-                            simplified
+                            gameId={game.id}
+                            color={game.color.replace('bg-', '')}
+                            simplified={true}
                           />
                         </div>
                       ) : (

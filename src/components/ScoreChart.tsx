@@ -10,12 +10,14 @@ import {
   Tooltip, 
   Legend
 } from 'recharts';
-import { Score } from '@/utils/types';
+import { Score, Game } from '@/utils/types';
 
 interface ScoreChartProps {
   scores: Score[];
   color?: string;
-  gameId: string;
+  gameId?: string;
+  game?: Game;
+  simplified?: boolean;
 }
 
 interface ChartDataPoint {
@@ -23,8 +25,19 @@ interface ChartDataPoint {
   value: number;
 }
 
-const ScoreChart = ({ scores, color = "#3182ce", gameId }: ScoreChartProps) => {
+const ScoreChart = ({ 
+  scores, 
+  color, 
+  gameId, 
+  game, 
+  simplified = false 
+}: ScoreChartProps) => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  
+  // Determine the game ID from either the direct gameId prop or from the game object
+  const effectiveGameId = gameId || (game?.id);
+  // Determine the color from either the direct color prop or from the game object
+  const effectiveColor = color || (game?.color ? game.color.replace('bg-', '') : "#3182ce");
   
   useEffect(() => {
     if (!scores.length) return;
@@ -52,7 +65,7 @@ const ScoreChart = ({ scores, color = "#3182ce", gameId }: ScoreChartProps) => {
   }
   
   // For Wordle, lower scores are better
-  const isAscending = gameId === 'wordle';
+  const isAscending = effectiveGameId === 'wordle';
   
   // Calculate domain for Y axis
   const values = chartData.map(point => point.value);
@@ -64,20 +77,24 @@ const ScoreChart = ({ scores, color = "#3182ce", gameId }: ScoreChartProps) => {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ top: 5, right: 20, left: 5, bottom: 5 }}
+          margin={simplified ? { top: 5, right: 10, left: 0, bottom: 5 } : { top: 5, right: 20, left: 5, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          {!simplified && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
           <XAxis 
             dataKey="date" 
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: simplified ? 10 : 12 }}
             tickLine={{ stroke: '#f0f0f0' }}
             axisLine={{ stroke: '#f0f0f0' }}
+            height={simplified ? 20 : 30}
+            hide={simplified && chartData.length > 10}
           />
           <YAxis 
             domain={[minValue, maxValue]}
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: simplified ? 10 : 12 }}
             tickLine={{ stroke: '#f0f0f0' }}
             axisLine={{ stroke: '#f0f0f0' }}
+            width={simplified ? 25 : 35}
+            hide={simplified}
           />
           <Tooltip 
             contentStyle={{ 
@@ -88,17 +105,19 @@ const ScoreChart = ({ scores, color = "#3182ce", gameId }: ScoreChartProps) => {
             }}
             labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
           />
-          <Legend 
-            formatter={(value) => <span className="text-sm font-medium">Score</span>}
-          />
+          {!simplified && (
+            <Legend 
+              formatter={(value) => <span className="text-sm font-medium">Score</span>}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="value"
-            stroke={color}
-            strokeWidth={2.5}
-            dot={{ stroke: color, strokeWidth: 2, r: 4, fill: 'white' }}
-            activeDot={{ r: 6, stroke: color, strokeWidth: 2, fill: 'white' }}
-            isAnimationActive={true}
+            stroke={effectiveColor}
+            strokeWidth={simplified ? 1.5 : 2.5}
+            dot={simplified ? false : { stroke: effectiveColor, strokeWidth: 2, r: 4, fill: 'white' }}
+            activeDot={{ r: simplified ? 4 : 6, stroke: effectiveColor, strokeWidth: 2, fill: 'white' }}
+            isAnimationActive={!simplified}
             animationDuration={2000}
             animationEasing="ease-in-out"
           />
