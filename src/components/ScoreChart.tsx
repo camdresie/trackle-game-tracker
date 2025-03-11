@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, 
@@ -44,7 +43,7 @@ const ScoreChart = ({
   const effectiveGameId = gameId || (game?.id);
   
   // Determine the color from either the direct color prop or from the game object
-  const baseColor = color || (game?.color ? game.color.replace('bg-', '') : "#3182ce");
+  const baseColor = color || (game?.color ? game.color.replace('bg-', '') : "blue-500");
   
   // Generate gradient colors for the chart
   const getColorOpacity = (opacity: string) => {
@@ -77,7 +76,7 @@ const ScoreChart = ({
       const date = new Date(year, month - 1, day); // month is 0-indexed in JS
       
       // Format value based on game type
-      let formattedValue = score.value;
+      let formattedValue: string | number = score.value;
       if (effectiveGameId === 'mini-crossword') {
         const minutes = Math.floor(score.value / 60);
         const seconds = score.value % 60;
@@ -114,10 +113,6 @@ const ScoreChart = ({
   // Calculate average for reference line
   const averageValue = values.reduce((sum, val) => sum + val, 0) / values.length;
   const averageLabel = isAscending ? 'Average Attempts' : 'Average Score';
-  
-  // Calculate best score for reference line
-  const bestValue = isAscending ? Math.min(...values) : Math.max(...values);
-  const bestLabel = isAscending ? 'Best Attempt' : 'Best Score';
   
   return (
     <div className="w-full h-64 animate-fade-in">
@@ -215,9 +210,7 @@ const ScoreChart = ({
                 return label;
               }}
             />
-            <Legend 
-              formatter={(value) => <span className="text-sm font-medium">Score History</span>}
-            />
+            {/* Removed duplicate legend - only show one in GameDetail.tsx */}
             <ReferenceLine 
               y={averageValue} 
               label={{ 
@@ -229,17 +222,7 @@ const ScoreChart = ({
               stroke="#6b7280" 
               strokeDasharray="3 3" 
             />
-            <ReferenceLine 
-              y={bestValue} 
-              label={{ 
-                value: bestLabel, 
-                position: 'insideTopRight',
-                fontSize: 11,
-                fill: getColorOpacity("1")
-              }} 
-              stroke={getColorOpacity("1")} 
-              strokeDasharray="3 3" 
-            />
+            {/* Removed the "Best Attempt" reference line as requested */}
             <Area 
               type="monotone" 
               dataKey="value" 

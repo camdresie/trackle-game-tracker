@@ -96,7 +96,7 @@ const GameDetail = () => {
             
             {displayScores.length > 0 && (
               <div className="glass-card rounded-xl p-4 mb-8 overflow-hidden">
-                <h2 className="text-xl font-semibold mb-4">Your Performance</h2>
+                <h2 className="text-xl font-semibold mb-4">Score History</h2>
                 <div className="h-60">
                   <ScoreChart 
                     scores={displayScores.slice(-30)} 
