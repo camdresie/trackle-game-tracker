@@ -7,17 +7,23 @@ import { supabase } from '@/lib/supabase';
 export const generalAchievements: Achievement[] = [
   {
     id: 'first-play',
+    name: 'First Play',
     title: 'First Steps',
     description: 'Play your first game',
     icon: 'flag',
+    color: 'bg-green-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.length > 0,
     category: 'general'
   },
   {
     id: 'all-games',
+    name: 'Game Master',
     title: 'Game Master',
     description: 'Play all available games',
     icon: 'crown',
+    color: 'bg-amber-500',
+    earned: false,
     criteria: (scores: Score[]) => {
       const uniqueGames = new Set(scores.map(score => score.gameId));
       return uniqueGames.size >= games.length;
@@ -26,9 +32,12 @@ export const generalAchievements: Achievement[] = [
   },
   {
     id: 'daily-player',
+    name: 'Daily Devotion',
     title: 'Daily Devotion',
     description: 'Play games for 7 consecutive days',
     icon: 'calendar',
+    color: 'bg-blue-500',
+    earned: false,
     criteria: (scores: Score[]) => {
       // Sort scores by date
       const sortedScores = [...scores].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -54,9 +63,12 @@ export const generalAchievements: Achievement[] = [
   },
   {
     id: 'game-enthusiast',
+    name: 'Game Enthusiast',
     title: 'Game Enthusiast',
     description: 'Play 50 games total',
     icon: 'sparkles',
+    color: 'bg-purple-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.length >= 50,
     category: 'general'
   }
@@ -66,27 +78,36 @@ export const generalAchievements: Achievement[] = [
 export const wordleAchievements: Achievement[] = [
   {
     id: 'wordle-first',
+    name: 'Word Beginner',
     title: 'Word Beginner',
     description: 'Complete your first Wordle puzzle',
     icon: 'bookmark',
+    color: 'bg-emerald-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').length > 0,
     category: 'wordle',
     gameId: 'wordle'
   },
   {
     id: 'wordle-master',
+    name: 'Word Master',
     title: 'Word Master',
     description: 'Solve Wordle in 2 attempts or fewer',
     icon: 'star',
+    color: 'bg-amber-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value <= 2),
     category: 'wordle',
     gameId: 'wordle'
   },
   {
     id: 'wordle-streak',
+    name: 'Perfect Streak',
     title: 'Perfect Streak',
     description: 'Maintain a 7-day streak in Wordle',
     icon: 'trophy',
+    color: 'bg-amber-500',
+    earned: false,
     criteria: (scores: Score[]) => {
       const wordleScores = scores.filter(s => s.gameId === 'wordle')
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -114,9 +135,12 @@ export const wordleAchievements: Achievement[] = [
   },
   {
     id: 'wordle-persistence',
+    name: 'Persistence',
     title: 'Persistence Pays Off',
     description: 'Complete Wordle in exactly 6 attempts',
     icon: 'target',
+    color: 'bg-orange-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value === 6),
     category: 'wordle',
     gameId: 'wordle'
@@ -127,27 +151,36 @@ export const wordleAchievements: Achievement[] = [
 export const quordleAchievements: Achievement[] = [
   {
     id: 'quordle-first',
+    name: 'Quadruple Threat',
     title: 'Quadruple Threat',
     description: 'Complete your first Quordle puzzle',
     icon: 'grid',
+    color: 'bg-purple-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length > 0,
     category: 'quordle',
     gameId: 'quordle'
   },
   {
     id: 'quordle-master',
+    name: 'Quordle Master',
     title: 'Quordle Master',
     description: 'Complete Quordle in 5 attempts or fewer',
     icon: 'circle-check',
+    color: 'bg-purple-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.value <= 5),
     category: 'quordle',
     gameId: 'quordle'
   },
   {
     id: 'quordle-expert',
+    name: 'Quordle Expert',
     title: 'Quordle Expert',
     description: 'Complete 10 Quordle puzzles',
     icon: 'badge-check',
+    color: 'bg-purple-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length >= 10,
     category: 'quordle',
     gameId: 'quordle'
@@ -158,27 +191,36 @@ export const quordleAchievements: Achievement[] = [
 export const tightropeAchievements: Achievement[] = [
   {
     id: 'tightrope-first',
+    name: 'Balancing Act',
     title: 'Balancing Act',
     description: 'Complete your first Tightrope puzzle',
     icon: 'gem',
+    color: 'bg-blue-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length > 0,
     category: 'tightrope',
     gameId: 'tightrope'
   },
   {
     id: 'tightrope-master',
+    name: 'Perfect Balance',
     title: 'Perfect Balance',
     description: 'Score 4000+ points in Tightrope',
     icon: 'badge-check',
+    color: 'bg-blue-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.gameId === 'tightrope' && score.value >= 4000),
     category: 'tightrope',
     gameId: 'tightrope'
   },
   {
     id: 'tightrope-adept',
+    name: 'Tightrope Adept',
     title: 'Tightrope Adept',
     description: 'Complete 15 Tightrope puzzles',
     icon: 'star',
+    color: 'bg-blue-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length >= 15,
     category: 'tightrope',
     gameId: 'tightrope'
@@ -189,36 +231,48 @@ export const tightropeAchievements: Achievement[] = [
 export const crosswordAchievements: Achievement[] = [
   {
     id: 'crossword-first',
+    name: 'Crossing Words',
     title: 'Crossing Words',
     description: 'Complete your first Mini Crossword',
     icon: 'pen-tool',
+    color: 'bg-rose-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length > 0,
     category: 'mini-crossword',
     gameId: 'mini-crossword'
   },
   {
     id: 'crossword-speed',
+    name: 'Speed Solver',
     title: 'Speed Solver',
     description: 'Complete Mini Crossword in under 60 seconds',
     icon: 'clock',
+    color: 'bg-rose-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.value < 60),
     category: 'mini-crossword',
     gameId: 'mini-crossword'
   },
   {
     id: 'crossword-expert',
+    name: 'Crossword Expert',
     title: 'Crossword Expert',
     description: 'Complete 20 Mini Crosswords',
     icon: 'award',
+    color: 'bg-rose-500',
+    earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length >= 20,
     category: 'mini-crossword',
     gameId: 'mini-crossword'
   },
   {
     id: 'crossword-master',
+    name: 'Crossword Master',
     title: 'Crossword Master',
     description: 'Complete the Mini Crossword in under 2 minutes 5 times',
     icon: 'sparkles',
+    color: 'bg-rose-500',
+    earned: false,
     criteria: (scores: Score[]) => {
       const underTwoMinutes = scores.filter(score => score.value < 120);
       return underTwoMinutes.length >= 5;
@@ -270,14 +324,15 @@ export const getPlayerAchievements = async (playerId: string): Promise<Achieveme
       : scores;
 
     // Check if the player has met the criteria for this achievement
-    const unlocked = achievement.criteria(achievementScores.map(score => ({
+    const unlocked = achievement.criteria ? achievement.criteria(achievementScores.map(score => ({
       id: score.id,
       gameId: score.game_id,
       playerId: score.user_id,
       value: score.value,
       date: score.date,
-      notes: score.notes
-    })));
+      notes: score.notes,
+      createdAt: score.created_at || new Date().toISOString() // Add createdAt
+    }))) : false;
 
     console.log(`Achievement ${achievement.id} unlocked:`, unlocked);
 
@@ -315,7 +370,8 @@ export const getAchievementProgress = async (
     playerId: score.user_id,
     value: score.value,
     date: score.date,
-    notes: score.notes
+    notes: score.notes,
+    createdAt: score.created_at || new Date().toISOString() // Add createdAt
   }));
 
   // Calculate progress based on achievement type

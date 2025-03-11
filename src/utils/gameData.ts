@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -75,7 +76,7 @@ export const generateSampleScores = (): Score[] => {
           // Generate random score between 0 and 2340 for Tightrope
           value = Math.floor(Math.random() * 2341);
         } else {
-          value = Math.floor(Math.random() * game.maxScore);
+          value = Math.floor(Math.random() * (game.maxScore || 10));
         }
         
         scores.push({
@@ -83,7 +84,8 @@ export const generateSampleScores = (): Score[] => {
           gameId: game.id,
           playerId: player.id,
           value,
-          date: date.toISOString().split('T')[0]
+          date: date.toISOString().split('T')[0],
+          createdAt: date.toISOString() // Add createdAt 
         });
       }
     });

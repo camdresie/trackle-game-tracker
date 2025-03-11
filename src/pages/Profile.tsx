@@ -347,7 +347,8 @@ const Profile = () => {
                           gameId: game.id,
                           playerId: user?.id || '',
                           value: gameStat.best_score || 0,
-                          date: new Date().toISOString()
+                          date: new Date().toISOString(),
+                          createdAt: new Date().toISOString()
                         } : undefined}
                         averageScore={gameStat?.average_score}
                         bestScore={gameStat?.best_score}
