@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   Dialog, 
@@ -96,22 +97,24 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         return [];
       }
       
-      // Log the raw data we get back
+      // Log the raw data for debugging
       console.log('Raw pending requests data:', JSON.stringify(data, null, 2));
 
       return data.map(request => {
-        // Access the nested user object properly - it's an array
-        const userDataArray = request.user;
+        // First, check what type of data we're getting
+        console.log('Request user data type:', typeof request.user);
+        console.log('Request user data:', request.user);
         
-        // Log how we're accessing the user data
-        console.log('User data for request:', request.id, userDataArray);
+        // Properly extract the user data from the nested structure
+        let userData = null;
         
-        // Extract the first item from the array if it exists
-        const userData = Array.isArray(userDataArray) && userDataArray.length > 0 
-          ? userDataArray[0] 
-          : null;
-        
-        console.log('Extracted user data:', userData);
+        if (Array.isArray(request.user) && request.user.length > 0) {
+          userData = request.user[0];
+          console.log('Extracted user data from array:', userData);
+        } else if (request.user && typeof request.user === 'object') {
+          userData = request.user;
+          console.log('Using user data directly:', userData);
+        }
         
         return {
           id: request.id,
