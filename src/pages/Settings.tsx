@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -29,7 +28,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureAvatarBucketExists } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const Settings = () => {
@@ -218,15 +217,10 @@ const Settings = () => {
     
     setUploading(true);
     try {
-      // Check if avatars bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
-      
-      // Create the bucket if it doesn't exist
-      if (!avatarBucketExists) {
-        await supabase.storage.createBucket('avatars', {
-          public: true,
-        });
+      // Ensure avatars bucket exists using our utility function
+      const bucketExists = await ensureAvatarBucketExists();
+      if (!bucketExists) {
+        throw new Error('Failed to ensure avatar bucket exists');
       }
       
       // Upload the file
