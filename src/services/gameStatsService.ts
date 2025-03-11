@@ -83,6 +83,7 @@ export async function getPlayedGames(userId: string) {
 
 export async function getTodaysGames(userId: string) {
   try {
+    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     console.log('Fetching games for today (from service):', today);
     

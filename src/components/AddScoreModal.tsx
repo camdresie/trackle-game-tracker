@@ -36,9 +36,18 @@ const AddScoreModal = ({
     game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
     Math.floor(game.maxScore / 2)
   );
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Set the date to today's date when the modal opens
+  useEffect(() => {
+    if (open) {
+      // Use current date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+      setDate(today);
+    }
+  }, [open]);
   
   // Calculate values for the slider labels
   const getSliderMarkers = () => {
@@ -95,7 +104,7 @@ const AddScoreModal = ({
         game.id === 'tightrope' ? 1170 : 
         Math.floor(game.maxScore / 2)
       );
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate('');  // Clear the date field when modal is closed
       setNotes('');
     } catch (error) {
       console.error('Error adding score:', error);
