@@ -103,6 +103,52 @@ export interface Database {
           updated_at?: string
         }
       }
+      friend_groups: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      friend_group_members: {
+        Row: {
+          id: string
+          group_id: string
+          friend_id: string
+          added_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          friend_id: string
+          added_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          friend_id?: string
+          added_at?: string
+        }
+      }
     }
     Functions: {
       get_profile: {

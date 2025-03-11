@@ -63,3 +63,20 @@ export interface Achievement {
   gameId?: string;
   criteria?: (scores: Score[]) => boolean;
 }
+
+export interface FriendGroup {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  members?: Player[];
+}
+
+export interface FriendGroupMember {
+  id: string;
+  group_id: string;
+  friend_id: string;
+  added_at: string;
+}

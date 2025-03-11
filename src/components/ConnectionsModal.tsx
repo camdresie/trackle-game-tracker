@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -19,6 +18,9 @@ import FriendRequestsList from './connections/FriendRequestsList';
 import SearchResultsList from './connections/SearchResultsList';
 import FriendsList from './connections/FriendsList';
 import { useGameData } from '@/hooks/useGameData';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
+import FriendGroupsManager from './connections/FriendGroupsManager';
 
 interface ConnectionsModalProps {
   open: boolean;
@@ -30,6 +32,7 @@ interface ConnectionsModalProps {
 const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved }: ConnectionsModalProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [displayedFriends, setDisplayedFriends] = useState<Player[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('friends');
   const queryClient = useQueryClient();
   
   // Fetch current user's friends
@@ -192,6 +195,17 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     },
     enabled: !!searchQuery && searchQuery.length >= 2 && open
   });
+  
+  // Use the friend groups hook
+  const {
+    friendGroups,
+    isLoading: isLoadingGroups,
+    createGroup,
+    deleteGroup,
+    updateGroup,
+    addFriendToGroup,
+    removeFriendFromGroup
+  } = useFriendGroups(displayedFriends);
   
   // Filter out users that are already friends
   const filteredSearchResults = searchResults.filter(user => 
@@ -438,6 +452,31 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     removeFriendMutation.mutate(connectionId);
   };
 
+  // Handle creating a new friend group
+  const handleCreateGroup = (data: { name: string, description: string }) => {
+    createGroup(data);
+  };
+
+  // Handle updating a friend group
+  const handleUpdateGroup = (data: { id: string, name: string, description?: string }) => {
+    updateGroup(data);
+  };
+
+  // Handle deleting a friend group
+  const handleDeleteGroup = (groupId: string) => {
+    deleteGroup(groupId);
+  };
+
+  // Handle adding a friend to a group
+  const handleAddFriendToGroup = (groupId: string, friendId: string) => {
+    addFriendToGroup({ groupId, friendId });
+  };
+
+  // Handle removing a friend from a group
+  const handleRemoveFriendFromGroup = (groupId: string, friendId: string) => {
+    removeFriendFromGroup({ groupId, friendId });
+  };
+
   // Update displayedFriends when friends data changes
   useEffect(() => {
     if (friends && Array.isArray(friends)) {
@@ -489,58 +528,83 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col">
-          {/* Search for friends */}
-          <div className="relative mb-4">
-            <Input
-              placeholder="Search for players..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10"
-            />
-            {searchQuery && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full"
-                onClick={() => setSearchQuery('')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+        <Tabs
+          defaultValue="friends"
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 min-h-0 flex flex-col"
+        >
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="friends">Friends</TabsTrigger>
+            <TabsTrigger value="groups">Groups</TabsTrigger>
+          </TabsList>
 
-          {/* Friend requests section */}
-          <FriendRequestsList
-            pendingRequests={pendingRequests}
-            onAccept={handleAcceptRequest}
-            onDecline={handleDeclineRequest}
-            isAccepting={acceptRequestMutation.isPending}
-            isDeclining={declineRequestMutation.isPending}
-          />
-
-          {/* Search results section */}
-          {searchQuery && searchQuery.length >= 2 && (
-            <>
-              <SearchResultsList
-                searchQuery={searchQuery}
-                searchResults={filteredSearchResults}
-                onAddFriend={handleAddFriend}
-                isLoading={loadingSearch}
-                isAdding={addFriendMutation.isPending}
+          <TabsContent value="friends" className="flex-1 min-h-0 flex flex-col">
+            {/* Search for friends */}
+            <div className="relative mb-4">
+              <Input
+                placeholder="Search for players..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-10"
               />
-              <Separator className="my-4" />
-            </>
-          )}
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
-          {/* Current friends section */}
-          <FriendsList
-            friends={displayedFriends}
-            isLoading={loadingFriends}
-            onRemoveFriend={handleRemoveFriend}
-            isRemoving={removeFriendMutation.isPending}
-          />
-        </div>
+            {/* Friend requests section */}
+            <FriendRequestsList
+              pendingRequests={pendingRequests}
+              onAccept={handleAcceptRequest}
+              onDecline={handleDeclineRequest}
+              isAccepting={acceptRequestMutation.isPending}
+              isDeclining={declineRequestMutation.isPending}
+            />
+
+            {/* Search results section */}
+            {searchQuery && searchQuery.length >= 2 && (
+              <>
+                <SearchResultsList
+                  searchQuery={searchQuery}
+                  searchResults={filteredSearchResults}
+                  onAddFriend={handleAddFriend}
+                  isLoading={loadingSearch}
+                  isAdding={addFriendMutation.isPending}
+                />
+                <Separator className="my-4" />
+              </>
+            )}
+
+            {/* Current friends section */}
+            <FriendsList
+              friends={displayedFriends}
+              isLoading={loadingFriends}
+              onRemoveFriend={handleRemoveFriend}
+              isRemoving={removeFriendMutation.isPending}
+            />
+          </TabsContent>
+
+          <TabsContent value="groups" className="flex-1 min-h-0 overflow-y-auto pr-2">
+            <FriendGroupsManager
+              friendGroups={friendGroups}
+              isLoading={isLoadingGroups}
+              availableFriends={displayedFriends}
+              onCreateGroup={handleCreateGroup}
+              onUpdateGroup={handleUpdateGroup}
+              onDeleteGroup={handleDeleteGroup}
+              onAddFriendToGroup={handleAddFriendToGroup}
+              onRemoveFriendFromGroup={handleRemoveFriendFromGroup}
+            />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

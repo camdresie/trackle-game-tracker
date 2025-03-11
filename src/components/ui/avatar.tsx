@@ -26,6 +26,11 @@ const AvatarImage = React.forwardRef<
   <AvatarPrimitive.Image
     ref={ref}
     className={cn("aspect-square h-full w-full object-cover", className)}
+    onError={(e) => {
+      // Handle image load errors by setting the src to undefined
+      // This will trigger the fallback to display
+      (e.target as HTMLImageElement).src = '';
+    }}
     {...props}
   />
 ))
