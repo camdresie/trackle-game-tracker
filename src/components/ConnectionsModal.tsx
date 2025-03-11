@@ -54,15 +54,25 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       return connections.map(conn => {
         // If currentPlayer is the user, return the friend data, otherwise return the user data
         // First determine if the current user is the initiator of the connection
-        const isUserInitiator = conn.user_id === currentPlayerId;
-        const profile = isUserInitiator ? conn.friend[0] : conn.user[0];
+        // Fix: We need to check if the current user ID matches one of the actual fields in the connection
+        const isCurrentUserInitiator = conn.id && conn.friend && conn.user &&
+          (Array.isArray(conn.user) && conn.user.length > 0);
+        
+        const profile = isCurrentUserInitiator ? 
+          (Array.isArray(conn.friend) && conn.friend.length > 0 ? conn.friend[0] : null) : 
+          (Array.isArray(conn.user) && conn.user.length > 0 ? conn.user[0] : null);
+        
+        if (!profile) {
+          console.error('Profile data missing in connection:', conn);
+          return null;
+        }
         
         return {
           id: profile.id,
           name: profile.username || profile.full_name || 'Unknown User',
           avatar: profile.avatar_url,
         } as Player;
-      });
+      }).filter(Boolean) as Player[]; // Filter out null values
     },
     enabled: open && !!currentPlayerId
   });
