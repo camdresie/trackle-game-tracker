@@ -36,6 +36,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUserGameStats, getPlayedGames } from '@/services/gameStatsService';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useGameData } from '@/hooks/useGameData'; // Fix: Import the useGameData hook
 
 const Profile = () => {
   const navigate = useNavigate();

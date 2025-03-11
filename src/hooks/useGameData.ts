@@ -116,7 +116,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: score.created_at || new Date().toISOString() // Handle both created_at and createdAt
+          createdAt: score.created_at || new Date().toISOString() // Fix: Add default for created_at
         }));
       } catch (error) {
         console.error(`Error fetching scores for friend ${friend.id}:`, error);
@@ -151,7 +151,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: score.created_at || new Date().toISOString() // Handle both created_at and createdAt
+          createdAt: score.created_at || new Date().toISOString() // Fix: Add default for created_at
         }));
         setScores(mappedScores);
         
