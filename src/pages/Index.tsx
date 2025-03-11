@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -46,7 +45,7 @@ const Index = () => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: score.created_at || new Date().toISOString() // Use created_at from DB or current time
+          createdAt: new Date().toISOString() // Always set a default createdAt
         }));
         console.log('Fetched today\'s scores:', mappedTodayScores);
         setTodaysGames(mappedTodayScores);
@@ -64,7 +63,7 @@ const Index = () => {
             value: score.value,
             date: score.date,
             notes: score.notes,
-            createdAt: score.created_at || new Date().toISOString() // Use created_at from DB or current time
+            createdAt: new Date().toISOString() // Always set a default createdAt
           }));
           allUserScores.push(...mappedScores);
         }
