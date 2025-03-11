@@ -36,6 +36,9 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
     
     try {
       console.log('Fetching friends data...');
+      // Reset friends first to avoid stale data
+      setFriends([]);
+      
       // Get user connections (friends)
       const { data: connections, error: connectionsError } = await supabase
         .from('connections')
@@ -47,6 +50,8 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
         console.error('Error fetching connections:', connectionsError);
         return;
       }
+      
+      console.log('Connections data:', connections);
       
       // Get friend IDs from connections
       const friendIds = connections
@@ -89,6 +94,9 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   // Function to refresh friends data (can be called after mutation)
   const refreshFriends = async () => {
     console.log('Refreshing friends data...');
+    // Clear friend scores when refreshing friends
+    setFriendScores({});
+    
     await fetchFriends();
     
     // If we have a gameId, also refresh friend scores

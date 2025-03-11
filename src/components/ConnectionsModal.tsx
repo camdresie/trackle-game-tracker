@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -278,10 +277,13 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       console.log('Removing connection with ID:', connectionId);
       
       // Delete the connection directly using the connectionId
-      const { error: deleteError } = await supabase
+      const { error: deleteError, data } = await supabase
         .from('connections')
         .delete()
-        .eq('id', connectionId);
+        .eq('id', connectionId)
+        .select();
+      
+      console.log('Deletion response:', data);
       
       if (deleteError) {
         console.error('Error removing connection:', deleteError);
@@ -290,8 +292,9 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       
       return connectionId;
     },
-    onSuccess: () => {
+    onSuccess: (connectionId) => {
       toast.success('Friend removed successfully');
+      console.log('Successfully removed connection with ID:', connectionId);
       
       // Force an immediate refetch of the friends data to update UI
       refetchFriends();
@@ -309,7 +312,6 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   });
 
-  // Handler functions
   const handleAddFriend = (friendId: string) => {
     addFriendMutation.mutate(friendId);
   };
