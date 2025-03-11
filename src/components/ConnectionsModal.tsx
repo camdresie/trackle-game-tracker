@@ -73,10 +73,13 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     enabled: open && !!currentPlayerId
   });
 
-  // Fetch pending friend requests - FIXED: Properly extract user info
+  // Fetch pending friend requests - FIXED: Fixed user profile extraction
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
+      // Log the current player ID for debugging
+      console.log('Fetching pending requests for player:', currentPlayerId);
+      
       const { data, error } = await supabase
         .from('connections')
         .select(`
@@ -93,17 +96,24 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         toast.error('Failed to load friend requests');
         return [];
       }
+      
+      // Log the raw data we get back
+      console.log('Raw pending requests data:', JSON.stringify(data, null, 2));
 
       return data.map(request => {
-        const userProfile = request.user && request.user[0];
-        console.log('Friend request user profile:', userProfile);
+        // Access the nested user object properly - it's an array of one object
+        const userData = request.user;
         
+        // Log how we're accessing the user data
+        console.log('User data for request:', request.id, userData);
+        
+        // Extract the username and avatar from the user object
         return {
           id: request.id,
           playerId: request.user_id,
           friendId: request.friend_id,
-          playerName: userProfile?.username || userProfile?.full_name || 'Unknown User',
-          playerAvatar: userProfile?.avatar_url
+          playerName: userData ? (userData.username || userData.full_name || 'Unknown User') : 'Unknown User',
+          playerAvatar: userData ? userData.avatar_url : undefined
         };
       });
     },
