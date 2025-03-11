@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -71,13 +72,6 @@ export const useLeaderboardData = (userId: string | undefined) => {
           query = query.eq('game_id', selectedGame);
         }
         
-        if (timeFilter === 'today') {
-          // For today filter, we need to join with scores to filter by date
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
-          query = query.filter('updated_at', 'gte', today);
-        }
-        
         const { data, error } = await query;
             
         if (error) throw error;
@@ -140,12 +134,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
           query = query.eq('game_id', selectedGame);
         }
         
-        if (timeFilter === 'today') {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
-          query = query.eq('date', today);
-        }
-        
+        // We'll filter by date in the JavaScript code to get the correct data for today's filter
         const { data, error } = await query;
             
         if (error) throw error;
@@ -205,9 +194,19 @@ export const useLeaderboardData = (userId: string | undefined) => {
   const getLeaderboardData = () => {
     if (!gameStatsData || !scoresData) return [];
     
+    // Get today's date for filtering
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    
+    // Filter scores data based on timeFilter
+    const filteredScores = timeFilter === 'today' 
+      ? scoresData.filter(score => score.date === today)
+      : scoresData;
+    
     // Group by user_id
     const userStatsMap = new Map();
     
+    // First, initialize all players from game stats
     gameStatsData.forEach(stat => {
       const userId = stat.user_id;
       const profile = stat.profiles;
@@ -215,7 +214,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
       if (!userStatsMap.has(userId)) {
         userStatsMap.set(userId, {
           player_id: userId,
-          username: profile.username || "Unknown Player", // Use the actual username or fallback
+          username: profile.username || "Unknown Player", 
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           total_score: 0,
@@ -225,31 +224,39 @@ export const useLeaderboardData = (userId: string | undefined) => {
           latest_play: null
         });
       }
-      
+    });
+    
+    // Now process the filtered scores to calculate proper statistics
+    for (const userId of userStatsMap.keys()) {
+      const userScores = filteredScores.filter(score => score.user_id === userId);
       const userStats = userStatsMap.get(userId);
-      
-      // Use the database total_plays and best_score directly
-      userStats.total_games = stat.total_plays;
-      userStats.best_score = stat.best_score;
-      
-      // Get all scores for this user for the selected game to calculate the true average
-      const userScores = scoresData.filter(score => score.user_id === userId);
       
       if (userScores.length > 0) {
         // Calculate the sum of all scores
         const sumOfScores = userScores.reduce((sum, score) => sum + score.value, 0);
         
-        // Calculate the average as sum divided by count
-        userStats.average_score = sumOfScores / userScores.length;
+        // Get the best score (assuming lower is better for wordle and mini-crossword)
+        const gameObj = games.find(game => game.id === selectedGame);
+        const lowerIsBetter = ['wordle', 'mini-crossword'].includes(selectedGame);
         
-        // Also update total_score to be the sum of all scores
+        const bestScore = lowerIsBetter 
+          ? Math.min(...userScores.map(score => score.value))
+          : Math.max(...userScores.map(score => score.value));
+        
+        // Update statistics
+        userStats.total_games = userScores.length;
+        userStats.best_score = bestScore;
+        userStats.average_score = sumOfScores / userScores.length;
         userStats.total_score = sumOfScores;
         
         // Update latest play date
         const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
         userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
+      } else if (timeFilter === 'today') {
+        // If filtering by today and no scores, remove this player
+        userStatsMap.delete(userId);
       }
-    });
+    }
     
     // Convert map to array
     return Array.from(userStatsMap.values());
@@ -283,12 +290,25 @@ export const useLeaderboardData = (userId: string | undefined) => {
         case 'totalScore':
           return b.total_score - a.total_score;
         case 'bestScore':
+          // For games where lower is better (like Wordle), reverse the sorting
+          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+            return a.best_score - b.best_score;
+          }
           return b.best_score - a.best_score;
         case 'totalGames':
           return b.total_games - a.total_games;
         case 'averageScore':
+          // For games where lower is better (like Wordle), reverse the sorting
+          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+            return a.average_score - b.average_score;
+          }
           return b.average_score - a.average_score;
         default:
+          // For games where lower is better (like Wordle), sort by best score (lowest first)
+          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+            return a.best_score - b.best_score;
+          }
+          // For other games, sort by total score (highest first)
           return b.total_score - a.total_score;
       }
     });
