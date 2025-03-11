@@ -101,7 +101,7 @@ export async function getTodaysGames(userId: string) {
     console.log('Today\'s games data from service:', data);
     
     // Transform to match our Score type
-    return data.map(score => ({
+    const scores = data.map(score => ({
       id: score.id,
       gameId: score.game_id,
       playerId: score.user_id,
@@ -109,6 +109,9 @@ export async function getTodaysGames(userId: string) {
       date: score.date,
       notes: score.notes
     }));
+    
+    console.log('Transformed scores:', scores);
+    return scores;
   } catch (error) {
     console.error('Error in getTodaysGames:', error);
     throw error;

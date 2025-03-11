@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,9 +11,8 @@ import ConnectionsModal from '@/components/ConnectionsModal';
 import { Game, Score } from '@/utils/types';
 import { games, addGame, calculateAverageScore, calculateBestScore } from '@/utils/gameData';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { getUserGameStats, getGameScores } from '@/services/gameStatsService';
+import { getUserGameStats, getGameScores, getTodaysGames } from '@/services/gameStatsService';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -37,31 +35,10 @@ const Index = () => {
       try {
         setIsLoading(true);
         
-        // Fetch today's games
-        const today = new Date().toISOString().split('T')[0];
-        console.log('Fetching games for today:', today);
-        const { data: todayScores, error: todayError } = await supabase
-          .from('scores')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('date', today);
-          
-        if (todayError) throw todayError;
-        
-        console.log('Today\'s scores from DB:', todayScores);
-        
-        // Transform to match our Score type
-        const formattedTodayScores = todayScores.map(score => ({
-          id: score.id,
-          gameId: score.game_id,
-          playerId: score.user_id,
-          value: score.value,
-          date: score.date,
-          notes: score.notes
-        }));
-        
-        setTodaysGames(formattedTodayScores);
-        console.log('Today\'s games after formatting:', formattedTodayScores);
+        // Fetch today's games using the service
+        const todayScores = await getTodaysGames(user.id);
+        console.log('Fetched today\'s scores:', todayScores);
+        setTodaysGames(todayScores);
         
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];

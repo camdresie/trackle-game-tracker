@@ -42,8 +42,13 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   // Check if the game was played today
   const isPlayedToday = () => {
     if (!latestScore) return false;
+    
     const today = new Date().toISOString().split('T')[0];
-    return latestScore.date === today;
+    const scoreDate = latestScore.date;
+    
+    console.log(`Game ${game.id} - Score date: ${scoreDate}, Today: ${today}, Match: ${scoreDate === today}`);
+    
+    return scoreDate === today;
   };
 
   return (
