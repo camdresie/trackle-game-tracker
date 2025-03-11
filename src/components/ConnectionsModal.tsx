@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -28,18 +27,19 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   
-  // Fetch current user's friends
+  // Fetch current user's friends with correct field access
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
-      // Query for accepted connections where current user is either the user_id or friend_id
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`
           id,
           status,
-          friend:friend_id(id, username, full_name, avatar_url),
-          user:user_id(id, username, full_name, avatar_url)
+          user_id,
+          friend_id,
+          friend:profiles!connections_friend_id_fkey(id, username, full_name, avatar_url),
+          user:profiles!connections_user_id_fkey(id, username, full_name, avatar_url)
         `)
         .eq('status', 'accepted')
         .or(`user_id.eq.${currentPlayerId},friend_id.eq.${currentPlayerId}`);
@@ -49,65 +49,60 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         toast.error('Failed to load friends');
         return [];
       }
-      
-      // Format friend data to match Player interface
+
       return connections.map(conn => {
-        // If currentPlayer is the user, return the friend data, otherwise return the user data
-        // First determine if the current user is the initiator of the connection
-        // Fix: We need to check if the current user ID matches one of the actual fields in the connection
-        const isCurrentUserInitiator = conn.id && conn.friend && conn.user &&
-          (Array.isArray(conn.user) && conn.user.length > 0);
-        
-        const profile = isCurrentUserInitiator ? 
-          (Array.isArray(conn.friend) && conn.friend.length > 0 ? conn.friend[0] : null) : 
-          (Array.isArray(conn.user) && conn.user.length > 0 ? conn.user[0] : null);
-        
-        if (!profile) {
+        const isUserInitiator = conn.user_id === currentPlayerId;
+        const profileData = isUserInitiator ? 
+          conn.friend?.[0] : 
+          conn.user?.[0];
+
+        if (!profileData) {
           console.error('Profile data missing in connection:', conn);
           return null;
         }
-        
+
         return {
-          id: profile.id,
-          name: profile.username || profile.full_name || 'Unknown User',
-          avatar: profile.avatar_url,
+          id: profileData.id,
+          name: profileData.username || profileData.full_name || 'Unknown User',
+          avatar: profileData.avatar_url,
         } as Player;
-      }).filter(Boolean) as Player[]; // Filter out null values
+      }).filter(Boolean) as Player[];
     },
     enabled: open && !!currentPlayerId
   });
-  
-  // Fetch pending friend requests
+
+  // Fetch pending friend requests specifically for the current user as recipient
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('connections')
         .select(`
-          id, 
-          user:user_id(id, username, full_name, avatar_url)
+          id,
+          user_id,
+          friend_id,
+          user:profiles!connections_user_id_fkey(id, username, full_name, avatar_url)
         `)
         .eq('friend_id', currentPlayerId)
         .eq('status', 'pending');
-      
+
       if (error) {
         console.error('Error fetching pending requests:', error);
         toast.error('Failed to load friend requests');
         return [];
       }
-      
+
       return data.map(request => ({
         id: request.id,
-        playerId: request.user[0].id,
-        friendId: currentPlayerId,
-        status: 'pending',
-        playerName: request.user[0].username || request.user[0].full_name || 'Unknown User',
-        playerAvatar: request.user[0].avatar_url
+        playerId: request.user_id,
+        friendId: request.friend_id,
+        playerName: request.user[0]?.username || request.user[0]?.full_name || 'Unknown User',
+        playerAvatar: request.user[0]?.avatar_url
       }));
     },
     enabled: open && !!currentPlayerId
   });
-  
+
   // Search for users
   const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
     queryKey: ['search-users', searchQuery, currentPlayerId],
@@ -186,7 +181,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       toast.error(error instanceof Error ? error.message : 'Failed to send friend request');
     }
   });
-  
+
   // Accept friend request mutation
   const acceptRequestMutation = useMutation({
     mutationFn: async (connectionId: string) => {
@@ -194,12 +189,12 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         .from('connections')
         .update({ status: 'accepted' })
         .eq('id', connectionId);
-      
+
       if (error) {
         console.error('Error accepting friend request:', error);
         throw new Error('Failed to accept friend request');
       }
-      
+
       return connectionId;
     },
     onSuccess: () => {
@@ -211,7 +206,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       toast.error(error instanceof Error ? error.message : 'Failed to accept friend request');
     }
   });
-  
+
   // Decline friend request mutation
   const declineRequestMutation = useMutation({
     mutationFn: async (connectionId: string) => {
@@ -219,12 +214,12 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         .from('connections')
         .delete()
         .eq('id', connectionId);
-      
+
       if (error) {
         console.error('Error declining friend request:', error);
         throw new Error('Failed to decline friend request');
       }
-      
+
       return connectionId;
     },
     onSuccess: () => {
@@ -235,22 +230,20 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       toast.error(error instanceof Error ? error.message : 'Failed to decline friend request');
     }
   });
-  
+
   // Handle adding a friend
   const handleAddFriend = (friendId: string) => {
     addFriendMutation.mutate(friendId);
   };
-  
-  // Handle accepting a friend request
+
   const handleAcceptRequest = (connectionId: string) => {
     acceptRequestMutation.mutate(connectionId);
   };
-  
-  // Handle declining a friend request
+
   const handleDeclineRequest = (connectionId: string) => {
     declineRequestMutation.mutate(connectionId);
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-hidden flex flex-col">
@@ -260,7 +253,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
             Connect with friends to compare your game scores
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex-1 min-h-0 flex flex-col">
           {/* Search for friends */}
           <div className="relative mb-4">
@@ -281,55 +274,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
               </Button>
             )}
           </div>
-          
-          {/* Search results */}
-          {searchQuery && searchQuery.length >= 2 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Search Results
-              </h3>
-              <ScrollArea className="h-32">
-                {loadingSearch ? (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Searching...
-                  </div>
-                ) : filteredSearchResults.length > 0 ? (
-                  <div className="space-y-2">
-                    {filteredSearchResults.map(player => (
-                      <div 
-                        key={player.id}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={player.avatar || undefined} />
-                            <AvatarFallback>{player.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <span>{player.name}</span>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleAddFriend(player.id)}
-                          disabled={addFriendMutation.isPending}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    No users found matching '{searchQuery}'
-                  </div>
-                )}
-              </ScrollArea>
-              <Separator className="my-4" />
-            </div>
-          )}
-          
-          {/* Friend requests */}
+
+          {/* Friend requests section - Always visible */}
           {pendingRequests.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-2">Friend Requests</h3>
@@ -376,8 +322,55 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
               <Separator className="my-4" />
             </div>
           )}
-          
-          {/* Current friends */}
+
+          {/* Search results section */}
+          {searchQuery && searchQuery.length >= 2 && (
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Search Results
+              </h3>
+              <ScrollArea className="h-32">
+                {loadingSearch ? (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Searching...
+                  </div>
+                ) : filteredSearchResults.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredSearchResults.map(player => (
+                      <div 
+                        key={player.id}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={player.avatar || undefined} />
+                            <AvatarFallback>{player.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <span>{player.name}</span>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleAddFriend(player.id)}
+                          disabled={addFriendMutation.isPending}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    No users found matching '{searchQuery}'
+                  </div>
+                )}
+              </ScrollArea>
+              <Separator className="my-4" />
+            </div>
+          )}
+
+          {/* Current friends section */}
           <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
             <Users className="h-4 w-4" />
             Your Friends
