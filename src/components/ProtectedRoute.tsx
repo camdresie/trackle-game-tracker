@@ -38,12 +38,15 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  console.log('Protected route check - profile:', profile);
+  // Check if this is a new user that needs to complete onboarding
+  const isNewUser = profile?.username === null && profile?.full_name === null;
   
-  // Redirect to onboarding if profile is not set up
-  // Skip this check on the onboarding page itself to avoid infinite redirects
-  if (location.pathname !== '/onboarding' && (!profile?.username || !profile?.full_name)) {
-    console.log('Redirecting to onboarding - incomplete profile. Username:', profile?.username, 'Full name:', profile?.full_name);
+  console.log('Protected route check - profile:', profile);
+  console.log('Is new user needing onboarding:', isNewUser);
+  
+  // Only redirect to onboarding if it's a new user and not already on the onboarding page
+  if (location.pathname !== '/onboarding' && isNewUser) {
+    console.log('Redirecting to onboarding - new user with incomplete profile');
     return <Navigate to="/onboarding" replace />;
   }
 
