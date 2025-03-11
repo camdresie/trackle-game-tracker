@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Player, Connection } from '@/utils/types';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Separator } from '@/components/ui/separator';
@@ -29,6 +29,7 @@ interface ConnectionsModalProps {
 
 const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved }: ConnectionsModalProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [displayedFriends, setDisplayedFriends] = useState<Player[]>([]);
   const queryClient = useQueryClient();
   
   // Fetch current user's friends
@@ -54,7 +55,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       
       if (error) {
         console.error('Error fetching friends:', error);
-        toast.error('Failed to load friends');
+        toast({
+          title: "Error",
+          description: "Failed to load friends",
+          variant: "destructive"
+        });
         return [];
       }
 
@@ -117,7 +122,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
 
       if (error) {
         console.error('Error fetching pending requests:', error);
-        toast.error('Failed to load friend requests');
+        toast({
+          title: "Error",
+          description: "Failed to load friend requests",
+          variant: "destructive"
+        });
         return [];
       }
       
@@ -167,7 +176,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       
       if (error) {
         console.error('Error searching users:', error);
-        toast.error('Failed to search users');
+        toast({
+          title: "Error",
+          description: "Failed to search users",
+          variant: "destructive"
+        });
         return [];
       }
       
@@ -182,7 +195,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
   
   // Filter out users that are already friends
   const filteredSearchResults = searchResults.filter(user => 
-    !friends.some(friend => friend.id === user.id)
+    !displayedFriends.some(friend => friend.id === user.id)
   );
   
   // Add friend mutation
@@ -221,11 +234,18 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       return friendId;
     },
     onSuccess: () => {
-      toast.success('Friend request sent');
+      toast({
+        title: "Success",
+        description: "Friend request sent"
+      });
       setSearchQuery('');
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to send friend request');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to send friend request',
+        variant: "destructive"
+      });
     }
   });
 
@@ -245,12 +265,19 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       return connectionId;
     },
     onSuccess: () => {
-      toast.success('Friend request accepted');
+      toast({
+        title: "Success",
+        description: "Friend request accepted"
+      });
       queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
       queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to accept friend request');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to accept friend request',
+        variant: "destructive"
+      });
     }
   });
 
@@ -270,54 +297,76 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       return connectionId;
     },
     onSuccess: () => {
-      toast.success('Friend request declined');
+      toast({
+        title: "Success",
+        description: "Friend request declined"
+      });
       queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to decline friend request');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to decline friend request',
+        variant: "destructive"
+      });
     }
   });
 
-  // Remove friend mutation - fixed to not verify rows returned
+  // Remove friend mutation with aggressive cache clearing
   const removeFriendMutation = useMutation({
     mutationFn: async (connectionId: string) => {
       console.log('Removing connection with ID:', connectionId);
       
-      // First, verify the connection exists
-      const { data: connectionCheck, error: checkError } = await supabase
-        .from('connections')
-        .select('id')
-        .eq('id', connectionId)
-        .single();
-      
-      if (checkError) {
-        console.error('Error checking connection:', checkError);
-        throw new Error('Connection not found or could not be verified');
+      try {
+        // First, verify the connection exists
+        const { data: connectionCheck, error: checkError } = await supabase
+          .from('connections')
+          .select('id')
+          .eq('id', connectionId)
+          .single();
+        
+        if (checkError) {
+          console.error('Error checking connection:', checkError);
+          throw new Error('Connection not found or could not be verified');
+        }
+        
+        // Perform the deletion
+        console.log('Found connection, attempting to delete:', connectionCheck.id);
+        const { error: deleteError } = await supabase
+          .from('connections')
+          .delete()
+          .eq('id', connectionId);
+        
+        if (deleteError) {
+          console.error('Error removing connection:', deleteError);
+          throw new Error('Failed to remove connection');
+        }
+        
+        // Since Supabase doesn't always return the deleted rows, we assume success if no error
+        console.log('Deletion completed without errors');
+        return connectionId;
+      } catch (error) {
+        console.error('Error in remove friend mutation:', error);
+        throw error;
       }
-      
-      // Perform the deletion
-      console.log('Found connection, attempting to delete:', connectionCheck.id);
-      const { error: deleteError } = await supabase
-        .from('connections')
-        .delete()
-        .eq('id', connectionId);
-      
-      if (deleteError) {
-        console.error('Error removing connection:', deleteError);
-        throw new Error('Failed to remove connection');
-      }
-      
-      // Since Supabase doesn't always return the deleted rows, we assume success if no error
-      console.log('Deletion completed without errors');
-      return connectionId;
     },
     onSuccess: (connectionId) => {
-      toast.success('Friend removed successfully');
+      toast({
+        title: "Success",
+        description: "Friend removed successfully"
+      });
       console.log('Successfully removed connection with ID:', connectionId);
       
-      // Force immediate refetch and invalidation of caches
+      // Immediately remove the friend from the displayed list
+      setDisplayedFriends(prev => prev.filter(friend => friend.connectionId !== connectionId));
+      
+      // Force aggressive cache removal for all friend-related queries
       queryClient.removeQueries({ queryKey: ['friends'] });
-      refetchFriends();
+      
+      // Force refetch after a short delay to ensure DB changes propagate
+      setTimeout(() => {
+        refetchFriends();
+      }, 500);
       
       // Call the external callback if provided
       if (onFriendRemoved) {
@@ -325,7 +374,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       }
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to remove friend');
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to remove friend',
+        variant: "destructive"
+      });
     }
   });
 
@@ -346,20 +399,40 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     
     // Verify we have a valid connection ID
     if (!connectionId) {
-      toast.error('Cannot remove friend: missing connection information');
+      toast({
+        title: "Error",
+        description: "Cannot remove friend: missing connection information",
+        variant: "destructive"
+      });
       return;
     }
     
     removeFriendMutation.mutate(connectionId);
   };
 
+  // Update displayedFriends when friends data changes
+  useEffect(() => {
+    if (friends && Array.isArray(friends)) {
+      console.log('Friends list received new friends data:', friends);
+      setDisplayedFriends(friends);
+    } else {
+      setDisplayedFriends([]);
+    }
+  }, [friends]);
+
   // Force refetch when modal opens
   useEffect(() => {
     if (open && currentPlayerId) {
-      // Invalidate and refetch friends data when modal opens
-      queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
+      // Clear displayed friends immediately when modal opens
+      setDisplayedFriends([]);
+      
+      // Aggressively clear cache and refetch
       queryClient.removeQueries({ queryKey: ['friends', currentPlayerId] });
-      refetchFriends();
+      
+      // Wait a moment before refetching to ensure we get fresh data
+      setTimeout(() => {
+        refetchFriends();
+      }, 100);
     }
   }, [open, currentPlayerId, queryClient, refetchFriends]);
 
@@ -419,7 +492,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
 
           {/* Current friends section */}
           <FriendsList
-            friends={friends}
+            friends={displayedFriends}
             isLoading={loadingFriends}
             onRemoveFriend={handleRemoveFriend}
             isRemoving={removeFriendMutation.isPending}

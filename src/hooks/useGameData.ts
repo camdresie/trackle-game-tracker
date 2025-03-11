@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Game, Score, Player } from '@/utils/types';
 import { getGameById } from '@/utils/gameData';
@@ -29,6 +29,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   const [friends, setFriends] = useState<Player[]>([]);
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [bestScore, setBestScore] = useState<number | null>(null);
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
 
   // Function to fetch friends data with more robust error handling
   const fetchFriends = async () => {
@@ -40,12 +41,14 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
       setFriends([]);
       setFriendScores({});
       
-      // Get user connections (friends) - ensure we're getting fresh data each time
+      // Get user connections (friends) with timestamp to prevent caching
+      const timestamp = new Date().getTime();
       const { data: connections, error: connectionsError } = await supabase
         .from('connections')
         .select('*')
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .order('id', { ascending: false });
         
       if (connectionsError) {
         console.error('Error fetching connections:', connectionsError);
@@ -112,9 +115,15 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   // Function to refresh friends data (can be called after mutation)
   const refreshFriends = async () => {
     console.log('Refreshing friends data...');
+    // Update refresh timestamp to force dependent queries to update
+    setLastRefreshTime(Date.now());
+    
     // Clear friend scores when refreshing friends
     setFriendScores({});
     setFriends([]); // Ensure we completely reset the friends state
+    
+    // Wait a moment to allow database changes to propagate
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     await fetchFriends();
     
@@ -128,6 +137,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   const fetchFriendScores = async () => {
     if (!gameId || !user || friends.length === 0) return;
     
+    // Create a new object to avoid reference issues
     const friendScoresData: { [key: string]: Score[] } = {};
     
     for (const friend of friends) {
@@ -163,7 +173,11 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
         // Get game data
         const gameData = getGameById(gameId);
         if (!gameData) {
-          toast.error("Game not found");
+          toast({
+            title: "Error",
+            description: "Game not found",
+            variant: "destructive"
+          });
           return;
         }
         setGame(gameData);
@@ -200,14 +214,25 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
         }
       } catch (error) {
         console.error('Error fetching game data:', error);
-        toast.error("Failed to load game data");
+        toast({
+          title: "Error",
+          description: "Failed to load game data",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     }
     
     fetchData();
-  }, [gameId, user]);
+  }, [gameId, user, lastRefreshTime]);
+
+  // Effect to fetch friend scores whenever friends list changes
+  useEffect(() => {
+    if (friends.length > 0 && gameId) {
+      fetchFriendScores();
+    }
+  }, [friends, gameId]);
 
   return {
     game,

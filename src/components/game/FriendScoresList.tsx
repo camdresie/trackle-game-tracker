@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
 import { Users, RefreshCcw } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 interface FriendScoresListProps {
   game: Game;
@@ -19,6 +20,10 @@ const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefr
   // Function to handle refresh button click
   const handleRefreshClick = () => {
     console.log("Refresh friends button clicked");
+    toast({
+      description: "Refreshing friend data..."
+    });
+    
     if (onRefreshFriends) {
       onRefreshFriends();
     }
