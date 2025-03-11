@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -104,7 +105,7 @@ const Leaderboard = () => {
         // Transform the data to fix the profiles structure
         return data.map((stat: any) => ({
           ...stat,
-          profiles: stat.profiles[0] || { 
+          profiles: stat.profiles && stat.profiles.length > 0 ? stat.profiles[0] : { 
             id: '',
             username: 'Unknown',
             full_name: null,
@@ -221,9 +222,10 @@ const Leaderboard = () => {
       
       const userStats = userStatsMap.get(userId);
       
-      // For Wordle, a lower score is better
-      const scoreValue = stat.game_id === 'wordle' ? -stat.best_score : stat.best_score;
+      // Handle game-specific scoring
+      let scoreValue = stat.best_score;
       
+      // For all games, use the actual score value without negation
       userStats.total_score += scoreValue;
       userStats.best_score = Math.max(userStats.best_score, Math.abs(stat.best_score));
       userStats.total_games += stat.total_plays;
