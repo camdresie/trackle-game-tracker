@@ -33,6 +33,7 @@ interface LeaderboardPlayer {
   best_score: number;
   average_score: number;
   total_games: number;
+  today_score: number | null; // Add today's score
   latest_play: string;
 }
 
@@ -198,12 +199,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
     
-    // Filter scores data based on timeFilter
-    const filteredScores = timeFilter === 'today' 
-      ? scoresData.filter(score => score.date === today)
-      : scoresData;
-    
-    // Group by user_id
+    // Initialize user stats map with profiles
     const userStatsMap = new Map();
     
     // First, initialize all players from game stats
@@ -221,40 +217,57 @@ export const useLeaderboardData = (userId: string | undefined) => {
           best_score: 0,
           average_score: 0,
           total_games: 0,
+          today_score: null,
           latest_play: null
         });
       }
     });
     
-    // Now process the filtered scores to calculate proper statistics
+    // Filter scores for the current game
+    const gameScores = scoresData.filter(score => score.game_id === selectedGame);
+    
+    // Process scores to calculate statistics
     for (const userId of userStatsMap.keys()) {
-      const userScores = filteredScores.filter(score => score.user_id === userId);
+      // Get all scores for this user for the selected game
+      const userScores = gameScores.filter(score => score.user_id === userId);
+      
+      // Get today's scores (if any)
+      const todayScores = userScores.filter(score => score.date === today);
+      
+      // If we're filtering by today and the user has no scores today, skip this user
+      if (timeFilter === 'today' && todayScores.length === 0) {
+        userStatsMap.delete(userId);
+        continue;
+      }
+      
       const userStats = userStatsMap.get(userId);
       
       if (userScores.length > 0) {
-        // Calculate the sum of all scores
+        // Calculate scores for all time
         const sumOfScores = userScores.reduce((sum, score) => sum + score.value, 0);
-        
-        // Get the best score (assuming lower is better for wordle and mini-crossword)
-        const gameObj = games.find(game => game.id === selectedGame);
-        const lowerIsBetter = ['wordle', 'mini-crossword'].includes(selectedGame);
-        
-        const bestScore = lowerIsBetter 
+        const bestScore = ['wordle', 'mini-crossword'].includes(selectedGame) 
           ? Math.min(...userScores.map(score => score.value))
           : Math.max(...userScores.map(score => score.value));
         
-        // Update statistics
+        // Update all-time statistics
         userStats.total_games = userScores.length;
         userStats.best_score = bestScore;
         userStats.average_score = sumOfScores / userScores.length;
         userStats.total_score = sumOfScores;
         
+        // Add today's score if available
+        if (todayScores.length > 0) {
+          // For today, we just use the most recent score of the day
+          const todayScore = todayScores.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )[0].value;
+          
+          userStats.today_score = todayScore;
+        }
+        
         // Update latest play date
         const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
         userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
-      } else if (timeFilter === 'today') {
-        // If filtering by today and no scores, remove this player
-        userStatsMap.delete(userId);
       }
     }
     
@@ -284,32 +297,47 @@ export const useLeaderboardData = (userId: string | undefined) => {
       );
     }
     
-    // Sort players
+    // Sort players based on time filter and sort by criteria
     return filteredPlayers.sort((a, b) => {
-      switch (sortBy) {
-        case 'totalScore':
-          return b.total_score - a.total_score;
-        case 'bestScore':
-          // For games where lower is better (like Wordle), reverse the sorting
+      // For "today only", sort by today's score
+      if (timeFilter === 'today') {
+        // Sort by today's score
+        if (a.today_score !== null && b.today_score !== null) {
           if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-            return a.best_score - b.best_score;
+            return a.today_score - b.today_score; // Lower is better
+          } else {
+            return b.today_score - a.today_score; // Higher is better
           }
-          return b.best_score - a.best_score;
-        case 'totalGames':
-          return b.total_games - a.total_games;
-        case 'averageScore':
-          // For games where lower is better (like Wordle), reverse the sorting
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-            return a.average_score - b.average_score;
-          }
-          return b.average_score - a.average_score;
-        default:
-          // For games where lower is better (like Wordle), sort by best score (lowest first)
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-            return a.best_score - b.best_score;
-          }
-          // For other games, sort by total score (highest first)
-          return b.total_score - a.total_score;
+        }
+        // Handle cases where one player might not have a today's score
+        return 0;
+      } else {
+        // Sort by the selected criteria for all-time
+        switch (sortBy) {
+          case 'totalScore':
+            return b.total_score - a.total_score;
+          case 'bestScore':
+            // For games where lower is better (like Wordle), reverse the sorting
+            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              return a.best_score - b.best_score;
+            }
+            return b.best_score - a.best_score;
+          case 'totalGames':
+            return b.total_games - a.total_games;
+          case 'averageScore':
+            // For games where lower is better (like Wordle), reverse the sorting
+            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              return a.average_score - b.average_score;
+            }
+            return b.average_score - a.average_score;
+          default:
+            // For games where lower is better (like Wordle), sort by best score (lowest first)
+            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              return a.best_score - b.best_score;
+            }
+            // For other games, sort by total score (highest first)
+            return b.total_score - a.total_score;
+        }
       }
     });
   };

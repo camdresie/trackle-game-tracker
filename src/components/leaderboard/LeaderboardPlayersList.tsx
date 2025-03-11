@@ -14,6 +14,7 @@ interface LeaderboardPlayer {
   best_score: number;
   average_score: number;
   total_games: number;
+  today_score: number | null;
 }
 
 interface LeaderboardPlayersListProps {
@@ -58,11 +59,13 @@ const LeaderboardPlayersList = ({
             scores={[]} // We'll load these on demand
             game={gameObj}
             stats={{
-              bestScore: player.best_score,
-              totalScore: player.total_score,
-              // Display rounded average score to one decimal place
-              averageScore: Math.round(player.average_score * 10) / 10,
-              totalGames: player.total_games
+              bestScore: timeFilter === 'today' ? player.today_score || 0 : player.best_score,
+              totalScore: timeFilter === 'today' ? player.today_score || 0 : player.total_score,
+              // Display rounded average score to one decimal place or today's score if filtering by today
+              averageScore: timeFilter === 'today' 
+                ? player.today_score || 0 
+                : Math.round(player.average_score * 10) / 10,
+              totalGames: timeFilter === 'today' ? (player.today_score ? 1 : 0) : player.total_games
             }}
             className="hover:scale-[1.01] transition-transform duration-200"
           />
