@@ -84,8 +84,7 @@ export async function getPlayedGames(userId: string) {
 export async function getTodaysGames(userId: string) {
   try {
     // Get today's date in YYYY-MM-DD format using the local timezone
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
     console.log('Fetching games for today (from service):', today);
     
     const { data, error } = await supabase

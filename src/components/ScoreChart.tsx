@@ -48,24 +48,18 @@ const ScoreChart = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    // Group scores by date to ensure we only have one point per day
-    const scoresByDate = sortedScores.reduce<Record<string, ChartDataPoint>>((acc, score) => {
-      const date = score.date;
-      if (!acc[date]) {
-        acc[date] = {
-          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          originalDate: date,
-          value: score.value
-        };
-      }
-      return acc;
-    }, {});
+    // Convert dates to local format for display
+    const formattedScores = sortedScores.map(score => {
+      const date = new Date(score.date);
+      return {
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        originalDate: score.date,
+        value: score.value
+      };
+    });
     
-    // Convert back to array
-    const data = Object.values(scoresByDate);
-    
-    console.log('Chart data prepared:', data);
-    setChartData(data);
+    console.log('Chart data prepared:', formattedScores);
+    setChartData(formattedScores);
   }, [scores]);
   
   if (!chartData.length) {

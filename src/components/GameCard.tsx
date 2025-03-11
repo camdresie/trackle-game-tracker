@@ -43,9 +43,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   const isPlayedToday = () => {
     if (!latestScore) return false;
     
-    // Get today's date in YYYY-MM-DD format, using local timezone
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
     const scoreDate = latestScore.date;
     
     console.log(`Game ${game.id} - Score date: ${scoreDate}, Today: ${today}, Match: ${scoreDate === today}`);

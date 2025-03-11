@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -43,9 +42,8 @@ const AddScoreModal = ({
   // Set the date to today's date when the modal opens
   useEffect(() => {
     if (open) {
-      // Get today's date in local timezone
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
       console.log('Setting date picker to today:', today);
       setDate(today);
     }
