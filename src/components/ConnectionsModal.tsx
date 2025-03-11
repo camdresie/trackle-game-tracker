@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -6,16 +7,17 @@ import {
   DialogTitle, 
   DialogDescription
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, Check, X, UserPlus, Users } from 'lucide-react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Player, Connection } from '@/utils/types';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { Separator } from '@/components/ui/separator';
+import FriendRequestsList from './connections/FriendRequestsList';
+import SearchResultsList from './connections/SearchResultsList';
+import FriendsList from './connections/FriendsList';
 
 interface ConnectionsModalProps {
   open: boolean;
@@ -27,7 +29,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   
-  // Fetch current user's friends with correct field access
+  // Fetch current user's friends
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
@@ -53,8 +55,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       return connections.map(conn => {
         const isUserInitiator = conn.user_id === currentPlayerId;
         const profileData = isUserInitiator ? 
-          conn.friend?.[0] : 
-          conn.user?.[0];
+          (conn.friend && Array.isArray(conn.friend) && conn.friend.length > 0 ? conn.friend[0] : null) : 
+          (conn.user && Array.isArray(conn.user) && conn.user.length > 0 ? conn.user[0] : null);
 
         if (!profileData) {
           console.error('Profile data missing in connection:', conn);
@@ -71,7 +73,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     enabled: open && !!currentPlayerId
   });
 
-  // Fetch pending friend requests specifically for the current user as recipient
+  // Fetch pending friend requests
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
@@ -107,14 +109,13 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
   const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
     queryKey: ['search-users', searchQuery, currentPlayerId],
     queryFn: async () => {
-      if (!searchQuery) return [];
+      if (!searchQuery || searchQuery.length < 2) return [];
       
-      // Query profiles that match the search term
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url')
         .ilike('username', `%${searchQuery}%`)
-        .neq('id', currentPlayerId) // Exclude current user
+        .neq('id', currentPlayerId)
         .limit(10);
       
       if (error) {
@@ -123,7 +124,6 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         return [];
       }
       
-      // Format search results to match Player interface
       return data.map(profile => ({
         id: profile.id,
         name: profile.username || profile.full_name || 'Unknown User',
@@ -231,7 +231,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     }
   });
 
-  // Handle adding a friend
+  // Handler functions
   const handleAddFriend = (friendId: string) => {
     addFriendMutation.mutate(friendId);
   };
@@ -275,133 +275,34 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
             )}
           </div>
 
-          {/* Friend requests section - Always visible */}
-          {pendingRequests.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-2">Friend Requests</h3>
-              <ScrollArea className="h-32">
-                <div className="space-y-2">
-                  {pendingRequests.map(request => (
-                    <div 
-                      key={request.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={request.playerAvatar || undefined} />
-                          <AvatarFallback>
-                            {request.playerName?.substring(0, 2).toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{request.playerName}</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="text-green-500"
-                          onClick={() => handleAcceptRequest(request.id)}
-                          disabled={acceptRequestMutation.isPending}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="text-rose-500"
-                          onClick={() => handleDeclineRequest(request.id)}
-                          disabled={declineRequestMutation.isPending}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              <Separator className="my-4" />
-            </div>
-          )}
+          {/* Friend requests section */}
+          <FriendRequestsList
+            pendingRequests={pendingRequests}
+            onAccept={handleAcceptRequest}
+            onDecline={handleDeclineRequest}
+            isAccepting={acceptRequestMutation.isPending}
+            isDeclining={declineRequestMutation.isPending}
+          />
 
           {/* Search results section */}
           {searchQuery && searchQuery.length >= 2 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Search Results
-              </h3>
-              <ScrollArea className="h-32">
-                {loadingSearch ? (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    Searching...
-                  </div>
-                ) : filteredSearchResults.length > 0 ? (
-                  <div className="space-y-2">
-                    {filteredSearchResults.map(player => (
-                      <div 
-                        key={player.id}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={player.avatar || undefined} />
-                            <AvatarFallback>{player.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <span>{player.name}</span>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleAddFriend(player.id)}
-                          disabled={addFriendMutation.isPending}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-sm text-muted-foreground">
-                    No users found matching '{searchQuery}'
-                  </div>
-                )}
-              </ScrollArea>
+            <>
+              <SearchResultsList
+                searchQuery={searchQuery}
+                searchResults={filteredSearchResults}
+                onAddFriend={handleAddFriend}
+                isLoading={loadingSearch}
+                isAdding={addFriendMutation.isPending}
+              />
               <Separator className="my-4" />
-            </div>
+            </>
           )}
 
           {/* Current friends section */}
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Your Friends
-          </h3>
-          <ScrollArea className="flex-1">
-            {loadingFriends ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading friends...
-              </div>
-            ) : friends.length > 0 ? (
-              <div className="space-y-2">
-                {friends.map(friend => (
-                  <div 
-                    key={friend.id}
-                    className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary/50"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={friend.avatar || undefined} />
-                      <AvatarFallback>{friend.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <span>{friend.name}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>You don't have any friends yet</p>
-                <p className="text-sm">Search for players to add them as friends</p>
-              </div>
-            )}
-          </ScrollArea>
+          <FriendsList
+            friends={friends}
+            isLoading={loadingFriends}
+          />
         </div>
       </DialogContent>
     </Dialog>

@@ -52,12 +52,20 @@ export interface Connection {
   id: string;
   user_id?: string;
   friend_id?: string;
-  playerId?: string; // For legacy/mock data compatibility
-  friendId?: string; // For legacy/mock data compatibility
   status: 'pending' | 'accepted';
-  createdAt?: string;
-  created_at?: string; // Supabase format
-  updated_at?: string; // Supabase format
-  friend?: any; // For Supabase join data
-  user?: any; // For Supabase join data
+  created_at?: string;
+  updated_at?: string;
+  // For Supabase join data
+  friend?: Array<{
+    id: string;
+    username?: string;
+    full_name?: string;
+    avatar_url?: string;
+  }>;
+  user?: Array<{
+    id: string;
+    username?: string;
+    full_name?: string;
+    avatar_url?: string;
+  }>;
 }
