@@ -35,7 +35,7 @@ const NavBar = () => {
         <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
           <Link to="/" className="flex items-center gap-2">
             <Award className="w-6 h-6 text-accent" />
-            <span className="font-semibold text-lg">Game Tracker</span>
+            <span className="font-semibold text-lg">Trackle</span>
           </Link>
           
           <button 
@@ -84,7 +84,7 @@ const NavBar = () => {
       <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
         <Link to="/" className="flex items-center gap-2">
           <Award className="w-6 h-6 text-accent" />
-          <span className="font-semibold text-lg">Game Tracker</span>
+          <span className="font-semibold text-lg">Trackle</span>
         </Link>
         
         <div className="flex items-center gap-3">

@@ -103,15 +103,24 @@ const Leaderboard = () => {
         console.log('Game stats data:', data);
         
         // Transform the data to fix the profiles structure
-        return data.map((stat: any) => ({
-          ...stat,
-          profiles: stat.profiles && stat.profiles.length > 0 ? stat.profiles[0] : { 
-            id: '',
-            username: 'Unknown',
-            full_name: null,
-            avatar_url: null
+        return data.map((stat: any) => {
+          if (!stat.profiles || !Array.isArray(stat.profiles) || stat.profiles.length === 0) {
+            return {
+              ...stat,
+              profiles: {
+                id: stat.user_id,
+                username: 'Unknown',
+                full_name: null,
+                avatar_url: null
+              }
+            };
           }
-        })) as GameStatsWithProfile[];
+          
+          return {
+            ...stat,
+            profiles: stat.profiles[0]
+          };
+        }) as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
@@ -209,7 +218,7 @@ const Leaderboard = () => {
       if (!userStatsMap.has(userId)) {
         userStatsMap.set(userId, {
           player_id: userId,
-          username: profile.username,
+          username: profile.username || 'Unknown',
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           total_score: 0,
