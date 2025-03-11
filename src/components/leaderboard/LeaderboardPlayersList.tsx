@@ -3,7 +3,7 @@ import React from 'react';
 import { Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
-import { Game, Player } from '@/utils/types';
+import { Game } from '@/utils/types';
 import { games } from '@/utils/gameData';
 
 interface LeaderboardPlayer {
@@ -49,7 +49,7 @@ const LeaderboardPlayersList = ({
             key={player.player_id}
             player={{
               id: player.player_id,
-              name: player.username || player.full_name || 'Unknown Player',
+              name: player.username, // Use the username directly
               avatar: player.avatar_url || undefined
             }}
             rank={index + 1}

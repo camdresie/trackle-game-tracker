@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -80,27 +79,31 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         console.log('Game stats data:', data);
         
-        // Transform the data to fix the profiles structure
+        // Transform the data to ensure we get the correct profile data
         const transformedData = data.map((stat: any) => {
-          // Check if profiles exists and is an array with at least one element
-          if (!stat.profiles || !Array.isArray(stat.profiles) || stat.profiles.length === 0) {
-            // Fetch the profile directly using a separate query
+          // Correctly handle the profile data structure from Supabase
+          // The profiles data comes as an array from the join
+          if (stat.profiles && Array.isArray(stat.profiles) && stat.profiles.length > 0) {
             return {
               ...stat,
-              profiles: {
-                id: stat.user_id,
-                username: `Player ${stat.user_id.substring(0, 4)}`, // Fallback only if absolutely necessary
-                full_name: null,
-                avatar_url: null
-              }
+              profiles: stat.profiles[0] // Use the first profile in the array
             };
           }
           
-          // Fix: Always use the actual profile data and never override with placeholder
+          // If profiles is already an object (not an array), keep it as is
+          if (stat.profiles && typeof stat.profiles === 'object' && !Array.isArray(stat.profiles)) {
+            return stat;
+          }
+          
+          // If no profile data found, use a placeholder but log this issue
+          console.error('Missing profile data for user ID:', stat.user_id);
           return {
             ...stat,
             profiles: {
-              ...stat.profiles[0]
+              id: stat.user_id,
+              username: `Unknown Player`, // Better placeholder
+              full_name: null,
+              avatar_url: null
             }
           };
         });
@@ -202,10 +205,9 @@ export const useLeaderboardData = (userId: string | undefined) => {
       const profile = stat.profiles;
       
       if (!userStatsMap.has(userId)) {
-        // Fix: Always use the profile username directly with no fallback to ensure proper display
         userStatsMap.set(userId, {
           player_id: userId,
-          username: profile.username,
+          username: profile.username || "Unknown Player", // Use the actual username or fallback
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           total_score: 0,
