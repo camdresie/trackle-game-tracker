@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -37,15 +38,35 @@ const Index = () => {
         
         // Fetch today's games using the service
         const todayScores = await getTodaysGames(user.id);
-        console.log('Fetched today\'s scores:', todayScores);
-        setTodaysGames(todayScores);
+        // Map scores to ensure all required fields
+        const mappedTodayScores: Score[] = todayScores.map(score => ({
+          id: score.id,
+          gameId: score.gameId,
+          playerId: score.playerId,
+          value: score.value,
+          date: score.date,
+          notes: score.notes,
+          createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+        }));
+        console.log('Fetched today\'s scores:', mappedTodayScores);
+        setTodaysGames(mappedTodayScores);
         
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];
         
         for (const game of gamesList) {
           const gameScores = await getGameScores(game.id, user.id);
-          allUserScores.push(...gameScores);
+          // Map scores to ensure all required fields
+          const mappedScores: Score[] = gameScores.map(score => ({
+            id: score.id,
+            gameId: score.gameId,
+            playerId: score.playerId,
+            value: score.value,
+            date: score.date,
+            notes: score.notes,
+            createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+          }));
+          allUserScores.push(...mappedScores);
         }
         
         setScores(allUserScores);

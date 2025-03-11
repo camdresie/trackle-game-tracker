@@ -34,7 +34,7 @@ const AddScoreModal = ({
   const [value, setValue] = useState(
     game.id === 'wordle' ? 3 : 
     game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
-    Math.floor(game.maxScore / 2)
+    Math.floor((game.maxScore || 100) / 2)
   );
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -61,13 +61,14 @@ const AddScoreModal = ({
       return [0, 585, 1170, 1755, 2340];
     } else {
       // For other games, calculate evenly spaced values
-      const step = game.maxScore / 4;
+      const maxScore = game.maxScore || 100;
+      const step = maxScore / 4;
       return [
         0,
         Math.round(step),
         Math.round(step * 2),
         Math.round(step * 3),
-        game.maxScore
+        maxScore
       ];
     }
   };
@@ -86,7 +87,8 @@ const AddScoreModal = ({
         playerId: user.id,
         value,
         date,
-        notes: notes || undefined
+        notes: notes || undefined,
+        createdAt: new Date().toISOString() // Add createdAt field
       };
       
       const { stats, score } = await addGameScore(newScore);
@@ -104,7 +106,7 @@ const AddScoreModal = ({
       setValue(
         game.id === 'wordle' ? 3 : 
         game.id === 'tightrope' ? 1170 : 
-        Math.floor(game.maxScore / 2)
+        Math.floor((game.maxScore || 100) / 2)
       );
       setDate('');  // Clear the date field when modal is closed
       setNotes('');
@@ -121,10 +123,10 @@ const AddScoreModal = ({
     if (game.id === 'wordle') {
       return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
     } else if (game.id === 'tightrope') {
-      const percentage = (value / game.maxScore) * 100;
+      const percentage = (value / (game.maxScore || 2340)) * 100;
       return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
     } else {
-      const percentage = (value / game.maxScore) * 100;
+      const percentage = (value / (game.maxScore || 100)) * 100;
       return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
     }
   };
@@ -134,7 +136,7 @@ const AddScoreModal = ({
     if (game.id === 'wordle') {
       return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
     } else {
-      const percentage = (value / game.maxScore) * 100;
+      const percentage = (value / (game.maxScore || 100)) * 100;
       return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
     }
   };
@@ -151,9 +153,9 @@ const AddScoreModal = ({
     let newValue = inputValue;
     
     if (game.id === 'wordle') {
-      newValue = Math.max(1, Math.min(game.maxScore, inputValue));
+      newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
     } else {
-      newValue = Math.max(0, Math.min(game.maxScore, inputValue));
+      newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }
     
     setValue(newValue);

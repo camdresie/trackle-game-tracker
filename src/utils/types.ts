@@ -55,6 +55,11 @@ export interface Achievement {
   description: string;
   icon: string;
   color: string;
+  title?: string;
   earned: boolean;
   date?: string;
+  unlockedAt?: string;
+  category?: string;
+  gameId?: string;
+  criteria?: (scores: Score[]) => boolean;
 }

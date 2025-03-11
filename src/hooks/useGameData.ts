@@ -46,14 +46,24 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
         
         // Get current player's scores
         const playerScores = await getGameScores(gameId, user.id);
-        setScores(playerScores);
+        // Map the scores to ensure they have all required fields
+        const mappedScores: Score[] = playerScores.map(score => ({
+          id: score.id,
+          gameId: score.gameId,
+          playerId: score.playerId,
+          value: score.value,
+          date: score.date,
+          notes: score.notes,
+          createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+        }));
+        setScores(mappedScores);
         
         // Calculate best score
-        if (playerScores.length > 0) {
+        if (mappedScores.length > 0) {
           if (gameId === 'wordle') {
-            setBestScore(Math.min(...playerScores.map(s => s.value)));
+            setBestScore(Math.min(...mappedScores.map(s => s.value)));
           } else {
-            setBestScore(Math.max(...playerScores.map(s => s.value)));
+            setBestScore(Math.max(...mappedScores.map(s => s.value)));
           }
         }
         
@@ -99,7 +109,16 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
               
               try {
                 const scores = await getGameScores(gameId, friendId);
-                friendScoresData[friendId] = scores;
+                // Map scores to ensure all required fields
+                friendScoresData[friendId] = scores.map(score => ({
+                  id: score.id,
+                  gameId: score.gameId,
+                  playerId: score.playerId,
+                  value: score.value,
+                  date: score.date,
+                  notes: score.notes,
+                  createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+                }));
               } catch (error) {
                 console.error(`Error fetching scores for friend ${friendId}:`, error);
               }
