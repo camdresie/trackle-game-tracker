@@ -16,15 +16,23 @@ interface FriendScoresListProps {
 }
 
 const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefreshFriends }: FriendScoresListProps) => {
+  // Function to handle refresh button click
+  const handleRefreshClick = () => {
+    console.log("Refresh friends button clicked");
+    if (onRefreshFriends) {
+      onRefreshFriends();
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Friend Scores</h2>
-        {friends.length > 0 && onRefreshFriends && (
+        {friends.length > 0 && (
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={onRefreshFriends}
+            onClick={handleRefreshClick}
             className="gap-1"
           >
             <RefreshCcw className="h-3 w-3" />

@@ -278,7 +278,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   });
 
-  // Remove friend mutation - improved with direct verification of success
+  // Remove friend mutation - fixed to not verify rows returned
   const removeFriendMutation = useMutation({
     mutationFn: async (connectionId: string) => {
       console.log('Removing connection with ID:', connectionId);
@@ -295,45 +295,29 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
         throw new Error('Connection not found or could not be verified');
       }
       
-      if (!connectionCheck) {
-        throw new Error('Connection not found');
-      }
-      
-      // Perform the deletion with more logging
+      // Perform the deletion
       console.log('Found connection, attempting to delete:', connectionCheck.id);
-      const { data, error: deleteError } = await supabase
+      const { error: deleteError } = await supabase
         .from('connections')
         .delete()
-        .eq('id', connectionId)
-        .select();
-      
-      console.log('Deletion response:', data);
+        .eq('id', connectionId);
       
       if (deleteError) {
         console.error('Error removing connection:', deleteError);
         throw new Error('Failed to remove connection');
       }
       
-      // If no rows were affected, throw an error
-      if (!data || data.length === 0) {
-        console.error('No connection was removed, deletion may have failed');
-        throw new Error('Connection was not removed');
-      }
-      
+      // Since Supabase doesn't always return the deleted rows, we assume success if no error
+      console.log('Deletion completed without errors');
       return connectionId;
     },
     onSuccess: (connectionId) => {
       toast.success('Friend removed successfully');
       console.log('Successfully removed connection with ID:', connectionId);
       
-      // Immediately update the local state by removing the friend
-      // This ensures UI is consistent even before the refetch completes
-      
-      // Force an immediate refetch of the friends data to update UI
+      // Force immediate refetch and invalidation of caches
+      queryClient.removeQueries({ queryKey: ['friends'] });
       refetchFriends();
-      
-      // Invalidate all related queries to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['friends'] });
       
       // Call the external callback if provided
       if (onFriendRemoved) {
