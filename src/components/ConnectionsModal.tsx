@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Dialog, 
@@ -73,7 +72,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     enabled: open && !!currentPlayerId
   });
 
-  // Fetch pending friend requests - FIXED: Fixed user profile extraction
+  // Fetch pending friend requests - FIXED: Accessing nested user data properly
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
@@ -101,13 +100,19 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       console.log('Raw pending requests data:', JSON.stringify(data, null, 2));
 
       return data.map(request => {
-        // Access the nested user object properly - it's an array of one object
-        const userData = request.user;
+        // Access the nested user object properly - it's an array
+        const userDataArray = request.user;
         
         // Log how we're accessing the user data
-        console.log('User data for request:', request.id, userData);
+        console.log('User data for request:', request.id, userDataArray);
         
-        // Extract the username and avatar from the user object
+        // Extract the first item from the array if it exists
+        const userData = Array.isArray(userDataArray) && userDataArray.length > 0 
+          ? userDataArray[0] 
+          : null;
+        
+        console.log('Extracted user data:', userData);
+        
         return {
           id: request.id,
           playerId: request.user_id,
