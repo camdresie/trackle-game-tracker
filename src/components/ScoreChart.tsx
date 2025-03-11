@@ -47,13 +47,15 @@ const ScoreChart = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    // Convert dates for display, ensuring they match the actual date stored
+    // Format dates for display using consistent approach
     const formattedScores = sortedScores.map(score => {
-      // Parse date ensuring it's interpreted as UTC to avoid timezone issues
-      const date = new Date(score.date + 'T00:00:00Z');
+      // Create date object from score date string
+      const [year, month, day] = score.date.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // month is 0-indexed in JS
+      
       return {
         // Format date for display
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: `${date.toLocaleString('default', { month: 'short' })} ${day}`,
         // Keep the original date string for tooltip
         originalDate: score.date,
         value: score.value

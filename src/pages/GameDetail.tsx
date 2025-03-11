@@ -147,9 +147,10 @@ const GameDetail = () => {
   }
   
   const formatDate = (dateString: string) => {
-    // Use a date constructor that ensures the date is not affected by timezones
-    // By adding 'T00:00:00Z' we ensure it's parsed as UTC
-    const date = new Date(dateString + 'T00:00:00Z');
+    // Create date object from date string without timezone conversion
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed in JS
+    
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
   };
