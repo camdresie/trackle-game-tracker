@@ -18,7 +18,7 @@ interface GameDataResult {
   bestScore: number | null;
   friends: Player[];
   friendScores: { [key: string]: Score[] };
-  refreshFriends: () => Promise<void>; // New method to manually refresh friends
+  refreshFriends: () => Promise<void>;
 }
 
 export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
@@ -36,11 +36,11 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
     
     try {
       console.log('Fetching friends data...');
-      // Reset friends first to avoid stale data
+      // Always reset friends first to avoid stale data
       setFriends([]);
       setFriendScores({});
       
-      // Get user connections (friends)
+      // Get user connections (friends) - ensure we're getting fresh data each time
       const { data: connections, error: connectionsError } = await supabase
         .from('connections')
         .select('*')
@@ -56,6 +56,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
       
       if (!connections || connections.length === 0) {
         console.log('No connections found for user:', user.id);
+        setFriends([]); // Explicitly set to empty array
         return;
       }
       
@@ -73,8 +74,10 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           
         if (profilesError) {
           console.error('Error fetching friend profiles:', profilesError);
+          setFriends([]); // Reset on error
         } else if (!friendProfiles || friendProfiles.length === 0) {
           console.log('No friend profiles found for IDs:', friendIds);
+          setFriends([]); // Reset when no profiles found
         } else {
           const friendData = friendProfiles.map(profile => {
             // Find the corresponding connection for this friend
@@ -102,6 +105,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
       }
     } catch (error) {
       console.error('Error fetching friends:', error);
+      setFriends([]); // Reset on any error
     }
   };
 
