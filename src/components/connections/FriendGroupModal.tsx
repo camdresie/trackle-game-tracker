@@ -21,7 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 interface FriendGroupModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: { name: string, description: string }) => void;
+  onSubmit: (data: { name: string, description?: string }) => void;
   isEditing?: boolean;
   initialData?: {
     name: string;
@@ -69,7 +69,11 @@ const FriendGroupModal = ({
   }, [open, initialData, form]);
 
   const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
+    // Since we're using zod validation, name will always be a non-empty string here
+    onSubmit({
+      name: values.name,
+      description: values.description,
+    });
     onOpenChange(false);
     form.reset();
   };
