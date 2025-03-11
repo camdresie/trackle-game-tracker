@@ -81,6 +81,40 @@ export async function getPlayedGames(userId: string) {
   }
 }
 
+export async function getTodaysGames(userId: string) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    console.log('Fetching games for today (from service):', today);
+    
+    const { data, error } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting today\'s games:', error);
+      throw error;
+    }
+
+    console.log('Today\'s games data from service:', data);
+    
+    // Transform to match our Score type
+    return data.map(score => ({
+      id: score.id,
+      gameId: score.game_id,
+      playerId: score.user_id,
+      value: score.value,
+      date: score.date,
+      notes: score.notes
+    }));
+  } catch (error) {
+    console.error('Error in getTodaysGames:', error);
+    throw error;
+  }
+}
+
 export async function getGameScores(gameId: string, userId: string) {
   try {
     const { data, error } = await supabase

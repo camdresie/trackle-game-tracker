@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 
@@ -39,15 +39,11 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     }
   };
 
-  // Format the date properly using the browser's locale
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    // Use specific options to ensure consistent formatting
-    return date.toLocaleDateString(undefined, { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  // Check if the game was played today
+  const isPlayedToday = () => {
+    if (!latestScore) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return latestScore.date === today;
   };
 
   return (
@@ -59,10 +55,10 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         <div className={cn("p-2.5 rounded-lg", game.color)}>
           {getIcon()}
         </div>
-        {latestScore && (
-          <div className="text-xs bg-secondary px-2 py-1 rounded-full flex items-center gap-1">
-            <CalendarDays className="w-3 h-3" />
-            <span>{formatDate(latestScore.date)}</span>
+        {isPlayedToday() && (
+          <div className="text-xs bg-green-500/20 text-green-600 dark:text-green-400 px-2 py-1 rounded-full flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            <span>Played today</span>
           </div>
         )}
       </div>

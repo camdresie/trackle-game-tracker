@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,14 +39,16 @@ const Index = () => {
         
         // Fetch today's games
         const today = new Date().toISOString().split('T')[0];
+        console.log('Fetching games for today:', today);
         const { data: todayScores, error: todayError } = await supabase
           .from('scores')
           .select('*')
           .eq('user_id', user.id)
-          .eq('date', today)
-          .order('created_at', { ascending: false });
+          .eq('date', today);
           
         if (todayError) throw todayError;
+        
+        console.log('Today\'s scores from DB:', todayScores);
         
         // Transform to match our Score type
         const formattedTodayScores = todayScores.map(score => ({
@@ -58,6 +61,7 @@ const Index = () => {
         }));
         
         setTodaysGames(formattedTodayScores);
+        console.log('Today\'s games after formatting:', formattedTodayScores);
         
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];
