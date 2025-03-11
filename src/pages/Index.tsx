@@ -46,7 +46,7 @@ const Index = () => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+          createdAt: score.created_at || new Date().toISOString() // Use created_at from DB or current time
         }));
         console.log('Fetched today\'s scores:', mappedTodayScores);
         setTodaysGames(mappedTodayScores);
@@ -64,7 +64,7 @@ const Index = () => {
             value: score.value,
             date: score.date,
             notes: score.notes,
-            createdAt: score.createdAt || new Date().toISOString() // Ensure createdAt is present
+            createdAt: score.created_at || new Date().toISOString() // Use created_at from DB or current time
           }));
           allUserScores.push(...mappedScores);
         }
