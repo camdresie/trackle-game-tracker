@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +36,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { profile, user } = useAuth();
   const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
   
@@ -151,7 +153,15 @@ const Profile = () => {
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-                  <User className="w-12 h-12 text-muted-foreground" />
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-12 h-12 text-muted-foreground" />
+                  )}
                 </div>
                 
                 <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
@@ -185,7 +195,12 @@ const Profile = () => {
                 </p>
               </div>
               
-              <Button variant="outline" size="sm" className="gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1"
+                onClick={() => navigate('/settings')}
+              >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </Button>
