@@ -30,7 +30,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [bestScore, setBestScore] = useState<number | null>(null);
 
-  // Function to fetch friends data
+  // Function to fetch friends data with more robust error handling
   const fetchFriends = async () => {
     if (!user) return;
     
@@ -38,6 +38,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
       console.log('Fetching friends data...');
       // Reset friends first to avoid stale data
       setFriends([]);
+      setFriendScores({});
       
       // Get user connections (friends)
       const { data: connections, error: connectionsError } = await supabase
@@ -53,6 +54,11 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
       
       console.log('Connections data:', connections);
       
+      if (!connections || connections.length === 0) {
+        console.log('No connections found for user:', user.id);
+        return;
+      }
+      
       // Get friend IDs from connections
       const friendIds = connections
         .map(conn => conn.user_id === user.id ? conn.friend_id : conn.user_id)
@@ -67,17 +73,25 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           
         if (profilesError) {
           console.error('Error fetching friend profiles:', profilesError);
+        } else if (!friendProfiles || friendProfiles.length === 0) {
+          console.log('No friend profiles found for IDs:', friendIds);
         } else {
-          const friendData = friendProfiles.map(profile => ({
-            id: profile.id,
-            name: profile.full_name || profile.username || 'Unknown User',
-            avatar: profile.avatar_url,
-            // Include connection ID for each friend for easier removal
-            connectionId: connections.find(c => 
+          const friendData = friendProfiles.map(profile => {
+            // Find the corresponding connection for this friend
+            const connection = connections.find(c => 
               (c.user_id === profile.id && c.friend_id === user.id) || 
               (c.friend_id === profile.id && c.user_id === user.id)
-            )?.id
-          }));
+            );
+            
+            return {
+              id: profile.id,
+              name: profile.full_name || profile.username || 'Unknown User',
+              avatar: profile.avatar_url,
+              // Include connection ID for each friend for easier removal
+              connectionId: connection?.id
+            };
+          });
+          
           console.log('Setting friends:', friendData);
           setFriends(friendData);
         }
@@ -96,6 +110,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
     console.log('Refreshing friends data...');
     // Clear friend scores when refreshing friends
     setFriendScores({});
+    setFriends([]); // Ensure we completely reset the friends state
     
     await fetchFriends();
     

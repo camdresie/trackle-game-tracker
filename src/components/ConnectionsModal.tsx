@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -87,7 +88,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
         } as Player;
       }).filter(Boolean) as Player[];
     },
-    enabled: open && !!currentPlayerId
+    enabled: open && !!currentPlayerId,
+    staleTime: 0, // Don't cache this data
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: open ? 2000 : false // When modal is open, refetch every 2 seconds
   });
 
   // Fetch pending friend requests
@@ -276,6 +281,18 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     mutationFn: async (connectionId: string) => {
       console.log('Removing connection with ID:', connectionId);
       
+      // Check if the connection exists before trying to delete it
+      const { data: existingConnection, error: checkError } = await supabase
+        .from('connections')
+        .select('id')
+        .eq('id', connectionId)
+        .single();
+        
+      if (checkError || !existingConnection) {
+        console.error('Connection not found or error checking:', checkError);
+        throw new Error('Connection not found');
+      }
+      
       // Delete the connection directly using the connectionId
       const { error: deleteError, data } = await supabase
         .from('connections')
@@ -299,8 +316,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       // Force an immediate refetch of the friends data to update UI
       refetchFriends();
       
-      // Also invalidate the friends cache to ensure fresh data on next query
-      queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
+      // Invalidate all related queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
       
       // Call the external callback if provided
       if (onFriendRemoved) {
@@ -328,6 +345,15 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     console.log('Handling remove friend for connection ID:', connectionId);
     removeFriendMutation.mutate(connectionId);
   };
+
+  // Force refetch when modal opens
+  useEffect(() => {
+    if (open && currentPlayerId) {
+      // Invalidate and refetch friends data when modal opens
+      queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
+      refetchFriends();
+    }
+  }, [open, currentPlayerId, queryClient, refetchFriends]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,23 +1,37 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
-import { Users } from 'lucide-react';
+import { Users, RefreshCcw } from 'lucide-react';
 
 interface FriendScoresListProps {
   game: Game;
   friends: Player[];
   friendScores: { [key: string]: Score[] };
   onManageFriends?: () => void;
+  onRefreshFriends?: () => void;
 }
 
-const FriendScoresList = ({ game, friends, friendScores, onManageFriends }: FriendScoresListProps) => {
+const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefreshFriends }: FriendScoresListProps) => {
   return (
     <>
-      <h2 className="text-xl font-semibold mb-4">Friend Scores</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Friend Scores</h2>
+        {friends.length > 0 && onRefreshFriends && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onRefreshFriends}
+            className="gap-1"
+          >
+            <RefreshCcw className="h-3 w-3" />
+            Refresh
+          </Button>
+        )}
+      </div>
       
       {friends.length > 0 ? (
         <div className="space-y-6">
