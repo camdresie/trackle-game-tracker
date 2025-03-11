@@ -166,6 +166,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      force_delete_connection: {
+        Args: {
+          connection_id: string
+        }
+        Returns: boolean
+      }
       get_profile: {
         Args: {
           profile_id: string
