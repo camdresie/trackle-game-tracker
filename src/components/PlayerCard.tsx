@@ -16,9 +16,18 @@ interface PlayerCardProps {
     totalGames: number;
   };
   className?: string;
+  showTodayOnly?: boolean; // New prop to show today's score only
 }
 
-const PlayerCard = ({ player, rank, scores, game, stats, className }: PlayerCardProps) => {
+const PlayerCard = ({ 
+  player, 
+  rank, 
+  scores, 
+  game, 
+  stats, 
+  className,
+  showTodayOnly = false // Default to showing all stats
+}: PlayerCardProps) => {
   // Calculate statistics or use provided stats
   const totalGames = stats?.totalGames || scores.length;
   const bestScore = stats?.bestScore || (game ? calculateBestScore(scores, game) : 0);
@@ -76,20 +85,31 @@ const PlayerCard = ({ player, rank, scores, game, stats, className }: PlayerCard
       </div>
       
       <div className="hidden sm:flex items-center gap-6">
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground">Games</p>
-          <p className="font-semibold">{totalGames}</p>
-        </div>
-        
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground">Best</p>
-          <p className="font-semibold">{bestScore || '-'}</p>
-        </div>
-        
-        <div className="text-center">
-          <p className="text-xs text-muted-foreground">Average</p>
-          <p className="font-semibold">{averageScore || '-'}</p>
-        </div>
+        {showTodayOnly ? (
+          // Show only today's score when in "Today Only" mode
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">Score</p>
+            <p className="font-semibold">{bestScore || '-'}</p>
+          </div>
+        ) : (
+          // Show all stats in "All Time" mode
+          <>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Games</p>
+              <p className="font-semibold">{totalGames}</p>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Best</p>
+              <p className="font-semibold">{bestScore || '-'}</p>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Average</p>
+              <p className="font-semibold">{averageScore || '-'}</p>
+            </div>
+          </>
+        )}
       </div>
       
       {rank === 1 && (

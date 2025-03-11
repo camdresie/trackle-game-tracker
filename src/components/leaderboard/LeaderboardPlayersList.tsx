@@ -68,6 +68,7 @@ const LeaderboardPlayersList = ({
               totalGames: timeFilter === 'today' ? (player.today_score ? 1 : 0) : player.total_games
             }}
             className="hover:scale-[1.01] transition-transform duration-200"
+            showTodayOnly={timeFilter === 'today'} // Pass the timeFilter as a boolean
           />
         ))
       ) : (
