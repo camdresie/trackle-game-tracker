@@ -120,7 +120,7 @@ const GameDetail = () => {
   }, [gameId, user]);
   
   const handleAddScore = (newScore: Score) => {
-    setScores(prev => [...prev, newScore]);
+    setScores(prev => [newScore, ...prev]);
     
     // Update best score
     if (newScore.gameId === 'wordle') {
@@ -147,8 +147,11 @@ const GameDetail = () => {
   }
   
   const formatDate = (dateString: string) => {
+    // Use a date constructor that ensures the date is not affected by timezones
+    // By adding 'T00:00:00Z' we ensure it's parsed as UTC
+    const date = new Date(dateString + 'T00:00:00Z');
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    return date.toLocaleDateString(undefined, options);
   };
 
   return (

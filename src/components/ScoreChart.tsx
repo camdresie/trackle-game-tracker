@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, 
@@ -48,11 +47,14 @@ const ScoreChart = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    // Convert dates to local format for display
+    // Convert dates for display, ensuring they match the actual date stored
     const formattedScores = sortedScores.map(score => {
-      const date = new Date(score.date);
+      // Parse date ensuring it's interpreted as UTC to avoid timezone issues
+      const date = new Date(score.date + 'T00:00:00Z');
       return {
+        // Format date for display
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        // Keep the original date string for tooltip
         originalDate: score.date,
         value: score.value
       };
@@ -114,6 +116,7 @@ const ScoreChart = ({
               return [value, 'Score'];
             }}
             labelFormatter={(label: string, payload: any[]) => {
+              // Display the original ISO date format in the tooltip
               if (payload.length > 0) {
                 const item = payload[0].payload;
                 return item.originalDate;

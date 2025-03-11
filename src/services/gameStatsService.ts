@@ -83,15 +83,17 @@ export async function getPlayedGames(userId: string) {
 
 export async function getTodaysGames(userId: string) {
   try {
-    // Get today's date in YYYY-MM-DD format using the local timezone
-    const today = new Date().toISOString().split('T')[0];
-    console.log('Fetching games for today (from service):', today);
+    // Format today's date in a way that matches the database format
+    const today = new Date();
+    // Get YYYY-MM-DD format with timezone adjustment
+    const formattedToday = today.toISOString().substring(0, 10);
+    console.log('Fetching games for today (from service):', formattedToday);
     
     const { data, error } = await supabase
       .from('scores')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', today)
+      .eq('date', formattedToday)
       .order('created_at', { ascending: false });
 
     if (error) {

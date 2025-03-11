@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -42,10 +43,11 @@ const AddScoreModal = ({
   // Set the date to today's date when the modal opens
   useEffect(() => {
     if (open) {
-      // Get today's date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
-      console.log('Setting date picker to today:', today);
-      setDate(today);
+      // Get today's date in YYYY-MM-DD format that matches database storage
+      const today = new Date();
+      const formattedToday = today.toISOString().substring(0, 10);
+      console.log('Setting date picker to today:', formattedToday);
+      setDate(formattedToday);
     }
   }, [open]);
   
