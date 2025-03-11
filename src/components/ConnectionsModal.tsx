@@ -73,7 +73,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     enabled: open && !!currentPlayerId
   });
 
-  // Fetch pending friend requests
+  // Fetch pending friend requests - FIXED: Properly extract user info
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
@@ -94,13 +94,18 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         return [];
       }
 
-      return data.map(request => ({
-        id: request.id,
-        playerId: request.user_id,
-        friendId: request.friend_id,
-        playerName: request.user[0]?.username || request.user[0]?.full_name || 'Unknown User',
-        playerAvatar: request.user[0]?.avatar_url
-      }));
+      return data.map(request => {
+        const userProfile = request.user && request.user[0];
+        console.log('Friend request user profile:', userProfile);
+        
+        return {
+          id: request.id,
+          playerId: request.user_id,
+          friendId: request.friend_id,
+          playerName: userProfile?.username || userProfile?.full_name || 'Unknown User',
+          playerAvatar: userProfile?.avatar_url
+        };
+      });
     },
     enabled: open && !!currentPlayerId
   });
