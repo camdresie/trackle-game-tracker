@@ -7,6 +7,25 @@ const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
+// Create or ensure avatar bucket exists
+export const ensureAvatarBucketExists = async () => {
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
+    
+    if (!avatarBucketExists) {
+      await supabase.storage.createBucket('avatars', {
+        public: true,
+      });
+      console.log('Created avatars bucket');
+    }
+    return true;
+  } catch (error) {
+    console.error('Error ensuring avatar bucket exists:', error);
+    return false;
+  }
+};
+
 // Social Auth Providers
 export const signInWithGoogle = async () => {
   const { error } = await supabase.auth.signInWithOAuth({

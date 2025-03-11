@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, signInWithGoogle, signInWithApple } from '@/lib/supabase';
@@ -193,8 +194,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('Profile updated successfully:', data);
       
-      // Update the local profile state
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // Update the local profile state with the returned data
+      setProfile(prev => prev ? { ...prev, ...data } : null);
 
       toast.success('Profile updated successfully');
     } catch (error: any) {

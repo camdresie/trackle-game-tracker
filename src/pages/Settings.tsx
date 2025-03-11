@@ -213,14 +213,16 @@ const Settings = () => {
     
     const file = files[0];
     const fileExt = file.name.split('.').pop();
-    const filePath = `${user?.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `${user?.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = fileName;
     
     setUploading(true);
     try {
-      // Check if avatars bucket exists, if not create it
+      // Check if avatars bucket exists
       const { data: buckets } = await supabase.storage.listBuckets();
       const avatarBucketExists = buckets?.some(bucket => bucket.name === 'avatars');
       
+      // Create the bucket if it doesn't exist
       if (!avatarBucketExists) {
         await supabase.storage.createBucket('avatars', {
           public: true,
@@ -230,7 +232,10 @@ const Settings = () => {
       // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
       if (uploadError) throw uploadError;
       
@@ -241,6 +246,11 @@ const Settings = () => {
         
       // Update the avatar URL in the state
       setAvatarUrl(data.publicUrl);
+      
+      // Update the profile with the new avatar URL
+      await updateProfile({
+        avatar_url: data.publicUrl,
+      });
       
       toast.success('Avatar uploaded successfully');
     } catch (error: any) {
