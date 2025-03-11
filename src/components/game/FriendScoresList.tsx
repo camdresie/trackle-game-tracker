@@ -17,17 +17,36 @@ interface FriendScoresListProps {
 }
 
 const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefreshFriends }: FriendScoresListProps) => {
-  // Function to handle refresh button click
+  // Function to handle refresh button click with enhanced feedback
   const handleRefreshClick = () => {
     console.log("Refresh friends button clicked");
+    
+    // Show immediate feedback toast
     toast({
       description: "Refreshing friend data..."
     });
     
     if (onRefreshFriends) {
-      onRefreshFriends();
+      // Call the refresh function provided by parent
+      try {
+        onRefreshFriends();
+        console.log("Friend refresh function called successfully");
+      } catch (error) {
+        console.error("Error during friend refresh:", error);
+        toast({
+          title: "Error",
+          description: "Failed to refresh friend data",
+          variant: "destructive"
+        });
+      }
+    } else {
+      console.warn("No refresh handler provided");
     }
   };
+
+  // Debug logs for component rendering
+  console.log("FriendScoresList rendering with friends:", friends.length);
+  console.log("Friend scores keys:", Object.keys(friendScores));
 
   return (
     <>
@@ -55,6 +74,8 @@ const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefr
                 ? Math.min(...friendScoresList.map(s => s.value))
                 : Math.max(...friendScoresList.map(s => s.value))
               : null;
+            
+            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores`);
             
             return (
               <div key={friend.id} className="space-y-2">

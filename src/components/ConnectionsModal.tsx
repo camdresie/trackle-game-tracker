@@ -312,71 +312,92 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   });
 
-  // Remove friend mutation with aggressive cache clearing
+  // Improved remove friend mutation with enhanced error handling and debugging
   const removeFriendMutation = useMutation({
     mutationFn: async (connectionId: string) => {
-      console.log('Removing connection with ID:', connectionId);
+      console.log('Starting connection removal process for ID:', connectionId);
+      
+      if (!connectionId) {
+        console.error('Invalid connection ID provided');
+        throw new Error('Invalid connection ID');
+      }
       
       try {
         // First, verify the connection exists
         const { data: connectionCheck, error: checkError } = await supabase
           .from('connections')
-          .select('id')
+          .select('id, user_id, friend_id')
           .eq('id', connectionId)
           .single();
         
         if (checkError) {
-          console.error('Error checking connection:', checkError);
+          console.error('Error checking connection before delete:', checkError);
           throw new Error('Connection not found or could not be verified');
         }
         
-        // Perform the deletion
-        console.log('Found connection, attempting to delete:', connectionCheck.id);
-        const { error: deleteError } = await supabase
+        console.log('Connection verified before deletion:', connectionCheck);
+        
+        // Perform a direct DELETE with count option to confirm rows were affected
+        const { count, error: deleteError } = await supabase
           .from('connections')
-          .delete()
+          .delete({ count: 'exact' })  // Use count option to get affected rows
           .eq('id', connectionId);
         
         if (deleteError) {
-          console.error('Error removing connection:', deleteError);
-          throw new Error('Failed to remove connection');
+          console.error('Error during connection deletion:', deleteError);
+          throw new Error('Database error during connection removal');
         }
         
-        // Since Supabase doesn't always return the deleted rows, we assume success if no error
-        console.log('Deletion completed without errors');
+        // Check if any rows were actually deleted
+        if (count === 0) {
+          console.error('No rows were deleted from the database');
+          throw new Error('Connection could not be removed (no rows affected)');
+        }
+        
+        console.log(`Successfully deleted ${count} connection(s) with ID:`, connectionId);
         return connectionId;
       } catch (error) {
-        console.error('Error in remove friend mutation:', error);
+        console.error('Error in removeFriendMutation:', error);
         throw error;
       }
     },
     onSuccess: (connectionId) => {
+      console.log('Friend removal confirmed successful for connection ID:', connectionId);
+      
       toast({
         title: "Success",
         description: "Friend removed successfully"
       });
-      console.log('Successfully removed connection with ID:', connectionId);
       
-      // Immediately remove the friend from the displayed list
-      setDisplayedFriends(prev => prev.filter(friend => friend.connectionId !== connectionId));
+      // Immediately remove the friend from the displayed list for UI responsiveness
+      setDisplayedFriends(prev => {
+        const newList = prev.filter(friend => friend.connectionId !== connectionId);
+        console.log('Updated displayed friends list after removal:', newList);
+        return newList;
+      });
       
-      // Force aggressive cache removal for all friend-related queries
+      // Clear all cache related to friends to ensure fresh data on next fetch
       queryClient.removeQueries({ queryKey: ['friends'] });
       
-      // Force refetch after a short delay to ensure DB changes propagate
+      // Force a refetch of friends data after a delay to ensure DB changes propagate
       setTimeout(() => {
+        console.log('Triggering friends data refetch after connection removal');
         refetchFriends();
+        
+        // Call the external callback if provided
+        if (onFriendRemoved) {
+          onFriendRemoved();
+        }
       }, 500);
-      
-      // Call the external callback if provided
-      if (onFriendRemoved) {
-        onFriendRemoved();
-      }
     },
     onError: (error) => {
+      console.error('Error during friend removal:', error);
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to remove friend',
+        description: error instanceof Error 
+          ? `The connection was not removed: ${error.message}` 
+          : 'Failed to remove friend due to an unknown error',
         variant: "destructive"
       });
     }
@@ -420,19 +441,32 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   }, [friends]);
 
-  // Force refetch when modal opens
+  // Force refetch when modal opens with improved error handling
   useEffect(() => {
     if (open && currentPlayerId) {
+      console.log('Modal opened, preparing to fetch fresh friends data');
+      
       // Clear displayed friends immediately when modal opens
       setDisplayedFriends([]);
       
-      // Aggressively clear cache and refetch
+      // Aggressively clear cache for all relevant queries
       queryClient.removeQueries({ queryKey: ['friends', currentPlayerId] });
       
       // Wait a moment before refetching to ensure we get fresh data
-      setTimeout(() => {
-        refetchFriends();
-      }, 100);
+      setTimeout(async () => {
+        console.log('Executing delayed friends data fetch');
+        try {
+          await refetchFriends();
+          console.log('Friends data refetch completed successfully');
+        } catch (error) {
+          console.error('Error during friends refetch:', error);
+          toast({
+            title: "Error",
+            description: "Failed to refresh friends list",
+            variant: "destructive"
+          });
+        }
+      }, 300);
     }
   }, [open, currentPlayerId, queryClient, refetchFriends]);
 
