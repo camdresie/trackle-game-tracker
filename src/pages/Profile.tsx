@@ -36,14 +36,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUserGameStats, getPlayedGames } from '@/services/gameStatsService';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useGameData } from '@/hooks/useGameData'; // Fix: Import the useGameData hook
+import { useFriendsList } from '@/hooks/useFriendsList'; // Updated import
 
 const Profile = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
-  const { refreshFriends } = useGameData({ gameId: undefined }); // Add this to get access to refreshFriends
+  
+  // Use our refactored friends hook
+  const { refreshFriends } = useFriendsList();
   
   // Use React Query to fetch game stats
   const { 
@@ -154,7 +156,6 @@ const Profile = () => {
     await refreshFriends();
   };
 
-  // Update the ConnectionsModal component to pass the handleFriendRemoved callback
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -432,7 +433,7 @@ const Profile = () => {
           open={showConnectionsModal}
           onOpenChange={setShowConnectionsModal}
           currentPlayerId={user.id}
-          onFriendRemoved={handleFriendRemoved} // Add this prop
+          onFriendRemoved={handleFriendRemoved}
         />
       )}
     </div>

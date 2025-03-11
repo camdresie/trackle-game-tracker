@@ -28,24 +28,21 @@ const GameDetail = () => {
     isLoading,
     bestScore,
     friends,
-    friendScores
+    friendScores,
+    refreshFriends
   } = useGameData({ gameId });
   
-  // We need to create local state to update the UI without refetching
   const [localScores, setLocalScores] = useState<Score[]>([]);
   const [localBestScore, setLocalBestScore] = useState<number | null>(null);
   
-  // Update local state when the fetched data changes
   useEffect(() => {
     setLocalScores(scores);
     setLocalBestScore(bestScore);
   }, [scores, bestScore]);
   
   const handleAddScore = (newScore: Score) => {
-    // Manually update the UI with the new score without having to refetch everything
     setLocalScores(prev => [newScore, ...prev]);
     
-    // Update best score
     if (newScore.gameId === 'wordle') {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.min(prev, newScore.value));
     } else {
@@ -53,11 +50,9 @@ const GameDetail = () => {
     }
   };
   
-  // Use the local state or fallback to the fetched state
   const displayScores = localScores.length > 0 ? localScores : scores;
   const displayBestScore = localBestScore !== null ? localBestScore : bestScore;
   
-  // If game is not found
   if (!game) {
     return (
       <div className="min-h-screen bg-background">
@@ -148,6 +143,7 @@ const GameDetail = () => {
                   friends={friends}
                   friendScores={friendScores}
                   onManageFriends={() => setShowConnectionsModal(true)}
+                  onRefreshFriends={refreshFriends}
                 />
               </TabsContent>
             </Tabs>
