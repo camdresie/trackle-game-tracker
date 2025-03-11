@@ -50,8 +50,14 @@ export interface Achievement {
 
 export interface Connection {
   id: string;
-  playerId: string;
-  friendId: string;
+  user_id?: string;
+  friend_id?: string;
+  playerId?: string; // For legacy/mock data compatibility
+  friendId?: string; // For legacy/mock data compatibility
   status: 'pending' | 'accepted';
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string; // Supabase format
+  updated_at?: string; // Supabase format
+  friend?: any; // For Supabase join data
+  user?: any; // For Supabase join data
 }

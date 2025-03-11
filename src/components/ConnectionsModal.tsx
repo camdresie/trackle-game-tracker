@@ -53,9 +53,9 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       // Format friend data to match Player interface
       return connections.map(conn => {
         // If currentPlayer is the user, return the friend data, otherwise return the user data
-        // Fix: Correctly access the first element of friend or user arrays
-        const isUser = conn.user_id === currentPlayerId;
-        const profile = isUser ? conn.friend[0] : conn.user[0];
+        // First determine if the current user is the initiator of the connection
+        const isUserInitiator = conn.user_id === currentPlayerId;
+        const profile = isUserInitiator ? conn.friend[0] : conn.user[0];
         
         return {
           id: profile.id,
