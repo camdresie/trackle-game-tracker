@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -110,20 +111,18 @@ const Leaderboard = () => {
               ...stat,
               profiles: {
                 id: stat.user_id,
-                username: `Player ${stat.user_id.substring(0, 4)}`, // Generate a placeholder name
+                username: `Player ${stat.user_id.substring(0, 4)}`, // Fallback only if absolutely necessary
                 full_name: null,
                 avatar_url: null
               }
             };
           }
           
-          // Fix for the user display issue - use actual username, not placeholder
+          // Fix: Always use the actual profile data and never override with placeholder
           return {
             ...stat,
             profiles: {
-              ...stat.profiles[0],
-              // Ensure username is never null or undefined, but use the actual username if available
-              username: stat.profiles[0].username || `Player ${stat.user_id.substring(0, 4)}`
+              ...stat.profiles[0]
             }
           };
         });
@@ -225,12 +224,10 @@ const Leaderboard = () => {
       const profile = stat.profiles;
       
       if (!userStatsMap.has(userId)) {
-        // Use the actual username from the profile, not a placeholder
-        const displayUsername = profile.username;
-        
+        // Fix: Always use the profile username directly with no fallback to ensure proper display
         userStatsMap.set(userId, {
           player_id: userId,
-          username: displayUsername,
+          username: profile.username,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           total_score: 0,
