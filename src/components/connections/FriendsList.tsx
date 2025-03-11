@@ -19,17 +19,17 @@ import { useState } from 'react';
 interface FriendsListProps {
   friends: Player[];
   isLoading: boolean;
-  onRemoveFriend?: (friendId: string) => void;
+  onRemoveFriend?: (connectionId: string) => void;
   isRemoving?: boolean;
 }
 
 const FriendsList = ({ friends, isLoading, onRemoveFriend, isRemoving }: FriendsListProps) => {
-  const [friendToRemove, setFriendToRemove] = useState<string | null>(null);
+  const [connectionToRemove, setConnectionToRemove] = useState<string | null>(null);
   
   const handleRemoveFriend = () => {
-    if (friendToRemove && onRemoveFriend) {
-      onRemoveFriend(friendToRemove);
-      setFriendToRemove(null);
+    if (connectionToRemove && onRemoveFriend) {
+      onRemoveFriend(connectionToRemove);
+      setConnectionToRemove(null);
     }
   };
 
@@ -58,11 +58,11 @@ const FriendsList = ({ friends, isLoading, onRemoveFriend, isRemoving }: Friends
                   </Avatar>
                   <span>{friend.name}</span>
                 </div>
-                {onRemoveFriend && (
+                {onRemoveFriend && friend.connectionId && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setFriendToRemove(friend.id)}
+                    onClick={() => setConnectionToRemove(friend.connectionId)}
                     disabled={isRemoving}
                     className="text-destructive hover:text-destructive"
                   >
@@ -82,7 +82,7 @@ const FriendsList = ({ friends, isLoading, onRemoveFriend, isRemoving }: Friends
       </ScrollArea>
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={!!friendToRemove} onOpenChange={(open) => !open && setFriendToRemove(null)}>
+      <AlertDialog open={!!connectionToRemove} onOpenChange={(open) => !open && setConnectionToRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Friend</AlertDialogTitle>

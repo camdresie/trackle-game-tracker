@@ -81,6 +81,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
           id: formattedProfile.id,
           name: formattedProfile.username || formattedProfile.full_name || 'Unknown User',
           avatar: formattedProfile.avatar_url,
+          connectionId: conn.id, // Add connectionId to the friend object to facilitate removal
         } as Player;
       }).filter(Boolean) as Player[];
     },
@@ -270,30 +271,10 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
 
   // Remove friend mutation
   const removeFriendMutation = useMutation({
-    mutationFn: async (friendId: string) => {
-      console.log('Removing friend with ID:', friendId);
+    mutationFn: async (connectionId: string) => {
+      console.log('Removing connection with ID:', connectionId);
       
-      // Find the connection record to delete
-      const { data: existingConn, error: findError } = await supabase
-        .from('connections')
-        .select('id')
-        .or(`and(user_id.eq.${currentPlayerId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentPlayerId})`)
-        .eq('status', 'accepted')
-        .limit(1);
-      
-      if (findError) {
-        console.error('Error finding connection to remove:', findError);
-        throw new Error('Failed to find connection');
-      }
-      
-      if (!existingConn || existingConn.length === 0) {
-        throw new Error('Connection not found');
-      }
-      
-      const connectionId = existingConn[0].id;
-      console.log('Found connection ID to remove:', connectionId);
-      
-      // Delete the connection
+      // Delete the connection directly using the connectionId
       const { error: deleteError } = await supabase
         .from('connections')
         .delete()
@@ -304,7 +285,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         throw new Error('Failed to remove connection');
       }
       
-      return friendId;
+      return connectionId;
     },
     onSuccess: () => {
       toast.success('Friend removed successfully');
@@ -328,8 +309,9 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     declineRequestMutation.mutate(connectionId);
   };
   
-  const handleRemoveFriend = (friendId: string) => {
-    removeFriendMutation.mutate(friendId);
+  const handleRemoveFriend = (connectionId: string) => {
+    console.log('Handling remove friend for connection ID:', connectionId);
+    removeFriendMutation.mutate(connectionId);
   };
 
   return (
