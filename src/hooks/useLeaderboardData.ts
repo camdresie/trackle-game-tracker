@@ -290,10 +290,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
       );
     }
     
-    // Filter by friends only
+    // Filter by friends only - modified to include current user
     if (showFriendsOnly && friendsData) {
       filteredPlayers = filteredPlayers.filter(player => 
-        friendsData.includes(player.player_id)
+        // Include both friends and the current user
+        player.player_id === userId || friendsData.includes(player.player_id)
       );
     }
     
