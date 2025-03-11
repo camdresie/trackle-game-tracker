@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import FriendRequestsList from './connections/FriendRequestsList';
 import SearchResultsList from './connections/SearchResultsList';
 import FriendsList from './connections/FriendsList';
+import { useGameData } from '@/hooks/useGameData';
 
 interface ConnectionsModalProps {
   open: boolean;
@@ -289,7 +290,9 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     },
     onSuccess: () => {
       toast.success('Friend removed successfully');
+      // Explicitly invalidate and refetch the friends query to update the UI
       queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
+      queryClient.refetchQueries({ queryKey: ['friends', currentPlayerId] });
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : 'Failed to remove friend');

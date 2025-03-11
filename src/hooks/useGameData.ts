@@ -18,6 +18,7 @@ interface GameDataResult {
   bestScore: number | null;
   friends: Player[];
   friendScores: { [key: string]: Score[] };
+  refreshFriends: () => Promise<void>; // New method to manually refresh friends
 }
 
 export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
@@ -28,6 +29,98 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
   const [friends, setFriends] = useState<Player[]>([]);
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [bestScore, setBestScore] = useState<number | null>(null);
+
+  // Function to fetch friends data
+  const fetchFriends = async () => {
+    if (!user) return;
+    
+    try {
+      // Get user connections (friends)
+      const { data: connections, error: connectionsError } = await supabase
+        .from('connections')
+        .select('*')
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+        
+      if (connectionsError) {
+        console.error('Error fetching connections:', connectionsError);
+        return;
+      }
+      
+      // Get friend IDs from connections
+      const friendIds = connections
+        .map(conn => conn.user_id === user.id ? conn.friend_id : conn.user_id)
+        .filter(Boolean);
+        
+      if (friendIds.length > 0) {
+        // Get friend profiles
+        const { data: friendProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', friendIds);
+          
+        if (profilesError) {
+          console.error('Error fetching friend profiles:', profilesError);
+        } else {
+          const friendData = friendProfiles.map(profile => ({
+            id: profile.id,
+            name: profile.full_name || profile.username || 'Unknown User',
+            avatar: profile.avatar_url,
+            // Include connection ID for each friend for easier removal
+            connectionId: connections.find(c => 
+              (c.user_id === profile.id && c.friend_id === user.id) || 
+              (c.friend_id === profile.id && c.user_id === user.id)
+            )?.id
+          }));
+          setFriends(friendData);
+        }
+      } else {
+        // No friends, set empty array
+        setFriends([]);
+      }
+    } catch (error) {
+      console.error('Error fetching friends:', error);
+    }
+  };
+
+  // Function to refresh friends data (can be called after mutation)
+  const refreshFriends = async () => {
+    await fetchFriends();
+    
+    // If we have a gameId, also refresh friend scores
+    if (gameId && friends.length > 0) {
+      await fetchFriendScores();
+    }
+  };
+  
+  // Function to fetch friend scores
+  const fetchFriendScores = async () => {
+    if (!gameId || !user || friends.length === 0) return;
+    
+    const friendScoresData: { [key: string]: Score[] } = {};
+    
+    for (const friend of friends) {
+      if (!friend.id) continue;
+      
+      try {
+        const scores = await getGameScores(gameId, friend.id);
+        // Map scores to ensure all required fields
+        friendScoresData[friend.id] = scores.map(score => ({
+          id: score.id,
+          gameId: score.gameId,
+          playerId: score.playerId,
+          value: score.value,
+          date: score.date,
+          notes: score.notes,
+          createdAt: new Date().toISOString() // Always set a default createdAt
+        }));
+      } catch (error) {
+        console.error(`Error fetching scores for friend ${friend.id}:`, error);
+      }
+    }
+    
+    setFriendScores(friendScoresData);
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -67,65 +160,12 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           }
         }
         
-        // Get user connections (friends)
-        const { data: connections, error: connectionsError } = await supabase
-          .from('connections')
-          .select('*')
-          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-          .eq('status', 'accepted');
-          
-        if (connectionsError) {
-          console.error('Error fetching connections:', connectionsError);
-          return;
-        }
+        // Fetch friends data
+        await fetchFriends();
         
-        // Get friend IDs from connections
-        const friendIds = connections
-          .map(conn => conn.user_id === user.id ? conn.friend_id : conn.user_id)
-          .filter(Boolean);
-          
-        if (friendIds.length > 0) {
-          // Get friend profiles
-          const { data: friendProfiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', friendIds);
-            
-          if (profilesError) {
-            console.error('Error fetching friend profiles:', profilesError);
-          } else {
-            const friendData = friendProfiles.map(profile => ({
-              id: profile.id,
-              name: profile.full_name || profile.username || 'Unknown User',
-              avatar: profile.avatar_url
-            }));
-            setFriends(friendData);
-            
-            // Fetch scores for each friend
-            const friendScoresData: { [key: string]: Score[] } = {};
-            
-            for (const friendId of friendIds) {
-              if (!friendId) continue;
-              
-              try {
-                const scores = await getGameScores(gameId, friendId);
-                // Map scores to ensure all required fields
-                friendScoresData[friendId] = scores.map(score => ({
-                  id: score.id,
-                  gameId: score.gameId,
-                  playerId: score.playerId,
-                  value: score.value,
-                  date: score.date,
-                  notes: score.notes,
-                  createdAt: new Date().toISOString() // Always set a default createdAt
-                }));
-              } catch (error) {
-                console.error(`Error fetching scores for friend ${friendId}:`, error);
-              }
-            }
-            
-            setFriendScores(friendScoresData);
-          }
+        // Fetch friend scores if we have friends
+        if (friends.length > 0) {
+          await fetchFriendScores();
         }
       } catch (error) {
         console.error('Error fetching game data:', error);
@@ -144,6 +184,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
     isLoading,
     bestScore,
     friends,
-    friendScores
+    friendScores,
+    refreshFriends
   };
 };
