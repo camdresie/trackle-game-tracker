@@ -18,10 +18,12 @@ import {
   Sparkles,
   Flag,
   Grid,
-  GemIcon as Gem
+  GemIcon as Gem,
+  Users
 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import GameCard from '@/components/GameCard';
+import ConnectionsModal from '@/components/ConnectionsModal';
 import { Game, Score, Achievement, GameStats } from '@/utils/types';
 import { 
   games, 
@@ -39,6 +41,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
+  const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   
   // Use React Query to fetch game stats
   const { 
@@ -195,15 +198,27 @@ const Profile = () => {
                 </p>
               </div>
               
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-1"
-                onClick={() => navigate('/settings')}
-              >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => setShowConnectionsModal(true)}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Friends</span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => navigate('/settings')}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -401,6 +416,14 @@ const Profile = () => {
           </Tabs>
         </div>
       </main>
+      
+      {showConnectionsModal && user && (
+        <ConnectionsModal
+          open={showConnectionsModal}
+          onOpenChange={setShowConnectionsModal}
+          currentPlayerId={user.id}
+        />
+      )}
     </div>
   );
 };

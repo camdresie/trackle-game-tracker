@@ -1,19 +1,20 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
+import { Users } from 'lucide-react';
 
 interface FriendScoresListProps {
   game: Game;
   friends: Player[];
   friendScores: { [key: string]: Score[] };
+  onManageFriends?: () => void;
 }
 
-const FriendScoresList = ({ game, friends, friendScores }: FriendScoresListProps) => {
+const FriendScoresList = ({ game, friends, friendScores, onManageFriends }: FriendScoresListProps) => {
   return (
     <>
       <h2 className="text-xl font-semibold mb-4">Friend Scores</h2>
@@ -69,9 +70,14 @@ const FriendScoresList = ({ game, friends, friendScores }: FriendScoresListProps
       ) : (
         <div className="text-center py-12 text-muted-foreground">
           <p className="mb-2">You haven't added any friends yet</p>
-          <Link to="/">
-            <Button variant="outline">Add Friends</Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            onClick={onManageFriends}
+            className="gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Add Friends
+          </Button>
         </div>
       )}
     </>

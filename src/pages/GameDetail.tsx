@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,14 +9,17 @@ import GameDetailHeader from '@/components/game/GameDetailHeader';
 import GameStatCards from '@/components/game/GameStatCards';
 import ScoreList from '@/components/game/ScoreList';
 import FriendScoresList from '@/components/game/FriendScoresList';
+import ConnectionsModal from '@/components/ConnectionsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameData } from '@/hooks/useGameData';
 import { Score } from '@/utils/types';
+import { Users } from 'lucide-react';
 
 const GameDetail = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
   const [showAddScore, setShowAddScore] = useState(false);
+  const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('scores');
   
   const {
@@ -112,10 +114,24 @@ const GameDetail = () => {
               onValueChange={setActiveTab}
               className="glass-card rounded-xl p-4"
             >
-              <TabsList className="mb-4">
-                <TabsTrigger value="scores">Your Scores</TabsTrigger>
-                <TabsTrigger value="friends">Friend Scores</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="scores">Your Scores</TabsTrigger>
+                  <TabsTrigger value="friends">Friend Scores</TabsTrigger>
+                </TabsList>
+                
+                {activeTab === 'friends' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => setShowConnectionsModal(true)}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Manage Friends</span>
+                  </Button>
+                )}
+              </div>
               
               <TabsContent value="scores" className="space-y-4">
                 <ScoreList 
@@ -131,6 +147,7 @@ const GameDetail = () => {
                   game={game}
                   friends={friends}
                   friendScores={friendScores}
+                  onManageFriends={() => setShowConnectionsModal(true)}
                 />
               </TabsContent>
             </Tabs>
@@ -144,6 +161,14 @@ const GameDetail = () => {
           onOpenChange={setShowAddScore}
           game={game}
           onAddScore={handleAddScore}
+        />
+      )}
+      
+      {showConnectionsModal && user && (
+        <ConnectionsModal
+          open={showConnectionsModal}
+          onOpenChange={setShowConnectionsModal}
+          currentPlayerId={user.id}
         />
       )}
     </div>
