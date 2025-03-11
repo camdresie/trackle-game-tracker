@@ -1,4 +1,3 @@
-
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -99,24 +98,24 @@ export const sampleScores = generateSampleScores();
 export const connections: Connection[] = [
   {
     id: 'conn1',
-    playerId: 'p1',
-    friendId: 'p2',
+    user_id: 'p1',
+    friend_id: 'p2',
     status: 'accepted',
-    createdAt: new Date().toISOString()
+    created_at: new Date().toISOString()
   },
   {
     id: 'conn2',
-    playerId: 'p1',
-    friendId: 'p3',
+    user_id: 'p1',
+    friend_id: 'p3',
     status: 'accepted',
-    createdAt: new Date().toISOString()
+    created_at: new Date().toISOString()
   },
   {
     id: 'conn3',
-    playerId: 'p2',
-    friendId: 'p3',
+    user_id: 'p2',
+    friend_id: 'p3',
     status: 'pending',
-    createdAt: new Date().toISOString()
+    created_at: new Date().toISOString()
   }
 ];
 
@@ -183,7 +182,7 @@ export const calculatePlayerRanking = (playerId: string): number => {
 // Get player connections
 export const getPlayerConnections = (playerId: string): Connection[] => {
   return connections.filter(conn => 
-    (conn.playerId === playerId || conn.friendId === playerId) && 
+    (conn.user_id === playerId || conn.friend_id === playerId) && 
     conn.status === 'accepted'
   );
 };
@@ -192,7 +191,7 @@ export const getPlayerConnections = (playerId: string): Connection[] => {
 export const getPlayerFriends = (playerId: string): Player[] => {
   const playerConnections = getPlayerConnections(playerId);
   const friendIds = playerConnections.map(conn => 
-    conn.playerId === playerId ? conn.friendId : conn.playerId
+    conn.user_id === playerId ? conn.friend_id : conn.user_id
   );
   
   return players.filter(player => friendIds.includes(player.id));
@@ -214,10 +213,10 @@ export const addGame = (game: Omit<Game, 'id'>): Game => {
 export const addConnection = (playerId: string, friendId: string): Connection => {
   const newConnection = {
     id: `conn-${Date.now()}`,
-    playerId,
-    friendId,
+    user_id: playerId,
+    friend_id: friendId,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    created_at: new Date().toISOString()
   } as Connection;
   
   connections.push(newConnection);
