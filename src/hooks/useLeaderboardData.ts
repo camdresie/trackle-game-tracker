@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -70,7 +71,9 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         if (timeFilter === 'today') {
           // For today filter, we need to join with scores to filter by date
-          query = query.filter('updated_at', 'gte', new Date().toISOString().split('T')[0]);
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+          query = query.filter('updated_at', 'gte', today);
         }
         
         const { data, error } = await query;
@@ -135,7 +138,9 @@ export const useLeaderboardData = (userId: string | undefined) => {
         }
         
         if (timeFilter === 'today') {
-          query = query.eq('date', new Date().toISOString().split('T')[0]);
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+          query = query.eq('date', today);
         }
         
         const { data, error } = await query;
@@ -220,24 +225,26 @@ export const useLeaderboardData = (userId: string | undefined) => {
       
       const userStats = userStatsMap.get(userId);
       
-      // Handle game-specific scoring
-      let scoreValue = stat.best_score;
-      
-      // For all games, use the actual score value without negation
-      userStats.total_score += scoreValue;
+      // Add to total_score using the score value directly (not average_score)
+      userStats.total_score += stat.best_score;
       userStats.best_score = Math.max(userStats.best_score, Math.abs(stat.best_score));
       userStats.total_games += stat.total_plays;
-      userStats.average_score = userStats.total_games > 0 
-        ? userStats.total_score / userStats.total_games 
-        : 0;
       
-      // Find the latest play date for this user
+      // Update latest play date
       const userScores = scoresData.filter(score => score.user_id === userId);
       if (userScores.length > 0) {
         const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
         if (!userStats.latest_play || new Date(userStats.latest_play) < latestScoreDate) {
           userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
         }
+      }
+    });
+    
+    // Calculate averages after all data is collected
+    userStatsMap.forEach(userStats => {
+      // Calculate average based on total_score and total_games
+      if (userStats.total_games > 0) {
+        userStats.average_score = userStats.total_score / userStats.total_games;
       }
     });
     

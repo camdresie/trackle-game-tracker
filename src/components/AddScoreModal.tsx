@@ -43,8 +43,10 @@ const AddScoreModal = ({
   // Set the date to today's date when the modal opens
   useEffect(() => {
     if (open) {
-      // Use current date in YYYY-MM-DD format
-      const today = new Date().toISOString().split('T')[0];
+      // Get today's date in local timezone
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+      console.log('Setting date picker to today:', today);
       setDate(today);
     }
   }, [open]);
@@ -199,7 +201,7 @@ const AddScoreModal = ({
             <Slider
               min={game.id === 'wordle' ? 1 : 0}
               max={game.maxScore}
-              step={1} // Changed from 20 to 1 for all games including Tightrope
+              step={1}
               value={[value]}
               onValueChange={(val) => setValue(val[0])}
               className="py-2"

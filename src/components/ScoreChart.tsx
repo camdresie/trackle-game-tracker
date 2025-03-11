@@ -22,6 +22,7 @@ interface ScoreChartProps {
 
 interface ChartDataPoint {
   date: string;
+  originalDate: string;
   value: number;
 }
 
@@ -47,12 +48,23 @@ const ScoreChart = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    // Transform to chart data
-    const data = sortedScores.map(score => ({
-      date: new Date(score.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: score.value
-    }));
+    // Group scores by date to ensure we only have one point per day
+    const scoresByDate = sortedScores.reduce<Record<string, ChartDataPoint>>((acc, score) => {
+      const date = score.date;
+      if (!acc[date]) {
+        acc[date] = {
+          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          originalDate: date,
+          value: score.value
+        };
+      }
+      return acc;
+    }, {});
     
+    // Convert back to array
+    const data = Object.values(scoresByDate);
+    
+    console.log('Chart data prepared:', data);
     setChartData(data);
   }, [scores]);
   
@@ -104,6 +116,16 @@ const ScoreChart = ({
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
             }}
             labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
+            formatter={(value: number, name: string, props: any) => {
+              return [value, 'Score'];
+            }}
+            labelFormatter={(label: string, payload: any[]) => {
+              if (payload.length > 0) {
+                const item = payload[0].payload;
+                return item.originalDate;
+              }
+              return label;
+            }}
           />
           {!simplified && (
             <Legend 
