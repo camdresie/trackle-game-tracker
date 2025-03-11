@@ -21,11 +21,14 @@ const Leaderboard = () => {
     setSearchTerm,
     showFriendsOnly,
     setShowFriendsOnly,
+    selectedFriendIds,
+    setSelectedFriendIds,
     timeFilter,
     setTimeFilter,
     filteredAndSortedPlayers,
     isLoading,
-    scoresData
+    scoresData,
+    friends
   } = useLeaderboardData(user?.id);
 
   // Set default game to the first game in the list if none is selected
@@ -55,12 +58,15 @@ const Leaderboard = () => {
             setSearchTerm={setSearchTerm}
             showFriendsOnly={showFriendsOnly}
             setShowFriendsOnly={setShowFriendsOnly}
+            selectedFriendIds={selectedFriendIds}
+            setSelectedFriendIds={setSelectedFriendIds}
             timeFilter={timeFilter}
             setTimeFilter={setTimeFilter}
             selectedGame={selectedGame}
             setSelectedGame={setSelectedGame}
             sortBy={sortBy}
             setSortBy={setSortBy}
+            friendsList={friends}
           />
           
           <LeaderboardPlayersList

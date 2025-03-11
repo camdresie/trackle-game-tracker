@@ -1,9 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { games } from '@/utils/gameData';
+import { useFriendsList } from '@/hooks/useFriendsList';
+import { Player } from '@/utils/types';
 
 interface GameStatsWithProfile {
   id: string;
@@ -43,7 +44,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
   const [sortBy, setSortBy] = useState<string>('totalScore');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState<'all' | 'today'>('all');
+  
+  // Get friends list
+  const { friends } = useFriendsList();
   
   // Fetch game stats data
   const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
@@ -151,45 +156,8 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId && !!selectedGame
   });
   
-  // Fetch friends data if needed
-  const { data: friendsData, isLoading: isLoadingFriends } = useQuery({
-    queryKey: ['friends'],
-    queryFn: async () => {
-      try {
-        console.log('Fetching friends data...');
-        
-        // Since the RPC function might not be working, let's use a direct query
-        const { data, error } = await supabase
-          .from('connections')
-          .select(`
-            id,
-            user_id,
-            friend_id,
-            status,
-            friend:friend_id(id, username, full_name, avatar_url),
-            user:user_id(id, username, full_name, avatar_url)
-          `)
-          .eq('status', 'accepted')
-          .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
-          
-        if (error) throw error;
-        
-        // Extract the friend IDs
-        const friendIds = data.map(connection => {
-          // If the user is the user_id, return the friend_id, otherwise return the user_id
-          return connection.user_id === userId ? connection.friend_id : connection.user_id;
-        });
-        
-        console.log('Friends data:', friendIds);
-        return friendIds;
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-        toast.error('Failed to load friends data');
-        return [];
-      }
-    },
-    enabled: !!userId && showFriendsOnly
-  });
+  // Get the friend IDs from the friends list
+  const friendIds = friends.map(friend => friend.id);
   
   // Transform game stats data into leaderboard players format
   const getLeaderboardData = () => {
@@ -290,12 +258,19 @@ export const useLeaderboardData = (userId: string | undefined) => {
       );
     }
     
-    // Filter by friends only - modified to include current user
-    if (showFriendsOnly && friendsData) {
-      filteredPlayers = filteredPlayers.filter(player => 
-        // Include both friends and the current user
-        player.player_id === userId || friendsData.includes(player.player_id)
-      );
+    // Filter by friends
+    if (showFriendsOnly) {
+      if (selectedFriendIds.length > 0) {
+        // Filter by selected specific friends and include current user
+        filteredPlayers = filteredPlayers.filter(player => 
+          player.player_id === userId || selectedFriendIds.includes(player.player_id)
+        );
+      } else {
+        // Filter by all friends and include current user
+        filteredPlayers = filteredPlayers.filter(player => 
+          player.player_id === userId || friendIds.includes(player.player_id)
+        );
+      }
     }
     
     // Sort players based on time filter and sort by criteria
@@ -344,7 +319,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
   };
 
   const filteredAndSortedPlayers = getFilteredAndSortedPlayers();
-  const isLoading = isLoadingGameStats || isLoadingScores || (showFriendsOnly && isLoadingFriends);
+  const isLoading = isLoadingGameStats || isLoadingScores;
   
   return {
     selectedGame,
@@ -355,10 +330,13 @@ export const useLeaderboardData = (userId: string | undefined) => {
     setSearchTerm,
     showFriendsOnly,
     setShowFriendsOnly,
+    selectedFriendIds,
+    setSelectedFriendIds,
     timeFilter,
     setTimeFilter,
     filteredAndSortedPlayers,
     isLoading,
-    scoresData
+    scoresData,
+    friends
   };
 };
