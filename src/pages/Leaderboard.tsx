@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -101,7 +100,17 @@ const Leaderboard = () => {
         if (error) throw error;
         
         console.log('Game stats data:', data);
-        return data as GameStatsWithProfile[];
+        
+        // Transform the data to fix the profiles structure
+        return data.map((stat: any) => ({
+          ...stat,
+          profiles: stat.profiles[0] || { 
+            id: '',
+            username: 'Unknown',
+            full_name: null,
+            avatar_url: null
+          }
+        })) as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
