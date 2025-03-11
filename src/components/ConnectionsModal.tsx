@@ -12,11 +12,11 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Player, Connection } from '@/utils/types';
-import { getPlayerFriends, players, connections, addConnection } from '@/utils/gameData';
-import { toast } from 'sonner';
 import { Plus, Check, X, UserPlus, Users } from 'lucide-react';
+import { Player, Connection } from '@/utils/types';
+import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 interface ConnectionsModalProps {
   open: boolean;
@@ -26,81 +26,217 @@ interface ConnectionsModalProps {
 
 const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsModalProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [friends, setFriends] = useState<Player[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<Connection[]>([]);
+  const queryClient = useQueryClient();
   
-  useEffect(() => {
-    if (open) {
-      // Get current friends
-      setFriends(getPlayerFriends(currentPlayerId));
+  // Fetch current user's friends
+  const { data: friends = [], isLoading: loadingFriends } = useQuery({
+    queryKey: ['friends', currentPlayerId],
+    queryFn: async () => {
+      // Query for accepted connections where current user is either the user_id or friend_id
+      const { data: connections, error } = await supabase
+        .from('connections')
+        .select(`
+          id,
+          status,
+          friend:friend_id(id, username, full_name, avatar_url),
+          user:user_id(id, username, full_name, avatar_url)
+        `)
+        .eq('status', 'accepted')
+        .or(`user_id.eq.${currentPlayerId},friend_id.eq.${currentPlayerId}`);
       
-      // Get pending connection requests
-      setPendingRequests(
-        connections.filter(conn => 
-          conn.friendId === currentPlayerId && 
-          conn.status === 'pending'
-        )
-      );
+      if (error) {
+        console.error('Error fetching friends:', error);
+        toast.error('Failed to load friends');
+        return [];
+      }
+      
+      // Format friend data to match Player interface
+      return connections.map(conn => {
+        // If currentPlayer is the user, return the friend data, otherwise return the user data
+        const profile = conn.user_id === currentPlayerId ? conn.friend : conn.user;
+        return {
+          id: profile.id,
+          name: profile.username || profile.full_name || 'Unknown User',
+          avatar: profile.avatar_url,
+        } as Player;
+      });
+    },
+    enabled: open && !!currentPlayerId
+  });
+  
+  // Fetch pending friend requests
+  const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
+    queryKey: ['pending-requests', currentPlayerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('connections')
+        .select(`
+          id, 
+          user:user_id(id, username, full_name, avatar_url)
+        `)
+        .eq('friend_id', currentPlayerId)
+        .eq('status', 'pending');
+      
+      if (error) {
+        console.error('Error fetching pending requests:', error);
+        toast.error('Failed to load friend requests');
+        return [];
+      }
+      
+      return data.map(request => ({
+        id: request.id,
+        playerId: request.user.id,
+        friendId: currentPlayerId,
+        status: 'pending',
+        playerName: request.user.username || request.user.full_name || 'Unknown User',
+        playerAvatar: request.user.avatar_url
+      }));
+    },
+    enabled: open && !!currentPlayerId
+  });
+  
+  // Search for users
+  const { data: searchResults = [], isLoading: loadingSearch } = useQuery({
+    queryKey: ['search-users', searchQuery, currentPlayerId],
+    queryFn: async () => {
+      if (!searchQuery) return [];
+      
+      // Query profiles that match the search term
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .ilike('username', `%${searchQuery}%`)
+        .neq('id', currentPlayerId) // Exclude current user
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching users:', error);
+        toast.error('Failed to search users');
+        return [];
+      }
+      
+      // Format search results to match Player interface
+      return data.map(profile => ({
+        id: profile.id,
+        name: profile.username || profile.full_name || 'Unknown User',
+        avatar: profile.avatar_url
+      })) as Player[];
+    },
+    enabled: !!searchQuery && searchQuery.length >= 2 && open
+  });
+  
+  // Filter out users that are already friends
+  const filteredSearchResults = searchResults.filter(user => 
+    !friends.some(friend => friend.id === user.id)
+  );
+  
+  // Add friend mutation
+  const addFriendMutation = useMutation({
+    mutationFn: async (friendId: string) => {
+      // Check if connection already exists
+      const { data: existingConn, error: checkError } = await supabase
+        .from('connections')
+        .select('id, status')
+        .or(`and(user_id.eq.${currentPlayerId},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentPlayerId})`)
+        .limit(1);
+      
+      if (checkError) {
+        console.error('Error checking existing connection:', checkError);
+        throw new Error('Failed to check connection status');
+      }
+      
+      if (existingConn && existingConn.length > 0) {
+        throw new Error('Connection already exists with this user');
+      }
+      
+      // Add new connection
+      const { error } = await supabase
+        .from('connections')
+        .insert({
+          user_id: currentPlayerId,
+          friend_id: friendId,
+          status: 'pending'
+        });
+      
+      if (error) {
+        console.error('Error adding friend:', error);
+        throw new Error('Failed to send friend request');
+      }
+      
+      return friendId;
+    },
+    onSuccess: () => {
+      toast.success('Friend request sent');
+      setSearchQuery('');
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to send friend request');
     }
-  }, [open, currentPlayerId]);
+  });
   
-  const handleAddFriend = (friendId: string) => {
-    // Check if connection already exists
-    const connectionExists = connections.some(
-      conn => 
-        (conn.playerId === currentPlayerId && conn.friendId === friendId) ||
-        (conn.playerId === friendId && conn.friendId === currentPlayerId)
-    );
-    
-    if (connectionExists) {
-      toast.error('Connection already exists with this player');
-      return;
-    }
-    
-    // Add new connection
-    addConnection(currentPlayerId, friendId);
-    toast.success('Friend request sent');
-    setSearchQuery('');
-  };
-  
-  const handleAcceptRequest = (connectionId: string) => {
-    // Find and update the connection status
-    const connectionIndex = connections.findIndex(conn => conn.id === connectionId);
-    if (connectionIndex !== -1) {
-      connections[connectionIndex].status = 'accepted';
+  // Accept friend request mutation
+  const acceptRequestMutation = useMutation({
+    mutationFn: async (connectionId: string) => {
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'accepted' })
+        .eq('id', connectionId);
       
-      // Update the friends list
-      setFriends(getPlayerFriends(currentPlayerId));
+      if (error) {
+        console.error('Error accepting friend request:', error);
+        throw new Error('Failed to accept friend request');
+      }
       
-      // Remove from pending requests
-      setPendingRequests(prev => prev.filter(req => req.id !== connectionId));
-      
+      return connectionId;
+    },
+    onSuccess: () => {
       toast.success('Friend request accepted');
+      queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to accept friend request');
     }
-  };
+  });
   
-  const handleDeclineRequest = (connectionId: string) => {
-    // Remove the connection
-    const connectionIndex = connections.findIndex(conn => conn.id === connectionId);
-    if (connectionIndex !== -1) {
-      connections.splice(connectionIndex, 1);
+  // Decline friend request mutation
+  const declineRequestMutation = useMutation({
+    mutationFn: async (connectionId: string) => {
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('id', connectionId);
       
-      // Remove from pending requests
-      setPendingRequests(prev => prev.filter(req => req.id !== connectionId));
+      if (error) {
+        console.error('Error declining friend request:', error);
+        throw new Error('Failed to decline friend request');
+      }
       
+      return connectionId;
+    },
+    onSuccess: () => {
       toast.success('Friend request declined');
+      queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to decline friend request');
     }
+  });
+  
+  // Handle adding a friend
+  const handleAddFriend = (friendId: string) => {
+    addFriendMutation.mutate(friendId);
   };
   
-  // Filter players based on search query
-  const filteredPlayers = searchQuery
-    ? players.filter(
-        player => 
-          player.id !== currentPlayerId &&
-          player.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !friends.some(friend => friend.id === player.id)
-      )
-    : [];
+  // Handle accepting a friend request
+  const handleAcceptRequest = (connectionId: string) => {
+    acceptRequestMutation.mutate(connectionId);
+  };
+  
+  // Handle declining a friend request
+  const handleDeclineRequest = (connectionId: string) => {
+    declineRequestMutation.mutate(connectionId);
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,36 +270,47 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
           </div>
           
           {/* Search results */}
-          {searchQuery && filteredPlayers.length > 0 && (
+          {searchQuery && searchQuery.length >= 2 && (
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                 <UserPlus className="h-4 w-4" />
                 Search Results
               </h3>
               <ScrollArea className="h-32">
-                <div className="space-y-2">
-                  {filteredPlayers.map(player => (
-                    <div 
-                      key={player.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={player.avatar} />
-                          <AvatarFallback>{player.name.substring(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <span>{player.name}</span>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleAddFriend(player.id)}
+                {loadingSearch ? (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    Searching...
+                  </div>
+                ) : filteredSearchResults.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredSearchResults.map(player => (
+                      <div 
+                        key={player.id}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
                       >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={player.avatar || undefined} />
+                            <AvatarFallback>{player.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <span>{player.name}</span>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleAddFriend(player.id)}
+                          disabled={addFriendMutation.isPending}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground">
+                    No users found matching '{searchQuery}'
+                  </div>
+                )}
               </ScrollArea>
               <Separator className="my-4" />
             </div>
@@ -175,43 +322,42 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
               <h3 className="text-sm font-medium mb-2">Friend Requests</h3>
               <ScrollArea className="h-32">
                 <div className="space-y-2">
-                  {pendingRequests.map(request => {
-                    const requestFrom = players.find(p => p.id === request.playerId);
-                    if (!requestFrom) return null;
-                    
-                    return (
-                      <div 
-                        key={request.id}
-                        className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={requestFrom.avatar} />
-                            <AvatarFallback>{requestFrom.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <span>{requestFrom.name}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-green-500"
-                            onClick={() => handleAcceptRequest(request.id)}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-rose-500"
-                            onClick={() => handleDeclineRequest(request.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {pendingRequests.map(request => (
+                    <div 
+                      key={request.id}
+                      className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={request.playerAvatar || undefined} />
+                          <AvatarFallback>
+                            {request.playerName?.substring(0, 2).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{request.playerName}</span>
                       </div>
-                    );
-                  })}
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="text-green-500"
+                          onClick={() => handleAcceptRequest(request.id)}
+                          disabled={acceptRequestMutation.isPending}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="text-rose-500"
+                          onClick={() => handleDeclineRequest(request.id)}
+                          disabled={declineRequestMutation.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
               <Separator className="my-4" />
@@ -224,7 +370,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
             Your Friends
           </h3>
           <ScrollArea className="flex-1">
-            {friends.length > 0 ? (
+            {loadingFriends ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading friends...
+              </div>
+            ) : friends.length > 0 ? (
               <div className="space-y-2">
                 {friends.map(friend => (
                   <div 
@@ -232,8 +382,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-secondary/50"
                   >
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={friend.avatar} />
-                      <AvatarFallback>{friend.name.substring(0, 2)}</AvatarFallback>
+                      <AvatarImage src={friend.avatar || undefined} />
+                      <AvatarFallback>{friend.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     <span>{friend.name}</span>
                   </div>
