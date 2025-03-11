@@ -312,10 +312,10 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   });
 
-  // Improved remove friend mutation with enhanced error handling and debugging
+  // Completely refactored remove friend mutation to ensure connection is properly deleted
   const removeFriendMutation = useMutation({
     mutationFn: async (connectionId: string) => {
-      console.log('Starting connection removal process for ID:', connectionId);
+      console.log('Starting enhanced connection removal process for ID:', connectionId);
       
       if (!connectionId) {
         console.error('Invalid connection ID provided');
@@ -323,7 +323,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       }
       
       try {
-        // First, verify the connection exists
+        // First, fetch the connection to confirm it exists
         const { data: connectionCheck, error: checkError } = await supabase
           .from('connections')
           .select('id, user_id, friend_id')
@@ -337,24 +337,33 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
         
         console.log('Connection verified before deletion:', connectionCheck);
         
-        // Perform a direct DELETE with count option to confirm rows were affected
-        const { count, error: deleteError } = await supabase
-          .from('connections')
-          .delete({ count: 'exact' })  // Use count option to get affected rows
-          .eq('id', connectionId);
+        // Perform DELETE with direct SQL for more reliable deletion
+        const { error: deleteError } = await supabase.rpc('force_delete_connection', {
+          connection_id: connectionId
+        });
         
         if (deleteError) {
           console.error('Error during connection deletion:', deleteError);
           throw new Error('Database error during connection removal');
         }
         
-        // Check if any rows were actually deleted
-        if (count === 0) {
-          console.error('No rows were deleted from the database');
-          throw new Error('Connection could not be removed (no rows affected)');
+        // Verify the connection was actually deleted
+        const { data: verifyDeletion, error: verifyError } = await supabase
+          .from('connections')
+          .select('id')
+          .eq('id', connectionId);
+        
+        if (verifyError) {
+          console.error('Error verifying deletion:', verifyError);
+          throw new Error('Could not verify connection deletion');
         }
         
-        console.log(`Successfully deleted ${count} connection(s) with ID:`, connectionId);
+        if (verifyDeletion && verifyDeletion.length > 0) {
+          console.error('Connection still exists after deletion attempt');
+          throw new Error('Connection could not be removed');
+        }
+        
+        console.log('Connection successfully deleted:', connectionId);
         return connectionId;
       } catch (error) {
         console.error('Error in removeFriendMutation:', error);
@@ -364,31 +373,29 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     onSuccess: (connectionId) => {
       console.log('Friend removal confirmed successful for connection ID:', connectionId);
       
+      // Show success toast
       toast({
         title: "Success",
         description: "Friend removed successfully"
       });
       
-      // Immediately remove the friend from the displayed list for UI responsiveness
-      setDisplayedFriends(prev => {
-        const newList = prev.filter(friend => friend.connectionId !== connectionId);
-        console.log('Updated displayed friends list after removal:', newList);
-        return newList;
-      });
+      // Immediately remove from the UI
+      setDisplayedFriends(prev => prev.filter(friend => friend.connectionId !== connectionId));
       
-      // Clear all cache related to friends to ensure fresh data on next fetch
+      // Completely remove from cache
       queryClient.removeQueries({ queryKey: ['friends'] });
+      queryClient.removeQueries({ queryKey: ['game-friends'] });
       
-      // Force a refetch of friends data after a delay to ensure DB changes propagate
+      // Force fresh data fetch with delay to allow DB changes to propagate
       setTimeout(() => {
-        console.log('Triggering friends data refetch after connection removal');
+        console.log('Triggering complete data refresh after connection removal');
         refetchFriends();
         
-        // Call the external callback if provided
+        // Call external callback
         if (onFriendRemoved) {
           onFriendRemoved();
         }
-      }, 500);
+      }, 1000);
     },
     onError: (error) => {
       console.error('Error during friend removal:', error);
@@ -396,7 +403,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       toast({
         title: "Error",
         description: error instanceof Error 
-          ? `The connection was not removed: ${error.message}` 
+          ? `Failed to remove connection: ${error.message}` 
           : 'Failed to remove friend due to an unknown error',
         variant: "destructive"
       });
@@ -441,20 +448,22 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   }, [friends]);
 
-  // Force refetch when modal opens with improved error handling
+  // Enhanced modal open effect with more thorough cache clearing and data refresh
   useEffect(() => {
     if (open && currentPlayerId) {
       console.log('Modal opened, preparing to fetch fresh friends data');
       
-      // Clear displayed friends immediately when modal opens
+      // Reset displayed friends immediately
       setDisplayedFriends([]);
       
-      // Aggressively clear cache for all relevant queries
-      queryClient.removeQueries({ queryKey: ['friends', currentPlayerId] });
+      // Aggressively clear all related cache
+      queryClient.removeQueries({ queryKey: ['friends'] });
+      queryClient.removeQueries({ queryKey: ['game-friends'] });
+      queryClient.removeQueries({ queryKey: ['pending-requests'] });
       
-      // Wait a moment before refetching to ensure we get fresh data
+      // Wait to ensure DB consistency before fetching fresh data
       setTimeout(async () => {
-        console.log('Executing delayed friends data fetch');
+        console.log('Executing delayed friends data fetch with fresh cache');
         try {
           await refetchFriends();
           console.log('Friends data refetch completed successfully');
@@ -466,7 +475,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
             variant: "destructive"
           });
         }
-      }, 300);
+      }, 500);
     }
   }, [open, currentPlayerId, queryClient, refetchFriends]);
 

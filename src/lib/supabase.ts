@@ -27,3 +27,24 @@ export const signInWithApple = async () => {
   });
   return { error };
 };
+
+// Enhanced connection management functions
+export const deleteConnection = async (connectionId: string) => {
+  try {
+    console.log('Calling force_delete_connection RPC with ID:', connectionId);
+    const { data, error } = await supabase.rpc('force_delete_connection', {
+      connection_id: connectionId
+    });
+    
+    if (error) {
+      console.error('Error in force_delete_connection RPC:', error);
+      throw error;
+    }
+    
+    console.log('RPC result:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception in deleteConnection function:', error);
+    return { success: false, error };
+  }
+};

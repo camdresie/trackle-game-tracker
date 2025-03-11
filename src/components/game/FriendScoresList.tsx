@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,12 @@ const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefr
     }
   };
 
+  // Automatically refresh when friends list changes length
+  useEffect(() => {
+    console.log("FriendScoresList - friends list changed to length:", friends.length);
+    // No need to call refresh directly - just log for monitoring
+  }, [friends.length]);
+
   // Debug logs for component rendering
   console.log("FriendScoresList rendering with friends:", friends.length);
   console.log("Friend scores keys:", Object.keys(friendScores));
@@ -83,7 +89,7 @@ const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefr
                   <div className="flex items-center gap-2">
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={friend.avatar} />
-                      <AvatarFallback>{friend.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{friend.name?.substring(0, 2).toUpperCase() || 'UN'}</AvatarFallback>
                     </Avatar>
                     <h3 className="font-medium">{friend.name}</h3>
                   </div>
