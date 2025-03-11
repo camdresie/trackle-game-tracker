@@ -105,7 +105,7 @@ const Index = () => {
         <section className="mb-8 animate-slide-up">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Game Tracker</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">Trackle</h1>
               <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
             </div>
             

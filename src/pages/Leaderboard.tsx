@@ -103,13 +103,15 @@ const Leaderboard = () => {
         console.log('Game stats data:', data);
         
         // Transform the data to fix the profiles structure
-        return data.map((stat: any) => {
+        const transformedData = data.map((stat: any) => {
+          // Check if profiles exists and is an array with at least one element
           if (!stat.profiles || !Array.isArray(stat.profiles) || stat.profiles.length === 0) {
+            // Fetch the profile directly using a separate query
             return {
               ...stat,
               profiles: {
                 id: stat.user_id,
-                username: 'Unknown',
+                username: `Player ${stat.user_id.substring(0, 4)}`, // Generate a placeholder name
                 full_name: null,
                 avatar_url: null
               }
@@ -118,9 +120,16 @@ const Leaderboard = () => {
           
           return {
             ...stat,
-            profiles: stat.profiles[0]
+            profiles: {
+              ...stat.profiles[0],
+              // Ensure username is never null or undefined
+              username: stat.profiles[0].username || `Player ${stat.user_id.substring(0, 4)}`
+            }
           };
-        }) as GameStatsWithProfile[];
+        });
+        
+        console.log('Transformed data:', transformedData);
+        return transformedData as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
@@ -216,9 +225,12 @@ const Leaderboard = () => {
       const profile = stat.profiles;
       
       if (!userStatsMap.has(userId)) {
+        // Use a default username that's more user-friendly than "Unknown"
+        const displayUsername = profile.username || `Player ${userId.substring(0, 4)}`;
+        
         userStatsMap.set(userId, {
           player_id: userId,
-          username: profile.username || 'Unknown',
+          username: displayUsername,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           total_score: 0,
