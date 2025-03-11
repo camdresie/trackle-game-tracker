@@ -54,6 +54,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       return connections.map(conn => {
         // If currentPlayer is the user, return the friend data, otherwise return the user data
         const profile = conn.user_id === currentPlayerId ? conn.friend : conn.user;
+        
+        // Fix: Access profile as an object, not array
         return {
           id: profile.id,
           name: profile.username || profile.full_name || 'Unknown User',
