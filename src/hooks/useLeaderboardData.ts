@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -229,26 +228,26 @@ export const useLeaderboardData = (userId: string | undefined) => {
       
       const userStats = userStatsMap.get(userId);
       
-      // Add to total_score using the score value directly (not average_score)
-      userStats.total_score += stat.best_score;
-      userStats.best_score = Math.max(userStats.best_score, Math.abs(stat.best_score));
-      userStats.total_games += stat.total_plays;
+      // Use the database total_plays and best_score directly
+      userStats.total_games = stat.total_plays;
+      userStats.best_score = stat.best_score;
       
-      // Update latest play date
+      // Get all scores for this user for the selected game to calculate the true average
       const userScores = scoresData.filter(score => score.user_id === userId);
+      
       if (userScores.length > 0) {
+        // Calculate the sum of all scores
+        const sumOfScores = userScores.reduce((sum, score) => sum + score.value, 0);
+        
+        // Calculate the average as sum divided by count
+        userStats.average_score = sumOfScores / userScores.length;
+        
+        // Also update total_score to be the sum of all scores
+        userStats.total_score = sumOfScores;
+        
+        // Update latest play date
         const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
-        if (!userStats.latest_play || new Date(userStats.latest_play) < latestScoreDate) {
-          userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
-        }
-      }
-    });
-    
-    // Calculate averages after all data is collected
-    userStatsMap.forEach(userStats => {
-      // Calculate average based on total_score and total_games
-      if (userStats.total_games > 0) {
-        userStats.average_score = userStats.total_score / userStats.total_games;
+        userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
       }
     });
     

@@ -60,7 +60,8 @@ const LeaderboardPlayersList = ({
             stats={{
               bestScore: player.best_score,
               totalScore: player.total_score,
-              averageScore: player.average_score,
+              // Display rounded average score to one decimal place
+              averageScore: Math.round(player.average_score * 10) / 10,
               totalGames: player.total_games
             }}
             className="hover:scale-[1.01] transition-transform duration-200"
