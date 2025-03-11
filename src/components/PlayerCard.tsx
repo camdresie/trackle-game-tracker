@@ -9,14 +9,20 @@ interface PlayerCardProps {
   rank: number;
   scores: Score[];
   game?: Game;
+  stats?: {
+    bestScore: number;
+    totalScore: number;
+    averageScore: number;
+    totalGames: number;
+  };
   className?: string;
 }
 
-const PlayerCard = ({ player, rank, scores, game, className }: PlayerCardProps) => {
-  // Calculate statistics
-  const totalGames = scores.length;
-  const bestScore = game ? calculateBestScore(scores, game) : 0;
-  const averageScore = calculateAverageScore(scores);
+const PlayerCard = ({ player, rank, scores, game, stats, className }: PlayerCardProps) => {
+  // Calculate statistics or use provided stats
+  const totalGames = stats?.totalGames || scores.length;
+  const bestScore = stats?.bestScore || (game ? calculateBestScore(scores, game) : 0);
+  const averageScore = stats?.averageScore || calculateAverageScore(scores);
   
   // Get latest play date
   const latestDate = scores.length > 0 

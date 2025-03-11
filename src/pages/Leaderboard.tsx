@@ -37,6 +37,25 @@ interface LeaderboardPlayer {
   latest_play: string;
 }
 
+interface GameStatsWithProfile {
+  id: string;
+  user_id: string;
+  game_id: string;
+  best_score: number;
+  average_score: number;
+  total_plays: number;
+  current_streak: number;
+  longest_streak: number;
+  created_at: string;
+  updated_at: string;
+  profiles: {
+    id: string;
+    username: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
 const Leaderboard = () => {
   const { user } = useAuth();
   const [selectedGame, setSelectedGame] = useState<string>('all');
@@ -45,7 +64,7 @@ const Leaderboard = () => {
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   const [timeFilter, setTimeFilter] = useState<'all' | 'today'>('all');
   
-  // Fetch game stats data - this is what we'll use instead of the missing leaderboard function
+  // Fetch game stats data
   const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
     queryKey: ['game_stats', selectedGame, timeFilter],
     queryFn: async () => {
@@ -82,7 +101,7 @@ const Leaderboard = () => {
         if (error) throw error;
         
         console.log('Game stats data:', data);
-        return data;
+        return data as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
