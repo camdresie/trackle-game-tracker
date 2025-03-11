@@ -85,7 +85,6 @@ const LeaderboardFilters = ({
               <SelectValue placeholder="Game" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Games</SelectItem>
               {games.map(game => (
                 <SelectItem key={game.id} value={game.id}>
                   {game.name}

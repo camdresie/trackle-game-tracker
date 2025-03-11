@@ -3,7 +3,6 @@ import React from 'react';
 import { Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
-import { Game } from '@/utils/types';
 import { games } from '@/utils/gameData';
 
 interface LeaderboardPlayer {
@@ -36,6 +35,9 @@ const LeaderboardPlayersList = ({
   timeFilter,
   setTimeFilter
 }: LeaderboardPlayersListProps) => {
+  // Find the selected game object
+  const gameObj = games.find(game => game.id === selectedGame);
+  
   return (
     <div className="space-y-4">
       {isLoading ? (
@@ -54,7 +56,7 @@ const LeaderboardPlayersList = ({
             }}
             rank={index + 1}
             scores={[]} // We'll load these on demand
-            game={selectedGame !== 'all' ? games.find(game => game.id === selectedGame) : undefined}
+            game={gameObj}
             stats={{
               bestScore: player.best_score,
               totalScore: player.total_score,

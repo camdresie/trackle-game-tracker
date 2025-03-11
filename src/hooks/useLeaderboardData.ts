@@ -1,8 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { games } from '@/utils/gameData';
 
 interface GameStatsWithProfile {
   id: string;
@@ -36,7 +37,8 @@ interface LeaderboardPlayer {
 }
 
 export const useLeaderboardData = (userId: string | undefined) => {
-  const [selectedGame, setSelectedGame] = useState<string>('all');
+  // Initialize with the first game instead of 'all'
+  const [selectedGame, setSelectedGame] = useState<string>(games.length > 0 ? games[0].id : '');
   const [sortBy, setSortBy] = useState<string>('totalScore');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
@@ -65,7 +67,8 @@ export const useLeaderboardData = (userId: string | undefined) => {
             profiles(id, username, full_name, avatar_url)
           `);
         
-        if (selectedGame !== 'all') {
+        // Always filter by selected game since we don't have 'all' anymore
+        if (selectedGame) {
           query = query.eq('game_id', selectedGame);
         }
         
@@ -119,7 +122,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         return [];
       }
     },
-    enabled: !!userId
+    enabled: !!userId && !!selectedGame
   });
   
   // Fetch scores data to properly display latest scores and calculate today's data
@@ -133,7 +136,8 @@ export const useLeaderboardData = (userId: string | undefined) => {
           .from('scores')
           .select('*');
         
-        if (selectedGame !== 'all') {
+        // Always filter by selected game since we don't have 'all' anymore
+        if (selectedGame) {
           query = query.eq('game_id', selectedGame);
         }
         
@@ -155,7 +159,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         return [];
       }
     },
-    enabled: !!userId
+    enabled: !!userId && !!selectedGame
   });
   
   // Fetch friends data if needed

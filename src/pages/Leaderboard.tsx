@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboardData } from '@/hooks/useLeaderboardData';
@@ -7,6 +7,7 @@ import LeaderboardHeader from '@/components/leaderboard/LeaderboardHeader';
 import LeaderboardFilters from '@/components/leaderboard/LeaderboardFilters';
 import LeaderboardPlayersList from '@/components/leaderboard/LeaderboardPlayersList';
 import LeaderboardStats from '@/components/leaderboard/LeaderboardStats';
+import { games } from '@/utils/gameData';
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -26,6 +27,17 @@ const Leaderboard = () => {
     isLoading,
     scoresData
   } = useLeaderboardData(user?.id);
+
+  // Set default game to the first game in the list if none is selected
+  useEffect(() => {
+    if (selectedGame === 'all' && games.length > 0) {
+      setSelectedGame(games[0].id);
+    }
+  }, [selectedGame, setSelectedGame]);
+  
+  // Find the current game object to display the game name in the header
+  const currentGame = games.find(game => game.id === selectedGame);
+  const gameTitle = currentGame ? currentGame.name : 'Game';
   
   return (
     <div className="min-h-screen bg-background">
@@ -33,8 +45,8 @@ const Leaderboard = () => {
       
       <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <LeaderboardHeader 
-          title="Leaderboard" 
-          subtitle="See who's winning across all games"
+          title={`${gameTitle} Leaderboard`}
+          subtitle="See who's winning at this game"
         />
         
         <div className="glass-card rounded-xl p-5 mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
