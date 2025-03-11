@@ -53,9 +53,10 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       // Format friend data to match Player interface
       return connections.map(conn => {
         // If currentPlayer is the user, return the friend data, otherwise return the user data
-        const profile = conn.user_id === currentPlayerId ? conn.friend : conn.user;
+        // Fix: Correctly access the first element of friend or user arrays
+        const isUser = conn.user_id === currentPlayerId;
+        const profile = isUser ? conn.friend[0] : conn.user[0];
         
-        // Fix: Access profile as an object, not array
         return {
           id: profile.id,
           name: profile.username || profile.full_name || 'Unknown User',
@@ -87,11 +88,11 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
       
       return data.map(request => ({
         id: request.id,
-        playerId: request.user.id,
+        playerId: request.user[0].id,
         friendId: currentPlayerId,
         status: 'pending',
-        playerName: request.user.username || request.user.full_name || 'Unknown User',
-        playerAvatar: request.user.avatar_url
+        playerName: request.user[0].username || request.user[0].full_name || 'Unknown User',
+        playerAvatar: request.user[0].avatar_url
       }));
     },
     enabled: open && !!currentPlayerId
