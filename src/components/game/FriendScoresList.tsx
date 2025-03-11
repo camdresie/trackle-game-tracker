@@ -1,0 +1,81 @@
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import ScoreChart from '@/components/ScoreChart';
+import { Game, Player, Score } from '@/utils/types';
+
+interface FriendScoresListProps {
+  game: Game;
+  friends: Player[];
+  friendScores: { [key: string]: Score[] };
+}
+
+const FriendScoresList = ({ game, friends, friendScores }: FriendScoresListProps) => {
+  return (
+    <>
+      <h2 className="text-xl font-semibold mb-4">Friend Scores</h2>
+      
+      {friends.length > 0 ? (
+        <div className="space-y-6">
+          {friends.map(friend => {
+            const friendScoresList = friendScores[friend.id] || [];
+            const bestFriendScore = friendScoresList.length > 0
+              ? game.id === 'wordle'
+                ? Math.min(...friendScoresList.map(s => s.value))
+                : Math.max(...friendScoresList.map(s => s.value))
+              : null;
+            
+            return (
+              <div key={friend.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={friend.avatar} />
+                      <AvatarFallback>{friend.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <h3 className="font-medium">{friend.name}</h3>
+                  </div>
+                  
+                  <div className="text-sm">
+                    Best: <span className="font-semibold">
+                      {bestFriendScore !== null ? bestFriendScore : '-'}
+                    </span>
+                  </div>
+                </div>
+                
+                {friendScoresList.length > 0 ? (
+                  <div className="h-32">
+                    <ScoreChart 
+                      scores={friendScoresList.slice(-20)} 
+                      gameId={game.id}
+                      color={game.color.replace('bg-', '')}
+                      simplified={true}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-muted-foreground bg-secondary/20 rounded-lg">
+                    No scores recorded
+                  </div>
+                )}
+                
+                <Separator />
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="mb-2">You haven't added any friends yet</p>
+          <Link to="/">
+            <Button variant="outline">Add Friends</Button>
+          </Link>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default FriendScoresList;
