@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -118,11 +117,12 @@ const Leaderboard = () => {
             };
           }
           
+          // Fix for the user display issue - use actual username, not placeholder
           return {
             ...stat,
             profiles: {
               ...stat.profiles[0],
-              // Ensure username is never null or undefined
+              // Ensure username is never null or undefined, but use the actual username if available
               username: stat.profiles[0].username || `Player ${stat.user_id.substring(0, 4)}`
             }
           };
@@ -225,8 +225,8 @@ const Leaderboard = () => {
       const profile = stat.profiles;
       
       if (!userStatsMap.has(userId)) {
-        // Use a default username that's more user-friendly than "Unknown"
-        const displayUsername = profile.username || `Player ${userId.substring(0, 4)}`;
+        // Use the actual username from the profile, not a placeholder
+        const displayUsername = profile.username;
         
         userStatsMap.set(userId, {
           player_id: userId,
