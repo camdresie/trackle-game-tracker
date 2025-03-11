@@ -33,6 +33,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
   const { data: friends = [], isLoading: loadingFriends } = useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
+      console.log('Fetching friends for user:', currentPlayerId);
+      
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`
@@ -52,28 +54,41 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
         return [];
       }
 
+      console.log('Raw friends data:', JSON.stringify(connections, null, 2));
+      
       return connections.map(conn => {
+        // Determine which profile to use based on the relationship direction
         const isUserInitiator = conn.user_id === currentPlayerId;
-        const profileData = isUserInitiator ? 
-          (conn.friend && Array.isArray(conn.friend) && conn.friend.length > 0 ? conn.friend[0] : null) : 
-          (conn.user && Array.isArray(conn.user) && conn.user.length > 0 ? conn.user[0] : null);
-
-        if (!profileData) {
+        const profileData = isUserInitiator ? conn.friend : conn.user;
+        
+        // Log profile data for debugging
+        console.log('Connection:', conn.id, 'Profile data:', profileData);
+        
+        // Handle profile data safely regardless of whether it's an array or object
+        let formattedProfile = null;
+        
+        if (Array.isArray(profileData) && profileData.length > 0) {
+          formattedProfile = profileData[0];
+        } else if (profileData && typeof profileData === 'object') {
+          formattedProfile = profileData;
+        }
+        
+        if (!formattedProfile) {
           console.error('Profile data missing in connection:', conn);
           return null;
         }
-
+        
         return {
-          id: profileData.id,
-          name: profileData.username || profileData.full_name || 'Unknown User',
-          avatar: profileData.avatar_url,
+          id: formattedProfile.id,
+          name: formattedProfile.username || formattedProfile.full_name || 'Unknown User',
+          avatar: formattedProfile.avatar_url,
         } as Player;
       }).filter(Boolean) as Player[];
     },
     enabled: open && !!currentPlayerId
   });
 
-  // Fetch pending friend requests - FIXED: Accessing nested user data properly
+  // Fetch pending friend requests
   const { data: pendingRequests = [], isLoading: loadingRequests } = useQuery({
     queryKey: ['pending-requests', currentPlayerId],
     queryFn: async () => {
