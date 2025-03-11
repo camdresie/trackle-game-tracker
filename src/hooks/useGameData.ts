@@ -35,6 +35,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
     if (!user) return;
     
     try {
+      console.log('Fetching friends data...');
       // Get user connections (friends)
       const { data: connections, error: connectionsError } = await supabase
         .from('connections')
@@ -72,10 +73,12 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
               (c.friend_id === profile.id && c.user_id === user.id)
             )?.id
           }));
+          console.log('Setting friends:', friendData);
           setFriends(friendData);
         }
       } else {
         // No friends, set empty array
+        console.log('No friends found, setting empty array');
         setFriends([]);
       }
     } catch (error) {
@@ -85,6 +88,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
 
   // Function to refresh friends data (can be called after mutation)
   const refreshFriends = async () => {
+    console.log('Refreshing friends data...');
     await fetchFriends();
     
     // If we have a gameId, also refresh friend scores
@@ -112,7 +116,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: new Date().toISOString() // Always set a default createdAt
+          createdAt: score.created_at || new Date().toISOString() // Handle both created_at and createdAt
         }));
       } catch (error) {
         console.error(`Error fetching scores for friend ${friend.id}:`, error);
@@ -147,7 +151,7 @@ export const useGameData = ({ gameId }: UseGameDataProps): GameDataResult => {
           value: score.value,
           date: score.date,
           notes: score.notes,
-          createdAt: new Date().toISOString() // Always set a default createdAt
+          createdAt: score.created_at || new Date().toISOString() // Handle both created_at and createdAt
         }));
         setScores(mappedScores);
         

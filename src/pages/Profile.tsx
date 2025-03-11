@@ -42,6 +42,7 @@ const Profile = () => {
   const { profile, user } = useAuth();
   const [activeAchievementCategory, setActiveAchievementCategory] = useState('all');
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
+  const { refreshFriends } = useGameData({ gameId: undefined }); // Add this to get access to refreshFriends
   
   // Use React Query to fetch game stats
   const { 
@@ -146,6 +147,13 @@ const Profile = () => {
     );
   }
   
+  // Handle friend removal from the connections modal
+  const handleFriendRemoved = async () => {
+    console.log("Friend removed, refreshing friends data...");
+    await refreshFriends();
+  };
+
+  // Update the ConnectionsModal component to pass the handleFriendRemoved callback
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -423,6 +431,7 @@ const Profile = () => {
           open={showConnectionsModal}
           onOpenChange={setShowConnectionsModal}
           currentPlayerId={user.id}
+          onFriendRemoved={handleFriendRemoved} // Add this prop
         />
       )}
     </div>

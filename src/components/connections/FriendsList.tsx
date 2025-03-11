@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface FriendsListProps {
   friends: Player[];
@@ -25,10 +25,23 @@ interface FriendsListProps {
 
 const FriendsList = ({ friends, isLoading, onRemoveFriend, isRemoving }: FriendsListProps) => {
   const [connectionToRemove, setConnectionToRemove] = useState<string | null>(null);
+  const [displayedFriends, setDisplayedFriends] = useState<Player[]>([]);
+  
+  // Update displayed friends when friends prop changes
+  useEffect(() => {
+    console.log("Friends list received new friends data:", friends);
+    setDisplayedFriends(friends);
+  }, [friends]);
   
   const handleRemoveFriend = () => {
     if (connectionToRemove && onRemoveFriend) {
       onRemoveFriend(connectionToRemove);
+      
+      // Remove from local state immediately for UI responsiveness
+      setDisplayedFriends(prevFriends => 
+        prevFriends.filter(friend => friend.connectionId !== connectionToRemove)
+      );
+      
       setConnectionToRemove(null);
     }
   };
@@ -44,9 +57,9 @@ const FriendsList = ({ friends, isLoading, onRemoveFriend, isRemoving }: Friends
           <div className="text-center py-8 text-muted-foreground">
             Loading friends...
           </div>
-        ) : friends.length > 0 ? (
+        ) : displayedFriends.length > 0 ? (
           <div className="space-y-2">
-            {friends.map(friend => (
+            {displayedFriends.map(friend => (
               <div 
                 key={friend.id}
                 className="flex items-center justify-between p-2 rounded-md hover:bg-secondary/50"

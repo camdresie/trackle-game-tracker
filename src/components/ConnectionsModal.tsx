@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -23,14 +24,15 @@ interface ConnectionsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentPlayerId: string;
+  onFriendRemoved?: () => void; // Added this callback for external components
 }
 
-const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsModalProps) => {
+const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved }: ConnectionsModalProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   
   // Fetch current user's friends
-  const { data: friends = [], isLoading: loadingFriends } = useQuery({
+  const { data: friends = [], isLoading: loadingFriends, refetch: refetchFriends } = useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
       console.log('Fetching friends for user:', currentPlayerId);
@@ -290,9 +292,17 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId }: ConnectionsMo
     },
     onSuccess: () => {
       toast.success('Friend removed successfully');
-      // Explicitly invalidate and refetch the friends query to update the UI
+      
+      // Force an immediate refetch of the friends data to update UI
+      refetchFriends();
+      
+      // Also invalidate the friends cache to ensure fresh data on next query
       queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
-      queryClient.refetchQueries({ queryKey: ['friends', currentPlayerId] });
+      
+      // Call the external callback if provided
+      if (onFriendRemoved) {
+        onFriendRemoved();
+      }
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : 'Failed to remove friend');
