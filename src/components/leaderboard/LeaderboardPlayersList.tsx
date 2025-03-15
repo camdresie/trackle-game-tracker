@@ -59,12 +59,19 @@ const LeaderboardPlayersList = ({
             scores={[]} // We'll load these on demand
             game={gameObj}
             stats={{
-              bestScore: timeFilter === 'today' ? player.today_score || 0 : player.best_score,
+              // Format scores appropriately for Wordle (display "-" for 0 scores)
+              bestScore: selectedGame === 'wordle' && 
+                        (timeFilter === 'today' ? player.today_score === 0 : player.best_score === 0) 
+                        ? 0 : // Pass 0 for the component to display as '-'
+                        (timeFilter === 'today' ? player.today_score || 0 : player.best_score),
               totalScore: timeFilter === 'today' ? player.today_score || 0 : player.total_score,
               // Display rounded average score to one decimal place or today's score if filtering by today
-              averageScore: timeFilter === 'today' 
-                ? player.today_score || 0 
-                : Math.round(player.average_score * 10) / 10,
+              averageScore: selectedGame === 'wordle' && 
+                          (timeFilter === 'today' ? player.today_score === 0 : player.average_score === 0)
+                          ? 0 : // Pass 0 for the component to display as '-'
+                          (timeFilter === 'today' 
+                            ? player.today_score || 0 
+                            : Math.round(player.average_score * 10) / 10),
               totalGames: timeFilter === 'today' ? (player.today_score ? 1 : 0) : player.total_games
             }}
             className="hover:scale-[1.01] transition-transform duration-200"

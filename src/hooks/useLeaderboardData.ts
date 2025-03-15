@@ -280,12 +280,22 @@ export const useLeaderboardData = (userId: string | undefined) => {
         // Sort by today's score
         if (a.today_score !== null && b.today_score !== null) {
           if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+            // Specifically for Wordle, handle '-' scores as 0 (no score) and put them at the bottom
+            if (selectedGame === 'wordle') {
+              // If either score is 0, it means no score (represented as '-' in UI)
+              if (a.today_score === 0 && b.today_score === 0) return 0;
+              if (a.today_score === 0) return 1; // Push a to the bottom
+              if (b.today_score === 0) return -1; // Push b to the bottom
+            }
             return a.today_score - b.today_score; // Lower is better
           } else {
             return b.today_score - a.today_score; // Higher is better
           }
         }
-        // Handle cases where one player might not have a today's score
+        // If one player has a score and the other doesn't, prioritize the one with a score
+        if (a.today_score !== null && b.today_score === null) return -1;
+        if (a.today_score === null && b.today_score !== null) return 1;
+        // If neither player has a score, keep original order
         return 0;
       } else {
         // Sort by the selected criteria for all-time
@@ -295,6 +305,15 @@ export const useLeaderboardData = (userId: string | undefined) => {
           case 'bestScore':
             // For games where lower is better (like Wordle), reverse the sorting
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
+              if (selectedGame === 'wordle') {
+                // If either score is 0, it means no score (represented as '-' in UI)
+                if (a.best_score === 0 && b.best_score === 0) return 0;
+                if (a.best_score === 0) return 1; // Push a to the bottom
+                if (b.best_score === 0) return -1; // Push b to the bottom
+                // Otherwise, lower is better for Wordle
+                return a.best_score - b.best_score;
+              }
               return a.best_score - b.best_score;
             }
             return b.best_score - a.best_score;
@@ -303,12 +322,30 @@ export const useLeaderboardData = (userId: string | undefined) => {
           case 'averageScore':
             // For games where lower is better (like Wordle), reverse the sorting
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
+              if (selectedGame === 'wordle') {
+                // If either score is 0, it means no score (represented as '-' in UI)
+                if (a.average_score === 0 && b.average_score === 0) return 0;
+                if (a.average_score === 0) return 1; // Push a to the bottom
+                if (b.average_score === 0) return -1; // Push b to the bottom
+                // Otherwise, lower is better for Wordle
+                return a.average_score - b.average_score;
+              }
               return a.average_score - b.average_score;
             }
             return b.average_score - a.average_score;
           default:
             // For games where lower is better (like Wordle), sort by best score (lowest first)
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
+              if (selectedGame === 'wordle') {
+                // If either score is 0, it means no score (represented as '-' in UI)
+                if (a.best_score === 0 && b.best_score === 0) return 0;
+                if (a.best_score === 0) return 1; // Push a to the bottom
+                if (b.best_score === 0) return -1; // Push b to the bottom
+                // Otherwise, lower is better for Wordle
+                return a.best_score - b.best_score;
+              }
               return a.best_score - b.best_score;
             }
             // For other games, sort by total score (highest first)

@@ -44,6 +44,14 @@ const PlayerCard = ({
     2: 'text-slate-400',
     3: 'text-amber-700'
   };
+
+  // Format score display for Wordle (display "-" for 0 scores)
+  const formatScore = (score: number) => {
+    if (game?.id === 'wordle' && score === 0) {
+      return '-';
+    }
+    return score;
+  };
   
   return (
     <div className={cn(
@@ -89,7 +97,7 @@ const PlayerCard = ({
           // Show only today's score when in "Today Only" mode
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Score</p>
-            <p className="font-semibold">{bestScore || '-'}</p>
+            <p className="font-semibold">{formatScore(bestScore)}</p>
           </div>
         ) : (
           // Show all stats in "All Time" mode
@@ -101,12 +109,12 @@ const PlayerCard = ({
             
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Best</p>
-              <p className="font-semibold">{bestScore || '-'}</p>
+              <p className="font-semibold">{formatScore(bestScore)}</p>
             </div>
             
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Average</p>
-              <p className="font-semibold">{averageScore || '-'}</p>
+              <p className="font-semibold">{formatScore(averageScore)}</p>
             </div>
           </>
         )}
