@@ -28,8 +28,9 @@ const LeaderboardStats = ({
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
-  // Count scores based on raw scores data and the current filter
-  const scoresCount = rawScoresData.filter(score => {
+  // Calculate total games played for the selected game (and time filter if applicable)
+  // This counts all games played by all users, not just the logged-in user
+  const gamesPlayedCount = rawScoresData.filter(score => {
     // First filter by selected game
     const gameMatch = selectedGame === 'all' || score.game_id === selectedGame;
     
@@ -42,9 +43,9 @@ const LeaderboardStats = ({
     return gameMatch;
   }).length;
   
-  // Adding debug logs to understand the discrepancy
+  // Debug logging
   console.log(`LeaderboardStats - Total raw scores: ${rawScoresData.length}`);
-  console.log(`LeaderboardStats - ${selectedGame} scores count: ${scoresCount}`);
+  console.log(`LeaderboardStats - ${selectedGame} games played count: ${gamesPlayedCount}`);
   console.log(`LeaderboardStats - Time filter: ${timeFilter}`);
   
   // Find the top player based on appropriate score
@@ -114,7 +115,7 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              scoresCount
+              gamesPlayedCount
             )}
           </div>
           <div className="text-sm text-muted-foreground">

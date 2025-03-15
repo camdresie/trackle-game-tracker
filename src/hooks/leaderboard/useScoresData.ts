@@ -13,7 +13,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
       try {
         console.log('Fetching ALL scores data for game:', selectedGame);
         
-        // Changed the query to not try to join with profiles directly
+        // Query to get all scores without filtering by user ID
         let query = supabase
           .from('scores')
           .select('*');
@@ -41,6 +41,19 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           }, {} as Record<string, number>);
           
           console.log('Scores count per game:', gameCounts);
+          
+          // Group scores by date to help debug time filtering
+          const scoresByDate = data.reduce((acc, score) => {
+            const date = score.date;
+            if (!acc[date]) {
+              acc[date] = {};
+            }
+            const gameId = score.game_id;
+            acc[date][gameId] = (acc[date][gameId] || 0) + 1;
+            return acc;
+          }, {} as Record<string, Record<string, number>>);
+          
+          console.log('Scores by date and game:', scoresByDate);
         }
         
         // Now separately get profiles for the user IDs
