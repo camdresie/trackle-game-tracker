@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -167,6 +166,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
     // Get today's date for filtering
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    console.log('Today\'s date for filtering:', today);
     
     // Initialize user stats map with profiles
     const userStatsMap = new Map();
@@ -229,9 +229,20 @@ export const useLeaderboardData = (userId: string | undefined) => {
     // Filter scores for the current game
     const gameScores = scoresData.filter(score => score.game_id === selectedGame);
     
-    // Log the filtered scores to debug
-    console.log(`Game ${selectedGame} - Filtered scores:`, gameScores);
-    console.log('Today\'s date:', today);
+    // Get today's scores
+    const todayScores = gameScores.filter(score => {
+      const scoreDate = typeof score.date === 'string' 
+        ? score.date 
+        : new Date(score.date).toISOString().split('T')[0];
+      const isToday = scoreDate === today;
+      if (isToday) {
+        console.log(`Found today's score for user ${score.user_id}: ${score.value} on ${scoreDate}`);
+      }
+      return isToday;
+    });
+    
+    console.log(`Game ${selectedGame} - All scores:`, gameScores);
+    console.log(`Game ${selectedGame} - Today's scores:`, todayScores);
     
     // Process scores to calculate statistics for ALL users
     for (const score of gameScores) {
@@ -290,7 +301,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         : new Date(score.date).toISOString().split('T')[0];
       
       if (scoreDate === today) {
-        console.log(`Found today's score for user ${userId}: ${score.value}`);
+        console.log(`Setting today's score for user ${userId}: ${score.value}`);
         userStats.today_score = score.value;
       }
       
@@ -301,24 +312,33 @@ export const useLeaderboardData = (userId: string | undefined) => {
       }
     }
     
-    // For users who don't have a score today but we're filtering by today, 
-    // set their today_score to 0 (which will display as "-")
+    // For today's filter, explicitly set today_score for all users who have a score today
     if (timeFilter === 'today') {
-      for (const [userId, stats] of userStatsMap.entries()) {
-        if (stats.today_score === null) {
-          stats.today_score = 0; // Will display as "-" in the UI
+      for (const score of todayScores) {
+        const userId = score.user_id;
+        if (userStatsMap.has(userId)) {
+          const userStats = userStatsMap.get(userId);
+          userStats.today_score = score.value;
+          console.log(`Explicitly set today's score for ${userStats.username}: ${score.value}`);
         }
       }
     }
     
     // Convert map to array
-    return Array.from(userStatsMap.values());
+    const leaderboardPlayers = Array.from(userStatsMap.values());
+    
+    // Debug output after processing
+    console.log('Processed leaderboard players:', leaderboardPlayers);
+    return leaderboardPlayers;
   };
   
   // Filter and sort players
   const getFilteredAndSortedPlayers = () => {
     const leaderboardData = getLeaderboardData();
     if (!leaderboardData.length) return [];
+    
+    console.log('Filtering and sorting players, time filter:', timeFilter);
+    console.log('Input data:', leaderboardData);
     
     let filteredPlayers = [...leaderboardData];
     
@@ -347,30 +367,28 @@ export const useLeaderboardData = (userId: string | undefined) => {
     
     // For today's filter, only show players who actually have a score today
     if (timeFilter === 'today') {
-      filteredPlayers = filteredPlayers.filter(player => 
-        // Include the current user even if they don't have a score today
-        player.player_id === userId || 
-        // Include friends with scores today
-        (friendIds.includes(player.player_id) && player.today_score !== null) ||
-        // Include non-friends with scores today if we're not filtering by friends only
-        (!showFriendsOnly && player.today_score !== null && player.today_score !== 0)
-      );
+      console.log('Filtering for today only, before filter:', filteredPlayers.length);
+      filteredPlayers = filteredPlayers.filter(player => {
+        const hasScore = player.today_score !== null && player.today_score !== 0;
+        if (hasScore) {
+          console.log(`Player ${player.username} has today's score: ${player.today_score}`);
+        }
+        return hasScore || player.player_id === userId; // Always include current user
+      });
+      console.log('After today filter:', filteredPlayers.length);
     }
     
     // Sort players based on time filter and sort by criteria
-    return filteredPlayers.sort((a, b) => {
+    const sortedPlayers = filteredPlayers.sort((a, b) => {
       // For "today only", sort by today's score
       if (timeFilter === 'today') {
         // Sort by today's score
         if (a.today_score !== null && b.today_score !== null) {
           if (['wordle', 'mini-crossword'].includes(selectedGame)) {
             // Specifically for Wordle, handle '-' scores as 0 (no score) and put them at the bottom
-            if (selectedGame === 'wordle') {
-              // If either score is 0, it means no score (represented as '-' in UI)
-              if (a.today_score === 0 && b.today_score === 0) return 0;
-              if (a.today_score === 0) return 1; // Push a to the bottom
-              if (b.today_score === 0) return -1; // Push b to the bottom
-            }
+            if (a.today_score === 0 && b.today_score === 0) return 0;
+            if (a.today_score === 0) return 1; // Push a to the bottom
+            if (b.today_score === 0) return -1; // Push b to the bottom
             return a.today_score - b.today_score; // Lower is better
           } else {
             return b.today_score - a.today_score; // Higher is better
@@ -389,15 +407,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
           case 'bestScore':
             // For games where lower is better (like Wordle), reverse the sorting
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
-              if (selectedGame === 'wordle') {
-                // If either score is 0, it means no score (represented as '-' in UI)
-                if (a.best_score === 0 && b.best_score === 0) return 0;
-                if (a.best_score === 0) return 1; // Push a to the bottom
-                if (b.best_score === 0) return -1; // Push b to the bottom
-                // Otherwise, lower is better for Wordle
-                return a.best_score - b.best_score;
-              }
+              // Handle scores of 0 (no score) by putting them at the bottom
+              if (a.best_score === 0 && b.best_score === 0) return 0;
+              if (a.best_score === 0) return 1; // Push a to the bottom
+              if (b.best_score === 0) return -1; // Push b to the bottom
+              // Otherwise, lower is better for Wordle
               return a.best_score - b.best_score;
             }
             return b.best_score - a.best_score;
@@ -406,30 +420,22 @@ export const useLeaderboardData = (userId: string | undefined) => {
           case 'averageScore':
             // For games where lower is better (like Wordle), reverse the sorting
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
-              if (selectedGame === 'wordle') {
-                // If either score is 0, it means no score (represented as '-' in UI)
-                if (a.average_score === 0 && b.average_score === 0) return 0;
-                if (a.average_score === 0) return 1; // Push a to the bottom
-                if (b.average_score === 0) return -1; // Push b to the bottom
-                // Otherwise, lower is better for Wordle
-                return a.average_score - b.average_score;
-              }
+              // Handle scores of 0 (no score) by putting them at the bottom
+              if (a.average_score === 0 && b.average_score === 0) return 0;
+              if (a.average_score === 0) return 1; // Push a to the bottom
+              if (b.average_score === 0) return -1; // Push b to the bottom
+              // Otherwise, lower is better for Wordle
               return a.average_score - b.average_score;
             }
             return b.average_score - a.average_score;
           default:
             // For games where lower is better (like Wordle), sort by best score (lowest first)
             if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Specifically for Wordle, handle scores of 0 (no score) by putting them at the bottom
-              if (selectedGame === 'wordle') {
-                // If either score is 0, it means no score (represented as '-' in UI)
-                if (a.best_score === 0 && b.best_score === 0) return 0;
-                if (a.best_score === 0) return 1; // Push a to the bottom
-                if (b.best_score === 0) return -1; // Push b to the bottom
-                // Otherwise, lower is better for Wordle
-                return a.best_score - b.best_score;
-              }
+              // Handle scores of 0 (no score) by putting them at the bottom
+              if (a.best_score === 0 && b.best_score === 0) return 0;
+              if (a.best_score === 0) return 1; // Push a to the bottom
+              if (b.best_score === 0) return -1; // Push b to the bottom
+              // Otherwise, lower is better for Wordle
               return a.best_score - b.best_score;
             }
             // For other games, sort by total score (highest first)
@@ -437,6 +443,9 @@ export const useLeaderboardData = (userId: string | undefined) => {
         }
       }
     });
+    
+    console.log('Final sorted and filtered players:', sortedPlayers);
+    return sortedPlayers;
   };
 
   const filteredAndSortedPlayers = getFilteredAndSortedPlayers();

@@ -32,6 +32,9 @@ const LeaderboardStats = ({
   scoresCount,
   rawScoresData
 }: LeaderboardStatsProps) => {
+  // Get today's date for filtering
+  const today = new Date().toISOString().split('T')[0];
+  
   // Calculate active players who have scores
   const activePlayers = players.filter(player => {
     if (timeFilter === 'today') {
@@ -40,6 +43,17 @@ const LeaderboardStats = ({
       return player.total_games > 0;
     }
   });
+  
+  // Count today's games more accurately
+  const todayGamesCount = timeFilter === 'today' 
+    ? rawScoresData.filter(score => {
+        // Get today's date in the same format as the score date
+        const scoreDate = typeof score.date === 'string' 
+          ? score.date 
+          : new Date(score.date).toISOString().split('T')[0];
+        return scoreDate === today && score.game_id === selectedGame;
+      }).length
+    : scoresCount;
   
   // For leader, find the top player based on appropriate score
   let leaderPlayer = null;
@@ -68,15 +82,6 @@ const LeaderboardStats = ({
       })[0];
     }
   }
-
-  // Count today's games if in today mode
-  const todayGamesCount = timeFilter === 'today' 
-    ? rawScoresData.filter(score => {
-        // Get today's date in the same format as the score date
-        const today = new Date().toISOString().split('T')[0];
-        return score.date === today && score.game_id === selectedGame;
-      }).length
-    : scoresCount;
 
   // Debug the scores data
   console.log('Raw scores for stats:', rawScoresData);
@@ -134,7 +139,7 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              timeFilter === 'today' ? todayGamesCount : scoresCount
+              todayGamesCount
             )}
           </div>
           <div className="text-sm text-muted-foreground">Total Scores</div>
