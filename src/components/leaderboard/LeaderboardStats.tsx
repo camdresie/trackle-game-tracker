@@ -86,6 +86,7 @@ const LeaderboardStats = ({
   // Debug the scores data
   console.log('Raw scores for stats:', rawScoresData);
   console.log('Time filter:', timeFilter);
+  console.log('Active players count:', activePlayers.length);
   console.log('Active players:', activePlayers);
   console.log('Leader player:', leaderPlayer);
   console.log('Today games count:', todayGamesCount);

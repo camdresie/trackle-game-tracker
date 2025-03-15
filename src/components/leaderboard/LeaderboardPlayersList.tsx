@@ -41,6 +41,7 @@ const LeaderboardPlayersList = ({
   
   // Log player data for debugging
   console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
+  console.log('LeaderboardPlayersList: players count before display:', players.length);
   console.log('LeaderboardPlayersList: players before display:', players);
   
   return (
@@ -69,16 +70,16 @@ const LeaderboardPlayersList = ({
               stats={{
                 // For today view, use today's score; otherwise use best score
                 bestScore: timeFilter === 'today' 
-                  ? (player.today_score || 0)
+                  ? (player.today_score !== null ? player.today_score : 0)
                   : player.best_score,
                 totalScore: timeFilter === 'today' 
-                  ? (player.today_score || 0) 
+                  ? (player.today_score !== null ? player.today_score : 0)
                   : player.total_score,
                 averageScore: timeFilter === 'today'
-                  ? (player.today_score || 0)
+                  ? (player.today_score !== null ? player.today_score : 0)
                   : Math.round(player.average_score * 10) / 10,
                 totalGames: timeFilter === 'today' 
-                  ? (player.today_score ? 1 : 0) 
+                  ? (player.today_score !== null ? 1 : 0)
                   : player.total_games
               }}
               className="hover:scale-[1.01] transition-transform duration-200"

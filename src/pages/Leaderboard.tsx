@@ -42,6 +42,11 @@ const Leaderboard = () => {
   const currentGame = games.find(game => game.id === selectedGame);
   const gameTitle = currentGame ? currentGame.name : 'Game';
   
+  // Debug outputs for leaderboard data
+  console.log('Leaderboard.tsx - timeFilter:', timeFilter);
+  console.log('Leaderboard.tsx - filtered players count:', filteredAndSortedPlayers.length);
+  console.log('Leaderboard.tsx - scores data count:', scoresData?.length || 0);
+  
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
