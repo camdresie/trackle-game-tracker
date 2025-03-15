@@ -23,24 +23,42 @@ const LeaderboardStats = ({
 }: LeaderboardStatsProps) => {
   // Get today's date for filtering - ensure consistent format
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  console.log('LeaderboardStats - Today\'s date for filtering:', today);
+  console.log('LeaderboardStats - Players count:', players.length);
   
   // Calculate active players who have scores
   const activePlayers = players.filter(player => {
     if (timeFilter === 'today') {
-      return player.today_score !== null;
+      const hasToday = player.today_score !== null;
+      if (hasToday) {
+        console.log(`LeaderboardStats - Today active player: ${player.username} with score ${player.today_score}`);
+      }
+      return hasToday;
     } else {
       return player.total_games > 0;
     }
   });
+  
+  console.log(`LeaderboardStats - Active players count for ${timeFilter} view:`, activePlayers.length);
   
   // Count today's games using the raw scores data
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
         // Standardize date format for comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        return scoreDate === today && (selectedGame === 'all' || score.game_id === selectedGame);
+        const isToday = scoreDate === today;
+        const matchesGame = selectedGame === 'all' || score.game_id === selectedGame;
+        const result = isToday && matchesGame;
+        
+        if (result) {
+          console.log(`LeaderboardStats - Today's score from user ${score.user_id} with value ${score.value}`);
+        }
+        
+        return result;
       }).length
     : scoresCount;
+  
+  console.log(`LeaderboardStats - Today's games count: ${todayGamesCount}`);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
@@ -68,6 +86,10 @@ const LeaderboardStats = ({
         }
       })[0];
     }
+  }
+  
+  if (leaderPlayer) {
+    console.log(`LeaderboardStats - Leader player: ${leaderPlayer.username}`);
   }
   
   return (

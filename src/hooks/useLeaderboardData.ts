@@ -28,6 +28,28 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get friends list
   const { friends } = useFriendsList();
   
+  // Fetch profiles first to ensure we have all user data
+  const { data: profilesData } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*');
+            
+        if (error) throw error;
+        
+        console.log('Profiles retrieved:', data?.length || 0);
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+        toast.error('Failed to load user profiles');
+        return [];
+      }
+    },
+    enabled: !!userId
+  });
+
   // Fetch all game stats data
   const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
     queryKey: ['game_stats', selectedGame],
@@ -37,19 +59,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         let query = supabase
           .from('game_stats')
-          .select(`
-            id,
-            user_id,
-            game_id,
-            best_score,
-            average_score,
-            total_plays,
-            current_streak,
-            longest_streak,
-            created_at,
-            updated_at,
-            profiles:profiles(id, username, full_name, avatar_url)
-          `);
+          .select('*');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
@@ -62,12 +72,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         console.log('Game stats data retrieved:', data?.length || 0, 'records');
         
-        // Transform the data to match our expected type
+        // Merge game stats with profile data
         const transformedData = data?.map(item => {
-          // Supabase returns profiles as an array with a single object
-          // We need to extract that object to match our type
-          const profileData = item.profiles?.[0] || {
-            id: '',
+          // Find the matching profile
+          const profile = profilesData?.find(p => p.id === item.user_id) || {
+            id: item.user_id,
             username: 'Unknown',
             full_name: null,
             avatar_url: null
@@ -75,10 +84,16 @@ export const useLeaderboardData = (userId: string | undefined) => {
           
           return {
             ...item,
-            profiles: profileData
+            profiles: {
+              id: profile.id,
+              username: profile.username || 'Unknown',
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url
+            }
           };
         });
         
+        console.log('Transformed game stats with profiles:', transformedData?.length || 0);
         return transformedData as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
@@ -86,12 +101,12 @@ export const useLeaderboardData = (userId: string | undefined) => {
         return [];
       }
     },
-    enabled: !!userId
+    enabled: !!userId && !!profilesData
   });
   
   // Fetch all scores data
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
-    queryKey: ['scores', selectedGame],
+    queryKey: ['scores', selectedGame, timeFilter],
     queryFn: async () => {
       try {
         console.log('Fetching scores data for game:', selectedGame);
@@ -110,6 +125,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         if (error) throw error;
         
         console.log('Scores data retrieved:', data?.length || 0, 'records');
+        console.log('Raw scores data sample:', data?.slice(0, 3));
         return data;
       } catch (error) {
         console.error('Error fetching scores data:', error);
@@ -123,13 +139,14 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get the friend IDs
   const friendIds = friends.map(friend => friend.id);
   
-  // Process leaderboard data
+  // Process leaderboard data - now with improved profile handling
   const leaderboardData = processLeaderboardData(
     gameStatsData,
     scoresData,
     selectedGame,
     friends,
-    userId
+    userId,
+    profilesData
   );
   
   // Filter and sort players

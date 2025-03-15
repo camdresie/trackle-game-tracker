@@ -10,38 +10,61 @@ export const processLeaderboardData = (
   scoresData: any[] | undefined,
   selectedGame: string,
   friends: Player[],
-  userId: string | undefined
+  userId: string | undefined,
+  profilesData: any[] | undefined
 ): LeaderboardPlayer[] => {
-  if (!gameStatsData || !scoresData) return [];
+  if (!scoresData) return [];
   
   // Get today's date for filtering - ensure consistent format
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  console.log('Today\'s date for filtering:', today);
-  console.log('Raw scores data:', scoresData);
+  console.log('processLeaderboardData - Today\'s date for filtering:', today);
+  console.log('processLeaderboardData - Raw scores data count:', scoresData.length);
   
-  // Initialize user stats map with profiles
+  // Initialize user stats map
   const userStatsMap = new Map<string, LeaderboardPlayer>();
   
-  // Process all game stats profiles first
-  gameStatsData.forEach(stat => {
-    const userId = stat.user_id;
-    const profile = stat.profiles;
-    
-    if (!userStatsMap.has(userId)) {
-      userStatsMap.set(userId, {
-        player_id: userId,
-        username: profile.username || "Unknown Player", 
-        full_name: profile.full_name,
-        avatar_url: profile.avatar_url,
-        total_score: 0,
-        best_score: 0,
-        average_score: 0,
-        total_games: 0,
-        today_score: null,
-        latest_play: null
-      });
-    }
-  });
+  // First, let's add all users from profiles data if available
+  if (profilesData && profilesData.length > 0) {
+    profilesData.forEach(profile => {
+      if (!userStatsMap.has(profile.id)) {
+        userStatsMap.set(profile.id, {
+          player_id: profile.id,
+          username: profile.username || "Unknown", 
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+      }
+    });
+  }
+  
+  // Process all game stats profiles
+  if (gameStatsData && gameStatsData.length > 0) {
+    gameStatsData.forEach(stat => {
+      const userId = stat.user_id;
+      const profile = stat.profiles;
+      
+      if (!userStatsMap.has(userId)) {
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: profile.username || "Unknown", 
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+      }
+    });
+  }
   
   // Make sure all friends are in the map
   friends.forEach(friend => {
@@ -77,22 +100,20 @@ export const processLeaderboardData = (
     });
   }
   
-  // Filter scores for the current game
-  const gameScores = selectedGame ? 
-    scoresData.filter(score => score.game_id === selectedGame) : 
-    scoresData;
-  
-  console.log(`Game ${selectedGame} - All filtered scores:`, gameScores);
-  
+  // MOST IMPORTANT: Make sure ALL users with scores are included
   // Add all players who have scores to the map, even if they don't have game stats
-  gameScores.forEach(score => {
+  scoresData.forEach(score => {
     const userId = score.user_id;
+    
     if (!userStatsMap.has(userId)) {
+      // Try to find a profile for this user
+      const profile = profilesData?.find(p => p.id === userId);
+      
       userStatsMap.set(userId, {
         player_id: userId,
-        username: "Player " + userId.substring(0, 6), // Temporary username
-        full_name: null,
-        avatar_url: null,
+        username: profile?.username || "Player " + userId.substring(0, 6),
+        full_name: profile?.full_name || null,
+        avatar_url: profile?.avatar_url || null,
         total_score: 0,
         best_score: 0,
         average_score: 0,
@@ -100,19 +121,15 @@ export const processLeaderboardData = (
         today_score: null,
         latest_play: null
       });
-      
-      // Try to find profile data for this user in game stats
-      const statEntry = gameStatsData?.find(stat => stat.user_id === userId);
-      if (statEntry) {
-        const userEntry = userStatsMap.get(userId);
-        if (userEntry) {
-          userEntry.username = statEntry.profiles.username || "Unknown Player";
-          userEntry.full_name = statEntry.profiles.full_name;
-          userEntry.avatar_url = statEntry.profiles.avatar_url;
-        }
-      }
     }
   });
+  
+  // Filter scores for the current game
+  const gameScores = selectedGame && selectedGame !== 'all' ? 
+    scoresData.filter(score => score.game_id === selectedGame) : 
+    scoresData;
+  
+  console.log(`processLeaderboardData - Game ${selectedGame} - All filtered scores:`, gameScores.length);
   
   // Process today's scores specifically
   const todayScores = gameScores.filter(score => {
@@ -120,7 +137,7 @@ export const processLeaderboardData = (
     return scoreDate === today;
   });
   
-  console.log(`Game ${selectedGame} - Today's scores:`, todayScores);
+  console.log(`processLeaderboardData - Game ${selectedGame} - Today's scores:`, todayScores.length);
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -128,8 +145,7 @@ export const processLeaderboardData = (
     const userStats = userStatsMap.get(userId);
     
     if (!userStats) {
-      console.warn(`User ${userId} not found in map, creating entry`);
-      // This should not happen as we've already added all users with scores to the map
+      console.warn(`User ${userId} not found in map, should never happen!`);
       continue;
     }
     
@@ -155,7 +171,7 @@ export const processLeaderboardData = (
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
       userStats.today_score = score.value;
-      console.log(`Setting today's score for user ${userId}: ${score.value}`);
+      console.log(`processLeaderboardData - Setting today's score for user ${userId} (${userStats.username}): ${score.value}`);
     }
     
     // Update latest play date
@@ -168,7 +184,7 @@ export const processLeaderboardData = (
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
-  console.log('Processed leaderboard players:', leaderboardPlayers);
+  console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
   return leaderboardPlayers;
 };
 
@@ -188,8 +204,8 @@ export const filterAndSortPlayers = (
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
-  console.log('Filtering and sorting players, time filter:', timeFilter);
-  console.log('Players before filtering:', leaderboardPlayers);
+  console.log('filterAndSortPlayers - Filtering and sorting players, time filter:', timeFilter);
+  console.log('filterAndSortPlayers - Players before filtering:', leaderboardPlayers.length);
   
   // Make a copy to avoid modifying the original data
   let filteredPlayers = [...leaderboardPlayers];
@@ -219,15 +235,19 @@ export const filterAndSortPlayers = (
   
   // For today's filter, only show players who have a score today
   if (timeFilter === 'today') {
-    console.log('Filtering for today only, before filter:', filteredPlayers.length);
+    console.log('filterAndSortPlayers - Filtering for today only, before filter:', filteredPlayers.length);
+    
     filteredPlayers = filteredPlayers.filter(player => {
       const hasScoreToday = player.today_score !== null;
+      
       if (hasScoreToday) {
-        console.log(`Player ${player.username} has today's score: ${player.today_score}`);
+        console.log(`filterAndSortPlayers - Player ${player.username} has today's score: ${player.today_score}`);
       }
+      
       return hasScoreToday;
     });
-    console.log('After today filter:', filteredPlayers.length);
+    
+    console.log('filterAndSortPlayers - After today filter:', filteredPlayers.length);
   }
   
   // Sort players
@@ -284,6 +304,6 @@ export const filterAndSortPlayers = (
     }
   });
   
-  console.log('Final sorted and filtered players:', filteredPlayers);
+  console.log('filterAndSortPlayers - Final sorted and filtered players:', filteredPlayers.length);
   return filteredPlayers;
 };
