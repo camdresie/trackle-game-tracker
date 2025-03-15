@@ -48,7 +48,15 @@ export const processLeaderboardData = (
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData || [];
   
-  console.log(`processLeaderboardData - Game ${selectedGame} - All filtered scores:`, gameScores.length);
+  // Debug logging for filtering
+  console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
+  console.log(`processLeaderboardData - Game ${selectedGame} - Games by date:`, 
+    gameScores.reduce((acc, score) => {
+      const date = score.date;
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  );
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {

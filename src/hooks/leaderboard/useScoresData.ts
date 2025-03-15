@@ -28,7 +28,20 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         if (error) throw error;
         
         console.log('Scores data retrieved:', data?.length || 0, 'records');
-        console.log('Raw scores data sample:', data?.slice(0, 3));
+        
+        // Debug: log unique game_ids in score data to check for inconsistencies
+        if (data && data.length > 0) {
+          const gameIds = [...new Set(data.map(item => item.game_id))];
+          console.log('Unique game IDs in scores data:', gameIds);
+          
+          // Count scores per game
+          const gameCounts = gameIds.reduce((acc, gameId) => {
+            acc[gameId] = data.filter(score => score.game_id === gameId).length;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          console.log('Scores count per game:', gameCounts);
+        }
         
         // Now separately get profiles for the user IDs
         const userIds = [...new Set(data?.map(item => item.user_id) || [])];

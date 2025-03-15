@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -40,6 +41,11 @@ const LeaderboardStats = ({
     
     return gameMatch;
   }).length;
+  
+  // Adding debug logs to understand the discrepancy
+  console.log(`LeaderboardStats - Total raw scores: ${rawScoresData.length}`);
+  console.log(`LeaderboardStats - ${selectedGame} scores count: ${scoresCount}`);
+  console.log(`LeaderboardStats - Time filter: ${timeFilter}`);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
