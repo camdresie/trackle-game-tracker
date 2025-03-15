@@ -233,62 +233,81 @@ export const useLeaderboardData = (userId: string | undefined) => {
     console.log(`Game ${selectedGame} - Filtered scores:`, gameScores);
     console.log('Today\'s date:', today);
     
-    // Process scores to calculate statistics
-    for (const userId of userStatsMap.keys()) {
-      // Get all scores for this user for the selected game
-      const userScores = gameScores.filter(score => score.user_id === userId);
+    // Process scores to calculate statistics for ALL users
+    for (const score of gameScores) {
+      const userId = score.user_id;
       
-      if (userScores.length > 0) {
-        console.log(`Found ${userScores.length} scores for user ${userId}`);
+      // Skip if this user is not in our map (not us or not a friend)
+      if (!userStatsMap.has(userId)) {
+        // Add this user to the map if they have scores
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: "Unknown Player", // Will be updated if we find profile data
+          full_name: null,
+          avatar_url: null,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+        
+        // Try to find profile data for this user in game stats
+        const statEntry = gameStatsData.find(stat => stat.user_id === userId);
+        if (statEntry) {
+          const userEntry = userStatsMap.get(userId);
+          userEntry.username = statEntry.profiles.username || "Unknown Player";
+          userEntry.full_name = statEntry.profiles.full_name;
+          userEntry.avatar_url = statEntry.profiles.avatar_url;
+        }
       }
       
-      // Get today's scores (if any)
-      const todayScores = userScores.filter(score => {
-        const scoreDate = typeof score.date === 'string' ? score.date : new Date(score.date).toISOString().split('T')[0];
-        const match = scoreDate === today;
-        console.log(`Game ${selectedGame} - User ${userId} - Score date: ${scoreDate}, Today: ${today}, Match: ${match}`);
-        return match;
-      });
-      
-      if (todayScores.length > 0) {
-        console.log(`Found ${todayScores.length} scores today for user ${userId}`);
-      }
-      
+      // Get the user's stats from the map
       const userStats = userStatsMap.get(userId);
       
-      if (userScores.length > 0) {
-        // Calculate scores for all time
-        const sumOfScores = userScores.reduce((sum, score) => sum + score.value, 0);
-        const bestScore = ['wordle', 'mini-crossword'].includes(selectedGame) 
-          ? Math.min(...userScores.map(score => score.value))
-          : Math.max(...userScores.map(score => score.value));
-        
-        // Update all-time statistics
-        userStats.total_games = userScores.length;
-        userStats.best_score = bestScore;
-        userStats.average_score = sumOfScores / userScores.length;
-        userStats.total_score = sumOfScores;
-        
-        // Add today's score if available
-        if (todayScores.length > 0) {
-          // For today, we just use the most recent score of the day
-          const todayScore = todayScores.sort((a, b) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )[0].value;
-          
-          console.log(`Today's score for user ${userId}: ${todayScore}`);
-          userStats.today_score = todayScore;
-        } else if (timeFilter === 'today') {
-          // If filtering by today but no score today, set to 0 (which will display as "-")
-          userStats.today_score = 0;
+      // Increase total games
+      userStats.total_games += 1;
+      
+      // Add to total score
+      userStats.total_score += score.value;
+      
+      // Calculate average score
+      userStats.average_score = userStats.total_score / userStats.total_games;
+      
+      // Update best score (for games where lower is better like Wordle, take the minimum)
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        userStats.best_score = userStats.best_score === 0 
+          ? score.value 
+          : Math.min(userStats.best_score, score.value);
+      } else {
+        userStats.best_score = Math.max(userStats.best_score, score.value);
+      }
+      
+      // Check if this score is from today
+      const scoreDate = typeof score.date === 'string' 
+        ? score.date 
+        : new Date(score.date).toISOString().split('T')[0];
+      
+      if (scoreDate === today) {
+        console.log(`Found today's score for user ${userId}: ${score.value}`);
+        userStats.today_score = score.value;
+      }
+      
+      // Update latest play date if newer
+      const scoreDateTime = new Date(score.created_at).getTime();
+      if (!userStats.latest_play || scoreDateTime > new Date(userStats.latest_play).getTime()) {
+        userStats.latest_play = score.date;
+      }
+    }
+    
+    // For users who don't have a score today but we're filtering by today, 
+    // set their today_score to 0 (which will display as "-")
+    if (timeFilter === 'today') {
+      for (const [userId, stats] of userStatsMap.entries()) {
+        if (stats.today_score === null) {
+          stats.today_score = 0; // Will display as "-" in the UI
         }
-        
-        // Update latest play date
-        const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
-        userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
-      } else if (timeFilter === 'today') {
-        // If no scores at all and filtering by today, set to 0 (which will display as "-")
-        userStats.today_score = 0;
       }
     }
     
@@ -324,6 +343,18 @@ export const useLeaderboardData = (userId: string | undefined) => {
           player.player_id === userId || friendIds.includes(player.player_id)
         );
       }
+    }
+    
+    // For today's filter, only show players who actually have a score today
+    if (timeFilter === 'today') {
+      filteredPlayers = filteredPlayers.filter(player => 
+        // Include the current user even if they don't have a score today
+        player.player_id === userId || 
+        // Include friends with scores today
+        (friendIds.includes(player.player_id) && player.today_score !== null) ||
+        // Include non-friends with scores today if we're not filtering by friends only
+        (!showFriendsOnly && player.today_score !== null && player.today_score !== 0)
+      );
     }
     
     // Sort players based on time filter and sort by criteria
