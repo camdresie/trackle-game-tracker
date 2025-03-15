@@ -70,6 +70,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             console.error('Error fetching user profiles:', profilesError);
           } else {
             userProfiles = profiles || [];
+            console.log('Retrieved profiles for scores:', userProfiles.length);
           }
         }
         
@@ -95,7 +96,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         return [];
       }
     },
-    enabled: !!selectedGame // Only need userId to get profiles, not to fetch scores
+    enabled: !!selectedGame // This query should run as long as a game is selected
   });
 
   return { scoresData, isLoadingScores };

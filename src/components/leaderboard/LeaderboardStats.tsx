@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 
@@ -29,19 +29,20 @@ const LeaderboardStats = ({
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
   // Calculate total games played for the selected game (and time filter if applicable)
-  // This counts all games played by all users, not just the logged-in user
-  const gamesPlayedCount = rawScoresData.filter(score => {
-    // First filter by selected game
-    const gameMatch = selectedGame === 'all' || score.game_id === selectedGame;
-    
-    // Then apply time filter if needed
-    if (timeFilter === 'today') {
-      const scoreDate = new Date(score.date).toISOString().split('T')[0];
-      return gameMatch && scoreDate === today;
-    }
-    
-    return gameMatch;
-  }).length;
+  const gamesPlayedCount = selectedGame === 'all' 
+    ? totalScoresCount 
+    : rawScoresData.filter(score => {
+        // First filter by selected game
+        const gameMatch = score.game_id === selectedGame;
+        
+        // Then apply time filter if needed
+        if (timeFilter === 'today') {
+          const scoreDate = new Date(score.date).toISOString().split('T')[0];
+          return gameMatch && scoreDate === today;
+        }
+        
+        return gameMatch;
+      }).length;
   
   // Debug logging
   console.log(`LeaderboardStats - Total raw scores: ${rawScoresData.length}`);
@@ -66,6 +67,7 @@ const LeaderboardStats = ({
       // Sort by best score for all-time
       leaderPlayer = [...activePlayers].sort((a, b) => {
         if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
+          if (a.best_score === 0 && b.best_score === 0) return 0;
           if (a.best_score === 0) return 1;
           if (b.best_score === 0) return -1;
           return a.best_score - b.best_score;
