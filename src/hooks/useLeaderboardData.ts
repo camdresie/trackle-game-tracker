@@ -131,6 +131,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
       try {
         console.log('Fetching scores data...');
         
+        // Don't filter by user ID to get scores for all users (including friends)
         let query = supabase
           .from('scores')
           .select('*');
@@ -140,7 +141,6 @@ export const useLeaderboardData = (userId: string | undefined) => {
           query = query.eq('game_id', selectedGame);
         }
         
-        // We'll filter by date in the JavaScript code to get the correct data for today's filter
         const { data, error } = await query;
             
         if (error) throw error;
@@ -194,19 +194,24 @@ export const useLeaderboardData = (userId: string | undefined) => {
     // Filter scores for the current game
     const gameScores = scoresData.filter(score => score.game_id === selectedGame);
     
+    // Log the filtered scores to debug
+    console.log('Game wordle - Filtered scores:', gameScores);
+    console.log('Today\'s date:', today);
+    
     // Process scores to calculate statistics
     for (const userId of userStatsMap.keys()) {
       // Get all scores for this user for the selected game
       const userScores = gameScores.filter(score => score.user_id === userId);
       
       // Get today's scores (if any)
-      const todayScores = userScores.filter(score => score.date === today);
+      const todayScores = userScores.filter(score => {
+        const match = score.date === today;
+        console.log(`Game ${selectedGame} - Score date: ${score.date}, Today: ${today}, Match: ${match}`);
+        return match;
+      });
       
-      // If we're filtering by today and the user has no scores today, skip this user
-      if (timeFilter === 'today' && todayScores.length === 0) {
-        userStatsMap.delete(userId);
-        continue;
-      }
+      // If we're filtering by today and the user has no scores today, keep the user but mark the score as null
+      // This way friends without scores today will still show up
       
       const userStats = userStatsMap.get(userId);
       
@@ -231,11 +236,17 @@ export const useLeaderboardData = (userId: string | undefined) => {
           )[0].value;
           
           userStats.today_score = todayScore;
+        } else if (timeFilter === 'today') {
+          // If filtering by today but no score today, set to 0 (which will display as "-")
+          userStats.today_score = 0;
         }
         
         // Update latest play date
         const latestScoreDate = new Date(Math.max(...userScores.map(s => new Date(s.date).getTime())));
         userStats.latest_play = latestScoreDate.toISOString().split('T')[0];
+      } else if (timeFilter === 'today') {
+        // If no scores at all and filtering by today, set to 0 (which will display as "-")
+        userStats.today_score = 0;
       }
     }
     

@@ -39,6 +39,10 @@ const LeaderboardPlayersList = ({
   // Find the selected game object
   const gameObj = games.find(game => game.id === selectedGame);
   
+  // Log player data for debugging
+  console.log('Leaderboard players:', players);
+  console.log('Time filter:', timeFilter);
+  
   return (
     <div className="space-y-4">
       {isLoading ? (
