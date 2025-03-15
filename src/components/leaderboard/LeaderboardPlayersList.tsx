@@ -39,8 +39,14 @@ const LeaderboardPlayersList = ({
   // Find the selected game object
   const gameObj = games.find(game => game.id === selectedGame);
   
+  // Filter players to only show those with today's scores when in today mode
+  const filteredPlayers = timeFilter === 'today' 
+    ? players.filter(player => player.today_score !== null && player.today_score !== 0)
+    : players;
+  
   // Log player data for debugging
-  console.log('Leaderboard players:', players);
+  console.log('Leaderboard players before filtering:', players);
+  console.log('Leaderboard players after filtering:', filteredPlayers);
   console.log('Time filter:', timeFilter);
   
   return (
@@ -50,13 +56,13 @@ const LeaderboardPlayersList = ({
           <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin mb-4" />
           <p className="text-muted-foreground">Loading leaderboard data...</p>
         </div>
-      ) : players.length > 0 ? (
-        players.map((player, index) => (
+      ) : filteredPlayers.length > 0 ? (
+        filteredPlayers.map((player, index) => (
           <PlayerCard 
             key={player.player_id}
             player={{
               id: player.player_id,
-              name: player.username, // Use the username directly
+              name: player.username,
               avatar: player.avatar_url || undefined
             }}
             rank={index + 1}

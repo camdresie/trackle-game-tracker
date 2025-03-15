@@ -86,6 +86,7 @@ const Leaderboard = () => {
           players={filteredAndSortedPlayers}
           selectedGame={selectedGame}
           scoresCount={scoresData?.length || 0}
+          rawScoresData={scoresData || []}
         />
       </main>
     </div>
