@@ -106,16 +106,17 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId && !!profilesData
   });
   
-  // Fetch all scores data for the current game
+  // Fetch all scores data for the current game - FIXING THE QUERY
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
     queryKey: ['scores', selectedGame, 'all-users'],
     queryFn: async () => {
       try {
         console.log('Fetching ALL scores data for game:', selectedGame);
         
+        // Changed the query to not try to join with profiles directly
         let query = supabase
           .from('scores')
-          .select('*, profiles:user_id(id, username, full_name, avatar_url)');
+          .select('*');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
@@ -129,12 +130,26 @@ export const useLeaderboardData = (userId: string | undefined) => {
         console.log('Scores data retrieved:', data?.length || 0, 'records');
         console.log('Raw scores data sample:', data?.slice(0, 3));
         
-        // Transform scores data to include profile information
+        // Now separately get profiles for the user IDs
+        const userIds = [...new Set(data?.map(item => item.user_id) || [])];
+        let userProfiles: any[] = [];
+        
+        if (userIds.length > 0) {
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+            
+          if (profilesError) {
+            console.error('Error fetching user profiles:', profilesError);
+          } else {
+            userProfiles = profiles || [];
+          }
+        }
+        
+        // Map profile data to scores
         const transformedData = data?.map(item => {
-          const profileData = item.profiles;
-          
-          // Ensure we have profile information
-          const profile = profileData || {
+          const profile = userProfiles.find(p => p.id === item.user_id) || {
             id: item.user_id,
             username: 'Unknown', 
             full_name: null,
