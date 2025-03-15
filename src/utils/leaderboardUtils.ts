@@ -1,3 +1,4 @@
+
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
@@ -13,8 +14,8 @@ export const processLeaderboardData = (
 ): LeaderboardPlayer[] => {
   if (!gameStatsData || !scoresData) return [];
   
-  // Get today's date for filtering
-  const today = new Date().toLocaleDateString('en-CA'); // Using consistent YYYY-MM-DD format
+  // Get today's date for filtering - ensure consistent format
+  const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   console.log('Today\'s date for filtering:', today);
   console.log('Raw scores data:', scoresData);
   
@@ -81,9 +82,10 @@ export const processLeaderboardData = (
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData;
   
-  // Get today's scores
+  // Get today's scores - Fix: Use standardized date format
   const todayScores = gameScores.filter(score => {
-    const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
+    // Standardize the date format from score.date
+    const scoreDate = new Date(score.date).toISOString().split('T')[0];
     const isToday = scoreDate === today;
     if (isToday) {
       console.log(`Found today's score for user ${score.user_id}: ${score.value} on ${scoreDate}`);
@@ -91,10 +93,11 @@ export const processLeaderboardData = (
     return isToday;
   });
   
-  console.log(`Game ${selectedGame} - All scores:`, gameScores);
-  console.log(`Game ${selectedGame} - Today's scores:`, todayScores);
+  console.log(`Game ${selectedGame} - All scores:`, gameScores.length);
+  console.log(`Game ${selectedGame} - Today's scores:`, todayScores.length);
+  console.log('Today\'s scores detail:', todayScores);
   
-  // Make sure ALL players who have scores are in the map
+  // Make sure ALL players who have scores (for selected game) are in the map
   gameScores.forEach(score => {
     const userId = score.user_id;
     if (!userStatsMap.has(userId)) {
@@ -152,7 +155,7 @@ export const processLeaderboardData = (
     }
     
     // Check if this score is from today
-    const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
+    const scoreDate = new Date(score.date).toISOString().split('T')[0];
     
     if (scoreDate === today) {
       console.log(`Setting today's score for user ${userId}: ${score.value}`);

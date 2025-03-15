@@ -21,8 +21,8 @@ const LeaderboardStats = ({
   scoresCount,
   rawScoresData
 }: LeaderboardStatsProps) => {
-  // Get today's date for filtering
-  const today = new Date().toLocaleDateString('en-CA'); // Format as YYYY-MM-DD
+  // Get today's date for filtering - ensure consistent format
+  const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   
   // Calculate active players who have scores
   const activePlayers = players.filter(player => {
@@ -37,7 +37,7 @@ const LeaderboardStats = ({
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
         // Convert the score date to a standard format for comparison
-        const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
+        const scoreDate = new Date(score.date).toISOString().split('T')[0];
         return scoreDate === today && score.game_id === selectedGame;
       }).length
     : scoresCount;
