@@ -48,7 +48,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
             longest_streak,
             created_at,
             updated_at,
-            profiles(id, username, full_name, avatar_url)
+            profiles:profiles(id, username, full_name, avatar_url)
           `);
         
         // Filter by selected game if not 'all'
@@ -62,8 +62,24 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         console.log('Game stats data retrieved:', data?.length || 0, 'records');
         
-        // Transform the data to ensure correct profile inclusion
-        return data as GameStatsWithProfile[];
+        // Transform the data to match our expected type
+        const transformedData = data?.map(item => {
+          // Supabase returns profiles as an array with a single object
+          // We need to extract that object to match our type
+          const profileData = item.profiles?.[0] || {
+            id: '',
+            username: 'Unknown',
+            full_name: null,
+            avatar_url: null
+          };
+          
+          return {
+            ...item,
+            profiles: profileData
+          };
+        });
+        
+        return transformedData as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
