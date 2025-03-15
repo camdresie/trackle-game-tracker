@@ -1,7 +1,8 @@
+
 import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLeaderboardData } from '@/hooks/useLeaderboardData';
+import { useLeaderboardData } from '@/hooks/leaderboard/useLeaderboardData';
 import LeaderboardHeader from '@/components/leaderboard/LeaderboardHeader';
 import LeaderboardFilters from '@/components/leaderboard/LeaderboardFilters';
 import LeaderboardPlayersList from '@/components/leaderboard/LeaderboardPlayersList';
