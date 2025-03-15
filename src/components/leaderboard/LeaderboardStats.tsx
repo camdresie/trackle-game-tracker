@@ -33,16 +33,16 @@ const LeaderboardStats = ({
     }
   });
   
-  // Count today's games more accurately
+  // Count today's games using the raw scores data
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
-        // Convert the score date to a standard format for comparison
+        // Standardize date format for comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        return scoreDate === today && score.game_id === selectedGame;
+        return scoreDate === today && (selectedGame === 'all' || score.game_id === selectedGame);
       }).length
     : scoresCount;
   
-  // For leader, find the top player based on appropriate score
+  // Find the top player based on appropriate score
   let leaderPlayer = null;
   if (activePlayers.length > 0) {
     if (timeFilter === 'today') {

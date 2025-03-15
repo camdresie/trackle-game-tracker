@@ -28,12 +28,12 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get friends list
   const { friends } = useFriendsList();
   
-  // Fetch game stats data
+  // Fetch all game stats data
   const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
     queryKey: ['game_stats', selectedGame],
     queryFn: async () => {
       try {
-        console.log('Fetching game stats data...');
+        console.log('Fetching game stats data for game:', selectedGame);
         
         let query = supabase
           .from('game_stats')
@@ -51,8 +51,8 @@ export const useLeaderboardData = (userId: string | undefined) => {
             profiles(id, username, full_name, avatar_url)
           `);
         
-        // Filter by selected game
-        if (selectedGame) {
+        // Filter by selected game if not 'all'
+        if (selectedGame && selectedGame !== 'all') {
           query = query.eq('game_id', selectedGame);
         }
         
@@ -60,33 +60,10 @@ export const useLeaderboardData = (userId: string | undefined) => {
             
         if (error) throw error;
         
-        console.log('Game stats data:', data);
+        console.log('Game stats data retrieved:', data?.length || 0, 'records');
         
-        // Transform the data to ensure we get the correct profile data
-        const transformedData = data.map((stat: any) => {
-          // Handle the profile data structure from Supabase
-          if (stat.profiles) {
-            return {
-              ...stat,
-              profiles: stat.profiles
-            };
-          }
-          
-          // If no profile data found, use a placeholder
-          console.error('Missing profile data for user ID:', stat.user_id);
-          return {
-            ...stat,
-            profiles: {
-              id: stat.user_id,
-              username: `Unknown Player`,
-              full_name: null,
-              avatar_url: null
-            }
-          };
-        });
-        
-        console.log('Transformed game stats data:', transformedData);
-        return transformedData as GameStatsWithProfile[];
+        // Transform the data to ensure correct profile inclusion
+        return data as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
         toast.error('Failed to load game statistics');
@@ -96,19 +73,19 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId
   });
   
-  // Fetch scores data to properly display latest scores and calculate today's data
+  // Fetch all scores data
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
     queryKey: ['scores', selectedGame],
     queryFn: async () => {
       try {
-        console.log('Fetching scores data...');
+        console.log('Fetching scores data for game:', selectedGame);
         
         let query = supabase
           .from('scores')
           .select('*');
         
-        // Filter by selected game
-        if (selectedGame) {
+        // Filter by selected game if not 'all'
+        if (selectedGame && selectedGame !== 'all') {
           query = query.eq('game_id', selectedGame);
         }
         
@@ -116,7 +93,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
             
         if (error) throw error;
         
-        console.log('Scores data:', data);
+        console.log('Scores data retrieved:', data?.length || 0, 'records');
         return data;
       } catch (error) {
         console.error('Error fetching scores data:', error);
@@ -127,10 +104,10 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId
   });
   
-  // Get the friend IDs from the friends list
+  // Get the friend IDs
   const friendIds = friends.map(friend => friend.id);
   
-  // Get leaderboard data from our utility function
+  // Process leaderboard data
   const leaderboardData = processLeaderboardData(
     gameStatsData,
     scoresData,
