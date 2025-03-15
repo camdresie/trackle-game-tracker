@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
-import { games } from '@/utils/gameData';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 
 interface LeaderboardStatsProps {
@@ -9,7 +7,7 @@ interface LeaderboardStatsProps {
   isLoading: boolean;
   players: LeaderboardPlayer[];
   selectedGame: string;
-  totalScoresCount: number; // Renamed from scoresCount to avoid conflict
+  totalScoresCount: number; 
   rawScoresData: any[]; // Adding raw scores data to analyze
 }
 
@@ -18,7 +16,7 @@ const LeaderboardStats = ({
   isLoading, 
   players, 
   selectedGame,
-  totalScoresCount, // Renamed prop
+  totalScoresCount, 
   rawScoresData
 }: LeaderboardStatsProps) => {
   // Get today's date for filtering - ensure consistent format
@@ -28,9 +26,6 @@ const LeaderboardStats = ({
   const activePlayers = players.filter(player => player.total_games > 0);
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
-  
-  // Count games based on the selected game
-  const gameCount = selectedGame === 'all' ? games.length : 1;
   
   // Count scores based on raw scores data and the current filter
   const scoresCount = rawScoresData.filter(score => {
@@ -90,7 +85,7 @@ const LeaderboardStats = ({
         )}
       </h2>
       
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-secondary/50 rounded-lg p-4 text-center">
           <div className="flex items-center justify-center mb-2">
             <Users className="w-5 h-5 text-blue-500" />
@@ -107,16 +102,6 @@ const LeaderboardStats = ({
         
         <div className="bg-secondary/50 rounded-lg p-4 text-center">
           <div className="flex items-center justify-center mb-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
-          </div>
-          <div className="text-2xl font-semibold">
-            {gameCount}
-          </div>
-          <div className="text-sm text-muted-foreground">Games Tracked</div>
-        </div>
-        
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
-          <div className="flex items-center justify-center mb-2">
             <ChevronsUpDown className="w-5 h-5 text-emerald-500" />
           </div>
           <div className="text-2xl font-semibold">
@@ -127,7 +112,7 @@ const LeaderboardStats = ({
             )}
           </div>
           <div className="text-sm text-muted-foreground">
-            {timeFilter === 'today' ? "Today's Scores" : "Total Scores"}
+            {timeFilter === 'today' ? "Today's Games" : "Games Played"}
           </div>
         </div>
         
