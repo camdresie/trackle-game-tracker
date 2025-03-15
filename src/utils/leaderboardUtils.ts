@@ -43,103 +43,6 @@ export const processLeaderboardData = (
     });
   }
   
-  // Process all game stats profiles
-  if (gameStatsData && gameStatsData.length > 0) {
-    gameStatsData.forEach(stat => {
-      const userId = stat.user_id;
-      const profile = stat.profiles;
-      
-      if (!userStatsMap.has(userId)) {
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: profile.username || "Unknown", 
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-      }
-    });
-  }
-  
-  // Make sure all friends are in the map
-  friends.forEach(friend => {
-    if (!userStatsMap.has(friend.id)) {
-      userStatsMap.set(friend.id, {
-        player_id: friend.id,
-        username: friend.name,
-        full_name: null,
-        avatar_url: friend.avatar || null,
-        total_score: 0,
-        best_score: 0,
-        average_score: 0,
-        total_games: 0,
-        today_score: null,
-        latest_play: null
-      });
-    }
-  });
-  
-  // Add current user if not already in the map
-  if (userId && !userStatsMap.has(userId)) {
-    userStatsMap.set(userId, {
-      player_id: userId,
-      username: "You",
-      full_name: null,
-      avatar_url: null,
-      total_score: 0,
-      best_score: 0,
-      average_score: 0,
-      total_games: 0,
-      today_score: null,
-      latest_play: null
-    });
-  }
-  
-  // MOST IMPORTANT: Make sure ALL users with scores are included
-  // Add all players who have scores to the map, even if they don't have game stats
-  if (scoresData && scoresData.length > 0) {
-    scoresData.forEach(score => {
-      const userId = score.user_id;
-      
-      if (!userStatsMap.has(userId)) {
-        // Try to get the profile info directly from the score if available
-        const profile = score.user_profile || profilesData?.find(p => p.id === userId);
-        
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: profile?.username || "Player " + userId.substring(0, 6),
-          full_name: profile?.full_name || null,
-          avatar_url: profile?.avatar_url || null,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-        
-        console.log(`Added player from scores: ${profile?.username || "Unknown"} (${userId.substring(0, 6)})`);
-      }
-    });
-  }
-  
-  // CRITICAL DEBUG: Check if camdresie is in the map at this point
-  profilesData?.forEach(profile => {
-    if (profile.username === 'camdresie') {
-      console.log('Found camdresie in profiles!', profile);
-      const inMap = userStatsMap.has(profile.id);
-      console.log(`camdresie (${profile.id}) in userStatsMap? ${inMap ? 'YES' : 'NO'}`);
-      if (inMap) {
-        console.log('camdresie in map:', userStatsMap.get(profile.id));
-      }
-    }
-  });
-  
   // Filter scores for the current game
   const gameScores = scoresData && selectedGame && selectedGame !== 'all' ? 
     scoresData.filter(score => score.game_id === selectedGame) : 
@@ -155,27 +58,48 @@ export const processLeaderboardData = (
   
   console.log(`processLeaderboardData - Game ${selectedGame} - Today's scores:`, todayScores.length);
   
-  // DEBUG: Check for camdresie scores
-  const camdresieScores = gameScores.filter(score => {
-    const profile = score.user_profile || profilesData?.find(p => p.id === score.user_id);
-    return profile?.username === 'camdresie';
-  });
-  console.log('Camdresie scores found:', camdresieScores.length, camdresieScores);
-  
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
     const userId = score.user_id;
+    
+    // If user doesn't exist in map yet, add them
+    if (!userStatsMap.has(userId)) {
+      // Try to get profile info from profiles data
+      const profile = profilesData?.find(p => p.id === userId);
+      
+      if (profile) {
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: profile.username || "Unknown",
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+      } else {
+        // If profile not found, create minimal entry
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: "Player " + userId.substring(0, 6),
+          full_name: null,
+          avatar_url: null,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+      }
+    }
+    
+    // Now get the user stats and update them
     const userStats = userStatsMap.get(userId);
-    
-    if (!userStats) {
-      console.warn(`User ${userId} not found in map, should never happen!`);
-      continue;
-    }
-    
-    // If this is camdresie, log details
-    if (userStats.username === 'camdresie') {
-      console.log(`Processing score for camdresie: ${score.value}, game: ${score.game_id}, date: ${score.date}`);
-    }
+    if (!userStats) continue; // Skip if user somehow not in map
     
     // Increase total games
     userStats.total_games += 1;
@@ -199,10 +123,6 @@ export const processLeaderboardData = (
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
       userStats.today_score = score.value;
-      
-      if (userStats.username === 'camdresie') {
-        console.log(`Setting today's score for camdresie: ${score.value}`);
-      }
     }
     
     // Update latest play date
@@ -212,12 +132,31 @@ export const processLeaderboardData = (
     }
   }
   
+  // Add any missing game stats entries to ensure all players are represented
+  if (gameStatsData && gameStatsData.length > 0) {
+    gameStatsData.forEach(stat => {
+      const userId = stat.user_id;
+      const profile = stat.profiles;
+      
+      if (!userStatsMap.has(userId) || userStatsMap.get(userId)?.total_games === 0) {
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: profile.username || "Unknown", 
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          total_score: stat.average_score * stat.total_plays,
+          best_score: stat.best_score || 0,
+          average_score: stat.average_score || 0,
+          total_games: stat.total_plays,
+          today_score: null,
+          latest_play: null
+        });
+      }
+    });
+  }
+  
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
-  
-  // DEBUG: Check if camdresie is in the final result
-  const camdresiePlayer = leaderboardPlayers.find(p => p.username === 'camdresie');
-  console.log('Camdresie in final leaderboard?', camdresiePlayer ? 'YES' : 'NO', camdresiePlayer);
   
   console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
   return leaderboardPlayers;
@@ -267,9 +206,6 @@ export const filterAndSortPlayers = (
       );
     }
   }
-  
-  // For today's filter, only show players who have a score today - REMOVED THIS FILTER
-  // We'll display all players regardless of whether they have played today
   
   // Sort players
   filteredPlayers.sort((a, b) => {

@@ -23,63 +23,39 @@ const LeaderboardStats = ({
 }: LeaderboardStatsProps) => {
   // Get today's date for filtering - ensure consistent format
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  console.log('LeaderboardStats - Today\'s date for filtering:', today);
-  console.log('LeaderboardStats - Players count:', players.length);
   
-  // Calculate active players who have scores
-  const activePlayers = players.filter(player => {
-    if (timeFilter === 'today') {
-      const hasToday = player.today_score !== null;
-      if (hasToday) {
-        console.log(`LeaderboardStats - Today active player: ${player.username} with score ${player.today_score}`);
-      }
-      return hasToday;
-    } else {
-      return player.total_games > 0;
-    }
-  });
+  // Consider all players with at least one game to be active
+  const activePlayers = players.filter(player => player.total_games > 0);
   
-  console.log(`LeaderboardStats - Active players count for ${timeFilter} view:`, activePlayers.length);
+  console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
+  
+  // Count games based on raw scores data
+  const gameScoresCount = rawScoresData.filter(score => {
+    return selectedGame === 'all' || score.game_id === selectedGame;
+  }).length;
   
   // Count today's games using the raw scores data
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
-        // Standardize date format for comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        const isToday = scoreDate === today;
-        const matchesGame = selectedGame === 'all' || score.game_id === selectedGame;
-        const result = isToday && matchesGame;
-        
-        if (result) {
-          console.log(`LeaderboardStats - Today's score from user ${score.user_id} with value ${score.value}`);
-        }
-        
-        return result;
+        return scoreDate === today && (selectedGame === 'all' || score.game_id === selectedGame);
       }).length
-    : scoresCount;
-  
-  // Calculate total scores across all time
-  const totalGamesAllTime = rawScoresData.filter(score => {
-    return selectedGame === 'all' || score.game_id === selectedGame;
-  }).length;
-  
-  console.log(`LeaderboardStats - Today's games count: ${todayGamesCount}`);
-  console.log(`LeaderboardStats - Total games all time: ${totalGamesAllTime}`);
+    : gameScoresCount;
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
   if (activePlayers.length > 0) {
     if (timeFilter === 'today') {
       // Sort by today's score (handling Wordle's lower-is-better scoring)
-      leaderPlayer = [...activePlayers].sort((a, b) => {
-        if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-          if (a.today_score === null) return 1;
-          if (b.today_score === null) return -1;
-          return a.today_score - b.today_score;
-        } else {
-          return (b.today_score || 0) - (a.today_score || 0);
-        }
-      })[0];
+      leaderPlayer = [...activePlayers]
+        .filter(p => p.today_score !== null)
+        .sort((a, b) => {
+          if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
+            return (a.today_score || 0) - (b.today_score || 0);
+          } else {
+            return (b.today_score || 0) - (a.today_score || 0);
+          }
+        })[0];
     } else {
       // Sort by best score for all-time
       leaderPlayer = [...activePlayers].sort((a, b) => {
@@ -92,10 +68,6 @@ const LeaderboardStats = ({
         }
       })[0];
     }
-  }
-  
-  if (leaderPlayer) {
-    console.log(`LeaderboardStats - Leader player: ${leaderPlayer.username}`);
   }
   
   return (
@@ -147,7 +119,7 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              timeFilter === 'today' ? todayGamesCount : totalGamesAllTime
+              timeFilter === 'today' ? todayGamesCount : gameScoresCount
             )}
           </div>
           <div className="text-sm text-muted-foreground">
