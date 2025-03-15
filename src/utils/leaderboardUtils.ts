@@ -106,8 +106,8 @@ export const processLeaderboardData = (
     const userId = score.user_id;
     
     if (!userStatsMap.has(userId)) {
-      // Try to find a profile for this user
-      const profile = profilesData?.find(p => p.id === userId);
+      // Try to get the profile info directly from the score if available
+      const profile = score.user_profile || profilesData?.find(p => p.id === userId);
       
       userStatsMap.set(userId, {
         player_id: userId,
@@ -121,6 +121,20 @@ export const processLeaderboardData = (
         today_score: null,
         latest_play: null
       });
+      
+      console.log(`Added player from scores: ${profile?.username || "Unknown"} (${userId.substring(0, 6)})`);
+    }
+  });
+  
+  // CRITICAL DEBUG: Check if camdresie is in the map at this point
+  profilesData?.forEach(profile => {
+    if (profile.username === 'camdresie') {
+      console.log('Found camdresie in profiles!', profile);
+      const inMap = userStatsMap.has(profile.id);
+      console.log(`camdresie (${profile.id}) in userStatsMap? ${inMap ? 'YES' : 'NO'}`);
+      if (inMap) {
+        console.log('camdresie in map:', userStatsMap.get(profile.id));
+      }
     }
   });
   
@@ -139,6 +153,13 @@ export const processLeaderboardData = (
   
   console.log(`processLeaderboardData - Game ${selectedGame} - Today's scores:`, todayScores.length);
   
+  // DEBUG: Check for camdresie scores
+  const camdresieScores = gameScores.filter(score => {
+    const profile = score.user_profile || profilesData?.find(p => p.id === score.user_id);
+    return profile?.username === 'camdresie';
+  });
+  console.log('Camdresie scores found:', camdresieScores.length, camdresieScores);
+  
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
     const userId = score.user_id;
@@ -147,6 +168,11 @@ export const processLeaderboardData = (
     if (!userStats) {
       console.warn(`User ${userId} not found in map, should never happen!`);
       continue;
+    }
+    
+    // If this is camdresie, log details
+    if (userStats.username === 'camdresie') {
+      console.log(`Processing score for camdresie: ${score.value}, game: ${score.game_id}, date: ${score.date}`);
     }
     
     // Increase total games
@@ -171,7 +197,10 @@ export const processLeaderboardData = (
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
       userStats.today_score = score.value;
-      console.log(`processLeaderboardData - Setting today's score for user ${userId} (${userStats.username}): ${score.value}`);
+      
+      if (userStats.username === 'camdresie') {
+        console.log(`Setting today's score for camdresie: ${score.value}`);
+      }
     }
     
     // Update latest play date
@@ -183,6 +212,10 @@ export const processLeaderboardData = (
   
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
+  
+  // DEBUG: Check if camdresie is in the final result
+  const camdresiePlayer = leaderboardPlayers.find(p => p.username === 'camdresie');
+  console.log('Camdresie in final leaderboard?', camdresiePlayer ? 'YES' : 'NO', camdresiePlayer);
   
   console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
   return leaderboardPlayers;

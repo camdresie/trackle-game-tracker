@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -108,16 +108,16 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId && !!profilesData
   });
   
-  // Fetch all scores data without time filter to ensure we capture the full history
+  // Fetch all scores data for the current game
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
-    queryKey: ['scores', selectedGame],
+    queryKey: ['scores', selectedGame, 'all-users'],
     queryFn: async () => {
       try {
-        console.log('Fetching scores data for game:', selectedGame);
+        console.log('Fetching ALL scores data for game:', selectedGame);
         
         let query = supabase
           .from('scores')
-          .select('*');
+          .select('*, profiles:user_id(id, username, full_name, avatar_url)');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
@@ -130,7 +130,26 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         console.log('Scores data retrieved:', data?.length || 0, 'records');
         console.log('Raw scores data sample:', data?.slice(0, 3));
-        return data;
+        
+        // Transform scores data to include profile information
+        const transformedData = data?.map(item => {
+          const profileData = item.profiles;
+          
+          // Ensure we have profile information
+          const profile = profileData || {
+            id: item.user_id,
+            username: 'Unknown', 
+            full_name: null,
+            avatar_url: null
+          };
+          
+          return {
+            ...item,
+            user_profile: profile
+          };
+        });
+        
+        return transformedData;
       } catch (error) {
         console.error('Error fetching scores data:', error);
         toast.error('Failed to load score data');
@@ -142,6 +161,21 @@ export const useLeaderboardData = (userId: string | undefined) => {
   
   // Get the friend IDs
   const friendIds = friends.map(friend => friend.id);
+  
+  // Debug: Check if camdresie is in any of our data sources
+  useEffect(() => {
+    if (profilesData) {
+      const camdresie = profilesData.find(p => p.username === 'camdresie');
+      console.log('Found camdresie in profiles?', camdresie ? 'YES' : 'NO', camdresie);
+    }
+    
+    if (scoresData) {
+      const camdresieScores = scoresData.filter(s => 
+        s.user_profile && s.user_profile.username === 'camdresie'
+      );
+      console.log('camdresie scores:', camdresieScores.length, camdresieScores);
+    }
+  }, [profilesData, scoresData]);
   
   // Process leaderboard data - now with improved profile handling
   const leaderboardData = processLeaderboardData(
@@ -165,6 +199,15 @@ export const useLeaderboardData = (userId: string | undefined) => {
     userId,
     friendIds
   );
+  
+  // Debug: Check if camdresie exists in our final data
+  useEffect(() => {
+    const camdresieInLeaderboard = leaderboardData.find(p => p.username === 'camdresie');
+    console.log('camdresie in processed leaderboard?', camdresieInLeaderboard ? 'YES' : 'NO', camdresieInLeaderboard);
+    
+    const camdresieInFilteredPlayers = filteredAndSortedPlayers.find(p => p.username === 'camdresie');
+    console.log('camdresie in filtered players?', camdresieInFilteredPlayers ? 'YES' : 'NO', camdresieInFilteredPlayers);
+  }, [leaderboardData, filteredAndSortedPlayers]);
   
   const isLoading = isLoadingGameStats || isLoadingScores;
   
