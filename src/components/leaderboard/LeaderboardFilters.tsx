@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { games } from '@/utils/gameData';
 import { Player } from '@/utils/types';
+import { SortByOption, TimeFilter } from '@/types/leaderboard';
 
 interface LeaderboardFiltersProps {
   searchTerm: string;
@@ -24,12 +25,12 @@ interface LeaderboardFiltersProps {
   setShowFriendsOnly: (show: boolean) => void;
   selectedFriendIds: string[];
   setSelectedFriendIds: (ids: string[]) => void;
-  timeFilter: 'all' | 'today';
-  setTimeFilter: (filter: 'all' | 'today') => void;
+  timeFilter: TimeFilter;
+  setTimeFilter: (filter: TimeFilter) => void;
   selectedGame: string;
   setSelectedGame: (game: string) => void;
-  sortBy: string;
-  setSortBy: (sort: string) => void;
+  sortBy: SortByOption;
+  setSortBy: (sort: SortByOption) => void;
   friendsList: Player[];
 }
 
@@ -159,7 +160,7 @@ const LeaderboardFilters = ({
         <div className="w-full sm:w-auto">
           <Select 
             value={timeFilter} 
-            onValueChange={(value) => setTimeFilter(value as 'all' | 'today')}
+            onValueChange={(value) => setTimeFilter(value as TimeFilter)}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Time Period" />
@@ -192,7 +193,7 @@ const LeaderboardFilters = ({
         <div className="w-full sm:w-auto">
           <Select 
             value={sortBy} 
-            onValueChange={setSortBy}
+            onValueChange={(value) => setSortBy(value as SortByOption)}
           >
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="Sort by" />

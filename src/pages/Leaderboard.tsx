@@ -8,6 +8,7 @@ import LeaderboardFilters from '@/components/leaderboard/LeaderboardFilters';
 import LeaderboardPlayersList from '@/components/leaderboard/LeaderboardPlayersList';
 import LeaderboardStats from '@/components/leaderboard/LeaderboardStats';
 import { games } from '@/utils/gameData';
+import { SortByOption } from '@/types/leaderboard';
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ const Leaderboard = () => {
             selectedGame={selectedGame}
             setSelectedGame={setSelectedGame}
             sortBy={sortBy}
-            setSortBy={setSortBy}
+            setSortBy={(value: SortByOption) => setSortBy(value)}
             friendsList={friends}
           />
           
