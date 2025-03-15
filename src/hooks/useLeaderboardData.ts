@@ -59,7 +59,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         let query = supabase
           .from('game_stats')
-          .select('*');
+          .select('*, profiles:user_id(id, username, full_name, avatar_url)');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
@@ -72,20 +72,24 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         console.log('Game stats data retrieved:', data?.length || 0, 'records');
         
-        // Merge game stats with profile data
+        // Transform the data to match our expected format
         const transformedData = data?.map(item => {
-          // Find the matching profile
-          const profile = profilesData?.find(p => p.id === item.user_id) || {
-            id: item.user_id,
-            username: 'Unknown',
-            full_name: null,
-            avatar_url: null
-          };
+          const profileData = item.profiles;
+          
+          // Ensure we have a single profile object
+          const profile = Array.isArray(profileData) && profileData.length > 0 
+            ? profileData[0] 
+            : profileData || {
+                id: item.user_id,
+                username: 'Unknown',
+                full_name: null,
+                avatar_url: null
+              };
           
           return {
             ...item,
             profiles: {
-              id: profile.id,
+              id: profile.id || item.user_id,
               username: profile.username || 'Unknown',
               full_name: profile.full_name,
               avatar_url: profile.avatar_url
