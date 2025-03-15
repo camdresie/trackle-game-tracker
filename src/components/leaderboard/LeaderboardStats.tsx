@@ -28,26 +28,42 @@ const LeaderboardStats = ({
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
-  // Calculate total games played for the selected game (and time filter if applicable)
-  const gamesPlayedCount = selectedGame === 'all' 
-    ? totalScoresCount 
-    : rawScoresData.filter(score => {
-        // First filter by selected game
-        const gameMatch = score.game_id === selectedGame;
-        
-        // Then apply time filter if needed
-        if (timeFilter === 'today') {
+  // Calculate total games played across ALL users for the selected game
+  let gamesPlayedCount = 0;
+  
+  if (rawScoresData && rawScoresData.length > 0) {
+    // Filter by game_id if a specific game is selected
+    if (selectedGame !== 'all') {
+      // Count games that match the selected game
+      const gameScores = rawScoresData.filter(score => score.game_id === selectedGame);
+      
+      // Apply time filter if needed
+      if (timeFilter === 'today') {
+        gamesPlayedCount = gameScores.filter(score => {
           const scoreDate = new Date(score.date).toISOString().split('T')[0];
-          return gameMatch && scoreDate === today;
-        }
-        
-        return gameMatch;
-      }).length;
+          return scoreDate === today;
+        }).length;
+      } else {
+        gamesPlayedCount = gameScores.length;
+      }
+    } else {
+      // For "all games", count all scores
+      if (timeFilter === 'today') {
+        gamesPlayedCount = rawScoresData.filter(score => {
+          const scoreDate = new Date(score.date).toISOString().split('T')[0];
+          return scoreDate === today;
+        }).length;
+      } else {
+        gamesPlayedCount = rawScoresData.length;
+      }
+    }
+  }
   
   // Debug logging
   console.log(`LeaderboardStats - Total raw scores: ${rawScoresData.length}`);
   console.log(`LeaderboardStats - ${selectedGame} games played count: ${gamesPlayedCount}`);
   console.log(`LeaderboardStats - Time filter: ${timeFilter}`);
+  console.log(`LeaderboardStats - Raw game IDs:`, rawScoresData.map(s => s.game_id));
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
