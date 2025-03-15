@@ -95,7 +95,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         return [];
       }
     },
-    enabled: !!userId
+    enabled: !!selectedGame // Only need userId to get profiles, not to fetch scores
   });
 
   return { scoresData, isLoadingScores };

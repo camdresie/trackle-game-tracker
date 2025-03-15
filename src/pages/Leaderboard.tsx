@@ -91,7 +91,7 @@ const Leaderboard = () => {
           isLoading={isLoading}
           players={filteredAndSortedPlayers}
           selectedGame={selectedGame}
-          totalScoresCount={scoresData?.length || 0} // Updated prop name here
+          totalScoresCount={scoresData?.length || 0} 
           rawScoresData={scoresData || []}
         />
       </main>
