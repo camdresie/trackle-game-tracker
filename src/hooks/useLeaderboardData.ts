@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -34,7 +35,7 @@ interface LeaderboardPlayer {
   best_score: number;
   average_score: number;
   total_games: number;
-  today_score: number | null; // Add today's score
+  today_score: number | null;
   latest_play: string;
 }
 
@@ -191,11 +192,45 @@ export const useLeaderboardData = (userId: string | undefined) => {
       }
     });
     
+    // Also make sure ALL friends are in the map, even if they don't have game stats
+    friends.forEach(friend => {
+      if (!userStatsMap.has(friend.id)) {
+        userStatsMap.set(friend.id, {
+          player_id: friend.id,
+          username: friend.name,
+          full_name: null,
+          avatar_url: friend.avatar || null,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+      }
+    });
+    
+    // Add the current user if not already in the map
+    if (userId && !userStatsMap.has(userId)) {
+      userStatsMap.set(userId, {
+        player_id: userId,
+        username: "You",
+        full_name: null,
+        avatar_url: null,
+        total_score: 0,
+        best_score: 0,
+        average_score: 0,
+        total_games: 0,
+        today_score: null,
+        latest_play: null
+      });
+    }
+    
     // Filter scores for the current game
     const gameScores = scoresData.filter(score => score.game_id === selectedGame);
     
     // Log the filtered scores to debug
-    console.log('Game wordle - Filtered scores:', gameScores);
+    console.log(`Game ${selectedGame} - Filtered scores:`, gameScores);
     console.log('Today\'s date:', today);
     
     // Process scores to calculate statistics
@@ -203,15 +238,21 @@ export const useLeaderboardData = (userId: string | undefined) => {
       // Get all scores for this user for the selected game
       const userScores = gameScores.filter(score => score.user_id === userId);
       
+      if (userScores.length > 0) {
+        console.log(`Found ${userScores.length} scores for user ${userId}`);
+      }
+      
       // Get today's scores (if any)
       const todayScores = userScores.filter(score => {
-        const match = score.date === today;
-        console.log(`Game ${selectedGame} - Score date: ${score.date}, Today: ${today}, Match: ${match}`);
+        const scoreDate = typeof score.date === 'string' ? score.date : new Date(score.date).toISOString().split('T')[0];
+        const match = scoreDate === today;
+        console.log(`Game ${selectedGame} - User ${userId} - Score date: ${scoreDate}, Today: ${today}, Match: ${match}`);
         return match;
       });
       
-      // If we're filtering by today and the user has no scores today, keep the user but mark the score as null
-      // This way friends without scores today will still show up
+      if (todayScores.length > 0) {
+        console.log(`Found ${todayScores.length} scores today for user ${userId}`);
+      }
       
       const userStats = userStatsMap.get(userId);
       
@@ -235,6 +276,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           )[0].value;
           
+          console.log(`Today's score for user ${userId}: ${todayScore}`);
           userStats.today_score = todayScore;
         } else if (timeFilter === 'today') {
           // If filtering by today but no score today, set to 0 (which will display as "-")
