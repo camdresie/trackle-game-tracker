@@ -36,10 +36,8 @@ const LeaderboardStats = ({
   // Count today's games more accurately
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
-        // Get today's date in the same format as the score date
-        const scoreDate = typeof score.date === 'string' 
-          ? score.date 
-          : new Date(score.date).toISOString().split('T')[0];
+        // Convert the score date to a standard format for comparison
+        const scoreDate = new Date(score.date).toISOString().split('T')[0];
         return scoreDate === today && score.game_id === selectedGame;
       }).length
     : scoresCount;
