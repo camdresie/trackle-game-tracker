@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 
