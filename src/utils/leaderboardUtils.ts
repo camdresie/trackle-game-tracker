@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
@@ -15,9 +14,9 @@ export const processLeaderboardData = (
   if (!gameStatsData || !scoresData) return [];
   
   // Get today's date for filtering
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA'); // Using consistent YYYY-MM-DD format
   console.log('Today\'s date for filtering:', today);
+  console.log('Raw scores data:', scoresData);
   
   // Initialize user stats map with profiles
   const userStatsMap = new Map<string, LeaderboardPlayer>();
@@ -78,11 +77,13 @@ export const processLeaderboardData = (
   }
   
   // Filter scores for the current game
-  const gameScores = scoresData.filter(score => score.game_id === selectedGame);
+  const gameScores = selectedGame ? 
+    scoresData.filter(score => score.game_id === selectedGame) : 
+    scoresData;
   
   // Get today's scores
   const todayScores = gameScores.filter(score => {
-    const scoreDate = new Date(score.date).toISOString().split('T')[0];
+    const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
     const isToday = scoreDate === today;
     if (isToday) {
       console.log(`Found today's score for user ${score.user_id}: ${score.value} on ${scoreDate}`);
@@ -93,15 +94,14 @@ export const processLeaderboardData = (
   console.log(`Game ${selectedGame} - All scores:`, gameScores);
   console.log(`Game ${selectedGame} - Today's scores:`, todayScores);
   
-  // Process ALL scores for the selected game
-  for (const score of gameScores) {
+  // Make sure ALL players who have scores are in the map
+  gameScores.forEach(score => {
     const userId = score.user_id;
-    
-    // If this user is not in our map, add them
     if (!userStatsMap.has(userId)) {
+      // Add this player since they have scores
       userStatsMap.set(userId, {
         player_id: userId,
-        username: "Unknown Player", // Will be updated if we find profile data
+        username: "Player " + userId.substring(0, 6), // Create a temporary username
         full_name: null,
         avatar_url: null,
         total_score: 0,
@@ -113,7 +113,7 @@ export const processLeaderboardData = (
       });
       
       // Try to find profile data for this user in game stats
-      const statEntry = gameStatsData.find(stat => stat.user_id === userId);
+      const statEntry = gameStatsData?.find(stat => stat.user_id === userId);
       if (statEntry) {
         const userEntry = userStatsMap.get(userId);
         if (userEntry) {
@@ -123,6 +123,11 @@ export const processLeaderboardData = (
         }
       }
     }
+  });
+  
+  // Process ALL scores for the selected game
+  for (const score of gameScores) {
+    const userId = score.user_id;
     
     // Get the user's stats from the map
     const userStats = userStatsMap.get(userId);
@@ -147,7 +152,7 @@ export const processLeaderboardData = (
     }
     
     // Check if this score is from today
-    const scoreDate = new Date(score.date).toISOString().split('T')[0];
+    const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
     
     if (scoreDate === today) {
       console.log(`Setting today's score for user ${userId}: ${score.value}`);
@@ -161,15 +166,15 @@ export const processLeaderboardData = (
     }
   }
   
-  // Make a second pass to ensure today's scores are properly set
+  // Make a second pass for today's scores to ensure they're properly set
   for (const score of todayScores) {
     const userId = score.user_id;
     // Make sure this user exists in our map
     if (!userStatsMap.has(userId)) {
       // Create a new entry for this user since they played today
-      userStatsMap.set(userId, {
+      const newPlayer: LeaderboardPlayer = {
         player_id: userId,
-        username: "Unknown Player",
+        username: "Player " + userId.substring(0, 6),
         full_name: null,
         avatar_url: null,
         total_score: score.value,
@@ -178,18 +183,17 @@ export const processLeaderboardData = (
         total_games: 1,
         today_score: score.value,
         latest_play: score.date
-      });
+      };
       
       // Try to find profile data for this user in game stats
-      const statEntry = gameStatsData.find(stat => stat.user_id === userId);
+      const statEntry = gameStatsData?.find(stat => stat.user_id === userId);
       if (statEntry) {
-        const userEntry = userStatsMap.get(userId);
-        if (userEntry) {
-          userEntry.username = statEntry.profiles.username || "Unknown Player";
-          userEntry.full_name = statEntry.profiles.full_name;
-          userEntry.avatar_url = statEntry.profiles.avatar_url;
-        }
+        newPlayer.username = statEntry.profiles.username || "Unknown Player";
+        newPlayer.full_name = statEntry.profiles.full_name;
+        newPlayer.avatar_url = statEntry.profiles.avatar_url;
       }
+      
+      userStatsMap.set(userId, newPlayer);
     } else {
       // Update existing user with today's score
       const userStats = userStatsMap.get(userId)!;

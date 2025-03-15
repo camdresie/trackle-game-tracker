@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -50,7 +51,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
             profiles(id, username, full_name, avatar_url)
           `);
         
-        // Always filter by selected game since we don't have 'all' anymore
+        // Filter by selected game
         if (selectedGame) {
           query = query.eq('game_id', selectedGame);
         }
@@ -63,34 +64,28 @@ export const useLeaderboardData = (userId: string | undefined) => {
         
         // Transform the data to ensure we get the correct profile data
         const transformedData = data.map((stat: any) => {
-          // Correctly handle the profile data structure from Supabase
-          // The profiles data comes as an array from the join
-          if (stat.profiles && Array.isArray(stat.profiles) && stat.profiles.length > 0) {
+          // Handle the profile data structure from Supabase
+          if (stat.profiles) {
             return {
               ...stat,
-              profiles: stat.profiles[0] // Use the first profile in the array
+              profiles: stat.profiles
             };
           }
           
-          // If profiles is already an object (not an array), keep it as is
-          if (stat.profiles && typeof stat.profiles === 'object' && !Array.isArray(stat.profiles)) {
-            return stat;
-          }
-          
-          // If no profile data found, use a placeholder but log this issue
+          // If no profile data found, use a placeholder
           console.error('Missing profile data for user ID:', stat.user_id);
           return {
             ...stat,
             profiles: {
               id: stat.user_id,
-              username: `Unknown Player`, // Better placeholder
+              username: `Unknown Player`,
               full_name: null,
               avatar_url: null
             }
           };
         });
         
-        console.log('Transformed data:', transformedData);
+        console.log('Transformed game stats data:', transformedData);
         return transformedData as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);
@@ -98,7 +93,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         return [];
       }
     },
-    enabled: !!userId && !!selectedGame
+    enabled: !!userId
   });
   
   // Fetch scores data to properly display latest scores and calculate today's data
@@ -108,12 +103,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
       try {
         console.log('Fetching scores data...');
         
-        // Don't filter by user ID to get scores for all users (including friends)
         let query = supabase
           .from('scores')
           .select('*');
         
-        // Always filter by selected game since we don't have 'all' anymore
+        // Filter by selected game
         if (selectedGame) {
           query = query.eq('game_id', selectedGame);
         }
@@ -130,7 +124,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
         return [];
       }
     },
-    enabled: !!userId && !!selectedGame
+    enabled: !!userId
   });
   
   // Get the friend IDs from the friends list

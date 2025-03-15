@@ -22,7 +22,7 @@ const LeaderboardStats = ({
   rawScoresData
 }: LeaderboardStatsProps) => {
   // Get today's date for filtering
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA'); // Format as YYYY-MM-DD
   
   // Calculate active players who have scores
   const activePlayers = players.filter(player => {
@@ -37,7 +37,7 @@ const LeaderboardStats = ({
   const todayGamesCount = timeFilter === 'today' 
     ? rawScoresData.filter(score => {
         // Convert the score date to a standard format for comparison
-        const scoreDate = new Date(score.date).toISOString().split('T')[0];
+        const scoreDate = new Date(score.date).toLocaleDateString('en-CA');
         return scoreDate === today && score.game_id === selectedGame;
       }).length
     : scoresCount;
@@ -69,14 +69,6 @@ const LeaderboardStats = ({
       })[0];
     }
   }
-
-  // Debug the scores data
-  console.log('Raw scores for stats:', rawScoresData);
-  console.log('Time filter:', timeFilter);
-  console.log('Active players count:', activePlayers.length);
-  console.log('Active players:', activePlayers);
-  console.log('Leader player:', leaderPlayer);
-  console.log('Today games count:', todayGamesCount);
   
   return (
     <div className="glass-card rounded-xl p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
