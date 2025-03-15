@@ -13,12 +13,12 @@ export const processLeaderboardData = (
   userId: string | undefined,
   profilesData: any[] | undefined
 ): LeaderboardPlayer[] => {
-  if (!scoresData) return [];
+  if (!profilesData) return [];
   
   // Get today's date for filtering - ensure consistent format
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   console.log('processLeaderboardData - Today\'s date for filtering:', today);
-  console.log('processLeaderboardData - Raw scores data count:', scoresData.length);
+  console.log('processLeaderboardData - Raw scores data count:', scoresData?.length || 0);
   
   // Initialize user stats map
   const userStatsMap = new Map<string, LeaderboardPlayer>();
@@ -102,29 +102,31 @@ export const processLeaderboardData = (
   
   // MOST IMPORTANT: Make sure ALL users with scores are included
   // Add all players who have scores to the map, even if they don't have game stats
-  scoresData.forEach(score => {
-    const userId = score.user_id;
-    
-    if (!userStatsMap.has(userId)) {
-      // Try to get the profile info directly from the score if available
-      const profile = score.user_profile || profilesData?.find(p => p.id === userId);
+  if (scoresData && scoresData.length > 0) {
+    scoresData.forEach(score => {
+      const userId = score.user_id;
       
-      userStatsMap.set(userId, {
-        player_id: userId,
-        username: profile?.username || "Player " + userId.substring(0, 6),
-        full_name: profile?.full_name || null,
-        avatar_url: profile?.avatar_url || null,
-        total_score: 0,
-        best_score: 0,
-        average_score: 0,
-        total_games: 0,
-        today_score: null,
-        latest_play: null
-      });
-      
-      console.log(`Added player from scores: ${profile?.username || "Unknown"} (${userId.substring(0, 6)})`);
-    }
-  });
+      if (!userStatsMap.has(userId)) {
+        // Try to get the profile info directly from the score if available
+        const profile = score.user_profile || profilesData?.find(p => p.id === userId);
+        
+        userStatsMap.set(userId, {
+          player_id: userId,
+          username: profile?.username || "Player " + userId.substring(0, 6),
+          full_name: profile?.full_name || null,
+          avatar_url: profile?.avatar_url || null,
+          total_score: 0,
+          best_score: 0,
+          average_score: 0,
+          total_games: 0,
+          today_score: null,
+          latest_play: null
+        });
+        
+        console.log(`Added player from scores: ${profile?.username || "Unknown"} (${userId.substring(0, 6)})`);
+      }
+    });
+  }
   
   // CRITICAL DEBUG: Check if camdresie is in the map at this point
   profilesData?.forEach(profile => {
@@ -139,9 +141,9 @@ export const processLeaderboardData = (
   });
   
   // Filter scores for the current game
-  const gameScores = selectedGame && selectedGame !== 'all' ? 
+  const gameScores = scoresData && selectedGame && selectedGame !== 'all' ? 
     scoresData.filter(score => score.game_id === selectedGame) : 
-    scoresData;
+    scoresData || [];
   
   console.log(`processLeaderboardData - Game ${selectedGame} - All filtered scores:`, gameScores.length);
   
@@ -266,22 +268,8 @@ export const filterAndSortPlayers = (
     }
   }
   
-  // For today's filter, only show players who have a score today
-  if (timeFilter === 'today') {
-    console.log('filterAndSortPlayers - Filtering for today only, before filter:', filteredPlayers.length);
-    
-    filteredPlayers = filteredPlayers.filter(player => {
-      const hasScoreToday = player.today_score !== null;
-      
-      if (hasScoreToday) {
-        console.log(`filterAndSortPlayers - Player ${player.username} has today's score: ${player.today_score}`);
-      }
-      
-      return hasScoreToday;
-    });
-    
-    console.log('filterAndSortPlayers - After today filter:', filteredPlayers.length);
-  }
+  // For today's filter, only show players who have a score today - REMOVED THIS FILTER
+  // We'll display all players regardless of whether they have played today
   
   // Sort players
   filteredPlayers.sort((a, b) => {

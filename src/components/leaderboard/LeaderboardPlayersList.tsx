@@ -32,9 +32,9 @@ const LeaderboardPlayersList = ({
   console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
   console.log('LeaderboardPlayersList: players count before display:', players.length);
   
-  // Filter players to only show those with games played
-  const playersWithGames = players.filter(player => player.total_games > 0);
-  console.log('LeaderboardPlayersList: players with games:', playersWithGames.length);
+  // Debug player data - don't filter to only show those with games played
+  const playersToDisplay = [...players];
+  console.log('LeaderboardPlayersList: players to display:', playersToDisplay.length);
   
   // Special check for camdresie
   const camdresie = players.find(p => p.username === 'camdresie');
@@ -49,9 +49,9 @@ const LeaderboardPlayersList = ({
           <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin mb-4" />
           <p className="text-muted-foreground">Loading leaderboard data...</p>
         </div>
-      ) : playersWithGames.length > 0 ? (
-        playersWithGames.map((player, index) => {
-          // Log each player's score for debugging
+      ) : playersToDisplay.length > 0 ? (
+        playersToDisplay.map((player, index) => {
+          // Log each player's data for debugging
           console.log(`Rendering player ${player.username}: today_score=${player.today_score}, total_games=${player.total_games}, timeFilter=${timeFilter}`);
           
           return (

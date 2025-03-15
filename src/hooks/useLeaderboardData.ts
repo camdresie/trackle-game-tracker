@@ -77,14 +77,12 @@ export const useLeaderboardData = (userId: string | undefined) => {
           const profileData = item.profiles;
           
           // Ensure we have a single profile object
-          const profile = Array.isArray(profileData) && profileData.length > 0 
-            ? profileData[0] 
-            : profileData || {
-                id: item.user_id,
-                username: 'Unknown',
-                full_name: null,
-                avatar_url: null
-              };
+          const profile = profileData || {
+            id: item.user_id,
+            username: 'Unknown',
+            full_name: null,
+            avatar_url: null
+          };
           
           return {
             ...item,
@@ -149,7 +147,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
           };
         });
         
-        return transformedData;
+        return transformedData || [];
       } catch (error) {
         console.error('Error fetching scores data:', error);
         toast.error('Failed to load score data');
