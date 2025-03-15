@@ -9,7 +9,7 @@ interface LeaderboardStatsProps {
   isLoading: boolean;
   players: LeaderboardPlayer[];
   selectedGame: string;
-  scoresCount: number;
+  totalScoresCount: number; // Renamed from scoresCount to avoid conflict
   rawScoresData: any[]; // Adding raw scores data to analyze
 }
 
@@ -18,7 +18,7 @@ const LeaderboardStats = ({
   isLoading, 
   players, 
   selectedGame,
-  scoresCount,
+  totalScoresCount, // Renamed prop
   rawScoresData
 }: LeaderboardStatsProps) => {
   // Get today's date for filtering - ensure consistent format
