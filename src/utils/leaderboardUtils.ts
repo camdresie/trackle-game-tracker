@@ -43,20 +43,12 @@ export const processLeaderboardData = (
     });
   }
   
-  // Filter scores for the current game
+  // Filter scores for the current game if a specific game is selected
   const gameScores = scoresData && selectedGame && selectedGame !== 'all' ? 
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData || [];
   
   console.log(`processLeaderboardData - Game ${selectedGame} - All filtered scores:`, gameScores.length);
-  
-  // Process today's scores specifically
-  const todayScores = gameScores.filter(score => {
-    const scoreDate = new Date(score.date).toISOString().split('T')[0];
-    return scoreDate === today;
-  });
-  
-  console.log(`processLeaderboardData - Game ${selectedGame} - Today's scores:`, todayScores.length);
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -122,6 +114,7 @@ export const processLeaderboardData = (
     // Process today's scores
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
+      console.log(`Today's score found for user ${userStats.username}: ${score.value}`);
       userStats.today_score = score.value;
     }
     
@@ -159,6 +152,11 @@ export const processLeaderboardData = (
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
   console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
+  
+  // Log how many players have today's scores
+  const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
+  console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
+  
   return leaderboardPlayers;
 };
 
@@ -183,6 +181,12 @@ export const filterAndSortPlayers = (
   
   // Make a copy to avoid modifying the original data
   let filteredPlayers = [...leaderboardPlayers];
+  
+  // For today filter, only include players with today's scores
+  if (timeFilter === 'today') {
+    filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
+    console.log('filterAndSortPlayers - Players with today scores:', filteredPlayers.length);
+  }
   
   // Search filter
   if (searchTerm) {

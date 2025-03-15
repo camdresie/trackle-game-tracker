@@ -32,8 +32,12 @@ const LeaderboardPlayersList = ({
   console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
   console.log('LeaderboardPlayersList: players count before display:', players.length);
   
-  // Display all players without filtering
-  const playersToDisplay = players;
+  // Filter players for today view to only show those with today's scores
+  const playersToDisplay = timeFilter === 'today' 
+    ? players.filter(player => player.today_score !== null)
+    : players;
+  
+  console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
   
   return (
     <div className="space-y-4">

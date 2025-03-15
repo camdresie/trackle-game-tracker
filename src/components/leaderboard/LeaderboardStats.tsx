@@ -24,23 +24,27 @@ const LeaderboardStats = ({
   // Get today's date for filtering - ensure consistent format
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   
-  // Consider all players with at least one game to be active
+  // Consider players with at least one game to be active (total_games > 0)
   const activePlayers = players.filter(player => player.total_games > 0);
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
-  // Count games based on raw scores data
-  const gameScoresCount = rawScoresData.filter(score => {
-    return selectedGame === 'all' || score.game_id === selectedGame;
-  }).length;
+  // Count games based on the selected game
+  const gameCount = selectedGame === 'all' ? games.length : 1;
   
-  // Count today's games using the raw scores data
-  const todayGamesCount = timeFilter === 'today' 
-    ? rawScoresData.filter(score => {
-        const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        return scoreDate === today && (selectedGame === 'all' || score.game_id === selectedGame);
-      }).length
-    : gameScoresCount;
+  // Count scores based on raw scores data and the current filter
+  const scoresCount = rawScoresData.filter(score => {
+    // First filter by selected game
+    const gameMatch = selectedGame === 'all' || score.game_id === selectedGame;
+    
+    // Then apply time filter if needed
+    if (timeFilter === 'today') {
+      const scoreDate = new Date(score.date).toISOString().split('T')[0];
+      return gameMatch && scoreDate === today;
+    }
+    
+    return gameMatch;
+  }).length;
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
@@ -106,7 +110,7 @@ const LeaderboardStats = ({
             <Trophy className="w-5 h-5 text-amber-500" />
           </div>
           <div className="text-2xl font-semibold">
-            {selectedGame === 'all' ? games.length : 1}
+            {gameCount}
           </div>
           <div className="text-sm text-muted-foreground">Games Tracked</div>
         </div>
@@ -119,7 +123,7 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              timeFilter === 'today' ? todayGamesCount : gameScoresCount
+              scoresCount
             )}
           </div>
           <div className="text-sm text-muted-foreground">
