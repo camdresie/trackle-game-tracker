@@ -43,7 +43,7 @@ const LeaderboardPlayersList = ({
       ) : players.length > 0 ? (
         players.map((player, index) => {
           // Log each player's score for debugging
-          console.log(`Rendering player ${player.username}: today_score=${player.today_score}, timeFilter=${timeFilter}`);
+          console.log(`Rendering player ${player.username}: today_score=${player.today_score}, total_games=${player.total_games}, timeFilter=${timeFilter}`);
           
           return (
             <PlayerCard 
@@ -67,9 +67,8 @@ const LeaderboardPlayersList = ({
                 averageScore: timeFilter === 'today'
                   ? (player.today_score !== null ? player.today_score : 0)
                   : Math.round(player.average_score * 10) / 10,
-                totalGames: timeFilter === 'today' 
-                  ? (player.today_score !== null ? 1 : 0)
-                  : player.total_games
+                // Always show total games played regardless of timeFilter
+                totalGames: player.total_games
               }}
               className="hover:scale-[1.01] transition-transform duration-200"
               showTodayOnly={timeFilter === 'today'} // Pass the timeFilter as a boolean

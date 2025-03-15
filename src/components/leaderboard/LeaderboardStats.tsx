@@ -58,7 +58,13 @@ const LeaderboardStats = ({
       }).length
     : scoresCount;
   
+  // Calculate total scores across all time
+  const totalGamesAllTime = rawScoresData.filter(score => {
+    return selectedGame === 'all' || score.game_id === selectedGame;
+  }).length;
+  
   console.log(`LeaderboardStats - Today's games count: ${todayGamesCount}`);
+  console.log(`LeaderboardStats - Total games all time: ${totalGamesAllTime}`);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
@@ -141,10 +147,12 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              todayGamesCount
+              timeFilter === 'today' ? todayGamesCount : totalGamesAllTime
             )}
           </div>
-          <div className="text-sm text-muted-foreground">Total Scores</div>
+          <div className="text-sm text-muted-foreground">
+            {timeFilter === 'today' ? "Today's Scores" : "Total Scores"}
+          </div>
         </div>
         
         <div className="bg-secondary/50 rounded-lg p-4 text-center">

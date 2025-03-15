@@ -104,9 +104,9 @@ export const useLeaderboardData = (userId: string | undefined) => {
     enabled: !!userId && !!profilesData
   });
   
-  // Fetch all scores data
+  // Fetch all scores data without time filter to ensure we capture the full history
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
-    queryKey: ['scores', selectedGame, timeFilter],
+    queryKey: ['scores', selectedGame],
     queryFn: async () => {
       try {
         console.log('Fetching scores data for game:', selectedGame);
