@@ -4,18 +4,7 @@ import { Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
 import { games } from '@/utils/gameData';
-
-interface LeaderboardPlayer {
-  player_id: string;
-  username: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  total_score: number;
-  best_score: number;
-  average_score: number;
-  total_games: number;
-  today_score: number | null;
-}
+import { LeaderboardPlayer } from '@/types/leaderboard';
 
 interface LeaderboardPlayersListProps {
   players: LeaderboardPlayer[];

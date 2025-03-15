@@ -1,58 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { games } from '@/utils/gameData';
 import { useFriendsList } from '@/hooks/useFriendsList';
-import { Player } from '@/utils/types';
-
-interface GameStatsWithProfile {
-  id: string;
-  user_id: string;
-  game_id: string;
-  best_score: number;
-  average_score: number;
-  total_plays: number;
-  current_streak: number;
-  longest_streak: number;
-  created_at: string;
-  updated_at: string;
-  profiles: {
-    id: string;
-    username: string;
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-}
-
-interface LeaderboardPlayer {
-  player_id: string;
-  username: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  total_score: number;
-  best_score: number;
-  average_score: number;
-  total_games: number;
-  today_score: number | null;
-  latest_play: string;
-}
+import { 
+  processLeaderboardData, 
+  filterAndSortPlayers 
+} from '@/utils/leaderboardUtils';
+import { 
+  LeaderboardPlayer, 
+  GameStatsWithProfile, 
+  TimeFilter,
+  SortByOption 
+} from '@/types/leaderboard';
 
 export const useLeaderboardData = (userId: string | undefined) => {
   // Initialize with the first game instead of 'all'
   const [selectedGame, setSelectedGame] = useState<string>(games.length > 0 ? games[0].id : '');
-  const [sortBy, setSortBy] = useState<string>('totalScore');
+  const [sortBy, setSortBy] = useState<SortByOption>('totalScore');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
-  const [timeFilter, setTimeFilter] = useState<'all' | 'today'>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   
   // Get friends list
   const { friends } = useFriendsList();
   
   // Fetch game stats data
   const { data: gameStatsData, isLoading: isLoadingGameStats } = useQuery({
-    queryKey: ['game_stats', selectedGame, timeFilter],
+    queryKey: ['game_stats', selectedGame],
     queryFn: async () => {
       try {
         console.log('Fetching game stats data...');
@@ -126,7 +103,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
   
   // Fetch scores data to properly display latest scores and calculate today's data
   const { data: scoresData, isLoading: isLoadingScores } = useQuery({
-    queryKey: ['scores', selectedGame, timeFilter],
+    queryKey: ['scores', selectedGame],
     queryFn: async () => {
       try {
         console.log('Fetching scores data...');
@@ -159,296 +136,28 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get the friend IDs from the friends list
   const friendIds = friends.map(friend => friend.id);
   
-  // Transform game stats data into leaderboard players format
-  const getLeaderboardData = () => {
-    if (!gameStatsData || !scoresData) return [];
-    
-    // Get today's date for filtering
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
-    console.log('Today\'s date for filtering:', today);
-    
-    // Initialize user stats map with profiles
-    const userStatsMap = new Map();
-    
-    // First, initialize all players from game stats
-    gameStatsData.forEach(stat => {
-      const userId = stat.user_id;
-      const profile = stat.profiles;
-      
-      if (!userStatsMap.has(userId)) {
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: profile.username || "Unknown Player", 
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-      }
-    });
-    
-    // Also make sure ALL friends are in the map, even if they don't have game stats
-    friends.forEach(friend => {
-      if (!userStatsMap.has(friend.id)) {
-        userStatsMap.set(friend.id, {
-          player_id: friend.id,
-          username: friend.name,
-          full_name: null,
-          avatar_url: friend.avatar || null,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-      }
-    });
-    
-    // Add the current user if not already in the map
-    if (userId && !userStatsMap.has(userId)) {
-      userStatsMap.set(userId, {
-        player_id: userId,
-        username: "You",
-        full_name: null,
-        avatar_url: null,
-        total_score: 0,
-        best_score: 0,
-        average_score: 0,
-        total_games: 0,
-        today_score: null,
-        latest_play: null
-      });
-    }
-    
-    // Filter scores for the current game
-    const gameScores = scoresData.filter(score => score.game_id === selectedGame);
-    
-    // Get today's scores
-    const todayScores = gameScores.filter(score => {
-      const scoreDate = typeof score.date === 'string' 
-        ? score.date 
-        : new Date(score.date).toISOString().split('T')[0];
-      const isToday = scoreDate === today;
-      if (isToday) {
-        console.log(`Found today's score for user ${score.user_id}: ${score.value} on ${scoreDate}`);
-      }
-      return isToday;
-    });
-    
-    console.log(`Game ${selectedGame} - All scores:`, gameScores);
-    console.log(`Game ${selectedGame} - Today's scores:`, todayScores);
-    
-    // Process scores to calculate statistics for ALL users
-    for (const score of gameScores) {
-      const userId = score.user_id;
-      
-      // Skip if this user is not in our map (not us or not a friend)
-      if (!userStatsMap.has(userId)) {
-        // Add this user to the map if they have scores
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: "Unknown Player", // Will be updated if we find profile data
-          full_name: null,
-          avatar_url: null,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-        
-        // Try to find profile data for this user in game stats
-        const statEntry = gameStatsData.find(stat => stat.user_id === userId);
-        if (statEntry) {
-          const userEntry = userStatsMap.get(userId);
-          userEntry.username = statEntry.profiles.username || "Unknown Player";
-          userEntry.full_name = statEntry.profiles.full_name;
-          userEntry.avatar_url = statEntry.profiles.avatar_url;
-        }
-      }
-      
-      // Get the user's stats from the map
-      const userStats = userStatsMap.get(userId);
-      
-      // Increase total games
-      userStats.total_games += 1;
-      
-      // Add to total score
-      userStats.total_score += score.value;
-      
-      // Calculate average score
-      userStats.average_score = userStats.total_score / userStats.total_games;
-      
-      // Update best score (for games where lower is better like Wordle, take the minimum)
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-        userStats.best_score = userStats.best_score === 0 
-          ? score.value 
-          : Math.min(userStats.best_score, score.value);
-      } else {
-        userStats.best_score = Math.max(userStats.best_score, score.value);
-      }
-      
-      // Check if this score is from today
-      const scoreDate = typeof score.date === 'string' 
-        ? score.date 
-        : new Date(score.date).toISOString().split('T')[0];
-      
-      if (scoreDate === today) {
-        console.log(`Setting today's score for user ${userId}: ${score.value}`);
-        userStats.today_score = score.value;
-      }
-      
-      // Update latest play date if newer
-      const scoreDateTime = new Date(score.created_at).getTime();
-      if (!userStats.latest_play || scoreDateTime > new Date(userStats.latest_play).getTime()) {
-        userStats.latest_play = score.date;
-      }
-    }
-    
-    // For today's filter, explicitly set today_score for all users who have a score today
-    if (timeFilter === 'today') {
-      for (const score of todayScores) {
-        const userId = score.user_id;
-        if (userStatsMap.has(userId)) {
-          const userStats = userStatsMap.get(userId);
-          userStats.today_score = score.value;
-          console.log(`Explicitly set today's score for ${userStats.username}: ${score.value}`);
-        }
-      }
-    }
-    
-    // Convert map to array
-    const leaderboardPlayers = Array.from(userStatsMap.values());
-    
-    // Debug output after processing
-    console.log('Processed leaderboard players:', leaderboardPlayers);
-    return leaderboardPlayers;
-  };
+  // Get leaderboard data from our utility function
+  const leaderboardData = processLeaderboardData(
+    gameStatsData,
+    scoresData,
+    selectedGame,
+    friends,
+    userId
+  );
   
   // Filter and sort players
-  const getFilteredAndSortedPlayers = () => {
-    const leaderboardData = getLeaderboardData();
-    if (!leaderboardData.length) return [];
-    
-    console.log('Filtering and sorting players, time filter:', timeFilter);
-    console.log('Input data:', leaderboardData);
-    
-    let filteredPlayers = [...leaderboardData];
-    
-    // Filter by search term
-    if (searchTerm) {
-      filteredPlayers = filteredPlayers.filter(player => 
-        player.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (player.full_name && player.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    
-    // Filter by friends
-    if (showFriendsOnly) {
-      if (selectedFriendIds.length > 0) {
-        // Filter by selected specific friends and include current user
-        filteredPlayers = filteredPlayers.filter(player => 
-          player.player_id === userId || selectedFriendIds.includes(player.player_id)
-        );
-      } else {
-        // Filter by all friends and include current user
-        filteredPlayers = filteredPlayers.filter(player => 
-          player.player_id === userId || friendIds.includes(player.player_id)
-        );
-      }
-    }
-    
-    // For today's filter, only show players who actually have a score today
-    if (timeFilter === 'today') {
-      console.log('Filtering for today only, before filter:', filteredPlayers.length);
-      filteredPlayers = filteredPlayers.filter(player => {
-        const hasScore = player.today_score !== null && player.today_score !== 0;
-        if (hasScore) {
-          console.log(`Player ${player.username} has today's score: ${player.today_score}`);
-        }
-        return hasScore || player.player_id === userId; // Always include current user
-      });
-      console.log('After today filter:', filteredPlayers.length);
-    }
-    
-    // Sort players based on time filter and sort by criteria
-    const sortedPlayers = filteredPlayers.sort((a, b) => {
-      // For "today only", sort by today's score
-      if (timeFilter === 'today') {
-        // Sort by today's score
-        if (a.today_score !== null && b.today_score !== null) {
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-            // Specifically for Wordle, handle '-' scores as 0 (no score) and put them at the bottom
-            if (a.today_score === 0 && b.today_score === 0) return 0;
-            if (a.today_score === 0) return 1; // Push a to the bottom
-            if (b.today_score === 0) return -1; // Push b to the bottom
-            return a.today_score - b.today_score; // Lower is better
-          } else {
-            return b.today_score - a.today_score; // Higher is better
-          }
-        }
-        // If one player has a score and the other doesn't, prioritize the one with a score
-        if (a.today_score !== null && b.today_score === null) return -1;
-        if (a.today_score === null && b.today_score !== null) return 1;
-        // If neither player has a score, keep original order
-        return 0;
-      } else {
-        // Sort by the selected criteria for all-time
-        switch (sortBy) {
-          case 'totalScore':
-            return b.total_score - a.total_score;
-          case 'bestScore':
-            // For games where lower is better (like Wordle), reverse the sorting
-            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Handle scores of 0 (no score) by putting them at the bottom
-              if (a.best_score === 0 && b.best_score === 0) return 0;
-              if (a.best_score === 0) return 1; // Push a to the bottom
-              if (b.best_score === 0) return -1; // Push b to the bottom
-              // Otherwise, lower is better for Wordle
-              return a.best_score - b.best_score;
-            }
-            return b.best_score - a.best_score;
-          case 'totalGames':
-            return b.total_games - a.total_games;
-          case 'averageScore':
-            // For games where lower is better (like Wordle), reverse the sorting
-            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Handle scores of 0 (no score) by putting them at the bottom
-              if (a.average_score === 0 && b.average_score === 0) return 0;
-              if (a.average_score === 0) return 1; // Push a to the bottom
-              if (b.average_score === 0) return -1; // Push b to the bottom
-              // Otherwise, lower is better for Wordle
-              return a.average_score - b.average_score;
-            }
-            return b.average_score - a.average_score;
-          default:
-            // For games where lower is better (like Wordle), sort by best score (lowest first)
-            if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-              // Handle scores of 0 (no score) by putting them at the bottom
-              if (a.best_score === 0 && b.best_score === 0) return 0;
-              if (a.best_score === 0) return 1; // Push a to the bottom
-              if (b.best_score === 0) return -1; // Push b to the bottom
-              // Otherwise, lower is better for Wordle
-              return a.best_score - b.best_score;
-            }
-            // For other games, sort by total score (highest first)
-            return b.total_score - a.total_score;
-        }
-      }
-    });
-    
-    console.log('Final sorted and filtered players:', sortedPlayers);
-    return sortedPlayers;
-  };
-
-  const filteredAndSortedPlayers = getFilteredAndSortedPlayers();
+  const filteredAndSortedPlayers = filterAndSortPlayers(
+    leaderboardData,
+    searchTerm,
+    showFriendsOnly,
+    selectedFriendIds,
+    timeFilter,
+    sortBy,
+    selectedGame,
+    userId,
+    friendIds
+  );
+  
   const isLoading = isLoadingGameStats || isLoadingScores;
   
   return {

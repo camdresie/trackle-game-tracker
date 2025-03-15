@@ -1,19 +1,8 @@
 
 import React from 'react';
-import { Trophy, Users, ChevronsUpDown, User, Loader2, Calendar, Star } from 'lucide-react';
+import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { games } from '@/utils/gameData';
-
-interface LeaderboardPlayer {
-  player_id: string;
-  username: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  total_score: number;
-  best_score: number;
-  average_score: number;
-  total_games: number;
-  today_score: number | null;
-}
+import { LeaderboardPlayer } from '@/types/leaderboard';
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
@@ -38,7 +27,7 @@ const LeaderboardStats = ({
   // Calculate active players who have scores
   const activePlayers = players.filter(player => {
     if (timeFilter === 'today') {
-      return player.today_score !== null && player.today_score !== 0;
+      return player.today_score !== null;
     } else {
       return player.total_games > 0;
     }
@@ -62,9 +51,9 @@ const LeaderboardStats = ({
       // Sort by today's score (handling Wordle's lower-is-better scoring)
       leaderPlayer = [...activePlayers].sort((a, b) => {
         if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-          if (a.today_score === 0 || a.today_score === null) return 1;
-          if (b.today_score === 0 || b.today_score === null) return -1;
-          return a.today_score! - b.today_score!;
+          if (a.today_score === null) return 1;
+          if (b.today_score === null) return -1;
+          return a.today_score - b.today_score;
         } else {
           return (b.today_score || 0) - (a.today_score || 0);
         }
