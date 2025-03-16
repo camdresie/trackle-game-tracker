@@ -25,7 +25,7 @@ const FriendScoresList = ({
   onManageFriends,
   onRefreshFriends
 }: FriendScoresListProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
   const [refreshing, setRefreshing] = useState(false);
   
@@ -118,8 +118,13 @@ const FriendScoresList = ({
   };
 
   // Create a list with the current user first (if available), followed by friends
-  const allPlayers = user 
-    ? [{ id: user.id, name: user.full_name || user.username || 'You', avatar: user.avatar, isCurrentUser: true }, ...friends]
+  const allPlayers = user && profile 
+    ? [{ 
+        id: user.id, 
+        name: profile.full_name || profile.username || 'You', 
+        avatar: profile.avatar_url, 
+        isCurrentUser: true 
+      }, ...friends]
     : [...friends];
 
   return (
