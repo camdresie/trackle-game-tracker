@@ -126,7 +126,7 @@ const FriendScoresList = ({
         </div>
       ) : friends.length > 0 ? (
         <div className="space-y-4">
-          {friends.map((friend) => {
+          {friends.map((friend, index) => {
             const stats = getFriendStats(friend.id);
             const scores = friendScores[friend.id] || [];
             const hasScores = scores.length > 0;
@@ -138,6 +138,7 @@ const FriendScoresList = ({
                   scores={scores}
                   game={game}
                   stats={stats}
+                  rank={index + 1} // Add rank property here, using the map index + 1
                 />
                 
                 {!hasScores && (
