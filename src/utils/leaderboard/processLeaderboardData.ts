@@ -3,6 +3,27 @@ import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
 /**
+ * Get the current date in Eastern Time (ET)
+ * @returns Date string in YYYY-MM-DD format for Eastern Time
+ */
+const getEasternTimeDate = (): string => {
+  // Create a date object for the current time
+  const now = new Date();
+  
+  // Convert to Eastern Time (ET)
+  // ET is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For a simple implementation, we'll use a fixed offset
+  // In production, you should use a proper timezone library
+  const etOffsetHours = -5; // Eastern Standard Time offset from UTC
+  
+  // Calculate the time in milliseconds and adjust for ET
+  const etTime = new Date(now.getTime() + etOffsetHours * 60 * 60 * 1000);
+  
+  // Format as YYYY-MM-DD
+  return etTime.toISOString().split('T')[0];
+};
+
+/**
  * Transforms game stats and scores data into leaderboard players format
  */
 export const processLeaderboardData = (
@@ -15,9 +36,9 @@ export const processLeaderboardData = (
 ): LeaderboardPlayer[] => {
   if (!profilesData) return [];
   
-  // Get today's date for filtering - ensure consistent format as YYYY-MM-DD
-  const today = new Date().toISOString().split('T')[0];
-  console.log('processLeaderboardData - Today\'s date for filtering (YYYY-MM-DD):', today);
+  // Get today's date in Eastern Time for filtering
+  const today = getEasternTimeDate();
+  console.log('processLeaderboardData - Today\'s date in ET (YYYY-MM-DD):', today);
   console.log('processLeaderboardData - Raw scores data count:', scoresData?.length || 0);
   
   // Initialize user stats map
@@ -120,19 +141,14 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Process today's scores - using formattedDate for consistent comparison
-    // More lenient date comparison: check if the date part matches today's date string
-    const scoreDate = score.formattedDate || 
-      (typeof score.date === 'string' 
-        ? score.date.split('T')[0] 
-        : new Date(score.date).toISOString().split('T')[0]);
-        
+    // Convert the score date to Eastern Time and get the date part
+    const scoreDate = convertToEasternTime(score.date);
+    
     // For testing purposes, also consider scores from the day before as "today"
-    // This is useful for development when there might not be scores from exactly today
     const isToday = scoreDate === today;
     
-    // Get yesterday's date in YYYY-MM-DD format for comparison
-    const yesterday = new Date();
+    // Get yesterday's date in Eastern Time for development purposes
+    const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     const isYesterday = scoreDate === yesterdayStr;
@@ -200,3 +216,27 @@ export const processLeaderboardData = (
   
   return leaderboardPlayers;
 };
+
+/**
+ * Convert a date to Eastern Time and return as YYYY-MM-DD format
+ */
+function convertToEasternTime(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  
+  // Get the UTC time components
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  
+  // Eastern Time offset is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For simplicity, we'll use a fixed offset of -5 (EST)
+  const etOffset = -5;
+  
+  // Create a new date object with the Eastern Time adjustment
+  const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
+  
+  // Return the date part in YYYY-MM-DD format
+  return etDate.toISOString().split('T')[0];
+}

@@ -4,6 +4,50 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 /**
+ * Get the current date in Eastern Time (ET)
+ * @returns Date string in YYYY-MM-DD format for Eastern Time
+ */
+const getEasternTimeDate = (): string => {
+  // Create a date object for the current time
+  const now = new Date();
+  
+  // Convert to Eastern Time (ET)
+  // ET is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For a simple implementation, we'll use a fixed offset
+  const etOffsetHours = -5; // Eastern Standard Time offset from UTC
+  
+  // Calculate the time in milliseconds and adjust for ET
+  const etTime = new Date(now.getTime() + etOffsetHours * 60 * 60 * 1000);
+  
+  // Format as YYYY-MM-DD
+  return etTime.toISOString().split('T')[0];
+};
+
+/**
+ * Convert a date to Eastern Time and return as YYYY-MM-DD format
+ */
+function convertToEasternTime(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  
+  // Get the UTC time components
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  
+  // Eastern Time offset is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For simplicity, we'll use a fixed offset of -5 (EST)
+  const etOffset = -5;
+  
+  // Create a new date object with the Eastern Time adjustment
+  const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
+  
+  // Return the date part in YYYY-MM-DD format
+  return etDate.toISOString().split('T')[0];
+}
+
+/**
  * Hook for fetching ALL scores data across users
  */
 export const useScoresData = (userId: string | undefined, selectedGame: string) => {
@@ -29,23 +73,21 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
         
-        // Get today's date in YYYY-MM-DD format for consistent comparison
-        const today = new Date().toISOString().split('T')[0];
-        console.log('Today\'s date for filtering (YYYY-MM-DD):', today);
+        // Get today's date in Eastern Time 
+        const today = getEasternTimeDate();
+        console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
         
         // Count today's scores to verify detection
         if (data && data.length > 0) {
-          // Format date objects to YYYY-MM-DD strings for consistent comparison
+          // Format date objects to Eastern Time YYYY-MM-DD strings for consistent comparison
           const formattedData = data.map(score => ({
             ...score,
-            // Ensure date is in the correct format
-            formattedDate: typeof score.date === 'string' 
-              ? score.date.split('T')[0]  // Handle ISO strings
-              : new Date(score.date).toISOString().split('T')[0] // Handle Date objects
+            // Convert to Eastern Time
+            formattedDate: convertToEasternTime(score.date)
           }));
           
           // For development purposes, also consider scores from the day before as "today"
-          const yesterday = new Date();
+          const yesterday = new Date(today);
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split('T')[0];
           
@@ -104,10 +146,8 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           return {
             ...item,
-            // Add a consistently formatted date for easier filtering
-            formattedDate: typeof item.date === 'string' 
-              ? item.date.split('T')[0]
-              : new Date(item.date).toISOString().split('T')[0],
+            // Add a consistently formatted date in Eastern Time
+            formattedDate: convertToEasternTime(item.date),
             user_profile: profile
           };
         });
