@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { processLeaderboardData, filterAndSortPlayers } from '@/utils/leaderboardUtils';
+import { processLeaderboardData, filterAndSortPlayers } from '@/utils/leaderboard';
 import { useFriendsList } from '@/hooks/useFriendsList';
 import { useProfilesData } from './useProfilesData';
 import { useGameStatsData } from './useGameStatsData';
