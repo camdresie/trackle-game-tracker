@@ -178,19 +178,19 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Handle Quordle input changes with proper support for all input operations
-  const handleQuordleInputChange = (index: number, inputValue: string) => {
+  // Handle Quordle input changes with proper input handling
+  const handleQuordleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
     const newQuordleValues = [...quordleValues];
     
-    // Handle empty input (like when backspace is pressed)
+    // Handle empty input or backspace
     if (inputValue === '') {
-      // Default to 7 when input is cleared
       newQuordleValues[index] = 7;
       setQuordleValues(newQuordleValues);
       return;
     }
     
-    // If "X" is entered, use 9 (failed attempt)
+    // If "X" or "x" is entered, use 9 (failed attempt)
     if (inputValue.toLowerCase() === 'x') {
       newQuordleValues[index] = 9;
       setQuordleValues(newQuordleValues);
@@ -232,7 +232,7 @@ const AddScoreModal = ({
                     <label className="text-xs text-muted-foreground">Word {index + 1}</label>
                     <Input
                       value={quordleValues[index] === 9 ? 'X' : quordleValues[index].toString()}
-                      onChange={(e) => handleQuordleInputChange(index, e.target.value)}
+                      onChange={(e) => handleQuordleInputChange(index, e)}
                       className="text-center"
                       maxLength={1}
                     />
