@@ -178,9 +178,17 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Handle Quordle input changes - FIX HERE
+  // Handle Quordle input changes with proper support for all input operations
   const handleQuordleInputChange = (index: number, inputValue: string) => {
     const newQuordleValues = [...quordleValues];
+    
+    // Handle empty input (like when backspace is pressed)
+    if (inputValue === '') {
+      // Default to 7 when input is cleared
+      newQuordleValues[index] = 7;
+      setQuordleValues(newQuordleValues);
+      return;
+    }
     
     // If "X" is entered, use 9 (failed attempt)
     if (inputValue.toLowerCase() === 'x') {
