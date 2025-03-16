@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, UserPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -166,8 +166,8 @@ const LeaderboardFilters = ({
               <SelectValue placeholder="Time Period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="today">Today Only</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -199,10 +199,15 @@ const LeaderboardFilters = ({
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="totalScore">Total Score</SelectItem>
-              <SelectItem value="bestScore">Best Score</SelectItem>
-              <SelectItem value="totalGames">Games Played</SelectItem>
-              <SelectItem value="averageScore">Average Score</SelectItem>
+              {timeFilter === 'today' ? (
+                <SelectItem value="totalScore">Today's Score</SelectItem>
+              ) : (
+                <>
+                  <SelectItem value="averageScore">Average Score</SelectItem>
+                  <SelectItem value="bestScore">Best Score</SelectItem>
+                  <SelectItem value="totalGames">Games Played</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

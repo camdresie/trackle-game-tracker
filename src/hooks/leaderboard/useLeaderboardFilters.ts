@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SortByOption, TimeFilter } from '@/types/leaderboard';
 import { games } from '@/utils/gameData';
 
@@ -13,7 +13,16 @@ export const useLeaderboardFilters = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('today'); // Changed default to 'today'
+
+  // When timeFilter changes, update the sortBy appropriately
+  useEffect(() => {
+    if (timeFilter === 'all') {
+      setSortBy('averageScore'); // Default to average score for "All Time" view
+    } else {
+      setSortBy('totalScore'); // Keep total score for today's view
+    }
+  }, [timeFilter]);
 
   return {
     selectedGame,

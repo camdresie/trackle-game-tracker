@@ -82,8 +82,6 @@ export const filterAndSortPlayers = (
     } else {
       // Sort by the selected criteria for all-time
       switch (sortBy) {
-        case 'totalScore':
-          return b.total_score - a.total_score;
         case 'bestScore':
           if (['wordle', 'mini-crossword'].includes(selectedGame)) {
             // For games where lower is better, handle 0 scores
@@ -105,14 +103,14 @@ export const filterAndSortPlayers = (
           }
           return b.average_score - a.average_score;
         default:
-          // Default sorting
+          // Default sorting for all-time view is average score
           if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-            if (a.best_score === 0 && b.best_score === 0) return 0;
-            if (a.best_score === 0) return 1;
-            if (b.best_score === 0) return -1;
-            return a.best_score - b.best_score;
+            if (a.average_score === 0 && b.average_score === 0) return 0;
+            if (a.average_score === 0) return 1;
+            if (b.average_score === 0) return -1;
+            return a.average_score - b.average_score;
           }
-          return b.total_score - a.total_score;
+          return b.average_score - a.average_score;
       }
     }
   });

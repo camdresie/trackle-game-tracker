@@ -43,6 +43,11 @@ const Leaderboard = () => {
   const currentGame = games.find(game => game.id === selectedGame);
   const gameTitle = currentGame ? currentGame.name : 'Game';
   
+  // Generate subtitle based on time filter
+  const subtitle = timeFilter === 'today' 
+    ? "See who's winning today" 
+    : "See who's winning overall";
+  
   // Debug outputs for leaderboard data
   console.log('Leaderboard.tsx - timeFilter:', timeFilter);
   console.log('Leaderboard.tsx - filtered players count:', filteredAndSortedPlayers.length);
@@ -55,7 +60,7 @@ const Leaderboard = () => {
       <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <LeaderboardHeader 
           title={`${gameTitle} Leaderboard`}
-          subtitle="See who's winning at this game"
+          subtitle={subtitle}
         />
         
         <div className="glass-card rounded-xl p-5 mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
