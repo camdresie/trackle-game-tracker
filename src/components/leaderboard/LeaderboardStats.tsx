@@ -28,19 +28,24 @@ const LeaderboardStats = ({
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
-  // Calculate total games played across ALL users for the selected game - simplified approach
+  // Calculate total games played across ALL users for the selected game - direct approach
   let gamesPlayedCount = 0;
   
   if (rawScoresData && rawScoresData.length > 0) {
+    console.log('LeaderboardStats - Raw scores data:', JSON.stringify(rawScoresData));
+    
     if (selectedGame !== 'all') {
       // Get scores for the selected game
       const filteredScores = rawScoresData.filter(score => score.game_id === selectedGame);
+      console.log(`LeaderboardStats - Filtered scores for ${selectedGame}:`, filteredScores.length);
       
       // Apply time filter if needed
       if (timeFilter === 'today') {
         gamesPlayedCount = filteredScores.filter(score => {
           const scoreDate = new Date(score.date).toISOString().split('T')[0];
-          return scoreDate === today;
+          const isToday = scoreDate === today;
+          console.log(`Score date: ${scoreDate}, Today: ${today}, IsToday: ${isToday}`);
+          return isToday;
         }).length;
       } else {
         gamesPlayedCount = filteredScores.length;
@@ -59,10 +64,10 @@ const LeaderboardStats = ({
   }
   
   // Debug logging
-  console.log(`LeaderboardStats - Total raw scores: ${rawScoresData.length}`);
+  console.log(`LeaderboardStats - Total raw scores: ${rawScoresData?.length || 0}`);
   console.log(`LeaderboardStats - ${selectedGame} games played count: ${gamesPlayedCount}`);
   console.log(`LeaderboardStats - Time filter: ${timeFilter}`);
-  console.log(`LeaderboardStats - Raw game IDs:`, rawScoresData.map(s => s.game_id));
+  console.log(`LeaderboardStats - Raw game IDs:`, rawScoresData?.map(s => s.game_id));
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
