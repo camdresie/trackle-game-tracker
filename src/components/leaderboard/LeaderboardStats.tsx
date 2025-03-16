@@ -169,6 +169,18 @@ const LeaderboardStats = ({
     return sortBy === statType ? 'bg-primary/20' : 'bg-secondary/50';
   };
 
+  // Helper function to format score based on game type
+  const formatScore = (score: number): string => {
+    if (score === null || score === undefined) return '-';
+    
+    // Format to at most 2 decimal places for average scores
+    if (typeof score === 'number' && !Number.isInteger(score)) {
+      return score.toFixed(2);
+    }
+    
+    return score.toString();
+  };
+
   // Determine which leader card to show in the third position based on selected filter
   const renderDynamicLeaderCard = () => {
     // Always show total scores for today view
@@ -199,7 +211,7 @@ const LeaderboardStats = ({
               <div className="flex items-center justify-center mb-2">
                 <Award className="w-5 h-5 text-blue-500" />
               </div>
-              <div className="text-2xl font-semibold">
+              <div className="text-xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : highestAveragePlayer ? (
@@ -208,8 +220,13 @@ const LeaderboardStats = ({
                   '-'
                 )}
               </div>
+              {!isLoading && highestAveragePlayer && (
+                <div className="text-base font-medium">
+                  {formatScore(highestAveragePlayer.average_score)}
+                </div>
+              )}
               <div className="text-sm text-muted-foreground">
-                Highest Average Score
+                Best Average Score
               </div>
             </CardContent>
           </Card>
@@ -221,7 +238,7 @@ const LeaderboardStats = ({
               <div className="flex items-center justify-center mb-2">
                 <Target className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-2xl font-semibold">
+              <div className="text-xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : bestScorePlayer ? (
@@ -230,6 +247,11 @@ const LeaderboardStats = ({
                   '-'
                 )}
               </div>
+              {!isLoading && bestScorePlayer && (
+                <div className="text-base font-medium">
+                  {formatScore(bestScorePlayer.best_score)}
+                </div>
+              )}
               <div className="text-sm text-muted-foreground">
                 Best Score
               </div>
@@ -243,7 +265,7 @@ const LeaderboardStats = ({
               <div className="flex items-center justify-center mb-2">
                 <Blocks className="w-5 h-5 text-purple-500" />
               </div>
-              <div className="text-2xl font-semibold">
+              <div className="text-xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : mostGamesPlayer ? (
@@ -252,6 +274,11 @@ const LeaderboardStats = ({
                   '-'
                 )}
               </div>
+              {!isLoading && mostGamesPlayer && (
+                <div className="text-base font-medium">
+                  {mostGamesPlayer.total_games}
+                </div>
+              )}
               <div className="text-sm text-muted-foreground">
                 Most Games Played
               </div>
