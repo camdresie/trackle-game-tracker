@@ -14,6 +14,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
     setSelectedGame,
     sortBy,
     setSortBy,
+    sortByCategory,
     searchTerm,
     setSearchTerm,
     showFriendsOnly,
@@ -106,6 +107,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
     setSelectedGame,
     sortBy,
     setSortBy,
+    sortByCategory, // Include sortByCategory in the return value
     searchTerm,
     setSearchTerm,
     showFriendsOnly,

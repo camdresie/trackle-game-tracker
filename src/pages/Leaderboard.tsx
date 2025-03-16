@@ -18,6 +18,7 @@ const Leaderboard = () => {
     setSelectedGame,
     sortBy,
     setSortBy,
+    sortByCategory,
     searchTerm,
     setSearchTerm,
     showFriendsOnly,
@@ -98,7 +99,7 @@ const Leaderboard = () => {
           selectedGame={selectedGame}
           totalScoresCount={scoresData?.length || 0}
           rawScoresData={scoresData || []}
-          sortBy={sortBy} // Pass the sortBy prop
+          sortBy={sortByCategory} // Use sortByCategory instead of sortBy
         />
       </main>
     </div>

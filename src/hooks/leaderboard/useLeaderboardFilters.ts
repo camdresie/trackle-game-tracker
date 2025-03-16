@@ -38,8 +38,9 @@ export const useLeaderboardFilters = () => {
   return {
     selectedGame,
     setSelectedGame,
-    sortBy: mapSortByToStatCategory(sortBy),
+    sortBy,
     setSortBy,
+    sortByCategory: mapSortByToStatCategory(sortBy), // Return the mapped category separately
     searchTerm,
     setSearchTerm,
     showFriendsOnly,
