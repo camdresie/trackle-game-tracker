@@ -69,7 +69,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         
         // Make a standalone query to first verify if this friend has any scores at all
         // Use simplified query to isolate potential RLS issues
-        const { count, error: countError } = await supabase
+        const { data, error: countError } = await supabase
           .from('scores')
           .select('*', { count: 'exact', head: true })
           .eq('game_id', gameId)
@@ -79,23 +79,25 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           console.error(`[useFriendScores] RLS/Count error for ${friend.name}:`, countError);
           console.log(`[useFriendScores] Debug info: Current user: ${sessionData.session?.user.id || 'No user'}, Friend: ${friend.id}, Game: ${gameId}`);
         } else {
-          console.log(`[useFriendScores] Found ${count || 0} scores for friend ${friend.name}`);
+          const countValue = data?.length !== undefined ? data.length : 0;
+          console.log(`[useFriendScores] Found ${countValue} scores for friend ${friend.name}`);
         }
         
         // Check if we can access any scores at all (not filtered)
         const { data: anyScores, error: anyScoresError } = await supabase
           .from('scores')
-          .select('count(*)', { count: 'exact', head: true })
+          .select('*', { count: 'exact', head: true })
           .eq('user_id', friend.id);
           
         if (anyScoresError) {
           console.error(`[useFriendScores] Cannot access ANY scores for ${friend.name}:`, anyScoresError);
         } else {
-          console.log(`[useFriendScores] Friend ${friend.name} has ${anyScores?.count || 0} total scores in database`);
+          const anyScoresCount = anyScores?.length !== undefined ? anyScores.length : 0;
+          console.log(`[useFriendScores] Friend ${friend.name} has ${anyScoresCount} total scores in database`);
         }
         
         // Query Supabase directly to get scores with full debug info
-        const { data, error, status, statusText } = await supabase
+        const { data: scoresData, error, status, statusText } = await supabase
           .from('scores')
           .select('*')
           .eq('game_id', gameId)
@@ -109,20 +111,20 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           continue;
         }
         
-        console.log(`[useFriendScores] Raw scores data for ${friend.name}:`, data);
+        console.log(`[useFriendScores] Raw scores data for ${friend.name}:`, scoresData);
         console.log(`[useFriendScores] HTTP Status: ${status} ${statusText}`);
         
         // Check permissions - log RLS debug info
         console.log(`[useFriendScores] RLS check: Current user can view scores for user_id=${friend.id}, game_id=${gameId}`);
         
-        if (!data || data.length === 0) {
+        if (!scoresData || scoresData.length === 0) {
           console.log(`[useFriendScores] No scores found for friend ${friend.name}`);
           newFriendScores[friend.id] = [];
           continue;
         }
         
         // Map retrieved scores to our Score type
-        const formattedScores = data.map(score => ({
+        const formattedScores = scoresData.map(score => ({
           id: score.id,
           gameId: score.game_id,
           playerId: score.user_id,
