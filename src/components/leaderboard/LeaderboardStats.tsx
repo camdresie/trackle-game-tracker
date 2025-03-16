@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
+import { subDays, addDays } from 'date-fns';
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
@@ -28,6 +29,9 @@ const LeaderboardStats = ({
   
   // Get today's date in YYYY-MM-DD format for consistent comparison
   const today = getEasternTimeDate();
+  // For development, also consider yesterday and tomorrow's dates
+  const yesterday = formatInTimeZone(subDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
+  const tomorrow = formatInTimeZone(addDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
   
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
@@ -39,7 +43,8 @@ const LeaderboardStats = ({
         const formattedDate = score.formattedDate || 
           formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
         
-        return formattedDate === today;
+        // For development/testing, consider scores from yesterday, today, and tomorrow
+        return formattedDate === today || formattedDate === yesterday || formattedDate === tomorrow;
       }).length
     : activePlayers.reduce((total, player) => total + player.total_games, 0);
   
@@ -48,6 +53,8 @@ const LeaderboardStats = ({
     console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
     console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
     console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
+    console.log(`LeaderboardStats - Yesterday's date (YYYY-MM-DD): ${yesterday}`);
+    console.log(`LeaderboardStats - Tomorrow's date (YYYY-MM-DD): ${tomorrow}`);
     console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
     console.log(`LeaderboardStats - Active players: ${activePlayers.length}`);
     
@@ -59,6 +66,8 @@ const LeaderboardStats = ({
           formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
         
         const isToday = formattedDate === today;
+        const isYesterday = formattedDate === yesterday;
+        const isTomorrow = formattedDate === tomorrow;
         
         if (isToday) {
           console.log(`LeaderboardStats - MATCH: Score from today found:`, {
@@ -72,13 +81,25 @@ const LeaderboardStats = ({
           });
         }
         
-        return isToday;
+        if (isYesterday || isTomorrow) {
+          console.log(`LeaderboardStats - NEAR MATCH: Score from ${isYesterday ? 'yesterday' : 'tomorrow'} found:`, {
+            id: score.id,
+            user_id: score.user_id,
+            raw_date: score.date,
+            formattedDate: formattedDate,
+            date: isYesterday ? yesterday : tomorrow,
+            value: score.value
+          });
+        }
+        
+        // For development/testing, consider all recent dates
+        return isToday || isYesterday || isTomorrow;
       });
       
-      console.log(`LeaderboardStats - Scores found for today:`, todayScores.length);
+      console.log(`LeaderboardStats - Scores found for recent dates:`, todayScores.length);
       
       if (todayScores.length > 0) {
-        console.log('Sample today scores:', todayScores.slice(0, Math.min(5, todayScores.length)).map(s => ({
+        console.log('Sample recent scores:', todayScores.slice(0, Math.min(5, todayScores.length)).map(s => ({
           id: s.id,
           user_id: s.user_id,
           date: s.date,
@@ -86,19 +107,19 @@ const LeaderboardStats = ({
           value: s.value
         })));
       } else {
-        console.log('No scores found for today');
+        console.log('No scores found for recent dates');
       }
       
-      // Count unique users who have played today
+      // Count unique users who have played recently
       const uniqueUserIds = new Set(todayScores.map(s => s.user_id));
-      console.log(`LeaderboardStats - Unique users with scores today: ${uniqueUserIds.size}`);
+      console.log(`LeaderboardStats - Unique users with recent scores: ${uniqueUserIds.size}`);
       if (uniqueUserIds.size > 0) {
-        console.log('Unique user IDs with today scores:', Array.from(uniqueUserIds));
+        console.log('Unique user IDs with recent scores:', Array.from(uniqueUserIds));
       }
     }
     
     console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
-  }, [rawScoresData, selectedGame, timeFilter, today, gamesPlayedCount, activePlayers]);
+  }, [rawScoresData, selectedGame, timeFilter, today, yesterday, tomorrow, gamesPlayedCount, activePlayers]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;

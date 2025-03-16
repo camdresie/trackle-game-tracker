@@ -1,7 +1,7 @@
 
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
-import { format, addDays } from 'date-fns';
+import { addDays, subDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
@@ -35,12 +35,13 @@ export const processLeaderboardData = (
   
   // Get today's date in Eastern Time for filtering
   const today = getEasternTimeDate();
-  // For development purposes, also consider scores from the day before
-  const yesterday = addDays(new Date(today), -1);
-  const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+  // For development purposes, also consider scores from the day before and day after
+  const yesterday = formatInTimeZone(subDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
+  const tomorrow = formatInTimeZone(addDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
   
   console.log('processLeaderboardData - Today\'s date in ET (YYYY-MM-DD):', today);
-  console.log('processLeaderboardData - Yesterday\'s date in ET (YYYY-MM-DD):', yesterdayStr);
+  console.log('processLeaderboardData - Yesterday\'s date in ET (YYYY-MM-DD):', yesterday);
+  console.log('processLeaderboardData - Tomorrow\'s date in ET (YYYY-MM-DD):', tomorrow);
   console.log('processLeaderboardData - Raw scores data count:', scoresData?.length || 0);
   
   // Initialize user stats map
@@ -152,14 +153,21 @@ export const processLeaderboardData = (
     // Get the formatted date in Eastern Time - use the existing formattedDate if available
     const scoreDate = score.formattedDate || convertToEasternTime(score.date);
     
-    // Check if the score is from today or yesterday
+    // Check if the score is from today, yesterday, or tomorrow (for development/testing)
     const isToday = scoreDate === today;
-    const isYesterday = scoreDate === yesterdayStr;
+    const isYesterday = scoreDate === yesterday;
+    const isTomorrow = scoreDate === tomorrow;
     
-    if (isToday || isYesterday) {
-      console.log(`TODAY/YESTERDAY SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, is today? ${isToday}, is yesterday? ${isYesterday}`);
+    if (isToday || isYesterday || isTomorrow) {
+      console.log(`RECENT SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, is today? ${isToday}, is yesterday? ${isYesterday}, is tomorrow? ${isTomorrow}`);
       
-      // Update the today_score for this user
+      // For debugging, let's make sure we're seeing camdresie's scores
+      if (userStats.username === 'camdresie') {
+        console.log(`FOUND CAMDRESIE SCORE: ${score.value}, date: ${score.date}, scoreDate: ${scoreDate}, matches today? ${isToday}`);
+      }
+      
+      // Update the today_score for this user for any recent date (today/yesterday/tomorrow)
+      // This helps with debugging and ensuring scores show up
       userStats.today_score = score.value;
     }
     

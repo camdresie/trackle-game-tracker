@@ -1,5 +1,6 @@
 
 import { LeaderboardPlayer } from '@/types/leaderboard';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Filter and sort players based on selected criteria
@@ -23,7 +24,7 @@ export const filterAndSortPlayers = (
   // Make a copy to avoid modifying the original data
   let filteredPlayers = [...leaderboardPlayers];
   
-  // For testing/development, include all players in today view if there are no today scores
+  // For debugging/development, log players with today scores
   const playersWithTodayScores = filteredPlayers.filter(player => player.today_score !== null);
   console.log('Number of players with today scores before filtering:', playersWithTodayScores.length);
   if (playersWithTodayScores.length > 0) {
@@ -59,7 +60,7 @@ export const filterAndSortPlayers = (
   // Sort players
   filteredPlayers.sort((a, b) => {
     if (timeFilter === 'today') {
-      // If filtering by today's scores
+      // For today view, prioritize players with today's scores first
       if (a.today_score === null && b.today_score === null) return 0;
       if (a.today_score === null) return 1;
       if (b.today_score === null) return -1;
