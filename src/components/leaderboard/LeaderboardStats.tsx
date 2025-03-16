@@ -20,8 +20,8 @@ const LeaderboardStats = ({
   totalScoresCount, 
   rawScoresData
 }: LeaderboardStatsProps) => {
-  // Get today's date for filtering
-  const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  // Get today's date in YYYY-MM-DD format for consistent comparison
+  const today = new Date().toISOString().split('T')[0];
   
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
@@ -36,7 +36,7 @@ const LeaderboardStats = ({
       
       // Then filter by date if timeFilter is 'today'
       if (timeFilter === 'today') {
-        // Ensure consistent date format comparison
+        // Ensure consistent date format comparison by converting to YYYY-MM-DD
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
         return scoreDate === today;
       }
@@ -48,16 +48,21 @@ const LeaderboardStats = ({
   useEffect(() => {
     console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
     console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
-    console.log(`LeaderboardStats - Today's date: ${today}`);
+    console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
     console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
     
     // Count and log scores that match today's date
     if (timeFilter === 'today') {
       const todayScores = rawScoresData.filter(score => {
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        return scoreDate === today;
+        const isToday = scoreDate === today;
+        if (isToday) {
+          console.log(`Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}`);
+        }
+        return isToday;
       });
-      console.log(`LeaderboardStats - Scores found for today: ${todayScores.length}`);
+      
+      console.log(`LeaderboardStats - Scores found for today (${today}): ${todayScores.length}`);
       
       if (todayScores.length > 0) {
         console.log('Sample today scores:', todayScores.slice(0, 2));
@@ -66,23 +71,28 @@ const LeaderboardStats = ({
       }
     }
     
-    console.log(`LeaderboardStats - Calculated games played count: ${gamesPlayedCount}`);
+    console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
   }, [rawScoresData, selectedGame, timeFilter, today]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
   if (activePlayers.length > 0) {
     if (timeFilter === 'today') {
-      // Sort by today's score (handling Wordle's lower-is-better scoring)
-      leaderPlayer = [...activePlayers]
-        .filter(p => p.today_score !== null)
-        .sort((a, b) => {
-          if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-            return (a.today_score || 0) - (b.today_score || 0);
-          } else {
-            return (b.today_score || 0) - (a.today_score || 0);
-          }
-        })[0];
+      // For today's view, only consider players with today's scores
+      const playersWithTodayScores = activePlayers.filter(p => p.today_score !== null);
+      console.log(`LeaderboardStats - Players with today scores: ${playersWithTodayScores.length}`);
+      
+      if (playersWithTodayScores.length > 0) {
+        // Sort by today's score (handling Wordle's lower-is-better scoring)
+        leaderPlayer = [...playersWithTodayScores]
+          .sort((a, b) => {
+            if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
+              return (a.today_score || 0) - (b.today_score || 0);
+            } else {
+              return (b.today_score || 0) - (a.today_score || 0);
+            }
+          })[0];
+      }
     } else {
       // Sort by best score for all-time
       leaderPlayer = [...activePlayers].sort((a, b) => {

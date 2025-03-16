@@ -29,34 +29,26 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
         
-        // Debug logging for better visibility into score data
+        // Get today's date in YYYY-MM-DD format without timezone issues
+        const today = new Date().toISOString().split('T')[0];
+        console.log('Today\'s date for filtering (YYYY-MM-DD):', today);
+        
+        // Count today's scores for debugging
         if (data && data.length > 0) {
-          // Count by game for debugging
-          const gameCounts = {};
-          data.forEach(score => {
-            gameCounts[score.game_id] = (gameCounts[score.game_id] || 0) + 1;
-          });
-          console.log('ALL scores by game type:', gameCounts);
-          
-          // Check today's scores specifically
-          const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-          console.log('Today\'s date for filtering:', today);
-          
           const todayScores = data.filter(score => {
-            // Ensure consistent date format comparison
+            // Format the score date consistently as YYYY-MM-DD for comparison
             const scoreDate = new Date(score.date).toISOString().split('T')[0];
             const isToday = scoreDate === today;
+            
             if (isToday) {
               console.log('Found a score from today:', score);
             }
+            
             return isToday;
           });
           
-          console.log(`ALL scores from today (${today}):`, todayScores.length);
-          
-          if (todayScores.length > 0) {
-            console.log('Sample of today scores:', todayScores.slice(0, 3));
-          }
+          console.log(`Scores from today (${today}):`, todayScores.length);
+          console.log('Sample today scores:', todayScores.slice(0, 3));
         }
         
         // Get profiles for all user IDs

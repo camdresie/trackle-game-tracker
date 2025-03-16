@@ -15,9 +15,9 @@ export const processLeaderboardData = (
 ): LeaderboardPlayer[] => {
   if (!profilesData) return [];
   
-  // Get today's date for filtering - ensure consistent format
-  const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
-  console.log('processLeaderboardData - Today\'s date for filtering:', today);
+  // Get today's date for filtering - ensure consistent format as YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
+  console.log('processLeaderboardData - Today\'s date for filtering (YYYY-MM-DD):', today);
   console.log('processLeaderboardData - Raw scores data count:', scoresData?.length || 0);
   
   // Initialize user stats map
@@ -152,7 +152,10 @@ export const processLeaderboardData = (
   const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
   console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
   if (playersWithTodayScores.length > 0) {
-    console.log('Players with today scores:', playersWithTodayScores.map(p => p.username));
+    console.log('Players with today scores:', playersWithTodayScores.map(p => ({
+      username: p.username,
+      today_score: p.today_score
+    })));
   }
   
   return leaderboardPlayers;
@@ -183,7 +186,8 @@ export const filterAndSortPlayers = (
   // For today filter, only include players with today's scores
   if (timeFilter === 'today') {
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
-    console.log('filterAndSortPlayers - Players with today scores:', filteredPlayers.length);
+    console.log('filterAndSortPlayers - Players with today scores after filtering:', filteredPlayers.length);
+    
     if (filteredPlayers.length > 0) {
       console.log('Sample players with today scores:', 
         filteredPlayers.slice(0, 3).map(p => ({
@@ -191,6 +195,8 @@ export const filterAndSortPlayers = (
           today_score: p.today_score
         }))
       );
+    } else {
+      console.log('No players found with today scores after filtering');
     }
   }
   
