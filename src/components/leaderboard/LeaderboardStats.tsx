@@ -9,7 +9,7 @@ interface LeaderboardStatsProps {
   players: LeaderboardPlayer[];
   selectedGame: string;
   totalScoresCount: number; 
-  rawScoresData: any[]; // Adding raw scores data to analyze
+  rawScoresData: any[]; // Raw scores data for analysis
 }
 
 const LeaderboardStats = ({ 
@@ -20,54 +20,51 @@ const LeaderboardStats = ({
   totalScoresCount, 
   rawScoresData
 }: LeaderboardStatsProps) => {
-  // Get today's date for filtering - ensure consistent format
+  // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
   
-  // Consider players with at least one game to be active (total_games > 0)
+  // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
-  
-  // Calculate total games played across ALL users for the selected game - direct approach
+  // Calculate total games played - SIMPLIFIED APPROACH
   let gamesPlayedCount = 0;
   
   if (rawScoresData && rawScoresData.length > 0) {
-    console.log('LeaderboardStats - Raw scores data:', JSON.stringify(rawScoresData));
-    
-    if (selectedGame !== 'all') {
-      // Get scores for the selected game
-      const filteredScores = rawScoresData.filter(score => score.game_id === selectedGame);
-      console.log(`LeaderboardStats - Filtered scores for ${selectedGame}:`, filteredScores.length);
-      
-      // Apply time filter if needed
-      if (timeFilter === 'today') {
-        gamesPlayedCount = filteredScores.filter(score => {
-          const scoreDate = new Date(score.date).toISOString().split('T')[0];
-          const isToday = scoreDate === today;
-          console.log(`Score date: ${scoreDate}, Today: ${today}, IsToday: ${isToday}`);
-          return isToday;
-        }).length;
-      } else {
-        gamesPlayedCount = filteredScores.length;
-      }
+    if (timeFilter === 'today') {
+      // Count today's games only
+      gamesPlayedCount = rawScoresData.filter(score => {
+        const isCorrectGame = selectedGame === 'all' || score.game_id === selectedGame;
+        const scoreDate = new Date(score.date).toISOString().split('T')[0];
+        const isToday = scoreDate === today;
+        return isCorrectGame && isToday;
+      }).length;
     } else {
-      // For all games
-      if (timeFilter === 'today') {
-        gamesPlayedCount = rawScoresData.filter(score => {
-          const scoreDate = new Date(score.date).toISOString().split('T')[0];
-          return scoreDate === today;
-        }).length;
+      // Count all games for the selected game type
+      if (selectedGame !== 'all') {
+        gamesPlayedCount = rawScoresData.filter(score => score.game_id === selectedGame).length;
       } else {
         gamesPlayedCount = rawScoresData.length;
       }
     }
   }
   
-  // Debug logging
-  console.log(`LeaderboardStats - Total raw scores: ${rawScoresData?.length || 0}`);
-  console.log(`LeaderboardStats - ${selectedGame} games played count: ${gamesPlayedCount}`);
-  console.log(`LeaderboardStats - Time filter: ${timeFilter}`);
-  console.log(`LeaderboardStats - Raw game IDs:`, rawScoresData?.map(s => s.game_id));
+  // Debug logging to ensure we're getting the right counts
+  console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
+  console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
+  console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
+  console.log(`LeaderboardStats - Calculated games played count: ${gamesPlayedCount}`);
+  
+  if (rawScoresData && rawScoresData.length > 0) {
+    // Log first few scores for debugging
+    console.log('Sample of score data:', rawScoresData.slice(0, 3));
+    
+    // Count by game type for debugging
+    const gameTypeCounts = {};
+    rawScoresData.forEach(score => {
+      gameTypeCounts[score.game_id] = (gameTypeCounts[score.game_id] || 0) + 1;
+    });
+    console.log('Counts by game type:', gameTypeCounts);
+  }
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
