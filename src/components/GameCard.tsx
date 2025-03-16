@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
@@ -37,6 +36,17 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     } else {
       return 'points';
     }
+  };
+  
+  // Format the average score to show only up to 2 decimal places when needed
+  const formatAverageScore = (score?: number) => {
+    if (score === undefined) return '-';
+    
+    // If it's a whole number, return it as is
+    if (Number.isInteger(score)) return score.toString();
+    
+    // Otherwise, truncate to 2 decimal places
+    return score.toFixed(2);
   };
 
   // Check if the game was played today
@@ -89,7 +99,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <Star className="w-4 h-4 text-purple-500 mb-1" />
           <span className="text-xs text-muted-foreground">Avg</span>
-          <span className="font-medium">{averageScore || '-'}</span>
+          <span className="font-medium">{formatAverageScore(averageScore)}</span>
         </div>
       </div>
       

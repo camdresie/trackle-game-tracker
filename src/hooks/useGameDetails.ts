@@ -15,6 +15,7 @@ interface GameDetailsResult {
   scores: Score[];
   isLoading: boolean;
   bestScore: number | null;
+  averageScore: number | null;
 }
 
 /**
@@ -26,6 +27,7 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
   const [scores, setScores] = useState<Score[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [bestScore, setBestScore] = useState<number | null>(null);
+  const [averageScore, setAverageScore] = useState<number | null>(null);
 
   useEffect(() => {
     async function fetchGameData() {
@@ -66,11 +68,15 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
         
         // Calculate best score
         if (mappedScores.length > 0) {
-          if (gameId === 'wordle') {
+          if (gameId === 'wordle' || gameId === 'mini-crossword') {
             setBestScore(Math.min(...mappedScores.map(s => s.value)));
           } else {
             setBestScore(Math.max(...mappedScores.map(s => s.value)));
           }
+          
+          // Calculate average score
+          const sum = mappedScores.reduce((total, score) => total + score.value, 0);
+          setAverageScore(sum / mappedScores.length);
         }
       } catch (error) {
         console.error('Error fetching game data:', error);
@@ -91,6 +97,7 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
     game,
     scores,
     isLoading,
-    bestScore
+    bestScore,
+    averageScore
   };
 };

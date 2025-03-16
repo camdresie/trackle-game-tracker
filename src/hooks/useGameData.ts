@@ -20,7 +20,8 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     game,
     scores,
     isLoading,
-    bestScore
+    bestScore,
+    averageScore
   } = useGameDetails({ gameId });
   
   // Get friends list with refresh capability
@@ -50,6 +51,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     scores,
     isLoading,
     bestScore,
+    averageScore,
     friends,
     friendScores,
     refreshFriends
