@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { format, addDays } from 'date-fns';
 
 /**
  * Get the current date in Eastern Time (ET)
@@ -29,7 +30,7 @@ const getEasternTimeDate = (): string => {
   const etTime = new Date(nowUTC.getTime() + (etOffsetHours * 60 * 60 * 1000));
   
   // Format as YYYY-MM-DD
-  return etTime.toISOString().split('T')[0];
+  return format(etTime, 'yyyy-MM-dd');
 };
 
 /**
@@ -54,7 +55,7 @@ function convertToEasternTime(dateInput: string | Date): string {
   const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
   
   // Return the date part in YYYY-MM-DD format
-  return etDate.toISOString().split('T')[0];
+  return format(etDate, 'yyyy-MM-dd');
 }
 
 /**
@@ -85,7 +86,14 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         // Get today's date in Eastern Time 
         const today = getEasternTimeDate();
+        
+        // For development purposes, also consider scores from the day before
+        const yesterday = addDays(new Date(today), -1);
+        const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+        
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
+        console.log('Yesterday\'s date in Eastern Time (YYYY-MM-DD):', yesterdayStr);
+        
         console.log('All raw scores:', data?.map(s => ({ 
           id: s.id, 
           user_id: s.user_id, 
@@ -101,11 +109,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             // Convert to Eastern Time
             formattedDate: convertToEasternTime(score.date)
           }));
-          
-          // For development purposes, also consider scores from the day before as "today"
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
           
           // Check for today's scores
           const todayScores = formattedData.filter(score => {

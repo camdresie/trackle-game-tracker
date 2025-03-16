@@ -1,6 +1,7 @@
 
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
+import { format, addDays } from 'date-fns';
 
 /**
  * Get the current date in Eastern Time (ET)
@@ -28,7 +29,7 @@ const getEasternTimeDate = (): string => {
   const etTime = new Date(nowUTC.getTime() + (etOffsetHours * 60 * 60 * 1000));
   
   // Format as YYYY-MM-DD
-  return etTime.toISOString().split('T')[0];
+  return format(etTime, 'yyyy-MM-dd');
 };
 
 /**
@@ -53,7 +54,7 @@ function convertToEasternTime(dateInput: string | Date): string {
   const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
   
   // Return the date part in YYYY-MM-DD format
-  return etDate.toISOString().split('T')[0];
+  return format(etDate, 'yyyy-MM-dd');
 }
 
 /**
@@ -71,7 +72,12 @@ export const processLeaderboardData = (
   
   // Get today's date in Eastern Time for filtering
   const today = getEasternTimeDate();
+  // For development purposes, also consider scores from the day before
+  const yesterday = addDays(new Date(today), -1);
+  const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+  
   console.log('processLeaderboardData - Today\'s date in ET (YYYY-MM-DD):', today);
+  console.log('processLeaderboardData - Yesterday\'s date in ET (YYYY-MM-DD):', yesterdayStr);
   console.log('processLeaderboardData - Raw scores data count:', scoresData?.length || 0);
   
   // Initialize user stats map
@@ -107,7 +113,7 @@ export const processLeaderboardData = (
   
   // Log a few scores to see the data structure
   if (gameScores.length > 0) {
-    console.log('Sample scores data:', gameScores.slice(0, 2));
+    console.log('Sample scores data:', gameScores.slice(0, Math.min(5, gameScores.length)));
     console.log('All scores with dates:', gameScores.map(s => ({
       user_id: s.user_id,
       date: s.date,
@@ -126,11 +132,6 @@ export const processLeaderboardData = (
       userGameCounts[userId] = stat.total_plays || 0;
     });
   }
-  
-  // For development purposes, consider scores from yesterday as "today"
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -193,7 +194,7 @@ export const processLeaderboardData = (
     const isYesterday = scoreDate === yesterdayStr;
     
     if (isToday || isYesterday) {
-      console.log(`SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, is today? ${isToday}, is yesterday? ${isYesterday}`);
+      console.log(`TODAY/YESTERDAY SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, is today? ${isToday}, is yesterday? ${isYesterday}`);
       
       // Update the today_score for this user
       userStats.today_score = score.value;

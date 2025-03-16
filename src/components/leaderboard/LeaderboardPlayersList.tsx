@@ -38,10 +38,10 @@ const LeaderboardPlayersList = ({
       console.log('Players with today scores in player list:', todayPlayers.length);
       
       if (todayPlayers.length > 0) {
-        console.log('Sample players with today scores in player list:', 
-          todayPlayers.slice(0, 2).map(p => ({
+        console.log('Sample players with today scores:', 
+          todayPlayers.slice(0, Math.min(5, todayPlayers.length)).map(p => ({
             username: p.username,
-            score: p.today_score
+            today_score: p.today_score
           }))
         );
       } else {
