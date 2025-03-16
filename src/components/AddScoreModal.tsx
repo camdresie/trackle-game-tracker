@@ -178,13 +178,17 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Handle Quordle input changes with proper input handling
+  // Fixed Quordle input changes handler
   const handleQuordleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
+    console.log(`Quordle input change for word ${index + 1}: '${inputValue}'`);
+    
+    // Create a copy of current values
     const newQuordleValues = [...quordleValues];
     
-    // Handle empty input or backspace
+    // Handle empty input (like when backspace is used and field is empty)
     if (inputValue === '') {
+      console.log(`Setting word ${index + 1} to default value 7 (empty input)`);
       newQuordleValues[index] = 7;
       setQuordleValues(newQuordleValues);
       return;
@@ -192,6 +196,7 @@ const AddScoreModal = ({
     
     // If "X" or "x" is entered, use 9 (failed attempt)
     if (inputValue.toLowerCase() === 'x') {
+      console.log(`Setting word ${index + 1} to 9 (X input)`);
       newQuordleValues[index] = 9;
       setQuordleValues(newQuordleValues);
       return;
@@ -200,6 +205,7 @@ const AddScoreModal = ({
     // For numeric values, parse and validate
     const numValue = parseInt(inputValue);
     if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
+      console.log(`Setting word ${index + 1} to numeric value: ${numValue}`);
       newQuordleValues[index] = numValue;
       setQuordleValues(newQuordleValues);
     }
