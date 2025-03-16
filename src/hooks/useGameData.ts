@@ -35,14 +35,26 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     friends 
   });
   
+  console.log(`useGameData - Friend scores data for ${friends.length} friends:`, friendScores);
+  console.log(`useGameData - Friend scores loading state:`, friendScoresLoading);
+  
   // Enhanced refresh function that updates all data
   const refreshFriends = async () => {
-    await baseFriendsRefresh();
-    setRefreshCount(prev => prev + 1);
+    console.log("Starting friend refresh process...");
     
-    // If we have a gameId, also refresh friend scores
-    if (gameId) {
-      await fetchFriendScores();
+    try {
+      await baseFriendsRefresh();
+      setRefreshCount(prev => prev + 1);
+      
+      // If we have a gameId, also refresh friend scores
+      if (gameId) {
+        console.log(`Refreshing scores for game ${gameId}`);
+        await fetchFriendScores();
+      }
+      
+      console.log("Friend refresh completed successfully");
+    } catch (error) {
+      console.error("Error during friend refresh:", error);
     }
   };
 

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Score } from '@/utils/types';
 import { getGameScores } from '@/services/gameStatsService';
+import { toast } from '@/components/ui/use-toast';
 
 interface UseFriendScoresProps {
   gameId: string | undefined;
@@ -21,7 +22,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Function to fetch friend scores with error handling
+  // Function to fetch friend scores with enhanced error handling
   const fetchFriendScores = async () => {
     if (!gameId || friends.length === 0) {
       console.log('Missing required data for fetching friend scores');
@@ -44,9 +45,10 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         try {
           console.log(`Fetching scores for friend ${friend.name} (${friend.id})`);
           const scores = await getGameScores(gameId, friend.id);
-          console.log(`Retrieved ${scores.length} scores for friend ${friend.name}`);
           
           if (scores && scores.length > 0) {
+            console.log(`Retrieved ${scores.length} scores for friend ${friend.name}`);
+            
             // Map scores to ensure all required fields
             friendScoresData[friend.id] = scores.map(score => ({
               id: score.id,
@@ -58,6 +60,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
               createdAt: score.createdAt || new Date().toISOString()
             }));
           } else {
+            console.log(`Retrieved 0 scores for friend ${friend.name}`);
             // Initialize with empty array even if no scores found
             friendScoresData[friend.id] = [];
           }
@@ -65,6 +68,13 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           console.error(`Error fetching scores for friend ${friend.id}:`, error);
           // Initialize with empty array on error
           friendScoresData[friend.id] = [];
+          
+          // Show toast for this specific error
+          toast({
+            title: `Error loading scores`,
+            description: `Couldn't load scores for ${friend.name}`,
+            variant: "destructive"
+          });
         }
       }));
       
@@ -72,6 +82,11 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
       setFriendScores(friendScoresData);
     } catch (error) {
       console.error('Error in fetchFriendScores:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load friend scores",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

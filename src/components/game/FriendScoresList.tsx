@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
-import { Users, RefreshCcw } from 'lucide-react';
+import { Users, RefreshCcw, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -53,15 +53,10 @@ const FriendScoresList = ({
     }
   };
 
-  // Automatically refresh when friends list changes length
-  useEffect(() => {
-    console.log("FriendScoresList - friends list changed to length:", friends.length);
-    // No need to call refresh directly - just log for monitoring
-  }, [friends.length]);
-
   // Debug logs for component rendering
   console.log("FriendScoresList rendering with friends:", friends.length);
   console.log("Friend scores keys:", Object.keys(friendScores));
+  console.log("All friend scores data:", friendScores);
 
   return (
     <>
@@ -98,13 +93,18 @@ const FriendScoresList = ({
         <div className="space-y-6">
           {friends.map(friend => {
             const friendScoresList = friendScores[friend.id] || [];
-            const bestFriendScore = friendScoresList.length > 0
-              ? game.id === 'wordle'
-                ? Math.min(...friendScoresList.map(s => s.value))
-                : Math.max(...friendScoresList.map(s => s.value))
-              : null;
             
-            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores`);
+            let bestFriendScore = null;
+            if (friendScoresList.length > 0) {
+              if (game.id === 'wordle' || game.id === 'mini-crossword' || game.id === 'quordle') {
+                bestFriendScore = Math.min(...friendScoresList.map(s => s.value));
+              } else {
+                bestFriendScore = Math.max(...friendScoresList.map(s => s.value));
+              }
+            }
+            
+            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores:`, 
+              friendScoresList.length > 0 ? friendScoresList : 'No scores');
             
             return (
               <div key={friend.id} className="space-y-2">
@@ -134,8 +134,10 @@ const FriendScoresList = ({
                     />
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-sm text-muted-foreground bg-secondary/20 rounded-lg">
-                    No scores recorded
+                  <div className="flex flex-col items-center justify-center py-6 text-sm text-muted-foreground bg-secondary/20 rounded-lg">
+                    <AlertCircle className="w-4 h-4 mb-2" />
+                    <p>No scores recorded</p>
+                    <p className="text-xs">Either your friend hasn't played this game or they're keeping their scores private</p>
                   </div>
                 )}
                 

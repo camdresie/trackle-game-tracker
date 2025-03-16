@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
@@ -133,9 +134,16 @@ export async function getGameScores(gameId: string, userId: string) {
       throw error;
     }
 
-    // Transform to match our Score type
+    if (!data || data.length === 0) {
+      console.log(`No scores found for game ${gameId} and user ${userId}`);
+      return [];
+    }
+
+    console.log(`Found ${data.length} scores for game ${gameId} and user ${userId}:`, data);
+
+    // Transform to match our Score type with defensive coding
     return data.map(score => ({
-      id: score.id,
+      id: score.id || `temp-${Date.now()}`,
       gameId: score.game_id,
       playerId: score.user_id,
       value: score.value,
