@@ -16,6 +16,7 @@ import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { addGameScore } from '@/services/gameStatsService';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface AddScoreModalProps {
   open: boolean;
@@ -40,14 +41,13 @@ const AddScoreModal = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Set the date to today's date when the modal opens
+  // Set the date to today's date in Eastern Time when the modal opens
   useEffect(() => {
     if (open) {
-      // Get today's date in YYYY-MM-DD format that matches database storage
-      const today = new Date();
-      const formattedToday = today.toISOString().substring(0, 10);
-      console.log('Setting date picker to today:', formattedToday);
-      setDate(formattedToday);
+      // Get today's date in Eastern Time (ET) in YYYY-MM-DD format
+      const todayInET = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
+      console.log('Setting date picker to today in Eastern Time:', todayInET);
+      setDate(todayInET);
     }
   }, [open]);
   
@@ -175,7 +175,7 @@ const AddScoreModal = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
+              max={formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd')}
             />
           </div>
           
