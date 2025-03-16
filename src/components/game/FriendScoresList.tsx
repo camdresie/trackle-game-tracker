@@ -7,16 +7,25 @@ import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
 import { Users, RefreshCcw } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FriendScoresListProps {
   game: Game;
   friends: Player[];
   friendScores: { [key: string]: Score[] };
+  isLoading?: boolean;
   onManageFriends?: () => void;
   onRefreshFriends?: () => void;
 }
 
-const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefreshFriends }: FriendScoresListProps) => {
+const FriendScoresList = ({ 
+  game, 
+  friends, 
+  friendScores, 
+  isLoading = false,
+  onManageFriends, 
+  onRefreshFriends 
+}: FriendScoresListProps) => {
   // Function to handle refresh button click with enhanced feedback
   const handleRefreshClick = () => {
     console.log("Refresh friends button clicked");
@@ -64,14 +73,28 @@ const FriendScoresList = ({ game, friends, friendScores, onManageFriends, onRefr
             size="sm" 
             onClick={handleRefreshClick}
             className="gap-1"
+            disabled={isLoading}
           >
-            <RefreshCcw className="h-3 w-3" />
-            Refresh
+            <RefreshCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Refreshing...' : 'Refresh'}
           </Button>
         )}
       </div>
       
-      {friends.length > 0 ? (
+      {isLoading && friends.length > 0 ? (
+        <div className="space-y-6">
+          {friends.map(friend => (
+            <div key={friend.id} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-8 h-8 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="h-32 w-full" />
+              <Separator />
+            </div>
+          ))}
+        </div>
+      ) : friends.length > 0 ? (
         <div className="space-y-6">
           {friends.map(friend => {
             const friendScoresList = friendScores[friend.id] || [];

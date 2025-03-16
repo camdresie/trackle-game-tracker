@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
@@ -141,7 +140,8 @@ export async function getGameScores(gameId: string, userId: string) {
       playerId: score.user_id,
       value: score.value,
       date: score.date,
-      notes: score.notes
+      notes: score.notes || '',
+      createdAt: score.created_at || new Date().toISOString()
     }));
   } catch (error) {
     console.error('Error in getGameScores:', error);

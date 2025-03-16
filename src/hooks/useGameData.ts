@@ -30,7 +30,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
   });
   
   // Get scores for all friends
-  const { friendScores, fetchFriendScores } = useFriendScores({ 
+  const { friendScores, fetchFriendScores, isLoading: friendScoresLoading } = useFriendScores({ 
     gameId, 
     friends 
   });
@@ -54,6 +54,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     averageScore,
     friends,
     friendScores,
+    friendScoresLoading,
     refreshFriends
   };
 };

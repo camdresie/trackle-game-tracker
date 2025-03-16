@@ -11,6 +11,7 @@ interface UseFriendScoresProps {
 interface FriendScoresResult {
   friendScores: { [key: string]: Score[] };
   fetchFriendScores: () => Promise<void>;
+  isLoading: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ interface FriendScoresResult {
  */
 export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): FriendScoresResult => {
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Function to fetch friend scores with error handling
   const fetchFriendScores = async () => {
@@ -27,51 +29,65 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     }
     
     console.log(`Fetching scores for ${friends.length} friends for game:`, gameId);
+    setIsLoading(true);
     
     // Create a new object to avoid reference issues
     const friendScoresData: { [key: string]: Score[] } = {};
     
-    for (const friend of friends) {
-      if (!friend.id) {
-        console.warn('Found friend entry with missing ID, skipping');
-        continue;
-      }
+    try {
+      await Promise.all(friends.map(async (friend) => {
+        if (!friend.id) {
+          console.warn('Found friend entry with missing ID, skipping');
+          return;
+        }
+        
+        try {
+          console.log(`Fetching scores for friend ${friend.name} (${friend.id})`);
+          const scores = await getGameScores(gameId, friend.id);
+          console.log(`Retrieved ${scores.length} scores for friend ${friend.name}`);
+          
+          if (scores && scores.length > 0) {
+            // Map scores to ensure all required fields
+            friendScoresData[friend.id] = scores.map(score => ({
+              id: score.id,
+              gameId: score.gameId,
+              playerId: score.playerId,
+              value: score.value,
+              date: score.date,
+              notes: score.notes || '',
+              createdAt: score.createdAt || new Date().toISOString()
+            }));
+          } else {
+            // Initialize with empty array even if no scores found
+            friendScoresData[friend.id] = [];
+          }
+        } catch (error) {
+          console.error(`Error fetching scores for friend ${friend.id}:`, error);
+          // Initialize with empty array on error
+          friendScoresData[friend.id] = [];
+        }
+      }));
       
-      try {
-        console.log(`Fetching scores for friend ${friend.name} (${friend.id})`);
-        const scores = await getGameScores(gameId, friend.id);
-        
-        // Map scores to ensure all required fields
-        friendScoresData[friend.id] = scores.map(score => ({
-          id: score.id,
-          gameId: score.gameId,
-          playerId: score.playerId,
-          value: score.value,
-          date: score.date,
-          notes: score.notes,
-          createdAt: new Date().toISOString()
-        }));
-        
-        console.log(`Retrieved ${scores.length} scores for friend ${friend.name}`);
-      } catch (error) {
-        console.error(`Error fetching scores for friend ${friend.id}:`, error);
-      }
+      console.log('Setting friend scores:', friendScoresData);
+      setFriendScores(friendScoresData);
+    } catch (error) {
+      console.error('Error in fetchFriendScores:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log('Setting friend scores:', friendScoresData);
-    setFriendScores(friendScoresData);
   };
 
-  // Effect to fetch friend scores whenever friends list changes
+  // Effect to fetch friend scores whenever friends list or gameId changes
   useEffect(() => {
     if (friends.length > 0 && gameId) {
-      console.log('Friends list changed, fetching updated friend scores');
+      console.log('Friends list or gameId changed, fetching updated friend scores');
       fetchFriendScores();
     }
   }, [friends, gameId]);
 
   return {
     friendScores,
-    fetchFriendScores
+    fetchFriendScores,
+    isLoading
   };
 };

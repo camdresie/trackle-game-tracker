@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -31,6 +30,7 @@ const GameDetail = () => {
     averageScore,
     friends,
     friendScores,
+    friendScoresLoading,
     refreshFriends
   } = useGameData({ gameId });
   
@@ -76,6 +76,8 @@ const GameDetail = () => {
   }
 
   return (
+    
+
     <div className="min-h-screen bg-background">
       <NavBar />
       
@@ -152,6 +154,7 @@ const GameDetail = () => {
                   game={game}
                   friends={friends}
                   friendScores={friendScores}
+                  isLoading={friendScoresLoading}
                   onManageFriends={() => setShowConnectionsModal(true)}
                   onRefreshFriends={refreshFriends}
                 />
