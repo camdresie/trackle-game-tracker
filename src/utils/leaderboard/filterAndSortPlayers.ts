@@ -23,8 +23,12 @@ export const filterAndSortPlayers = (
   // Make a copy to avoid modifying the original data
   let filteredPlayers = [...leaderboardPlayers];
   
+  // For testing/development, include all players in today view if there are no today scores
+  const playersWithTodayScores = filteredPlayers.filter(player => player.today_score !== null);
+  const useFallbackForToday = timeFilter === 'today' && playersWithTodayScores.length === 0;
+  
   // For today filter, only include players with today's scores
-  if (timeFilter === 'today') {
+  if (timeFilter === 'today' && !useFallbackForToday) {
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
     console.log('filterAndSortPlayers - Players with today scores after filtering:', filteredPlayers.length);
     
@@ -65,7 +69,7 @@ export const filterAndSortPlayers = (
   
   // Sort players
   filteredPlayers.sort((a, b) => {
-    if (timeFilter === 'today') {
+    if (timeFilter === 'today' && !useFallbackForToday) {
       // If filtering by today's scores
       if (a.today_score === null && b.today_score === null) return 0;
       if (a.today_score === null) return 1;

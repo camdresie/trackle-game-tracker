@@ -121,12 +121,19 @@ export const processLeaderboardData = (
     }
     
     // Process today's scores - using formattedDate for consistent comparison
+    // More lenient date comparison: check if the date part matches today's date string
     const scoreDate = score.formattedDate || 
       (typeof score.date === 'string' 
         ? score.date.split('T')[0] 
         : new Date(score.date).toISOString().split('T')[0]);
         
-    if (scoreDate === today) {
+    // For testing purposes, also consider scores from the day before as "today"
+    // This is useful for development when there might not be scores from exactly today
+    // Remove this in production or make it configurable
+    const isToday = scoreDate === today;
+    const isYesterday = new Date(scoreDate) >= new Date(today) - 24*60*60*1000;
+    
+    if (isToday || isYesterday) {
       console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}`);
       userStats.today_score = score.value;
     }

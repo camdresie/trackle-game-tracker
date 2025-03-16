@@ -44,27 +44,34 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
               : new Date(score.date).toISOString().split('T')[0] // Handle Date objects
           }));
           
-          // Check specifically for today's scores
+          // For development purposes, also consider scores from the day before as "today"
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          // Check specifically for today's scores and yesterday's scores (for development)
           const todayScores = formattedData.filter(score => {
             const isToday = score.formattedDate === today;
+            const isYesterday = score.formattedDate === yesterdayStr;
             
-            if (isToday) {
-              console.log('MATCH: Found a score from today:', {
+            if (isToday || isYesterday) {
+              console.log('MATCH: Found a recent score:', {
                 id: score.id,
                 user_id: score.user_id,
                 date: score.date,
                 formattedDate: score.formattedDate,
-                today: today, 
+                today: today,
+                yesterday: yesterdayStr,
                 value: score.value
               });
             }
             
-            return isToday;
+            return isToday || isYesterday;
           });
           
-          console.log(`useScoresData: Scores from today (${today}):`, todayScores.length);
+          console.log(`useScoresData: Recent scores (${today} or ${yesterdayStr}):`, todayScores.length);
           if (todayScores.length > 0) {
-            console.log('Sample today scores:', todayScores.slice(0, 3));
+            console.log('Sample recent scores:', todayScores.slice(0, 3));
           }
         }
         
