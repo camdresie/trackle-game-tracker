@@ -222,6 +222,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_friend_test_scores: {
+        Args: {
+          p_game_id: string
+          p_friend_id: string
+          p_requester_id: string
+          p_today_date: string
+          p_yesterday_date: string
+          p_two_days_ago_date: string
+        }
+        Returns: Json
+      }
       force_delete_connection: {
         Args: {
           connection_id: string

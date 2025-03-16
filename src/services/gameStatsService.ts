@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
