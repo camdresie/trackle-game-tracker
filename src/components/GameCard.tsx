@@ -1,7 +1,9 @@
+
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
+import GameShare from './GameShare';
 
 interface GameCardProps {
   game: Game;
@@ -72,12 +74,20 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         <div className={cn("p-2.5 rounded-lg", game.color)}>
           {getIcon()}
         </div>
-        {isPlayedToday() && (
-          <div className="text-xs bg-green-500/20 text-green-600 dark:text-green-400 px-2 py-1 rounded-full flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" />
-            <span>Played today</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {isPlayedToday() && (
+            <div className="text-xs bg-green-500/20 text-green-600 dark:text-green-400 px-2 py-1 rounded-full flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              <span>Played today</span>
+            </div>
+          )}
+          <GameShare 
+            game={game}
+            latestScore={latestScore}
+            averageScore={averageScore}
+            bestScore={bestScore}
+          />
+        </div>
       </div>
       
       <h3 className="text-lg font-semibold mb-1">{game.name}</h3>

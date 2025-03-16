@@ -49,10 +49,22 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
     return score.toString();
   };
   
+  // Get unit label for the game
+  const getUnitLabel = (): string => {
+    if (['wordle', 'quordle'].includes(selectedGame)) {
+      return 'tries';
+    } else if (selectedGame === 'mini-crossword') {
+      return 'seconds';
+    } else {
+      return 'points';
+    }
+  };
+  
   // Generate the share text
   const generateShareText = () => {
     const topPlayers = getTopPlayers();
     const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame);
+    const unitLabel = getUnitLabel();
     
     let shareText = `🎮 ${gameTitle} Leaderboard`;
     
@@ -72,7 +84,12 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
           ? player.today_score
           : (isLowerBetter ? player.best_score : player.average_score);
         
-        shareText += `${medal} ${player.username}: ${formatScore(score)}\n`;
+        // Add context about what the score represents
+        const scoreContext = timeFilter === 'today' 
+          ? 'Today'
+          : (isLowerBetter ? 'Best' : 'Avg');
+        
+        shareText += `${medal} ${player.username}: ${formatScore(score)} ${unitLabel} (${scoreContext})\n`;
       });
     }
     
