@@ -22,58 +22,73 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
       try {
         console.log('Fetching ALL scores data across users for game:', selectedGame);
         
-        // Query to get all scores (fixed the join syntax to use profiles)
-        let query = supabase
-          .from('scores')
-          .select('*, profiles(id, username, full_name, avatar_url)');
+        // First get the scores
+        let scoresQuery = supabase.from('scores');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
-          query = query.eq('game_id', selectedGame);
+          scoresQuery = scoresQuery.eq('game_id', selectedGame);
         }
         
-        const { data, error } = await query;
+        const { data: scoresData, error: scoresError } = await scoresQuery.select('*');
             
-        if (error) throw error;
+        if (scoresError) throw scoresError;
         
-        console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
+        console.log('Retrieved scores data:', scoresData?.length || 0, 'records');
         
-        // Get today's date in Eastern Time 
-        const today = getEasternTimeDate();
-        console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
-        
-        // Log all dates to debug
-        if (data && data.length > 0) {
-          console.log('All scores retrieved:', data.map(item => ({
-            id: item.id,
-            user_id: item.user_id,
-            username: item.profiles?.username,
-            date: item.date,
-            value: item.value
-          })));
+        // If we have scores, fetch the matching profiles in a separate query
+        if (scoresData && scoresData.length > 0) {
+          // Get unique user IDs from scores
+          const userIds = [...new Set(scoresData.map(score => score.user_id))];
+          
+          // Fetch profiles for these users
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+            
+          if (profilesError) throw profilesError;
+          
+          console.log('Retrieved profiles data for scores:', profilesData?.length || 0);
+          
+          // Create a map of profiles by ID for quick lookup
+          const profilesMap = new Map();
+          profilesData?.forEach(profile => {
+            profilesMap.set(profile.id, profile);
+          });
+          
+          // Get today's date in Eastern Time 
+          const today = getEasternTimeDate();
+          console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
+          
+          // Transform and combine the data
+          const transformedData = scoresData.map(item => {
+            // Use simple string comparison to check if the score's date matches today's date
+            const isToday = item.date === today;
+            
+            if (isToday) {
+              console.log(`Found today's score: ID ${item.id}, User ${item.user_id}, Date ${item.date}, Value ${item.value}`);
+            }
+            
+            // Get the matching profile
+            const profile = profilesMap.get(item.user_id);
+            
+            return {
+              ...item,
+              isToday,
+              formattedDate: item.date,
+              profiles: profile || null
+            };
+          });
+          
+          // Count and log today's scores
+          const todayScoresCount = transformedData.filter(item => item.isToday).length;
+          console.log(`Total scores marked as today: ${todayScoresCount}`);
+          
+          return transformedData;
         }
         
-        // Transform and mark today's scores
-        const transformedData = data?.map(item => {
-          // Use simple string comparison to check if the score's date matches today's date
-          const isToday = item.date === today;
-          
-          if (isToday) {
-            console.log(`Found today's score: ID ${item.id}, User ${item.user_id}, Username: ${item.profiles?.username}, Date ${item.date}, Value ${item.value}`);
-          }
-          
-          return {
-            ...item,
-            isToday,
-            formattedDate: item.date
-          };
-        }) || [];
-        
-        // Count and log today's scores
-        const todayScoresCount = transformedData.filter(item => item.isToday).length;
-        console.log(`Total scores marked as today: ${todayScoresCount}`);
-        
-        return transformedData;
+        return [];
       } catch (error) {
         console.error('Error fetching scores data:', error);
         toast.error('Failed to load score data');
