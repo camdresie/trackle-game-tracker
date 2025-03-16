@@ -11,13 +11,22 @@ const getEasternTimeDate = (): string => {
   // Create a date object for the current time
   const now = new Date();
   
-  // Convert to Eastern Time (ET)
-  // ET is UTC-5 (standard time) or UTC-4 (daylight saving)
-  // For a simple implementation, we'll use a fixed offset
-  const etOffsetHours = -5; // Eastern Standard Time offset from UTC
+  // Get current time in UTC
+  const nowUTC = new Date(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(), 
+    now.getUTCHours(),
+    now.getUTCMinutes(), 
+    now.getUTCSeconds()
+  );
   
-  // Calculate the time in milliseconds and adjust for ET
-  const etTime = new Date(now.getTime() + etOffsetHours * 60 * 60 * 1000);
+  // Eastern Time is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For simplicity, we'll use a fixed offset of -5 (EST)
+  const etOffsetHours = -5;
+  
+  // Calculate the time in ET by adjusting from UTC
+  const etTime = new Date(nowUTC.getTime() + (etOffsetHours * 60 * 60 * 1000));
   
   // Format as YYYY-MM-DD
   return etTime.toISOString().split('T')[0];
@@ -27,6 +36,7 @@ const getEasternTimeDate = (): string => {
  * Convert a date to Eastern Time and return as YYYY-MM-DD format
  */
 function convertToEasternTime(dateInput: string | Date): string {
+  // Convert input to Date object if it's a string
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   
   // Get the UTC time components
@@ -76,6 +86,12 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         // Get today's date in Eastern Time 
         const today = getEasternTimeDate();
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
+        console.log('All raw scores:', data?.map(s => ({ 
+          id: s.id, 
+          user_id: s.user_id, 
+          date: s.date, 
+          et_date: convertToEasternTime(s.date) 
+        })));
         
         // Count today's scores to verify detection
         if (data && data.length > 0) {
@@ -91,18 +107,28 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split('T')[0];
           
-          // Check specifically for today's scores and yesterday's scores (for development)
+          // Check for today's scores
           const todayScores = formattedData.filter(score => {
             const isToday = score.formattedDate === today;
             const isYesterday = score.formattedDate === yesterdayStr;
             
-            if (isToday || isYesterday) {
-              console.log('MATCH: Found a recent score:', {
+            if (isToday) {
+              console.log('MATCH: Found TODAY score:', {
                 id: score.id,
                 user_id: score.user_id,
                 date: score.date,
                 formattedDate: score.formattedDate,
                 today: today,
+                value: score.value
+              });
+            }
+            
+            if (isYesterday) {
+              console.log('MATCH: Found YESTERDAY score:', {
+                id: score.id,
+                user_id: score.user_id,
+                date: score.date,
+                formattedDate: score.formattedDate,
                 yesterday: yesterdayStr,
                 value: score.value
               });
@@ -113,7 +139,13 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           console.log(`useScoresData: Recent scores (${today} or ${yesterdayStr}):`, todayScores.length);
           if (todayScores.length > 0) {
-            console.log('Sample recent scores:', todayScores.slice(0, 3));
+            console.log('All recent scores:', todayScores.map(s => ({
+              id: s.id,
+              user_id: s.user_id,
+              date: s.date,
+              formattedDate: s.formattedDate,
+              value: s.value
+            })));
           }
         }
         

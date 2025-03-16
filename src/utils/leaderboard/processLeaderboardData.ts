@@ -10,18 +10,51 @@ const getEasternTimeDate = (): string => {
   // Create a date object for the current time
   const now = new Date();
   
-  // Convert to Eastern Time (ET)
-  // ET is UTC-5 (standard time) or UTC-4 (daylight saving)
-  // For a simple implementation, we'll use a fixed offset
-  // In production, you should use a proper timezone library
-  const etOffsetHours = -5; // Eastern Standard Time offset from UTC
+  // Get current time in UTC
+  const nowUTC = new Date(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(), 
+    now.getUTCHours(),
+    now.getUTCMinutes(), 
+    now.getUTCSeconds()
+  );
   
-  // Calculate the time in milliseconds and adjust for ET
-  const etTime = new Date(now.getTime() + etOffsetHours * 60 * 60 * 1000);
+  // Eastern Time is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For simplicity, we'll use a fixed offset of -5 (EST)
+  const etOffsetHours = -5;
+  
+  // Calculate the time in ET by adjusting from UTC
+  const etTime = new Date(nowUTC.getTime() + (etOffsetHours * 60 * 60 * 1000));
   
   // Format as YYYY-MM-DD
   return etTime.toISOString().split('T')[0];
 };
+
+/**
+ * Convert a date to Eastern Time and return as YYYY-MM-DD format
+ */
+function convertToEasternTime(dateInput: string | Date): string {
+  // Convert input to Date object if it's a string
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  
+  // Get the UTC time components
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  
+  // Eastern Time offset is UTC-5 (standard time) or UTC-4 (daylight saving)
+  // For simplicity, we'll use a fixed offset of -5 (EST)
+  const etOffset = -5;
+  
+  // Create a new date object with the Eastern Time adjustment
+  const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
+  
+  // Return the date part in YYYY-MM-DD format
+  return etDate.toISOString().split('T')[0];
+}
 
 /**
  * Transforms game stats and scores data into leaderboard players format
@@ -75,6 +108,12 @@ export const processLeaderboardData = (
   // Log a few scores to see the data structure
   if (gameScores.length > 0) {
     console.log('Sample scores data:', gameScores.slice(0, 2));
+    console.log('All scores with dates:', gameScores.map(s => ({
+      user_id: s.user_id,
+      date: s.date,
+      formattedDate: s.formattedDate || convertToEasternTime(s.date),
+      value: s.value
+    })));
   }
   
   // Create a list of user IDs with their total game counts from game stats
@@ -87,6 +126,11 @@ export const processLeaderboardData = (
       userGameCounts[userId] = stat.total_plays || 0;
     });
   }
+  
+  // For development purposes, consider scores from yesterday as "today"
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -141,20 +185,17 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Convert the score date to Eastern Time and get the date part
-    const scoreDate = convertToEasternTime(score.date);
+    // Get the formatted date in Eastern Time - use the existing formattedDate if available
+    const scoreDate = score.formattedDate || convertToEasternTime(score.date);
     
-    // For testing purposes, also consider scores from the day before as "today"
+    // Check if the score is from today or yesterday
     const isToday = scoreDate === today;
-    
-    // Get yesterday's date in Eastern Time for development purposes
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
     const isYesterday = scoreDate === yesterdayStr;
     
     if (isToday || isYesterday) {
-      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}`);
+      console.log(`SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, is today? ${isToday}, is yesterday? ${isYesterday}`);
+      
+      // Update the today_score for this user
       userStats.today_score = score.value;
     }
     
@@ -216,27 +257,3 @@ export const processLeaderboardData = (
   
   return leaderboardPlayers;
 };
-
-/**
- * Convert a date to Eastern Time and return as YYYY-MM-DD format
- */
-function convertToEasternTime(dateInput: string | Date): string {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  
-  // Get the UTC time components
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  const hours = date.getUTCHours();
-  const minutes = date.getUTCMinutes();
-  
-  // Eastern Time offset is UTC-5 (standard time) or UTC-4 (daylight saving)
-  // For simplicity, we'll use a fixed offset of -5 (EST)
-  const etOffset = -5;
-  
-  // Create a new date object with the Eastern Time adjustment
-  const etDate = new Date(Date.UTC(year, month, day, hours + etOffset, minutes));
-  
-  // Return the date part in YYYY-MM-DD format
-  return etDate.toISOString().split('T')[0];
-}

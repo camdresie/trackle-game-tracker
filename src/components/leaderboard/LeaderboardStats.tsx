@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -19,23 +20,48 @@ const LeaderboardStats = ({
   totalScoresCount, 
   rawScoresData
 }: LeaderboardStatsProps) => {
+  // Function to get the current date in Eastern Time (ET)
+  const getEasternTimeDate = (): string => {
+    const now = new Date();
+    const nowUTC = new Date(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(), 
+      now.getUTCHours(),
+      now.getUTCMinutes(), 
+      now.getUTCSeconds()
+    );
+    
+    // Eastern Time offset (EST, UTC-5)
+    const etOffsetHours = -5;
+    
+    // Calculate the time in ET
+    const etTime = new Date(nowUTC.getTime() + (etOffsetHours * 60 * 60 * 1000));
+    
+    return etTime.toISOString().split('T')[0];
+  };
+  
   // Get today's date in YYYY-MM-DD format for consistent comparison
-  const today = new Date().toISOString().split('T')[0];
+  const today = getEasternTimeDate();
   
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate total games played by summing each player's game count
-  // This is more accurate than counting individual scores which may be filtered
+  // Calculate total games played by counting scores for today or all time
   const gamesPlayedCount = timeFilter === 'today'
     ? rawScoresData.filter(score => {
         // Use the formattedDate field for consistent comparison
         const formattedDate = score.formattedDate || 
           (typeof score.date === 'string' 
-            ? score.date.split('T')[0] 
+            ? new Date(score.date).toISOString().split('T')[0] 
             : new Date(score.date).toISOString().split('T')[0]);
         
-        return formattedDate === today;
+        // For development, include yesterday's scores
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        return formattedDate === today || formattedDate === yesterdayStr;
       }).length
     : activePlayers.reduce((total, player) => total + player.total_games, 0);
   
@@ -47,37 +73,44 @@ const LeaderboardStats = ({
     console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
     console.log(`LeaderboardStats - Active players: ${activePlayers.length}`);
     
-    // Log each player's game count in all-time mode
-    if (timeFilter === 'all') {
-      console.log('Player game counts:');
-      activePlayers.forEach(player => {
-        console.log(`${player.username}: ${player.total_games} games`);
-      });
-      console.log(`Total games calculated: ${gamesPlayedCount}`);
-    }
-    
-    // Count and log scores that match today's date
+    // Count scores that match today's date
     if (timeFilter === 'today') {
       const todayScores = rawScoresData.filter(score => {
         // Use formattedDate if available, otherwise format the date
         const formattedDate = score.formattedDate || 
           (typeof score.date === 'string' 
-            ? score.date.split('T')[0] 
+            ? new Date(score.date).toISOString().split('T')[0] 
             : new Date(score.date).toISOString().split('T')[0]);
         
-        const isToday = formattedDate === today;
+        // For development, include yesterday's scores
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
         
-        if (isToday) {
-          console.log(`LeaderboardStats - MATCH: Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}, formattedDate: ${formattedDate}`);
+        const isToday = formattedDate === today;
+        const isYesterday = formattedDate === yesterdayStr;
+        
+        if (isToday || isYesterday) {
+          console.log(`LeaderboardStats - MATCH: Score from today/yesterday found:`, {
+            id: score.id,
+            user_id: score.user_id,
+            raw_date: score.date,
+            formattedDate: formattedDate,
+            today: today,
+            yesterday: yesterdayStr,
+            value: score.value,
+            matches_today: isToday,
+            matches_yesterday: isYesterday
+          });
         }
         
-        return isToday;
+        return isToday || isYesterday;
       });
       
-      console.log(`LeaderboardStats - Scores found for today (${today}):`, todayScores.length);
+      console.log(`LeaderboardStats - Scores found for today/yesterday:`, todayScores.length);
       
       if (todayScores.length > 0) {
-        console.log('Sample today scores:', todayScores.slice(0, 2).map(s => ({
+        console.log('Sample today/yesterday scores:', todayScores.map(s => ({
           id: s.id,
           user_id: s.user_id,
           date: s.date,
@@ -85,7 +118,14 @@ const LeaderboardStats = ({
           value: s.value
         })));
       } else {
-        console.log('No scores found for today');
+        console.log('No scores found for today/yesterday');
+      }
+      
+      // Count unique users who have played today
+      const uniqueUserIds = new Set(todayScores.map(s => s.user_id));
+      console.log(`LeaderboardStats - Unique users with scores today/yesterday: ${uniqueUserIds.size}`);
+      if (uniqueUserIds.size > 0) {
+        console.log('Unique user IDs with today/yesterday scores:', Array.from(uniqueUserIds));
       }
     }
     
@@ -101,6 +141,12 @@ const LeaderboardStats = ({
       console.log(`LeaderboardStats - Players with today scores: ${playersWithTodayScores.length}`);
       
       if (playersWithTodayScores.length > 0) {
+        // Log all players with today scores for debugging
+        console.log('Players with today scores:', playersWithTodayScores.map(p => ({
+          username: p.username, 
+          today_score: p.today_score
+        })));
+        
         // Sort by today's score (handling Wordle's lower-is-better scoring)
         leaderPlayer = [...playersWithTodayScores]
           .sort((a, b) => {
@@ -150,11 +196,16 @@ const LeaderboardStats = ({
           <div className="text-2xl font-semibold">
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
+            ) : timeFilter === 'today' ? (
+              // For today's view, count players with today scores
+              players.filter(p => p.today_score !== null).length
             ) : (
               activePlayers.length || 0
             )}
           </div>
-          <div className="text-sm text-muted-foreground">Active Players</div>
+          <div className="text-sm text-muted-foreground">
+            {timeFilter === 'today' ? "Today's Players" : "Active Players"}
+          </div>
         </div>
         
         <div className="bg-secondary/50 rounded-lg p-4 text-center">
