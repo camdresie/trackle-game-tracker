@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -26,7 +25,7 @@ const LeaderboardStats = ({
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate total games played for the selected game - directly from raw scores
+  // Calculate total games played for the selected game
   const gamesPlayedCount = rawScoresData
     .filter(score => {
       // First filter by selected game (already should be filtered, but double-check)
@@ -36,12 +35,16 @@ const LeaderboardStats = ({
       
       // Then filter by date if timeFilter is 'today'
       if (timeFilter === 'today') {
-        // Format the score date as YYYY-MM-DD for consistent comparison
-        const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        const matchesToday = scoreDate === today;
+        // Use the formattedDate field we added in useScoresData
+        const formattedDate = score.formattedDate || 
+          (typeof score.date === 'string' 
+            ? score.date.split('T')[0] 
+            : new Date(score.date).toISOString().split('T')[0]);
+            
+        const matchesToday = formattedDate === today;
         
         if (matchesToday) {
-          console.log(`LeaderboardStats - Today match: Score ${score.id} from ${scoreDate} equals today ${today}`);
+          console.log(`LeaderboardStats - Today match: Score ${score.id} with date ${score.date} (${formattedDate}) matches today ${today}`);
         }
         
         return matchesToday;
@@ -60,12 +63,16 @@ const LeaderboardStats = ({
     // Count and log scores that match today's date
     if (timeFilter === 'today') {
       const todayScores = rawScoresData.filter(score => {
-        // Format the score date as YYYY-MM-DD for consistent comparison
-        const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        const isToday = scoreDate === today;
+        // Use formattedDate if available, otherwise format the date
+        const formattedDate = score.formattedDate || 
+          (typeof score.date === 'string' 
+            ? score.date.split('T')[0] 
+            : new Date(score.date).toISOString().split('T')[0]);
+        
+        const isToday = formattedDate === today;
         
         if (isToday) {
-          console.log(`Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}, scoreDate: ${scoreDate}`);
+          console.log(`LeaderboardStats - MATCH: Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}, formattedDate: ${formattedDate}`);
         }
         
         return isToday;
@@ -78,8 +85,8 @@ const LeaderboardStats = ({
           id: s.id,
           user_id: s.user_id,
           date: s.date,
-          value: s.value,
-          formatted_date: new Date(s.date).toISOString().split('T')[0]
+          formattedDate: s.formattedDate || new Date(s.date).toISOString().split('T')[0],
+          value: s.value
         })));
       } else {
         console.log('No scores found for today');

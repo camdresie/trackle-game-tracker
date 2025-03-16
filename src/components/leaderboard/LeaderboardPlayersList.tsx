@@ -36,10 +36,6 @@ const LeaderboardPlayersList = ({
     if (timeFilter === 'today') {
       const todayPlayers = players.filter(p => p.today_score !== null);
       console.log('Players with today scores in player list:', todayPlayers.length);
-      console.log('All players in today view:', players.map(p => ({
-        username: p.username, 
-        today_score: p.today_score
-      })));
       
       if (todayPlayers.length > 0) {
         console.log('Sample players with today scores in player list:', 
@@ -51,11 +47,19 @@ const LeaderboardPlayersList = ({
       } else {
         console.log('No players have today scores in player list');
       }
+      
+      // Debug all players in today view
+      console.log('All players in today view:', players.map(p => ({
+        username: p.username, 
+        today_score: p.today_score
+      })));
     }
   }, [players, timeFilter]);
   
-  // Double-check filtering for today's players
-  const playersToDisplay = players;
+  // In today view, we should only show players with today_score not null
+  const playersToDisplay = timeFilter === 'today' 
+    ? players.filter(p => p.today_score !== null)
+    : players;
   
   console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
   

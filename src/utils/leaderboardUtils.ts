@@ -84,7 +84,7 @@ export const processLeaderboardData = (
       });
     }
     
-    // Now get the user stats and update them
+    // Get the user stats and update them
     const userStats = userStatsMap.get(userId);
     if (!userStats) continue; // Skip if user somehow not in map
     
@@ -106,10 +106,14 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Process today's scores - IMPORTANT: Make sure date formats match exactly
-    const scoreDate = new Date(score.date).toISOString().split('T')[0];
+    // Process today's scores - using formattedDate for consistent comparison
+    const scoreDate = score.formattedDate || 
+      (typeof score.date === 'string' 
+        ? score.date.split('T')[0] 
+        : new Date(score.date).toISOString().split('T')[0]);
+        
     if (scoreDate === today) {
-      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, today: ${today}`);
+      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}`);
       userStats.today_score = score.value;
     }
     
