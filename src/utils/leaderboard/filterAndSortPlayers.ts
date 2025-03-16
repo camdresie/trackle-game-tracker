@@ -57,21 +57,22 @@ export const filterAndSortPlayers = (
     }
   }
   
+  // For today view, show only players with today's scores
+  if (timeFilter === 'today') {
+    filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
+    console.log('Players after filtering for today scores:', filteredPlayers.length);
+  }
+  
   // Sort players
   filteredPlayers.sort((a, b) => {
     if (timeFilter === 'today') {
-      // For today view, prioritize players with today's scores first
-      if (a.today_score === null && b.today_score === null) return 0;
-      if (a.today_score === null) return 1;
-      if (b.today_score === null) return -1;
-      
-      // Sort by today's score
+      // For today view, sort by today's score
       if (['wordle', 'mini-crossword'].includes(selectedGame)) {
         // For games where lower is better
-        return a.today_score - b.today_score;
+        return a.today_score! - b.today_score!;
       } else {
         // For games where higher is better
-        return b.today_score - a.today_score;
+        return b.today_score! - a.today_score!;
       }
     } else {
       // Sort by the selected criteria for all-time
