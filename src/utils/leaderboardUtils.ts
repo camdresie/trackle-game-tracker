@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
@@ -56,6 +55,17 @@ export const processLeaderboardData = (
     console.log('Sample scores data:', gameScores.slice(0, 2));
   }
   
+  // Create a list of user IDs with their total game counts from game stats
+  const userGameCounts: Record<string, number> = {};
+  
+  // If we have game stats data, use it to initialize user game counts
+  if (gameStatsData && gameStatsData.length > 0) {
+    gameStatsData.forEach(stat => {
+      const userId = stat.user_id;
+      userGameCounts[userId] = stat.total_plays || 0;
+    });
+  }
+  
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
     const userId = score.user_id;
@@ -78,7 +88,7 @@ export const processLeaderboardData = (
         total_score: 0,
         best_score: 0,
         average_score: 0,
-        total_games: 0,
+        total_games: userGameCounts[userId] || 0,
         today_score: null,
         latest_play: null
       });
@@ -88,14 +98,17 @@ export const processLeaderboardData = (
     const userStats = userStatsMap.get(userId);
     if (!userStats) continue; // Skip if user somehow not in map
     
-    // Increase total games
-    userStats.total_games += 1;
+    // If we don't already have a total_games count from game_stats, count it from scores
+    if (!userGameCounts[userId]) {
+      userStats.total_games += 1;
+    }
     
     // Add to total score
     userStats.total_score += score.value;
     
     // Calculate average score
-    userStats.average_score = userStats.total_score / userStats.total_games;
+    userStats.average_score = userStats.total_games > 0 ? 
+      (userStats.total_score / userStats.total_games) : 0;
     
     // Update best score (for games where lower is better like Wordle, take the minimum)
     if (['wordle', 'mini-crossword'].includes(selectedGame)) {
@@ -130,7 +143,7 @@ export const processLeaderboardData = (
       const userId = stat.user_id;
       const profile = stat.profiles;
       
-      if (!userStatsMap.has(userId) || userStatsMap.get(userId)?.total_games === 0) {
+      if (!userStatsMap.has(userId)) {
         userStatsMap.set(userId, {
           player_id: userId,
           username: profile.username || "Unknown", 
@@ -143,6 +156,15 @@ export const processLeaderboardData = (
           today_score: null,
           latest_play: null
         });
+      } else {
+        // If the user exists but doesn't have game stats, update them
+        const userStats = userStatsMap.get(userId);
+        if (userStats && userStats.total_games === 0) {
+          userStats.total_games = stat.total_plays;
+          userStats.best_score = stat.best_score || 0;
+          userStats.average_score = stat.average_score || 0;
+          userStats.total_score = stat.average_score * stat.total_plays;
+        }
       }
     });
   }
@@ -151,6 +173,8 @@ export const processLeaderboardData = (
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
   console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
+  console.log('processLeaderboardData - Total game count for all players:', 
+    leaderboardPlayers.reduce((sum, player) => sum + player.total_games, 0));
   
   // Log how many players have today's scores
   const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);

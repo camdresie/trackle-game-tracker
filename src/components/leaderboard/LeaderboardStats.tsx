@@ -25,33 +25,19 @@ const LeaderboardStats = ({
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate total games played for the selected game
-  const gamesPlayedCount = rawScoresData
-    .filter(score => {
-      // First filter by selected game (already should be filtered, but double-check)
-      if (selectedGame && selectedGame !== 'all' && score.game_id !== selectedGame) {
-        return false;
-      }
-      
-      // Then filter by date if timeFilter is 'today'
-      if (timeFilter === 'today') {
-        // Use the formattedDate field we added in useScoresData
+  // Calculate total games played by summing each player's game count
+  // This is more accurate than counting individual scores which may be filtered
+  const gamesPlayedCount = timeFilter === 'today'
+    ? rawScoresData.filter(score => {
+        // Use the formattedDate field for consistent comparison
         const formattedDate = score.formattedDate || 
           (typeof score.date === 'string' 
             ? score.date.split('T')[0] 
             : new Date(score.date).toISOString().split('T')[0]);
-            
-        const matchesToday = formattedDate === today;
         
-        if (matchesToday) {
-          console.log(`LeaderboardStats - Today match: Score ${score.id} with date ${score.date} (${formattedDate}) matches today ${today}`);
-        }
-        
-        return matchesToday;
-      }
-      
-      return true;
-    }).length;
+        return formattedDate === today;
+      }).length
+    : activePlayers.reduce((total, player) => total + player.total_games, 0);
   
   // Debug logging to track our calculations
   useEffect(() => {
@@ -59,6 +45,16 @@ const LeaderboardStats = ({
     console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
     console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
     console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
+    console.log(`LeaderboardStats - Active players: ${activePlayers.length}`);
+    
+    // Log each player's game count in all-time mode
+    if (timeFilter === 'all') {
+      console.log('Player game counts:');
+      activePlayers.forEach(player => {
+        console.log(`${player.username}: ${player.total_games} games`);
+      });
+      console.log(`Total games calculated: ${gamesPlayedCount}`);
+    }
     
     // Count and log scores that match today's date
     if (timeFilter === 'today') {
@@ -78,7 +74,7 @@ const LeaderboardStats = ({
         return isToday;
       });
       
-      console.log(`LeaderboardStats - Scores found for today (${today}): ${todayScores.length}`);
+      console.log(`LeaderboardStats - Scores found for today (${today}):`, todayScores.length);
       
       if (todayScores.length > 0) {
         console.log('Sample today scores:', todayScores.slice(0, 2).map(s => ({
@@ -94,7 +90,7 @@ const LeaderboardStats = ({
     }
     
     console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
-  }, [rawScoresData, selectedGame, timeFilter, today, gamesPlayedCount]);
+  }, [rawScoresData, selectedGame, timeFilter, today, gamesPlayedCount, activePlayers]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
