@@ -28,26 +28,25 @@ const LeaderboardStats = ({
   
   console.log(`LeaderboardStats - Active players count: ${activePlayers.length}`);
   
-  // Calculate total games played across ALL users for the selected game
+  // Calculate total games played across ALL users for the selected game - simplified approach
   let gamesPlayedCount = 0;
   
   if (rawScoresData && rawScoresData.length > 0) {
-    // Filter by game_id if a specific game is selected
     if (selectedGame !== 'all') {
-      // Count games that match the selected game
-      const gameScores = rawScoresData.filter(score => score.game_id === selectedGame);
+      // Get scores for the selected game
+      const filteredScores = rawScoresData.filter(score => score.game_id === selectedGame);
       
       // Apply time filter if needed
       if (timeFilter === 'today') {
-        gamesPlayedCount = gameScores.filter(score => {
+        gamesPlayedCount = filteredScores.filter(score => {
           const scoreDate = new Date(score.date).toISOString().split('T')[0];
           return scoreDate === today;
         }).length;
       } else {
-        gamesPlayedCount = gameScores.length;
+        gamesPlayedCount = filteredScores.length;
       }
     } else {
-      // For "all games", count all scores
+      // For all games
       if (timeFilter === 'today') {
         gamesPlayedCount = rawScoresData.filter(score => {
           const scoreDate = new Date(score.date).toISOString().split('T')[0];
