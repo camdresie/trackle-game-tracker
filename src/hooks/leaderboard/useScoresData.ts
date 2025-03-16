@@ -22,15 +22,15 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
       try {
         console.log('Fetching ALL scores data across users for game:', selectedGame);
         
-        // First get the scores
-        let scoresQuery = supabase.from('scores');
+        // Create base query
+        let query = supabase.from('scores').select('*');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
-          scoresQuery = scoresQuery.eq('game_id', selectedGame);
+          query = query.eq('game_id', selectedGame);
         }
         
-        const { data: scoresData, error: scoresError } = await scoresQuery.select('*');
+        const { data: scoresData, error: scoresError } = await query;
             
         if (scoresError) throw scoresError;
         
