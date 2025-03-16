@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
 import { format, subDays } from 'date-fns';
