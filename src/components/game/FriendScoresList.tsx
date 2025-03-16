@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
@@ -29,12 +29,12 @@ const FriendScoresList = ({
   const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
   const [refreshing, setRefreshing] = useState(false);
   
-  // Check if there are any friend scores at all
-  const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
-  
-  // Debug logging
+  // Enhanced debug logging
   console.log('FriendScoresList render - Friends:', friends.length);
   console.log('FriendScoresList render - Friend score keys:', Object.keys(friendScores).length);
+  
+  // Check if there are any friend scores at all (with more detailed logging)
+  const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
   console.log('FriendScoresList render - Has any scores:', hasAnyScores);
   console.log('FriendScoresList render - Detailed scores:', Object.entries(friendScores).map(([id, scores]) => ({
     friendId: id,
@@ -143,7 +143,7 @@ const FriendScoresList = ({
                   scores={scores}
                   game={game}
                   stats={stats}
-                  rank={index + 1} // Add rank property here, using the map index + 1
+                  rank={index + 1}
                 />
                 
                 {!hasScores && (

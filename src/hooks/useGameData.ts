@@ -4,7 +4,6 @@ import { useFriendsList } from './useFriendsList';
 import { useFriendScores } from './useFriendScores';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 
 interface UseGameDataProps {
   gameId: string | undefined;
@@ -31,14 +30,14 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     refreshTrigger: refreshCount 
   });
   
-  // Get scores for all friends
+  // Get scores for all friends using our simplified hook
   const { friendScores, fetchFriendScores, isLoading: friendScoresLoading } = useFriendScores({ 
     gameId, 
     friends 
   });
   
-  // Enhanced debug function
-  const logDebugInfo = useCallback(() => {
+  // Log debug info for troubleshooting
+  useEffect(() => {
     console.log(`[useGameData] Debug info for gameId: ${gameId || 'undefined'}`);
     console.log(`[useGameData] Game:`, game);
     console.log(`[useGameData] Friends count: ${friends.length}`);
@@ -51,13 +50,14 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
         scoreValues: scores.map(s => s.value)
       }))
     );
-    console.log(`[useGameData] Friend scores loading state:`, friendScoresLoading);
-  }, [game, friends, friendScores, friendScoresLoading, gameId]);
+  }, [game, friends, friendScores, gameId]);
   
-  // Periodically log the state for debugging
+  // Effect to fetch friend scores when friends or gameId changes
   useEffect(() => {
-    logDebugInfo();
-  }, [logDebugInfo, friends, friendScores]);
+    if (gameId && friends.length > 0) {
+      fetchFriendScores();
+    }
+  }, [gameId, friends, fetchFriendScores]);
   
   // Enhanced refresh function that updates all data
   const refreshFriends = async () => {
@@ -68,34 +68,11 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       await baseFriendsRefresh();
       setRefreshCount(prev => prev + 1);
       
-      // If we have a gameId, also refresh friend scores directly from the database
+      // Then fetch friend scores directly
       if (gameId) {
-        console.log(`[useGameData] Refreshing scores for game ${gameId}`);
-        
-        // Manual direct query to ensure fresh data
-        for (const friend of friends) {
-          console.log(`[useGameData] Manually querying scores for friend ${friend.name}`);
-          const { data, error } = await supabase
-            .from('scores')
-            .select('*')
-            .eq('game_id', gameId)
-            .eq('user_id', friend.id);
-            
-          if (error) {
-            console.error(`[useGameData] Error querying scores for friend ${friend.name}:`, error);
-          } else {
-            console.log(`[useGameData] Found ${data?.length || 0} scores for friend ${friend.name}:`, data);
-          }
-        }
-        
-        // Now refresh scores through the hook
         await fetchFriendScores();
         toast.success("Friend data refreshed successfully");
-        
-        // Log debug information after refresh
-        logDebugInfo();
       } else {
-        console.warn("[useGameData] Cannot refresh friend scores - no gameId available");
         toast.error("Cannot refresh scores - game ID not available");
       }
       
