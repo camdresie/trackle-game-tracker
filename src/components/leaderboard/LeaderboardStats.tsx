@@ -32,10 +32,8 @@ const LeaderboardStats = ({
   const activePlayers = players.filter(player => player.total_games > 0);
   
   // Calculate counts directly from rawScoresData for today's view
-  const todayScores = rawScoresData.filter(score => {
-    // Use formattedDate which was properly calculated in useScoresData
-    return score.formattedDate === today;
-  });
+  // Use the isToday flag set in useScoresData for more reliable filtering
+  const todayScores = rawScoresData.filter(score => score.isToday);
   
   // Count unique users who have played today
   const uniqueUserIds = [...new Set(todayScores.map(s => s.user_id))];
@@ -71,6 +69,7 @@ const LeaderboardStats = ({
           username: s.user_profile?.username,
           date: s.date,
           formattedDate: s.formattedDate,
+          isToday: s.isToday,
           value: s.value
         })));
       } else {

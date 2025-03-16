@@ -73,14 +73,12 @@ export const processLeaderboardData = (
     
     // Get all score dates for debugging
     const allDates = gameScores.map(score => {
-      // Make sure to format the date consistently in ET
-      const formattedDate = score.formattedDate || convertToEasternTime(score.date);
       return {
         user_id: score.user_id,
         date: score.date,
-        formattedDate: formattedDate,
-        value: score.value,
-        isToday: formattedDate === today
+        formattedDate: score.formattedDate,
+        isToday: score.isToday,
+        value: score.value
       };
     });
     
@@ -158,14 +156,11 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Get the formatted date in Eastern Time - use the existing formattedDate if available
-    const scoreDate = score.formattedDate;
-    
-    // Check if the score is from today
-    const isToday = scoreDate === today;
+    // Check if the score is from today using the isToday flag we set in useScoresData
+    const isToday = score.isToday;
     
     if (isToday) {
-      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}`);
+      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, isToday: ${isToday}`);
       
       // Update the today_score for this user
       userStats.today_score = score.value;

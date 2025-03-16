@@ -45,6 +45,12 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         if (error) throw error;
         
         console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
+        console.log('Raw scores from database:', data?.map(score => ({
+          id: score.id,
+          user_id: score.user_id,
+          date: score.date,
+          value: score.value
+        })));
         
         // Get today's date in Eastern Time 
         const today = getEasternTimeDate();
@@ -78,26 +84,26 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           };
           
           // CRITICAL FIX: The database date field is already in YYYY-MM-DD format
-          // We need to interpret it as the actual date in Eastern Time
-          // Create a date object that's the start of day in ET for proper comparison
-          const scoreDate = new Date(item.date + 'T12:00:00');
-          const formattedDate = convertToEasternTime(scoreDate);
-          const isToday = formattedDate === today;
+          // We need to compare it directly to today's date in Eastern Time
+          // This fixes the issue where some scores with today's date weren't being identified
+          const dbDate = item.date; // Database date in YYYY-MM-DD format
+          const isToday = dbDate === today;
           
           if (isToday) {
-            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, Value: ${item.value}, Date: ${item.date}, ET Date: ${formattedDate}`);
+            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, ID: ${item.id}, Value: ${item.value}, DB Date: ${dbDate}, Today: ${today}`);
           }
           
           return {
             ...item,
             // Add a consistently formatted date in Eastern Time
-            formattedDate: formattedDate,
+            formattedDate: dbDate,
+            isToday: isToday,
             user_profile: profile
           };
         });
         
         // Count and log today's scores
-        const todayScores = transformedData?.filter(score => score.formattedDate === today) || [];
+        const todayScores = transformedData?.filter(score => score.isToday) || [];
         console.log(`useScoresData: Found ${todayScores.length} scores from today (${today})`);
         if (todayScores.length > 0) {
           console.log('All today\'s scores:', todayScores.map(s => ({
@@ -106,6 +112,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             username: s.user_profile?.username,
             date: s.date,
             formattedDate: s.formattedDate,
+            isToday: s.isToday,
             value: s.value
           })));
         }
