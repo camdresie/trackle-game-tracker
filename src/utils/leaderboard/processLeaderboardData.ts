@@ -12,14 +12,6 @@ const getEasternTimeDate = (): string => {
 };
 
 /**
- * Convert a date to Eastern Time and return as YYYY-MM-DD format
- */
-function convertToEasternTime(dateInput: string | Date): string {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  return formatInTimeZone(date, 'America/New_York', 'yyyy-MM-dd');
-}
-
-/**
  * Transforms game stats and scores data into leaderboard players format
  */
 export const processLeaderboardData = (
@@ -64,22 +56,20 @@ export const processLeaderboardData = (
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData || [];
   
-  // Debug logging for filtering
-  console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
+  console.log(`processLeaderboardData - Game ${selectedGame} - Total filtered scores:`, gameScores.length);
   
   // Log specific information about today's scores
   const todayScores = gameScores.filter(score => score.isToday);
-  console.log(`processLeaderboardData - Found ${todayScores.length} scores for today (${today})`);
+  console.log(`processLeaderboardData - Found ${todayScores.length} scores marked as today's scores`);
   
   if (todayScores.length > 0) {
-    console.log('Today\'s scores:', todayScores.map(score => {
+    console.log('Today\'s scores in processLeaderboardData:', todayScores.map(score => {
       return {
+        id: score.id,
         user_id: score.user_id,
         date: score.date,
-        formattedDate: score.formattedDate,
         isToday: score.isToday,
-        value: score.value,
-        username: score.user_profile?.username || 'Unknown'
+        value: score.value
       };
     }));
   }
@@ -102,7 +92,7 @@ export const processLeaderboardData = (
     // If user doesn't exist in map yet, add them
     if (!userStatsMap.has(userId)) {
       // Try to get profile info from user_profile attached to score
-      const profile = score.user_profile || {
+      const profile = score.profiles || {
         id: userId,
         username: "Unknown Player",
         full_name: null,
@@ -150,7 +140,7 @@ export const processLeaderboardData = (
     
     // Check if the score is from today by using the isToday flag
     if (score.isToday) {
-      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, isToday: ${score.isToday}`);
+      console.log(`Today's score found for user ${userStats.username}: ${score.value}, ID: ${score.id}`);
       
       // Update the today_score for this user
       userStats.today_score = score.value;
@@ -199,15 +189,15 @@ export const processLeaderboardData = (
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
   console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
-  console.log('processLeaderboardData - Total game count for all players:', 
-    leaderboardPlayers.reduce((sum, player) => sum + player.total_games, 0));
   
   // Log how many players have today's scores
   const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
   console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
+  
   if (playersWithTodayScores.length > 0) {
     console.log('Players with today scores:', playersWithTodayScores.map(p => ({
       username: p.username,
+      player_id: p.player_id,
       today_score: p.today_score
     })));
   }

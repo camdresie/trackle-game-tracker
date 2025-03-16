@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
@@ -11,14 +12,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 const getEasternTimeDate = (): string => {
   return formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
 };
-
-/**
- * Convert a date to Eastern Time and return as YYYY-MM-DD format
- */
-function convertToEasternTime(dateInput: string | Date): string {
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  return formatInTimeZone(date, 'America/New_York', 'yyyy-MM-dd');
-}
 
 /**
  * Hook for fetching ALL scores data across users
@@ -45,12 +38,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         if (error) throw error;
         
         console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
-        console.log('Raw scores from database:', data?.map(score => ({
-          id: score.id,
-          user_id: score.user_id,
-          date: score.date,
-          value: score.value
-        })));
         
         // Get today's date in Eastern Time 
         const today = getEasternTimeDate();
@@ -59,76 +46,38 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         // Log all dates to debug
         const allDates = data?.map(item => item.date) || [];
         console.log('All dates in database:', allDates);
-        console.log('Unique dates in database:', [...new Set(allDates)]);
         
-        // Get profiles for all user IDs
-        const userIds = [...new Set(data?.map(item => item.user_id) || [])];
-        let userProfiles: any[] = [];
+        // Log all dates and user IDs for better debugging
+        data?.forEach(item => {
+          console.log(`Score ID: ${item.id}, User ID: ${item.user_id}, Date: ${item.date}`);
+        });
         
-        if (userIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', userIds);
-            
-          if (profilesError) {
-            console.error('Error fetching profiles:', profilesError);
-          } else {
-            userProfiles = profiles || [];
-            console.log('Retrieved profiles for scores:', userProfiles.length);
-          }
-        }
-        
-        // Explicitly log any scores from today
+        // Explicitly log any scores with today's date
         const todayScores = data?.filter(s => s.date === today) || [];
-        console.log(`Database has ${todayScores.length} scores with date exactly matching today (${today}):`);
+        console.log(`Found ${todayScores.length} scores with today's date (${today}):`);
         if (todayScores.length > 0) {
           todayScores.forEach(s => {
-            console.log(`Today's score in DB: ID ${s.id}, User ${s.user_id}, Date ${s.date}, Value ${s.value}`);
+            console.log(`Today's score: ID ${s.id}, User ${s.user_id}, Date ${s.date}, Value ${s.value}`);
           });
         }
         
-        // Map profile data to scores and determine if each score is from today
+        // Transform and mark today's scores
         const transformedData = data?.map(item => {
-          const profile = userProfiles.find(p => p.id === item.user_id) || {
-            id: item.user_id,
-            username: 'Unknown', 
-            full_name: null,
-            avatar_url: null
-          };
-          
-          // CRITICAL: Do a direct string comparison with the date
-          // This is more reliable than date object comparison
+          // Mark if score is from today
           const isToday = item.date === today;
           
           if (isToday) {
-            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, ID: ${item.id}, Value: ${item.value}, DB Date: ${item.date}, Today: ${today}`);
+            console.log(`Marking score ${item.id} as today's score for user ${item.user_id}`);
           }
           
           return {
             ...item,
-            formattedDate: item.date, // Date is already in YYYY-MM-DD format
             isToday,
-            user_profile: profile
+            formattedDate: item.date
           };
-        });
+        }) || [];
         
-        // Count and log today's scores
-        const todayTransformedScores = transformedData?.filter(score => score.isToday) || [];
-        console.log(`useScoresData: Found ${todayTransformedScores.length} scores from today (${today})`);
-        if (todayTransformedScores.length > 0) {
-          console.log('All today\'s scores:', todayTransformedScores.map(s => ({
-            id: s.id,
-            user_id: s.user_id,
-            username: s.user_profile?.username,
-            date: s.date,
-            formattedDate: s.formattedDate,
-            isToday: s.isToday,
-            value: s.value
-          })));
-        }
-        
-        return transformedData || [];
+        return transformedData;
       } catch (error) {
         console.error('Error fetching scores data:', error);
         toast.error('Failed to load score data');

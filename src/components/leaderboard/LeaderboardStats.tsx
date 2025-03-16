@@ -20,25 +20,48 @@ const LeaderboardStats = ({
   totalScoresCount, 
   rawScoresData
 }: LeaderboardStatsProps) => {
-  // Function to get the current date in Eastern Time (ET)
+  // Get today's date in YYYY-MM-DD format for consistent comparison
   const getEasternTimeDate = (): string => {
     return formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
   };
   
-  // Get today's date in YYYY-MM-DD format for consistent comparison
   const today = getEasternTimeDate();
   
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate counts directly from rawScoresData for today's view
-  // Use the isToday flag set in useScoresData for more reliable filtering
+  // For today's view, use the isToday flag directly from raw scores data
   const todayScores = rawScoresData.filter(score => score.isToday);
   
   // Count unique users who have played today
   const uniqueUserIds = [...new Set(todayScores.map(s => s.user_id))];
   const todayPlayersCount = uniqueUserIds.length;
   const todayGamesCount = todayScores.length;
+  
+  // Debug logging for today's data
+  useEffect(() => {
+    console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
+    console.log(`LeaderboardStats - Total raw scores: ${rawScoresData?.length || 0}`);
+    
+    if (timeFilter === 'today') {
+      console.log(`LeaderboardStats - Scores marked as today: ${todayScores.length}`);
+      
+      if (todayScores.length > 0) {
+        console.log('Today\'s scores details:', todayScores.map(s => ({
+          id: s.id,
+          user_id: s.user_id,
+          date: s.date,
+          isToday: s.isToday,
+          value: s.value
+        })));
+      }
+      
+      console.log(`LeaderboardStats - Unique users with today's scores: ${uniqueUserIds.length}`);
+      if (uniqueUserIds.length > 0) {
+        console.log('Unique user IDs with today\'s scores:', uniqueUserIds);
+      }
+    }
+  }, [rawScoresData, timeFilter, today, todayScores, uniqueUserIds]);
   
   // Calculate total games played based on the time filter
   const gamesPlayedCount = timeFilter === 'today' 
@@ -50,42 +73,6 @@ const LeaderboardStats = ({
     ? todayPlayersCount 
     : activePlayers.length;
   
-  // Debug logging to track our calculations
-  useEffect(() => {
-    console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
-    console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
-    console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
-    console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
-    console.log(`LeaderboardStats - Active players: ${activePlayers.length}`);
-    
-    // Count scores that match today's date
-    if (timeFilter === 'today') {
-      console.log(`LeaderboardStats - Scores found for today's date:`, todayScores.length);
-      
-      if (todayScores.length > 0) {
-        console.log('Today\'s scores:', todayScores.map(s => ({
-          id: s.id,
-          user_id: s.user_id,
-          username: s.user_profile?.username,
-          date: s.date,
-          formattedDate: s.formattedDate,
-          isToday: s.isToday,
-          value: s.value
-        })));
-      } else {
-        console.log('No scores found for today\'s date');
-      }
-      
-      console.log(`LeaderboardStats - Unique users with today's scores: ${uniqueUserIds.length}`);
-      if (uniqueUserIds.length > 0) {
-        console.log('Unique user IDs with today\'s scores:', uniqueUserIds);
-      }
-    }
-    
-    console.log(`LeaderboardStats - Final calculated players count: ${playersCount}`);
-    console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
-  }, [rawScoresData, selectedGame, timeFilter, today, todayScores, uniqueUserIds, playersCount, gamesPlayedCount, activePlayers]);
-  
   // Find the top player based on appropriate score
   let leaderPlayer = null;
   if (timeFilter === 'today' && todayScores.length > 0) {
@@ -95,7 +82,7 @@ const LeaderboardStats = ({
     // Gather all today's scores by user
     todayScores.forEach(score => {
       const userId = score.user_id;
-      const username = score.user_profile?.username || 'Unknown';
+      const username = score.profiles?.username || 'Unknown';
       const value = score.value;
       
       // For games where lower is better, keep the lowest score
