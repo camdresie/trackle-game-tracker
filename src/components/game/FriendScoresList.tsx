@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
-import { Users, RefreshCcw, AlertCircle } from 'lucide-react';
+import { Users, RefreshCcw, AlertCircle, Bug } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,9 +26,19 @@ const FriendScoresList = ({
   onManageFriends, 
   onRefreshFriends 
 }: FriendScoresListProps) => {
+  // Debug logs on mount and when props change
+  useEffect(() => {
+    console.log("[FriendScoresList] Rendering with props:", { 
+      gameId: game?.id,
+      friendsCount: friends?.length, 
+      friendScoresKeys: Object.keys(friendScores || {}),
+      isLoading
+    });
+  }, [game, friends, friendScores, isLoading]);
+  
   // Function to handle refresh button click with enhanced feedback
   const handleRefreshClick = () => {
-    console.log("Refresh friends button clicked");
+    console.log("[FriendScoresList] Refresh friends button clicked");
     
     // Show immediate feedback toast
     toast({
@@ -39,9 +49,9 @@ const FriendScoresList = ({
       // Call the refresh function provided by parent
       try {
         onRefreshFriends();
-        console.log("Friend refresh function called successfully");
+        console.log("[FriendScoresList] Friend refresh function called successfully");
       } catch (error) {
-        console.error("Error during friend refresh:", error);
+        console.error("[FriendScoresList] Error during friend refresh:", error);
         toast({
           title: "Error",
           description: "Failed to refresh friend data",
@@ -49,11 +59,11 @@ const FriendScoresList = ({
         });
       }
     } else {
-      console.warn("No refresh handler provided");
+      console.warn("[FriendScoresList] No refresh handler provided");
     }
   };
 
-  // Debug logs for component rendering
+  // Detailed debug logs
   console.log("FriendScoresList rendering with friends:", friends.length);
   console.log("Friend scores keys:", Object.keys(friendScores));
   console.log("All friend scores data:", friendScores);
@@ -93,6 +103,8 @@ const FriendScoresList = ({
         <div className="space-y-6">
           {friends.map(friend => {
             const friendScoresList = friendScores[friend.id] || [];
+            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores:`, 
+              friendScoresList.length > 0 ? friendScoresList : 'No scores');
             
             let bestFriendScore = null;
             if (friendScoresList.length > 0) {
@@ -102,9 +114,6 @@ const FriendScoresList = ({
                 bestFriendScore = Math.max(...friendScoresList.map(s => s.value));
               }
             }
-            
-            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores:`, 
-              friendScoresList.length > 0 ? friendScoresList : 'No scores');
             
             return (
               <div key={friend.id} className="space-y-2">

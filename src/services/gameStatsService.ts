@@ -122,6 +122,8 @@ export async function getTodaysGames(userId: string) {
 
 export async function getGameScores(gameId: string, userId: string) {
   try {
+    console.log(`[getGameScores] Fetching scores for game:${gameId}, user:${userId}`);
+    
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -130,18 +132,18 @@ export async function getGameScores(gameId: string, userId: string) {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error getting game scores:', error);
+      console.error('[getGameScores] Error fetching scores:', error);
       throw error;
     }
 
     if (!data || data.length === 0) {
-      console.log(`No scores found for game ${gameId} and user ${userId}`);
+      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
       return [];
     }
 
-    console.log(`Found ${data.length} scores for game ${gameId} and user ${userId}:`, data);
+    console.log(`[getGameScores] Found ${data.length} scores for game ${gameId} and user ${userId}:`, data);
 
-    // Transform to match our Score type with defensive coding
+    // Transform data consistently while ensuring all fields are present
     return data.map(score => ({
       id: score.id || `temp-${Date.now()}`,
       gameId: score.game_id,
@@ -152,7 +154,7 @@ export async function getGameScores(gameId: string, userId: string) {
       createdAt: score.created_at || new Date().toISOString()
     }));
   } catch (error) {
-    console.error('Error in getGameScores:', error);
+    console.error('[getGameScores] Unhandled error:', error);
     throw error;
   }
 }
