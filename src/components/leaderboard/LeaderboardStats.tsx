@@ -26,29 +26,23 @@ const LeaderboardStats = ({
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate total games played - SIMPLIFIED APPROACH
+  // Calculate total games played - DIRECT COUNT FROM SCORES DATA
   let gamesPlayedCount = 0;
   
   if (rawScoresData && rawScoresData.length > 0) {
     if (timeFilter === 'today') {
       // Count today's games only
       gamesPlayedCount = rawScoresData.filter(score => {
-        const isCorrectGame = selectedGame === 'all' || score.game_id === selectedGame;
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        const isToday = scoreDate === today;
-        return isCorrectGame && isToday;
+        return scoreDate === today;
       }).length;
     } else {
-      // Count all games for the selected game type
-      if (selectedGame !== 'all') {
-        gamesPlayedCount = rawScoresData.filter(score => score.game_id === selectedGame).length;
-      } else {
-        gamesPlayedCount = rawScoresData.length;
-      }
+      // Count all games (already filtered by selected game in useScoresData)
+      gamesPlayedCount = rawScoresData.length;
     }
   }
   
-  // Debug logging to ensure we're getting the right counts
+  // Debug logging
   console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
   console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
   console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);

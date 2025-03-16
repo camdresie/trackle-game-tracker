@@ -33,10 +33,10 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get game stats data
   const { gameStatsData, isLoadingGameStats } = useGameStatsData(userId, selectedGame, profilesData);
   
-  // Get scores data
+  // Get scores data - this will fetch ALL scores for the selected game
   const { scoresData, isLoadingScores } = useScoresData(userId, selectedGame);
   
-  // Debug check to find camdresie in our data sources
+  // Debug check for data
   useEffect(() => {
     if (profilesData) {
       const camdresie = profilesData.find(p => p.username === 'camdresie');
@@ -44,12 +44,15 @@ export const useLeaderboardData = (userId: string | undefined) => {
     }
     
     if (scoresData) {
-      const camdresieScores = scoresData.filter(s => 
-        s.user_profile && s.user_profile.username === 'camdresie'
-      );
-      console.log('camdresie scores:', camdresieScores.length, camdresieScores);
+      console.log('Total scores retrieved:', scoresData.length);
+      
+      // Log scores by game type for selected game
+      if (selectedGame && selectedGame !== 'all') {
+        const selectedGameScores = scoresData.filter(s => s.game_id === selectedGame);
+        console.log(`Scores for ${selectedGame}:`, selectedGameScores.length);
+      }
     }
-  }, [profilesData, scoresData]);
+  }, [profilesData, scoresData, selectedGame]);
   
   // Get friend IDs
   const friendIds = friends.map(friend => friend.id);
