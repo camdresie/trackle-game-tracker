@@ -41,6 +41,9 @@ const AddScoreModal = ({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // For Quordle, we use separate inputs for each word
+  const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
+  
   // Set the date to today's date in Eastern Time when the modal opens
   useEffect(() => {
     if (open) {
@@ -73,6 +76,11 @@ const AddScoreModal = ({
     }
   };
   
+  // Calculate the Quordle aggregate score
+  const calculateQuordleScore = () => {
+    return quordleValues.reduce((sum, val) => sum + val, 0);
+  };
+  
   const handleSubmit = async () => {
     if (!user) {
       toast.error('You must be logged in to add scores');
@@ -82,10 +90,13 @@ const AddScoreModal = ({
     setIsSubmitting(true);
     
     try {
+      // For Quordle, use the aggregate score from all 4 words
+      const scoreValue = game.id === 'quordle' ? calculateQuordleScore() : value;
+      
       const newScore = {
         gameId: game.id,
         playerId: user.id,
-        value,
+        value: scoreValue,
         date,
         notes: notes || undefined,
         createdAt: new Date().toISOString() // Add createdAt field
@@ -108,6 +119,7 @@ const AddScoreModal = ({
         game.id === 'tightrope' ? 1170 : 
         Math.floor((game.maxScore || 100) / 2)
       );
+      setQuordleValues([7, 7, 7, 7]);
       setDate('');  // Clear the date field when modal is closed
       setNotes('');
     } catch (error) {
@@ -125,6 +137,9 @@ const AddScoreModal = ({
     } else if (game.id === 'tightrope') {
       const percentage = (value / (game.maxScore || 2340)) * 100;
       return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
+    } else if (game.id === 'quordle') {
+      const score = calculateQuordleScore();
+      return score <= 20 ? 'Excellent' : score <= 28 ? 'Good' : 'Fair';
     } else {
       const percentage = (value / (game.maxScore || 100)) * 100;
       return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -135,6 +150,9 @@ const AddScoreModal = ({
   const getScoreColor = () => {
     if (game.id === 'wordle') {
       return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+    } else if (game.id === 'quordle') {
+      const score = calculateQuordleScore();
+      return score <= 20 ? 'text-emerald-500' : score <= 28 ? 'text-amber-500' : 'text-rose-500';
     } else {
       const percentage = (value / (game.maxScore || 100)) * 100;
       return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
@@ -160,6 +178,21 @@ const AddScoreModal = ({
     
     setValue(newValue);
   };
+  
+  // Handle Quordle input changes
+  const handleQuordleInputChange = (index: number, value: string) => {
+    const newQuordleValues = [...quordleValues];
+    // If "X" is entered, use 9 (failed attempt)
+    if (value.toLowerCase() === 'x') {
+      newQuordleValues[index] = 9;
+    } else {
+      const numValue = parseInt(value);
+      if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
+        newQuordleValues[index] = numValue;
+      }
+    }
+    setQuordleValues(newQuordleValues);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -179,44 +212,75 @@ const AddScoreModal = ({
             />
           </div>
           
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium">Score</label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={value}
-                  onChange={handleInputChange}
-                  className="w-20 text-right"
-                  min={game.id === 'wordle' ? 1 : 0}
-                  max={game.maxScore}
-                />
-                <span className="text-xs text-muted-foreground">
-                  / {game.maxScore}
-                </span>
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${getScoreColor()} bg-secondary`}>
-                  {getScoreLabel()}
-                </span>
+          {game.id === 'quordle' ? (
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Score for 4 words (1-9 or X for fail)</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[0, 1, 2, 3].map((index) => (
+                  <div key={index} className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Word {index + 1}</label>
+                    <Input
+                      value={quordleValues[index] === 9 ? 'X' : quordleValues[index]}
+                      onChange={(e) => handleQuordleInputChange(index, e.target.value)}
+                      className="text-center"
+                      maxLength={1}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="text-sm font-medium">Total Score</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold">{calculateQuordleScore()}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${getScoreColor()} bg-secondary`}>
+                    {getScoreLabel()}
+                  </span>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                <p>Lower numbers are better. Use X or 9 for failed words.</p>
               </div>
             </div>
-            
-            <Slider
-              min={game.id === 'wordle' ? 1 : 0}
-              max={game.maxScore}
-              step={1}
-              value={[value]}
-              onValueChange={(val) => setValue(val[0])}
-              className="py-2"
-            />
-            
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              {getSliderMarkers().map((markerValue, i) => (
-                <div key={i} className="flex-shrink-0 w-6 text-center">
-                  {markerValue}
+          ) : (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium">Score</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={value}
+                    onChange={handleInputChange}
+                    className="w-20 text-right"
+                    min={game.id === 'wordle' ? 1 : 0}
+                    max={game.maxScore}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    / {game.maxScore}
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${getScoreColor()} bg-secondary`}>
+                    {getScoreLabel()}
+                  </span>
                 </div>
-              ))}
+              </div>
+              
+              <Slider
+                min={game.id === 'wordle' ? 1 : 0}
+                max={game.maxScore}
+                step={1}
+                value={[value]}
+                onValueChange={(val) => setValue(val[0])}
+                className="py-2"
+              />
+              
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                {getSliderMarkers().map((markerValue, i) => (
+                  <div key={i} className="flex-shrink-0 w-6 text-center">
+                    {markerValue}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
           <div className="space-y-2">
             <label className="text-sm font-medium">Notes (optional)</label>

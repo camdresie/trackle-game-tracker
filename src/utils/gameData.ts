@@ -24,7 +24,7 @@ export const games: Game[] = [
     description: 'Solve four Wordle-style puzzles at once.',
     icon: 'grid',
     color: 'bg-purple-500',
-    maxScore: 9
+    maxScore: 36  // Updated from 9 to 36 (9 per word × 4 words)
   },
   {
     id: 'mini-crossword',
@@ -159,8 +159,8 @@ export const calculateAverageScore = (scores: Score[]): number => {
 export const calculateBestScore = (scores: Score[], game: Game): number => {
   if (scores.length === 0) return 0;
   
-  // For some games like Wordle, lower is better
-  if (game.id === 'wordle') {
+  // For some games like Wordle and Quordle, lower is better
+  if (game.id === 'wordle' || game.id === 'quordle') {
     return Math.min(...scores.map(score => score.value));
   }
   
@@ -232,6 +232,8 @@ export const getLabelByGame = (gameId: string): string => {
       return 'tries';
     case 'mini-crossword':
       return 'seconds';
+    case 'quordle':
+      return 'tries';
     default:
       return 'points';
   }
