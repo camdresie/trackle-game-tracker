@@ -25,6 +25,14 @@ export const filterAndSortPlayers = (
   
   // For testing/development, include all players in today view if there are no today scores
   const playersWithTodayScores = filteredPlayers.filter(player => player.today_score !== null);
+  console.log('Number of players with today scores before filtering:', playersWithTodayScores.length);
+  if (playersWithTodayScores.length > 0) {
+    console.log('Players with today scores:', playersWithTodayScores.map(p => ({
+      username: p.username,
+      today_score: p.today_score
+    })));
+  }
+  
   const useFallbackForToday = timeFilter === 'today' && playersWithTodayScores.length === 0;
   
   // For today filter, only include players with today's scores
