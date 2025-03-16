@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
@@ -165,13 +166,7 @@ const LeaderboardStats = ({
       return 'bg-secondary/50'; // Always use default for today view
     }
     
-    const highlightMapping: Record<string, string> = {
-      'averageScore': 'highestAverage',
-      'bestScore': 'bestScore',
-      'totalGames': 'mostGames'
-    };
-    
-    return sortBy === highlightMapping[statType] ? 'bg-primary/20' : 'bg-secondary/50';
+    return sortBy === statType ? 'bg-primary/20' : 'bg-secondary/50';
   };
   
   return (
@@ -190,8 +185,59 @@ const LeaderboardStats = ({
         )}
       </h2>
       
+      {/* Original count stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-center mb-2">
+              <Users className="w-5 h-5 text-indigo-500" />
+            </div>
+            <div className="text-2xl font-semibold">
+              {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : playersCount}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Active Players
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-center mb-2">
+              <Gamepad className="w-5 h-5 text-rose-500" />
+            </div>
+            <div className="text-2xl font-semibold">
+              {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : gamesPlayedCount}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Games Played
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-center mb-2">
+              <Star className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="text-2xl font-semibold">
+              {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : totalScoresCount}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Total Scores
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Current Leaders section */}
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-amber-500" />
+        <span>Current Leaders</span>
+      </h3>
+      
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`${getHighlightClass('averageScore')} rounded-lg p-4 text-center transition-colors duration-200`}>
+        <div className={`${getHighlightClass('highestAverage')} rounded-lg p-4 text-center transition-colors duration-200`}>
           <div className="flex items-center justify-center mb-2">
             <Award className="w-5 h-5 text-blue-500" />
           </div>
@@ -227,7 +273,7 @@ const LeaderboardStats = ({
           </div>
         </div>
         
-        <div className={`${getHighlightClass('totalGames')} rounded-lg p-4 text-center transition-colors duration-200`}>
+        <div className={`${getHighlightClass('mostGames')} rounded-lg p-4 text-center transition-colors duration-200`}>
           <div className="flex items-center justify-center mb-2">
             <Blocks className="w-5 h-5 text-purple-500" />
           </div>
