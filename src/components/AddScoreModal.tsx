@@ -42,6 +42,7 @@ const AddScoreModal = ({
   
   // For Quordle, we use separate inputs for each word
   const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
+  const [quordleDisplayValues, setQuordleDisplayValues] = useState(['7', '7', '7', '7']);
   
   // Set the date to today's date in Eastern Time when the modal opens
   useEffect(() => {
@@ -119,6 +120,7 @@ const AddScoreModal = ({
         Math.floor((game.maxScore || 100) / 2)
       );
       setQuordleValues([7, 7, 7, 7]);
+      setQuordleDisplayValues(['7', '7', '7', '7']);
       setDate('');  // Clear the date field when modal is closed
       setNotes('');
     } catch (error) {
@@ -178,37 +180,53 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Completely rewritten Quordle input changes handler
+  // Completely revamped Quordle input handling
   const handleQuordleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    // Create a copy of the display values array
+    const newDisplayValues = [...quordleDisplayValues];
+    // Set the display value to whatever the user typed
+    newDisplayValues[index] = e.target.value;
+    setQuordleDisplayValues(newDisplayValues);
+    
     console.log(`Quordle input change for word ${index + 1}: '${e.target.value}'`);
     
-    // Create a new copy of the current values array
+    // Now process the input to update the actual values
     const newQuordleValues = [...quordleValues];
     
-    // Handle different types of input
     if (e.target.value === '') {
-      // Empty input - this happens when user clears the field (e.g. with backspace)
-      console.log(`Setting word ${index + 1} to default value 7 (empty input)`);
-      newQuordleValues[index] = 7;
+      // Empty input means user is editing - keep the display empty but don't update the value yet
+      console.log(`User is editing word ${index + 1} (field emptied)`);
     } else if (e.target.value.toLowerCase() === 'x') {
       // "X" input for failed attempts
       console.log(`Setting word ${index + 1} to 9 (X input)`);
       newQuordleValues[index] = 9;
+      setQuordleValues(newQuordleValues);
     } else {
       // Try to parse as a number
       const numValue = parseInt(e.target.value);
       if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
         console.log(`Setting word ${index + 1} to numeric value: ${numValue}`);
         newQuordleValues[index] = numValue;
-      } else {
-        // Invalid input - ignore it and keep previous value
-        console.log(`Invalid input for word ${index + 1}: '${e.target.value}', keeping previous value: ${quordleValues[index]}`);
-        return; // Don't update state for invalid inputs
+        setQuordleValues(newQuordleValues);
       }
     }
+  };
+  
+  // Handle the onBlur event for Quordle inputs to restore default values when needed
+  const handleQuordleInputBlur = (index: number) => {
+    const displayValue = quordleDisplayValues[index];
+    const newDisplayValues = [...quordleDisplayValues];
+    const newQuordleValues = [...quordleValues];
     
-    // Update state with the new values
-    setQuordleValues(newQuordleValues);
+    // If empty or invalid, restore to default
+    if (displayValue === '' || (displayValue !== 'X' && displayValue !== 'x' && (isNaN(parseInt(displayValue)) || parseInt(displayValue) < 1 || parseInt(displayValue) > 9))) {
+      newDisplayValues[index] = '7'; // Default display
+      newQuordleValues[index] = 7; // Default value
+      console.log(`Restoring word ${index + 1} to default 7 (invalid input on blur)`);
+      
+      setQuordleDisplayValues(newDisplayValues);
+      setQuordleValues(newQuordleValues);
+    }
   };
 
   return (
@@ -238,8 +256,9 @@ const AddScoreModal = ({
                     <label className="text-xs text-muted-foreground">Word {index + 1}</label>
                     <Input
                       type="text"
-                      value={quordleValues[index] === 9 ? 'X' : quordleValues[index].toString()}
+                      value={quordleDisplayValues[index]}
                       onChange={(e) => handleQuordleInputChange(index, e)}
+                      onBlur={() => handleQuordleInputBlur(index)}
                       className="text-center"
                       maxLength={1}
                     />
