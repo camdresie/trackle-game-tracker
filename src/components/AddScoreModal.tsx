@@ -78,7 +78,8 @@ const AddScoreModal = ({
   
   // Calculate the Quordle aggregate score
   const calculateQuordleScore = () => {
-    return quordleValues.reduce((sum, val) => sum + val, 0);
+    // Updated to use 10 for each 'X' (failed attempt) instead of 9
+    return quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0);
   };
   
   const handleSubmit = async () => {
@@ -197,9 +198,9 @@ const AddScoreModal = ({
       // Empty input means user is editing - keep the display empty but don't update the value yet
       console.log(`User is editing word ${index + 1} (field emptied)`);
     } else if (e.target.value.toLowerCase() === 'x') {
-      // "X" input for failed attempts
-      console.log(`Setting word ${index + 1} to 9 (X input)`);
-      newQuordleValues[index] = 9;
+      // "X" input for failed attempts - now worth 10 points instead of 9
+      console.log(`Setting word ${index + 1} to 10 (X input)`);
+      newQuordleValues[index] = 10; // Changed from 9 to 10
       setQuordleValues(newQuordleValues);
     } else {
       // Try to parse as a number
@@ -275,7 +276,7 @@ const AddScoreModal = ({
                 </div>
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                <p>Lower numbers are better. Use X or 9 for failed words.</p>
+                <p>Lower numbers are better. Use X or 10 for failed words (worth 10 points).</p>
               </div>
             </div>
           ) : (
