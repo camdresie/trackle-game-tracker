@@ -33,10 +33,8 @@ const LeaderboardStats = ({
   
   // Calculate counts directly from rawScoresData for today's view
   const todayScores = rawScoresData.filter(score => {
-    // Use formattedDate if available, otherwise format the date
-    const formattedDate = score.formattedDate || 
-      formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
-    return formattedDate === today;
+    // Use formattedDate which was properly calculated in useScoresData
+    return score.formattedDate === today;
   });
   
   // Count unique users who have played today
@@ -72,7 +70,7 @@ const LeaderboardStats = ({
           user_id: s.user_id,
           username: s.user_profile?.username,
           date: s.date,
-          formattedDate: s.formattedDate || formatInTimeZone(new Date(s.date), 'America/New_York', 'yyyy-MM-dd'),
+          formattedDate: s.formattedDate,
           value: s.value
         })));
       } else {

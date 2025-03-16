@@ -159,7 +159,7 @@ export const processLeaderboardData = (
     }
     
     // Get the formatted date in Eastern Time - use the existing formattedDate if available
-    const scoreDate = score.formattedDate || convertToEasternTime(score.date);
+    const scoreDate = score.formattedDate;
     
     // Check if the score is from today
     const isToday = scoreDate === today;

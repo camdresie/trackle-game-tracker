@@ -68,7 +68,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           }
         }
         
-        // Map profile data to scores and convert dates to Eastern Time
+        // Map profile data to scores and convert database dates to Eastern Time
         const transformedData = data?.map(item => {
           const profile = userProfiles.find(p => p.id === item.user_id) || {
             id: item.user_id,
@@ -77,12 +77,15 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             avatar_url: null
           };
           
-          // Convert score date to Eastern Time format
-          const formattedDate = convertToEasternTime(item.date);
+          // CRITICAL FIX: The database date field is already in YYYY-MM-DD format
+          // We need to interpret it as the actual date in Eastern Time
+          // Create a date object that's the start of day in ET for proper comparison
+          const scoreDate = new Date(item.date + 'T12:00:00');
+          const formattedDate = convertToEasternTime(scoreDate);
           const isToday = formattedDate === today;
           
           if (isToday) {
-            console.log(`TODAY'S SCORE in useScoresData: User ${profile.username}, Value: ${item.value}, Date: ${item.date}, ET Date: ${formattedDate}`);
+            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, Value: ${item.value}, Date: ${item.date}, ET Date: ${formattedDate}`);
           }
           
           return {

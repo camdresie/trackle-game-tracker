@@ -56,10 +56,10 @@ const LeaderboardPlayersList = ({
     }
   }, [players, timeFilter]);
   
-  // For the leaderboard display, just show all players regardless of timeFilter
-  // This is the key change - we're no longer filtering out players with null today_score
-  // The filtering should be done in the underlying data processing
-  const playersToDisplay = players;
+  // For today view, only show players who have a today_score
+  const playersToDisplay = timeFilter === 'today' 
+    ? players.filter(player => player.today_score !== null)
+    : players;
   
   console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
   
