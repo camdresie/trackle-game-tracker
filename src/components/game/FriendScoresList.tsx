@@ -5,7 +5,7 @@ import { Loader2, User, RefreshCw, Bug } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
-import { addFriendTestScores } from '@/services/gameStatsService';
+import { addFriendTestScores } from '@/services/testScoreHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FriendScoresListProps {

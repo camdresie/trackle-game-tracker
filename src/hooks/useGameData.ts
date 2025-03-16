@@ -37,11 +37,27 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     friends 
   });
   
-  // Log Supabase connection status
+  // Log Supabase connection status for debugging RLS issues
   useEffect(() => {
     // Check if we're authenticated
     supabase.auth.getSession().then(({ data }) => {
-      console.log('[useGameData] Auth status:', data.session ? 'Authenticated' : 'Not authenticated');
+      const sessionStatus = data.session ? 'Authenticated' : 'Not authenticated';
+      const userId = data.session?.user?.id || 'No user ID';
+      console.log(`[useGameData] Auth status: ${sessionStatus}, User ID: ${userId}`);
+      
+      // If authenticated, check if we can access our own scores
+      if (data.session) {
+        supabase
+          .from('scores')
+          .select('id', { count: 'exact', head: true })
+          .then(({ count, error }) => {
+            if (error) {
+              console.error('[useGameData] Error accessing scores table:', error);
+            } else {
+              console.log(`[useGameData] User can access the scores table. Found ${count || 0} scores`);
+            }
+          });
+      }
     });
   }, []);
   
@@ -74,7 +90,12 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     console.log("[useGameData] Starting friend refresh process...");
     
     try {
-      // First refresh the friends list
+      // First check authentication status
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('[useGameData] Refresh with auth status:', 
+        sessionData.session ? 'Authenticated as ' + sessionData.session.user.id : 'Not authenticated');
+      
+      // Then refresh the friends list
       await baseFriendsRefresh();
       setRefreshCount(prev => prev + 1);
       

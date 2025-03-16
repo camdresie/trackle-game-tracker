@@ -19,7 +19,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Enhanced fetch function with more detailed debugging
+  // Enhanced fetch function with detailed debugging for RLS issue diagnosis
   const fetchFriendScores = useCallback(async () => {
     if (!gameId) {
       console.log('[useFriendScores] Missing gameId, cannot fetch scores');
@@ -42,6 +42,11 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     });
     
     try {
+      // Get current user's session information for debugging
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('[useFriendScores] Current auth session:', 
+        sessionData.session ? 'Authenticated as ' + sessionData.session.user.id : 'Not authenticated');
+      
       // Process each friend sequentially with detailed logging
       for (const friend of friends) {
         if (!friend.id) {
@@ -51,7 +56,19 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         
         console.log(`[useFriendScores] Fetching scores for friend: ${friend.name} (${friend.id}) and game: ${gameId}`);
         
+        // First check if the scores table exists and we have access
+        const { error: tableAccessError } = await supabase
+          .from('scores')
+          .select('count(*)', { count: 'exact', head: true });
+          
+        if (tableAccessError) {
+          console.error(`[useFriendScores] Cannot access scores table:`, tableAccessError);
+          toast.error("RLS policy issue: Cannot access scores table");
+          continue;
+        }
+        
         // Make a standalone query to first verify if this friend has any scores at all
+        // Use simplified query to isolate potential RLS issues
         const { count, error: countError } = await supabase
           .from('scores')
           .select('*', { count: 'exact', head: true })
@@ -59,13 +76,26 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           .eq('user_id', friend.id);
           
         if (countError) {
-          console.error(`[useFriendScores] Count error for ${friend.name}:`, countError);
+          console.error(`[useFriendScores] RLS/Count error for ${friend.name}:`, countError);
+          console.log(`[useFriendScores] Debug info: Current user: ${sessionData.session?.user.id || 'No user'}, Friend: ${friend.id}, Game: ${gameId}`);
         } else {
           console.log(`[useFriendScores] Found ${count || 0} scores for friend ${friend.name}`);
         }
         
-        // Query Supabase directly to get scores
-        const { data, error } = await supabase
+        // Check if we can access any scores at all (not filtered)
+        const { data: anyScores, error: anyScoresError } = await supabase
+          .from('scores')
+          .select('count(*)', { count: 'exact', head: true })
+          .eq('user_id', friend.id);
+          
+        if (anyScoresError) {
+          console.error(`[useFriendScores] Cannot access ANY scores for ${friend.name}:`, anyScoresError);
+        } else {
+          console.log(`[useFriendScores] Friend ${friend.name} has ${anyScores?.count || 0} total scores in database`);
+        }
+        
+        // Query Supabase directly to get scores with full debug info
+        const { data, error, status, statusText } = await supabase
           .from('scores')
           .select('*')
           .eq('game_id', gameId)
@@ -74,11 +104,13 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           
         if (error) {
           console.error(`[useFriendScores] Error fetching scores for ${friend.name}:`, error);
+          console.log(`[useFriendScores] HTTP Status: ${status} ${statusText}`);
           newFriendScores[friend.id] = [];
           continue;
         }
         
         console.log(`[useFriendScores] Raw scores data for ${friend.name}:`, data);
+        console.log(`[useFriendScores] HTTP Status: ${status} ${statusText}`);
         
         // Check permissions - log RLS debug info
         console.log(`[useFriendScores] RLS check: Current user can view scores for user_id=${friend.id}, game_id=${gameId}`);
