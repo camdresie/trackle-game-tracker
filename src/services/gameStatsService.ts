@@ -123,26 +123,7 @@ export async function getGameScores(gameId: string, userId: string) {
   try {
     console.log(`[getGameScores] Fetching scores for game:${gameId}, user:${userId}`);
     
-    // First, check if such scores actually exist in the database
-    const { count, error: countError } = await supabase
-      .from('scores')
-      .select('*', { count: 'exact', head: true })
-      .eq('game_id', gameId)
-      .eq('user_id', userId);
-
-    if (countError) {
-      console.error('[getGameScores] Error checking if scores exist:', countError);
-      throw countError;
-    }
-
-    console.log(`[getGameScores] Found ${count} scores matching the query`);
-    
-    if (count === 0) {
-      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
-      return [];
-    }
-    
-    // Proceed with the actual query now that we know scores exist
+    // Perform the actual query without checking count first
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -155,17 +136,15 @@ export async function getGameScores(gameId: string, userId: string) {
       throw error;
     }
 
-    console.log(`[getGameScores] Successfully retrieved ${data?.length || 0} scores for game ${gameId} and user ${userId}`);
+    console.log(`[getGameScores] Successfully retrieved ${data?.length || 0} scores for game ${gameId} and user ${userId}:`, data);
     
     if (!data || data.length === 0) {
-      console.log(`[getGameScores] No scores found in the result for game ${gameId} and user ${userId}`);
+      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
       return [];
     }
 
-    console.log(`[getGameScores] Found ${data.length} scores for game ${gameId} and user ${userId}:`, data);
-
     // Transform data consistently while ensuring all fields are present
-    return data.map(score => ({
+    const formattedScores = data.map(score => ({
       id: score.id || `temp-${Date.now()}`,
       gameId: score.game_id,
       playerId: score.user_id,
@@ -174,6 +153,9 @@ export async function getGameScores(gameId: string, userId: string) {
       notes: score.notes || '',
       createdAt: score.created_at || new Date().toISOString()
     }));
+    
+    console.log(`[getGameScores] Transformed ${formattedScores.length} scores:`, formattedScores);
+    return formattedScores;
   } catch (error) {
     console.error('[getGameScores] Unhandled error:', error);
     throw error;

@@ -16,9 +16,6 @@ interface FriendScoresResult {
   isLoading: boolean;
 }
 
-/**
- * Hook for fetching and managing friend scores for a specific game
- */
 export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): FriendScoresResult => {
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -43,21 +40,10 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     const friendScoresData: { [key: string]: Score[] } = {};
     
     try {
-      // First, let's directly check if there are any scores for this game for ANY user
-      const { count, error: countError } = await supabase
-        .from('scores')
-        .select('*', { count: 'exact', head: true })
-        .eq('game_id', gameId);
-      
-      if (countError) {
-        console.error('[useFriendScores] Error checking if any scores exist:', countError);
-      } else {
-        console.log(`[useFriendScores] Total scores in database for game ${gameId}: ${count}`);
-      }
-      
       // Process each friend in parallel
       const friendsWithIds = friends.filter(friend => !!friend.id);
-      console.log(`[useFriendScores] Processing ${friendsWithIds.length} friends with IDs`);
+      console.log(`[useFriendScores] Processing ${friendsWithIds.length} friends with IDs:`, 
+        friendsWithIds.map(f => ({ id: f.id, name: f.name })));
       
       if (friendsWithIds.length === 0) {
         console.warn('[useFriendScores] All friends are missing IDs, nothing to fetch');
@@ -65,13 +51,17 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         return;
       }
       
-      await Promise.all(friendsWithIds.map(async (friend) => {
+      // Initialize scores arrays for all friends
+      friendsWithIds.forEach(friend => {
+        friendScoresData[friend.id] = [];
+      });
+      
+      const promises = friendsWithIds.map(async (friend) => {
         console.log(`[useFriendScores] Fetching scores for friend ${friend.name} (${friend.id})`);
         
         try {
           const scores = await getGameScores(gameId, friend.id);
           
-          // Initialize the scores array for this friend, even if empty
           if (scores && scores.length > 0) {
             console.log(`[useFriendScores] Retrieved ${scores.length} scores for friend ${friend.name}:`, scores);
             friendScoresData[friend.id] = scores;
@@ -82,22 +72,12 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         } catch (error) {
           console.error(`[useFriendScores] Error fetching scores for friend ${friend.name}:`, error);
           friendScoresData[friend.id] = [];
-          
-          toast({
-            title: `Error loading scores`,
-            description: `Couldn't load scores for ${friend.name}`,
-            variant: "destructive"
-          });
         }
-      }));
+      });
+      
+      await Promise.all(promises);
       
       console.log('[useFriendScores] All friend scores fetched:', friendScoresData);
-      
-      // Check if any scores were actually found
-      const totalScores = Object.values(friendScoresData).reduce(
-        (sum, scores) => sum + scores.length, 0
-      );
-      console.log(`[useFriendScores] Total scores found across all friends: ${totalScores}`);
       
       // Set the state with all friend scores
       setFriendScores(friendScoresData);
@@ -116,15 +96,19 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
 
   // Effect to fetch friend scores whenever friends list or gameId changes
   useEffect(() => {
-    if (gameId && friends.length > 0) {
-      console.log('[useFriendScores] Effect triggered - fetching scores');
-      fetchFriendScores();
-    } else {
-      console.log('[useFriendScores] Effect triggered but missing data:', { 
-        hasGameId: !!gameId, 
-        friendsCount: friends.length 
-      });
-    }
+    const fetchData = async () => {
+      if (gameId && friends.length > 0) {
+        console.log('[useFriendScores] Effect triggered - fetching scores');
+        await fetchFriendScores();
+      } else {
+        console.log('[useFriendScores] Effect triggered but missing data:', { 
+          hasGameId: !!gameId, 
+          friendsCount: friends.length 
+        });
+      }
+    };
+    
+    fetchData();
   }, [gameId, friends, fetchFriendScores]);
 
   return {

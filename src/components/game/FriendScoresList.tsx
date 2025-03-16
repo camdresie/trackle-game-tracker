@@ -1,243 +1,186 @@
 
-import React, { useEffect, useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import ScoreChart from '@/components/ScoreChart';
-import { Game, Player, Score } from '@/utils/types';
-import { Users, RefreshCcw, AlertCircle, PlusCircle } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2, User, RefreshCw } from 'lucide-react';
+import PlayerCard from '@/components/PlayerCard';
+import { Game, Score } from '@/utils/types';
+import { toast } from 'sonner';
 import { addFriendTestScores } from '@/services/gameStatsService';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FriendScoresListProps {
   game: Game;
-  friends: Player[];
+  friends: { id: string; name: string; avatar?: string }[];
   friendScores: { [key: string]: Score[] };
-  isLoading?: boolean;
-  onManageFriends?: () => void;
-  onRefreshFriends?: () => void;
+  isLoading: boolean;
+  onManageFriends: () => void;
+  onRefreshFriends: () => Promise<void>;
 }
 
-const FriendScoresList = ({ 
-  game, 
-  friends, 
-  friendScores, 
-  isLoading = false,
-  onManageFriends, 
-  onRefreshFriends 
+const FriendScoresList = ({
+  game,
+  friends,
+  friendScores,
+  isLoading,
+  onManageFriends,
+  onRefreshFriends
 }: FriendScoresListProps) => {
   const { user } = useAuth();
-  const [hasAddedTestScores, setHasAddedTestScores] = useState(false);
-  const [addingTestData, setAddingTestData] = useState(false);
+  const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
+  const [refreshing, setRefreshing] = useState(false);
   
-  // Debug logs on mount and when props change
-  useEffect(() => {
-    console.log("[FriendScoresList] Rendering with props:", { 
-      gameId: game?.id,
-      friendsCount: friends?.length, 
-      friendScoresKeys: Object.keys(friendScores || {}),
-      isLoading
-    });
-    
-    // Check if we have any actual scores data
-    const actualScoresCount = Object.values(friendScores || {}).reduce(
-      (total, scores) => total + scores.length, 0
-    );
-    console.log(`[FriendScoresList] Total actual scores available: ${actualScoresCount}`);
-  }, [game, friends, friendScores, isLoading]);
+  // Check if there are any friend scores at all
+  const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
   
-  // Function to handle refresh button click with enhanced feedback
-  const handleRefreshClick = () => {
-    console.log("[FriendScoresList] Refresh friends button clicked");
+  // Debug logging
+  console.log('FriendScoresList render - Friends:', friends.length);
+  console.log('FriendScoresList render - Friend score keys:', Object.keys(friendScores).length);
+  console.log('FriendScoresList render - Has any scores:', hasAnyScores);
+  
+  // Calculate stats for each friend
+  const getFriendStats = (friendId: string) => {
+    const scores = friendScores[friendId] || [];
     
-    // Show immediate feedback toast
-    toast({
-      description: "Refreshing friend data..."
-    });
-    
-    if (onRefreshFriends) {
-      // Call the refresh function provided by parent
-      try {
-        onRefreshFriends();
-        console.log("[FriendScoresList] Friend refresh function called successfully");
-      } catch (error) {
-        console.error("[FriendScoresList] Error during friend refresh:", error);
-        toast({
-          title: "Error",
-          description: "Failed to refresh friend data",
-          variant: "destructive"
-        });
-      }
-    } else {
-      console.warn("[FriendScoresList] No refresh handler provided");
+    if (scores.length === 0) {
+      return { bestScore: 0, totalScore: 0, averageScore: 0, totalGames: 0 };
     }
+    
+    const totalGames = scores.length;
+    const totalScore = scores.reduce((sum, score) => sum + score.value, 0);
+    const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
+    
+    let bestScore = scores[0]?.value || 0;
+    if (game.id === 'wordle') {
+      // For Wordle, lower is better
+      bestScore = Math.min(...scores.map(s => s.value));
+    } else {
+      // For other games, higher is better
+      bestScore = Math.max(...scores.map(s => s.value));
+    }
+    
+    return { bestScore, totalScore, averageScore, totalGames };
   };
   
-  // Function to add test scores for friends using the backend function
-  const addTestScores = async () => {
-    if (friends.length === 0 || !game || !user) return;
+  const handleAddTestScores = async (friendId: string) => {
+    if (!user || !game) return;
+    
+    setAddingTestScores(prev => ({ ...prev, [friendId]: true }));
     
     try {
-      setAddingTestData(true);
+      console.log(`Adding test scores for friend ${friendId} and game ${game.id}`);
+      const result = await addFriendTestScores(game.id, friendId, user.id);
       
-      // We'll use the first friend for simplicity
-      const friend = friends[0];
-      
-      console.log(`[FriendScoresList] Adding test scores for friend ${friend.name} (${friend.id})`);
-      
-      // Call our service function to add test scores through a backend function
-      const result = await addFriendTestScores(game.id, friend.id, user.id);
-      
-      if (result.error) {
-        throw result.error;
+      if (result.success) {
+        toast.success("Test scores added successfully");
+        // Refresh friend scores after adding test data
+        await onRefreshFriends();
+      } else {
+        console.error("Failed to add test scores:", result.error);
+        toast.error("Failed to add test scores");
       }
-      
-      console.log('[FriendScoresList] Successfully added test scores:', result);
-      setHasAddedTestScores(true);
-      
-      // Refresh friend scores
-      if (onRefreshFriends) {
-        onRefreshFriends();
-      }
-      
-      toast({
-        title: "Success",
-        description: `Added test scores for ${friend.name}`,
-      });
     } catch (error) {
-      console.error('[FriendScoresList] Error in addTestScores:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add test scores. Check console for details.",
-        variant: "destructive"
-      });
+      console.error("Error adding test scores:", error);
+      toast.error("Error adding test scores");
     } finally {
-      setAddingTestData(false);
+      setAddingTestScores(prev => ({ ...prev, [friendId]: false }));
+    }
+  };
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await onRefreshFriends();
+      toast.success("Friend scores refreshed");
+    } catch (error) {
+      console.error("Error refreshing friend scores:", error);
+      toast.error("Failed to refresh friend scores");
+    } finally {
+      setRefreshing(false);
     }
   };
 
-  // Detailed debug logs
-  console.log("FriendScoresList rendering with friends:", friends.length);
-  console.log("Friend scores keys:", Object.keys(friendScores));
-  console.log("All friend scores data:", friendScores);
-
   return (
-    <>
-      <div className="flex justify-between items-center mb-4">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Friend Scores</h2>
-        <div className="flex gap-2">
-          {!hasAddedTestScores && friends.length > 0 && (
-            <Button 
-              variant="outline"
-              size="sm" 
-              onClick={addTestScores}
-              className="gap-1"
-              disabled={addingTestData || isLoading || !user}
-            >
-              <PlusCircle className="h-3 w-3" />
-              {addingTestData ? 'Adding Test Data...' : 'Add Test Scores'}
-            </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="gap-1"
+        >
+          {refreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
           )}
-          {friends.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleRefreshClick}
-              className="gap-1"
-              disabled={isLoading}
-            >
-              <RefreshCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Button>
-          )}
-        </div>
+          <span>Refresh</span>
+        </Button>
       </div>
       
-      {isLoading && friends.length > 0 ? (
-        <div className="space-y-6">
-          {friends.map(friend => (
-            <div key={friend.id} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-              <Skeleton className="h-32 w-full" />
-              <Separator />
-            </div>
-          ))}
+      {isLoading ? (
+        <div className="text-center py-12">
+          <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-2" />
+          <p className="text-muted-foreground">Loading friend scores...</p>
         </div>
       ) : friends.length > 0 ? (
-        <div className="space-y-6">
-          {friends.map(friend => {
-            const friendScoresList = friendScores[friend.id] || [];
-            console.log(`Rendering friend ${friend.name} with ${friendScoresList.length} scores:`, 
-              friendScoresList.length > 0 ? friendScoresList : 'No scores');
-            
-            let bestFriendScore = null;
-            if (friendScoresList.length > 0) {
-              if (game.id === 'wordle' || game.id === 'mini-crossword' || game.id === 'quordle') {
-                bestFriendScore = Math.min(...friendScoresList.map(s => s.value));
-              } else {
-                bestFriendScore = Math.max(...friendScoresList.map(s => s.value));
-              }
-            }
+        <div className="space-y-4">
+          {friends.map((friend) => {
+            const stats = getFriendStats(friend.id);
+            const scores = friendScores[friend.id] || [];
+            const hasScores = scores.length > 0;
             
             return (
               <div key={friend.id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={friend.avatar} />
-                      <AvatarFallback>{friend.name?.substring(0, 2).toUpperCase() || 'UN'}</AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-medium">{friend.name}</h3>
-                  </div>
-                  
-                  <div className="text-sm">
-                    Best: <span className="font-semibold">
-                      {bestFriendScore !== null ? bestFriendScore : '-'}
-                    </span>
-                  </div>
-                </div>
+                <PlayerCard 
+                  player={friend}
+                  scores={scores}
+                  game={game}
+                  stats={stats}
+                />
                 
-                {friendScoresList.length > 0 ? (
-                  <div className="h-32">
-                    <ScoreChart 
-                      scores={friendScoresList.slice(-20)} 
-                      gameId={game.id}
-                      color={game.color.replace('bg-', '')}
-                      simplified={true}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-sm text-muted-foreground bg-secondary/20 rounded-lg">
-                    <AlertCircle className="w-4 h-4 mb-2" />
-                    <p>No scores recorded</p>
-                    <p className="text-xs">Either your friend hasn't played this game or they're keeping their scores private</p>
+                {!hasScores && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddTestScores(friend.id)}
+                      disabled={addingTestScores[friend.id]}
+                    >
+                      {addingTestScores[friend.id] ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                          Adding test scores...
+                        </>
+                      ) : (
+                        "Add test scores"
+                      )}
+                    </Button>
                   </div>
                 )}
-                
-                <Separator />
               </div>
             );
           })}
+          
+          {!hasAnyScores && (
+            <div className="bg-secondary/30 rounded-lg p-4 text-sm text-center text-muted-foreground mt-4">
+              <p>No scores found for your friends yet</p>
+              <p className="mt-1">Add test scores to see how they would appear</p>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="mb-2">You haven't added any friends yet</p>
-          <Button 
-            variant="outline" 
-            onClick={onManageFriends}
-            className="gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Add Friends
-          </Button>
+        <div className="text-center py-12 bg-secondary/20 rounded-xl">
+          <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No friends yet</h3>
+          <p className="text-muted-foreground max-w-md mx-auto mb-4">
+            Add friends to see their scores and compare your progress with theirs.
+          </p>
+          <Button onClick={onManageFriends}>Manage Friends</Button>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
