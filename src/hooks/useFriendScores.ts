@@ -1,12 +1,15 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UseFriendScoresProps {
   gameId: string | undefined;
   friends: { id: string; name: string }[];
+  includeCurrentUser?: boolean;
+  currentUserScores?: Score[];
 }
 
 interface FriendScoresResult {
@@ -15,9 +18,25 @@ interface FriendScoresResult {
   isLoading: boolean;
 }
 
-export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): FriendScoresResult => {
+export const useFriendScores = ({ 
+  gameId, 
+  friends, 
+  includeCurrentUser = false,
+  currentUserScores = []
+}: UseFriendScoresProps): FriendScoresResult => {
+  const { user } = useAuth();
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Add current user's scores to friendScores when they change
+  useEffect(() => {
+    if (includeCurrentUser && user && currentUserScores.length > 0) {
+      setFriendScores(prev => ({
+        ...prev,
+        [user.id]: currentUserScores
+      }));
+    }
+  }, [includeCurrentUser, user, currentUserScores]);
 
   // Enhanced fetch function with detailed debugging for RLS issue diagnosis
   const fetchFriendScores = useCallback(async () => {
@@ -26,8 +45,8 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
       return;
     }
     
-    if (friends.length === 0) {
-      console.log('[useFriendScores] No friends to fetch scores for');
+    if (friends.length === 0 && (!includeCurrentUser || !user)) {
+      console.log('[useFriendScores] No friends or current user to fetch scores for');
       return;
     }
     
@@ -35,11 +54,20 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     console.log(`[useFriendScores] Friend IDs:`, friends.map(f => f.id));
     setIsLoading(true);
     
-    // Initialize empty scores for all friends
+    // Initialize empty scores for all friends and current user if needed
     const newFriendScores: { [key: string]: Score[] } = {};
     friends.forEach(friend => {
       newFriendScores[friend.id] = [];
     });
+    
+    // If including current user and we have their scores, add them
+    if (includeCurrentUser && user) {
+      if (currentUserScores.length > 0) {
+        newFriendScores[user.id] = currentUserScores;
+      } else {
+        newFriendScores[user.id] = [];
+      }
+    }
     
     try {
       // Get current user's session information for debugging
@@ -138,8 +166,16 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         newFriendScores[friend.id] = formattedScores;
       }
       
-      // Set all friend scores at once
-      setFriendScores(newFriendScores);
+      // Set all friend scores at once, preserving current user scores if they exist
+      if (includeCurrentUser && user && currentUserScores.length > 0) {
+        setFriendScores({
+          ...newFriendScores,
+          [user.id]: currentUserScores
+        });
+      } else {
+        setFriendScores(newFriendScores);
+      }
+      
       console.log('[useFriendScores] All friend scores fetched:', newFriendScores);
       
     } catch (error) {
@@ -148,7 +184,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     } finally {
       setIsLoading(false);
     }
-  }, [gameId, friends]);
+  }, [gameId, friends, includeCurrentUser, user, currentUserScores]);
 
   return {
     friendScores,

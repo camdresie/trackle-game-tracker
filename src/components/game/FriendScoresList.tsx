@@ -117,6 +117,11 @@ const FriendScoresList = ({
     }
   };
 
+  // Create a list with the current user first (if available), followed by friends
+  const allPlayers = user 
+    ? [{ id: user.id, name: user.full_name || user.username || 'You', avatar: user.avatar, isCurrentUser: true }, ...friends]
+    : [...friends];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -144,33 +149,38 @@ const FriendScoresList = ({
           <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-2" />
           <p className="text-muted-foreground">Loading friend scores...</p>
         </div>
-      ) : friends.length > 0 ? (
+      ) : allPlayers.length > 0 ? (
         <div className="space-y-4">
-          {friends.map((friend, index) => {
-            const stats = getFriendStats(friend.id);
-            const scores = friendScores[friend.id] || [];
+          {allPlayers.map((player, index) => {
+            const stats = getFriendStats(player.id);
+            const scores = friendScores[player.id] || [];
             const hasScores = scores.length > 0;
             
             return (
-              <div key={friend.id} className="space-y-2">
+              <div key={player.id} className="space-y-2">
                 <PlayerCard 
-                  player={friend}
+                  player={{
+                    id: player.id,
+                    name: 'isCurrentUser' in player ? `${player.name} (You)` : player.name,
+                    avatar: player.avatar
+                  }}
                   scores={scores}
                   game={game}
                   stats={stats}
                   rank={index + 1}
+                  className={'isCurrentUser' in player ? "border-2 border-primary/30" : undefined}
                 />
                 
-                {!hasScores && (
+                {!hasScores && !('isCurrentUser' in player) && (
                   <div className="flex justify-end">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAddTestScores(friend.id)}
-                      disabled={addingTestScores[friend.id]}
+                      onClick={() => handleAddTestScores(player.id)}
+                      disabled={addingTestScores[player.id]}
                       className="gap-1"
                     >
-                      {addingTestScores[friend.id] ? (
+                      {addingTestScores[player.id] ? (
                         <>
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                           Adding test scores...

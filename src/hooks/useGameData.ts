@@ -31,10 +31,12 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     refreshTrigger: refreshCount 
   });
   
-  // Get scores for all friends using our simplified hook
+  // Get scores for all friends and current user using our simplified hook
   const { friendScores, fetchFriendScores, isLoading: friendScoresLoading } = useFriendScores({ 
     gameId, 
-    friends 
+    friends,
+    includeCurrentUser: true, // Include current user's scores in friendScores
+    currentUserScores: scores // Pass current user's scores
   });
   
   // Log Supabase connection status for debugging RLS issues
@@ -79,11 +81,11 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
   
   // Improved effect to fetch friend scores when friends or gameId changes
   useEffect(() => {
-    if (gameId && friends.length > 0) {
-      console.log('[useGameData] Triggering fetchFriendScores due to gameId or friends change');
+    if (gameId && (friends.length > 0 || scores.length > 0)) {
+      console.log('[useGameData] Triggering fetchFriendScores due to gameId, friends, or scores change');
       fetchFriendScores();
     }
-  }, [gameId, friends, fetchFriendScores]);
+  }, [gameId, friends, scores, fetchFriendScores]);
   
   // Enhanced refresh function that updates all data
   const refreshFriends = useCallback(async () => {
