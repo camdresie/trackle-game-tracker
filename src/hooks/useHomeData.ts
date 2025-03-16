@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Game, Score } from '@/utils/types';
-import { games, addGame } from '@/utils/gameData';
+import { games } from '@/utils/gameData';
 import { getGameScores, getTodaysGames } from '@/services/gameStatsService';
 
 export interface HomeDataResult {
@@ -15,12 +15,9 @@ export interface HomeDataResult {
   setSelectedGame: (game: Game | null) => void;
   showAddScore: boolean;
   setShowAddScore: (show: boolean) => void;
-  showAddGame: boolean;
-  setShowAddGame: (show: boolean) => void;
   showConnections: boolean;
   setShowConnections: (show: boolean) => void;
   handleAddScore: (newScore: Score) => void;
-  handleAddGame: (newGameData: Omit<Game, 'id' | 'isCustom'>) => void;
 }
 
 export const useHomeData = (): HomeDataResult => {
@@ -28,7 +25,6 @@ export const useHomeData = (): HomeDataResult => {
   const { toast } = useToast();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showAddScore, setShowAddScore] = useState(false);
-  const [showAddGame, setShowAddGame] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
   const [scores, setScores] = useState<Score[]>([]);
   const [gamesList, setGamesList] = useState<Game[]>(games);
@@ -100,11 +96,6 @@ export const useHomeData = (): HomeDataResult => {
       setTodaysGames((prevGames) => [...prevGames, newScore]);
     }
   };
-  
-  const handleAddGame = (newGameData: Omit<Game, 'id' | 'isCustom'>) => {
-    const newGame = addGame(newGameData);
-    setGamesList([...gamesList]);
-  };
 
   return {
     isLoading,
@@ -115,11 +106,8 @@ export const useHomeData = (): HomeDataResult => {
     setSelectedGame,
     showAddScore,
     setShowAddScore,
-    showAddGame,
-    setShowAddGame,
     showConnections,
     setShowConnections,
-    handleAddScore,
-    handleAddGame
+    handleAddScore
   };
 };

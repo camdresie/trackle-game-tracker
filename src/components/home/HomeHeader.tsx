@@ -5,14 +5,12 @@ import { Game } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
 
 interface HomeHeaderProps {
-  onShowAddGame: () => void;
   onShowAddScore: () => void;
   onShowConnections: () => void;
   gamesList: Game[];
 }
 
 const HomeHeader = ({
-  onShowAddGame,
   onShowAddScore,
   onShowConnections,
   gamesList
@@ -46,15 +44,6 @@ const HomeHeader = ({
         >
           <UsersRound className="w-4 h-4" />
           Friends
-        </Button>
-        
-        <Button 
-          variant="outline"
-          onClick={onShowAddGame}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Game
         </Button>
         
         <Button 

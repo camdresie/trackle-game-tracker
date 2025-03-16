@@ -198,18 +198,6 @@ export const getPlayerFriends = (playerId: string): Player[] => {
   return players.filter(player => friendIds.includes(player.id));
 };
 
-// Add a new game
-export const addGame = (game: Omit<Game, 'id'>): Game => {
-  const newGame = {
-    ...game,
-    id: `game-${Date.now()}`,
-    isCustom: true
-  };
-  
-  games.push(newGame);
-  return newGame;
-};
-
 // Add a new connection
 export const addConnection = (playerId: string, friendId: string): Connection => {
   const newConnection = {

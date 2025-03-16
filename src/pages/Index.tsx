@@ -2,7 +2,6 @@
 import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import AddScoreModal from '@/components/AddScoreModal';
-import AddGameModal from '@/components/AddGameModal';
 import ConnectionsModal from '@/components/ConnectionsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHomeData } from '@/hooks/useHomeData';
@@ -22,12 +21,9 @@ const Index = () => {
     setSelectedGame,
     showAddScore,
     setShowAddScore,
-    showAddGame,
-    setShowAddGame,
     showConnections,
     setShowConnections,
-    handleAddScore,
-    handleAddGame
+    handleAddScore
   } = useHomeData();
 
   const handleShowAddScore = () => {
@@ -44,7 +40,6 @@ const Index = () => {
       <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <section className="mb-8 animate-slide-up">
           <HomeHeader 
-            onShowAddGame={() => setShowAddGame(true)}
             onShowAddScore={handleShowAddScore}
             onShowConnections={() => setShowConnections(true)}
             gamesList={gamesList}
@@ -71,12 +66,6 @@ const Index = () => {
             onAddScore={handleAddScore}
           />
         )}
-        
-        <AddGameModal
-          open={showAddGame}
-          onOpenChange={setShowAddGame}
-          onAddGame={handleAddGame}
-        />
         
         <ConnectionsModal
           open={showConnections}
