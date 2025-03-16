@@ -1,4 +1,3 @@
-
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -65,10 +64,13 @@ export const filterAndSortPlayers = (
     }
   }
   
-  // For today view, show only players with today's scores
+  // IMPORTANT: For today view, we should keep the filtering for today's scores here
+  // but we need to make sure the data is properly populated before it gets here
   if (timeFilter === 'today') {
+    // Only keep players with a non-null today_score
+    const beforeFilter = filteredPlayers.length;
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
-    console.log('Players after filtering for today scores:', filteredPlayers.length);
+    console.log(`Players with today scores: ${filteredPlayers.length} out of ${beforeFilter}`);
     
     // Log players with today scores after filtering
     if (filteredPlayers.length > 0) {

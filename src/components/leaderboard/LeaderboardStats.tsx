@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -32,16 +31,28 @@ const LeaderboardStats = ({
   // Consider players with at least one game to be active
   const activePlayers = players.filter(player => player.total_games > 0);
   
-  // Calculate total games played by counting scores for today or all time
-  const gamesPlayedCount = timeFilter === 'today'
-    ? rawScoresData.filter(score => {
-        // Use the formattedDate field for consistent comparison
-        const formattedDate = score.formattedDate || 
-          formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
-        
-        return formattedDate === today;
-      }).length
+  // Calculate counts directly from rawScoresData for today's view
+  const todayScores = rawScoresData.filter(score => {
+    // Use formattedDate if available, otherwise format the date
+    const formattedDate = score.formattedDate || 
+      formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
+    return formattedDate === today;
+  });
+  
+  // Count unique users who have played today
+  const uniqueUserIds = [...new Set(todayScores.map(s => s.user_id))];
+  const todayPlayersCount = uniqueUserIds.length;
+  const todayGamesCount = todayScores.length;
+  
+  // Calculate total games played based on the time filter
+  const gamesPlayedCount = timeFilter === 'today' 
+    ? todayGamesCount 
     : activePlayers.reduce((total, player) => total + player.total_games, 0);
+  
+  // Calculate players count based on time filter
+  const playersCount = timeFilter === 'today' 
+    ? todayPlayersCount 
+    : activePlayers.length;
   
   // Debug logging to track our calculations
   useEffect(() => {
@@ -53,34 +64,13 @@ const LeaderboardStats = ({
     
     // Count scores that match today's date
     if (timeFilter === 'today') {
-      const todayScores = rawScoresData.filter(score => {
-        // Use formattedDate if available, otherwise format the date
-        const formattedDate = score.formattedDate || 
-          formatInTimeZone(new Date(score.date), 'America/New_York', 'yyyy-MM-dd');
-        
-        const isToday = formattedDate === today;
-        
-        if (isToday) {
-          console.log(`LeaderboardStats - MATCH: Score from today found:`, {
-            id: score.id,
-            user_id: score.user_id,
-            raw_date: score.date,
-            formattedDate: formattedDate,
-            today: today,
-            value: score.value,
-            matches_today: isToday
-          });
-        }
-        
-        return isToday;
-      });
-      
       console.log(`LeaderboardStats - Scores found for today's date:`, todayScores.length);
       
       if (todayScores.length > 0) {
-        console.log('Sample today\'s scores:', todayScores.slice(0, Math.min(5, todayScores.length)).map(s => ({
+        console.log('Today\'s scores:', todayScores.map(s => ({
           id: s.id,
           user_id: s.user_id,
+          username: s.user_profile?.username,
           date: s.date,
           formattedDate: s.formattedDate || formatInTimeZone(new Date(s.date), 'America/New_York', 'yyyy-MM-dd'),
           value: s.value
@@ -89,55 +79,68 @@ const LeaderboardStats = ({
         console.log('No scores found for today\'s date');
       }
       
-      // Count unique users who have played today
-      const uniqueUserIds = new Set(todayScores.map(s => s.user_id));
-      console.log(`LeaderboardStats - Unique users with today's scores: ${uniqueUserIds.size}`);
-      if (uniqueUserIds.size > 0) {
-        console.log('Unique user IDs with today\'s scores:', Array.from(uniqueUserIds));
+      console.log(`LeaderboardStats - Unique users with today's scores: ${uniqueUserIds.length}`);
+      if (uniqueUserIds.length > 0) {
+        console.log('Unique user IDs with today\'s scores:', uniqueUserIds);
       }
     }
     
+    console.log(`LeaderboardStats - Final calculated players count: ${playersCount}`);
     console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
-  }, [rawScoresData, selectedGame, timeFilter, today, gamesPlayedCount, activePlayers]);
+  }, [rawScoresData, selectedGame, timeFilter, today, todayScores, uniqueUserIds, playersCount, gamesPlayedCount, activePlayers]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
-  if (activePlayers.length > 0) {
-    if (timeFilter === 'today') {
-      // For today's view, only consider players with today's scores
-      const playersWithTodayScores = activePlayers.filter(p => p.today_score !== null);
-      console.log(`LeaderboardStats - Players with today scores: ${playersWithTodayScores.length}`);
+  if (timeFilter === 'today' && todayScores.length > 0) {
+    // For today view, calculate the leader directly from today's scores
+    const userScores: Record<string, { userId: string, username: string, score: number }> = {};
+    
+    // Gather all today's scores by user
+    todayScores.forEach(score => {
+      const userId = score.user_id;
+      const username = score.user_profile?.username || 'Unknown';
+      const value = score.value;
       
-      if (playersWithTodayScores.length > 0) {
-        // Log all players with today scores for debugging
-        console.log('Players with today scores:', playersWithTodayScores.map(p => ({
-          username: p.username, 
-          today_score: p.today_score
-        })));
-        
-        // Sort by today's score (handling Wordle's lower-is-better scoring)
-        leaderPlayer = [...playersWithTodayScores]
-          .sort((a, b) => {
-            if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-              return (a.today_score || 0) - (b.today_score || 0);
-            } else {
-              return (b.today_score || 0) - (a.today_score || 0);
-            }
-          })[0];
-      }
-    } else {
-      // Sort by best score for all-time
-      leaderPlayer = [...activePlayers].sort((a, b) => {
-        if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-          if (a.best_score === 0 && b.best_score === 0) return 0;
-          if (a.best_score === 0) return 1;
-          if (b.best_score === 0) return -1;
-          return a.best_score - b.best_score;
-        } else {
-          return b.best_score - a.best_score;
+      // For games where lower is better, keep the lowest score
+      // For other games, keep the highest score
+      if (!userScores[userId]) {
+        userScores[userId] = { userId, username, score: value };
+      } else if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        if (value < userScores[userId].score) {
+          userScores[userId].score = value;
         }
-      })[0];
+      } else {
+        if (value > userScores[userId].score) {
+          userScores[userId].score = value;
+        }
+      }
+    });
+    
+    // Convert to array and sort
+    const sortedUsers = Object.values(userScores).sort((a, b) => {
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        return a.score - b.score; // Lower is better
+      } else {
+        return b.score - a.score; // Higher is better
+      }
+    });
+    
+    // Get the top player
+    if (sortedUsers.length > 0) {
+      leaderPlayer = { username: sortedUsers[0].username };
     }
+  } else if (activePlayers.length > 0) {
+    // For all-time view, use the existing logic
+    leaderPlayer = [...activePlayers].sort((a, b) => {
+      if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
+        if (a.best_score === 0 && b.best_score === 0) return 0;
+        if (a.best_score === 0) return 1;
+        if (b.best_score === 0) return -1;
+        return a.best_score - b.best_score;
+      } else {
+        return b.best_score - a.best_score;
+      }
+    })[0];
   }
   
   return (
@@ -164,11 +167,8 @@ const LeaderboardStats = ({
           <div className="text-2xl font-semibold">
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-            ) : timeFilter === 'today' ? (
-              // For today's view, count players with today scores
-              players.filter(p => p.today_score !== null).length
             ) : (
-              activePlayers.length || 0
+              playersCount || 0
             )}
           </div>
           <div className="text-sm text-muted-foreground">
@@ -184,7 +184,7 @@ const LeaderboardStats = ({
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
             ) : (
-              gamesPlayedCount
+              gamesPlayedCount || 0
             )}
           </div>
           <div className="text-sm text-muted-foreground">

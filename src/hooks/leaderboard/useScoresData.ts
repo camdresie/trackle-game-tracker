@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { addDays, subDays } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
@@ -51,53 +50,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         const today = getEasternTimeDate();
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
         
-        // Log all raw scores for debugging
-        console.log('All raw scores:', data?.map(s => ({ 
-          id: s.id, 
-          user_id: s.user_id, 
-          date: s.date, 
-          et_date: convertToEasternTime(s.date) 
-        })));
-        
-        // Count today's scores to verify detection
-        if (data && data.length > 0) {
-          // Format date objects to Eastern Time YYYY-MM-DD strings for consistent comparison
-          const formattedData = data.map(score => ({
-            ...score,
-            // Convert to Eastern Time
-            formattedDate: convertToEasternTime(score.date)
-          }));
-          
-          // Check for today's scores
-          const todayScores = formattedData.filter(score => {
-            const isToday = score.formattedDate === today;
-            
-            if (isToday) {
-              console.log('MATCH: Found TODAY score:', {
-                id: score.id,
-                user_id: score.user_id,
-                date: score.date,
-                formattedDate: score.formattedDate,
-                today: today,
-                value: score.value
-              });
-            }
-            
-            return isToday;
-          });
-          
-          console.log(`useScoresData: Found ${todayScores.length} scores from today (${today})`);
-          if (todayScores.length > 0) {
-            console.log('All today\'s scores:', todayScores.map(s => ({
-              id: s.id,
-              user_id: s.user_id,
-              date: s.date,
-              formattedDate: s.formattedDate,
-              value: s.value
-            })));
-          }
-        }
-        
         // Get profiles for all user IDs
         const userIds = [...new Set(data?.map(item => item.user_id) || [])];
         let userProfiles: any[] = [];
@@ -116,7 +68,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           }
         }
         
-        // Map profile data to scores
+        // Map profile data to scores and convert dates to Eastern Time
         const transformedData = data?.map(item => {
           const profile = userProfiles.find(p => p.id === item.user_id) || {
             id: item.user_id,
@@ -125,13 +77,35 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             avatar_url: null
           };
           
+          // Convert score date to Eastern Time format
+          const formattedDate = convertToEasternTime(item.date);
+          const isToday = formattedDate === today;
+          
+          if (isToday) {
+            console.log(`TODAY'S SCORE in useScoresData: User ${profile.username}, Value: ${item.value}, Date: ${item.date}, ET Date: ${formattedDate}`);
+          }
+          
           return {
             ...item,
             // Add a consistently formatted date in Eastern Time
-            formattedDate: convertToEasternTime(item.date),
+            formattedDate: formattedDate,
             user_profile: profile
           };
         });
+        
+        // Count and log today's scores
+        const todayScores = transformedData?.filter(score => score.formattedDate === today) || [];
+        console.log(`useScoresData: Found ${todayScores.length} scores from today (${today})`);
+        if (todayScores.length > 0) {
+          console.log('All today\'s scores:', todayScores.map(s => ({
+            id: s.id,
+            user_id: s.user_id,
+            username: s.user_profile?.username,
+            date: s.date,
+            formattedDate: s.formattedDate,
+            value: s.value
+          })));
+        }
         
         return transformedData || [];
       } catch (error) {

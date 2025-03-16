@@ -70,12 +70,28 @@ export const processLeaderboardData = (
   // Log a few scores to see the data structure
   if (gameScores.length > 0) {
     console.log('Sample scores data:', gameScores.slice(0, Math.min(5, gameScores.length)));
-    console.log('All scores with dates:', gameScores.map(s => ({
-      user_id: s.user_id,
-      date: s.date,
-      formattedDate: s.formattedDate || convertToEasternTime(s.date),
-      value: s.value
-    })));
+    
+    // Get all score dates for debugging
+    const allDates = gameScores.map(score => {
+      // Make sure to format the date consistently in ET
+      const formattedDate = score.formattedDate || convertToEasternTime(score.date);
+      return {
+        user_id: score.user_id,
+        date: score.date,
+        formattedDate: formattedDate,
+        value: score.value,
+        isToday: formattedDate === today
+      };
+    });
+    
+    console.log('All scores with dates:', allDates);
+    
+    // Specifically log today's scores
+    const todayScores = allDates.filter(score => score.isToday);
+    console.log(`Found ${todayScores.length} scores for today (${today}):`);
+    if (todayScores.length > 0) {
+      console.log('Today\'s scores:', todayScores);
+    }
   }
   
   // Create a list of user IDs with their total game counts from game stats
