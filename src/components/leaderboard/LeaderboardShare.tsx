@@ -41,6 +41,13 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
   const formatScore = (score: number): string => {
     if (score === null || score === undefined) return '-';
     
+    // Format time-based scores for Mini Crossword
+    if (selectedGame === 'mini-crossword') {
+      const minutes = Math.floor(score / 60);
+      const seconds = score % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
     // Format to at most 2 decimal places for average scores
     if (typeof score === 'number' && !Number.isInteger(score)) {
       return score.toFixed(2);

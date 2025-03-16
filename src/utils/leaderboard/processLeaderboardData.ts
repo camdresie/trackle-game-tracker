@@ -130,7 +130,7 @@ export const processLeaderboardData = (
     userStats.average_score = userStats.total_games > 0 ? 
       (userStats.total_score / userStats.total_games) : 0;
     
-    // Update best score (for games where lower is better like Wordle, take the minimum)
+    // Update best score (for games where lower is better like Wordle and Mini Crossword, take the minimum)
     if (['wordle', 'mini-crossword'].includes(selectedGame)) {
       userStats.best_score = userStats.best_score === 0 
         ? score.value 

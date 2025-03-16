@@ -59,8 +59,8 @@ const ScoreChart = ({
     return colorMap[baseColor] || colorMap["blue-500"];
   };
   
-  // For Wordle, lower scores are better
-  const isAscending = effectiveGameId === 'wordle';
+  // For Wordle and Mini Crossword, lower scores are better
+  const isAscending = ['wordle', 'mini-crossword'].includes(effectiveGameId || '');
   
   useEffect(() => {
     if (!scores.length) return;

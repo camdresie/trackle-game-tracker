@@ -21,6 +21,34 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
     return date.toLocaleDateString(undefined, options);
   };
 
+  // Format score value based on game type
+  const formatScoreValue = (score: number, gameId: string) => {
+    if (gameId === 'mini-crossword') {
+      const minutes = Math.floor(score / 60);
+      const seconds = score % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return score;
+  };
+
+  // Determine score rating
+  const getScoreRating = (score: number, gameId: string) => {
+    if (gameId === 'wordle' && score <= 3) {
+      return 'Excellent';
+    } else if (gameId === 'wordle' && score <= 4) {
+      return 'Good';
+    } else if (gameId === 'mini-crossword' && score < 120) { // Less than 2 minutes
+      return 'Excellent';
+    } else if (gameId === 'mini-crossword' && score < 240) { // Less than 4 minutes
+      return 'Good';
+    } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.8) {
+      return 'Excellent';
+    } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.7) {
+      return 'Good';
+    }
+    return 'Fair';
+  };
+
   return (
     <>
       <h2 className="text-xl font-semibold mb-2">Your Score History</h2>
@@ -37,7 +65,7 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
                 >
                   <div className="flex items-center gap-3">
                     <div className="bg-secondary rounded-md p-2 w-12 h-12 flex items-center justify-center">
-                      <span className="text-xl font-bold">{score.value}</span>
+                      <span className="text-xl font-bold">{formatScoreValue(score.value, game.id)}</span>
                     </div>
                     <div>
                       <div className="font-medium">{formatDate(score.date)}</div>
@@ -47,17 +75,13 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
                     </div>
                   </div>
                   <div className={
-                    (game.id === 'wordle' && score.value <= 3) || 
-                    (!['wordle', 'tightrope', 'quordle'].includes(game.id) && score.value >= game.maxScore * 0.8)
+                    getScoreRating(score.value, game.id) === 'Excellent' 
                       ? 'text-emerald-500' 
-                      : 'text-amber-500'
+                      : getScoreRating(score.value, game.id) === 'Good'
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground'
                   }>
-                    {(game.id === 'wordle' && score.value <= 2)
-                      ? 'Excellent'
-                      : (game.id === 'wordle' && score.value <= 4) || 
-                        (!['wordle', 'tightrope', 'quordle'].includes(game.id) && score.value >= game.maxScore * 0.7)
-                        ? 'Good'
-                        : 'Fair'}
+                    {getScoreRating(score.value, game.id)}
                   </div>
                 </div>
               ))

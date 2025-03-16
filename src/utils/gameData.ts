@@ -159,8 +159,8 @@ export const calculateAverageScore = (scores: Score[]): number => {
 export const calculateBestScore = (scores: Score[], game: Game): number => {
   if (scores.length === 0) return 0;
   
-  // For some games like Wordle and Quordle, lower is better
-  if (game.id === 'wordle' || game.id === 'quordle') {
+  // For some games like Wordle and Mini Crossword, lower is better
+  if (game.id === 'wordle' || game.id === 'mini-crossword') {
     return Math.min(...scores.map(score => score.value));
   }
   
