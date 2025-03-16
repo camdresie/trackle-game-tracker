@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Trophy, Users, GameController, Star, Loader2, Calendar, Award, Target, Blocks } from 'lucide-react';
+import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
