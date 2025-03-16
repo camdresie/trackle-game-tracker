@@ -4,6 +4,7 @@ import { useFriendsList } from './useFriendsList';
 import { useFriendScores } from './useFriendScores';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface UseGameDataProps {
   gameId: string | undefined;
@@ -35,6 +36,14 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     gameId, 
     friends 
   });
+  
+  // Log Supabase connection status
+  useEffect(() => {
+    // Check if we're authenticated
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('[useGameData] Auth status:', data.session ? 'Authenticated' : 'Not authenticated');
+    });
+  }, []);
   
   // Enhanced debug info
   useEffect(() => {

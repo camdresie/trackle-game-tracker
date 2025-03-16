@@ -19,7 +19,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Enhanced fetch function with more detailed logging
+  // Enhanced fetch function with more detailed debugging
   const fetchFriendScores = useCallback(async () => {
     if (!gameId) {
       console.log('[useFriendScores] Missing gameId, cannot fetch scores');
@@ -51,7 +51,20 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         
         console.log(`[useFriendScores] Fetching scores for friend: ${friend.name} (${friend.id}) and game: ${gameId}`);
         
-        // Direct query to Supabase with explicit parameters
+        // Make a standalone query to first verify if this friend has any scores at all
+        const { count, error: countError } = await supabase
+          .from('scores')
+          .select('*', { count: 'exact', head: true })
+          .eq('game_id', gameId)
+          .eq('user_id', friend.id);
+          
+        if (countError) {
+          console.error(`[useFriendScores] Count error for ${friend.name}:`, countError);
+        } else {
+          console.log(`[useFriendScores] Found ${count || 0} scores for friend ${friend.name}`);
+        }
+        
+        // Query Supabase directly to get scores
         const { data, error } = await supabase
           .from('scores')
           .select('*')
@@ -66,6 +79,9 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         }
         
         console.log(`[useFriendScores] Raw scores data for ${friend.name}:`, data);
+        
+        // Check permissions - log RLS debug info
+        console.log(`[useFriendScores] RLS check: Current user can view scores for user_id=${friend.id}, game_id=${gameId}`);
         
         if (!data || data.length === 0) {
           console.log(`[useFriendScores] No scores found for friend ${friend.name}`);

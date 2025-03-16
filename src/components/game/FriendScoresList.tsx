@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, RefreshCw } from 'lucide-react';
+import { Loader2, User, RefreshCw, Bug } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
@@ -33,12 +33,13 @@ const FriendScoresList = ({
   useEffect(() => {
     console.log('FriendScoresList render - Game:', game?.id);
     console.log('FriendScoresList render - Friends:', friends);
-    console.log('FriendScoresList render - Friend scores object:', friendScores);
+    console.log('FriendScoresList render - Friend scores object keys:', Object.keys(friendScores));
     
     // Log each friend's scores individually
     friends.forEach(friend => {
-      console.log(`Friend ${friend.name} (${friend.id}) scores:`, 
-        friendScores[friend.id] || 'No scores found');
+      const scores = friendScores[friend.id] || [];
+      console.log(`Friend ${friend.name} (${friend.id}) has ${scores.length} scores:`, 
+        scores.length > 0 ? scores : 'No scores found');
     });
   }, [friends, friendScores, game]);
   
@@ -120,20 +121,22 @@ const FriendScoresList = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Friend Scores</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="gap-1"
-        >
-          {refreshing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          <span>Refresh</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="gap-1"
+          >
+            {refreshing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            <span>Refresh</span>
+          </Button>
+        </div>
       </div>
       
       {isLoading ? (
@@ -165,14 +168,18 @@ const FriendScoresList = ({
                       size="sm"
                       onClick={() => handleAddTestScores(friend.id)}
                       disabled={addingTestScores[friend.id]}
+                      className="gap-1"
                     >
                       {addingTestScores[friend.id] ? (
                         <>
-                          <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                           Adding test scores...
                         </>
                       ) : (
-                        "Add test scores"
+                        <>
+                          <Bug className="w-3 h-3 mr-1" />
+                          Add test scores
+                        </>
                       )}
                     </Button>
                   </div>
