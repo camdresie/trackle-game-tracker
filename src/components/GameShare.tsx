@@ -116,16 +116,21 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className }: Ga
   
   return (
     <Button
-      variant="ghost"
-      size="icon"
+      variant="outline"
+      size="sm"
       className={className}
       onClick={handleCopyToClipboard}
-      title="Share your stats"
     >
       {isCopied ? (
-        <Check className="w-4 h-4" />
+        <>
+          <Check className="w-4 h-4" />
+          <span>Copied!</span>
+        </>
       ) : (
-        <Share2 className="w-4 h-4" />
+        <>
+          <Share2 className="w-4 h-4" />
+          <span>Share Stats</span>
+        </>
       )}
     </Button>
   );

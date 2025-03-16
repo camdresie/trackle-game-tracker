@@ -36,13 +36,13 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
           <p className="text-muted-foreground max-w-lg mb-4">{game.description}</p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <GameShare 
             game={game}
             latestScore={latestScore}
             averageScore={averageScore}
             bestScore={bestScore}
-            className="mr-2"
+            className="w-full sm:w-auto mb-2 sm:mb-0"
           />
           <Button 
             onClick={onAddScore}
