@@ -37,10 +37,15 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
       return 'Excellent';
     } else if (gameId === 'wordle' && score <= 4) {
       return 'Good';
-    } else if (gameId === 'mini-crossword' && score < 120) { // Less than 2 minutes
-      return 'Excellent';
-    } else if (gameId === 'mini-crossword' && score < 240) { // Less than 4 minutes
-      return 'Good';
+    } else if (gameId === 'mini-crossword') {
+      // For Mini Crossword, LOWER is better (it's time-based)
+      if (score < 120) { // Less than 2 minutes
+        return 'Excellent';
+      } else if (score < 240) { // Less than 4 minutes
+        return 'Good';
+      } else {
+        return 'Fair';
+      }
     } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.8) {
       return 'Excellent';
     } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.7) {

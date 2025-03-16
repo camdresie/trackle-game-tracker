@@ -5,6 +5,9 @@ import { Game } from '@/utils/types';
 export const getScoreLabel = (value: number, game: Game, quordleValues?: number[]) => {
   if (game.id === 'wordle') {
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+  } else if (game.id === 'mini-crossword') {
+    // For Mini Crossword, LOWER is better (it's time-based)
+    return value < 120 ? 'Excellent' : value < 240 ? 'Good' : 'Fair';
   } else if (game.id === 'tightrope') {
     const percentage = (value / (game.maxScore || 2340)) * 100;
     return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -23,6 +26,9 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
 export const getScoreColor = (value: number, game: Game, quordleValues?: number[]) => {
   if (game.id === 'wordle') {
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+  } else if (game.id === 'mini-crossword') {
+    // For Mini Crossword, LOWER is better (it's time-based)
+    return value < 120 ? 'text-emerald-500' : value < 240 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'quordle') {
     const score = quordleValues 
       ? quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0)
@@ -65,6 +71,7 @@ export const calculateQuordleScore = (quordleValues: number[]) => {
 // Get default value based on game type
 export const getDefaultValue = (game: Game) => {
   return game.id === 'wordle' ? 3 : 
+         game.id === 'mini-crossword' ? 180 : // Default to 3 minutes for Mini Crossword
          game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
          Math.floor((game.maxScore || 100) / 2);
 };

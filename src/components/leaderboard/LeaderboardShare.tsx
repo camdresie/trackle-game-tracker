@@ -33,8 +33,25 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
       ? players.filter(player => player.today_score !== null)
       : players;
     
+    // Sort players based on game type (for mini-crossword lower is better)
+    const sortedPlayers = [...relevantPlayers].sort((a, b) => {
+      const scoreA = timeFilter === 'today' ? a.today_score : (selectedGame === 'mini-crossword' ? a.best_score : a.average_score);
+      const scoreB = timeFilter === 'today' ? b.today_score : (selectedGame === 'mini-crossword' ? b.best_score : a.average_score);
+      
+      if (scoreA === null) return 1;
+      if (scoreB === null) return -1;
+      
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        // Lower is better for these games
+        return scoreA - scoreB;
+      } else {
+        // Higher is better for other games
+        return scoreB - scoreA;
+      }
+    });
+    
     // Return up to top 3 players
-    return relevantPlayers.slice(0, 3);
+    return sortedPlayers.slice(0, 3);
   };
   
   // Format a score based on the game type
@@ -61,7 +78,7 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
     if (['wordle', 'quordle'].includes(selectedGame)) {
       return 'tries';
     } else if (selectedGame === 'mini-crossword') {
-      return 'seconds';
+      return '';  // No need for unit label since we're showing the time format MM:SS
     } else {
       return 'points';
     }
@@ -96,7 +113,11 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
           ? 'Today'
           : (isLowerBetter ? 'Best' : 'Avg');
         
-        shareText += `${medal} ${player.username}: ${formatScore(score)} ${unitLabel} (${scoreContext})\n`;
+        // Add unit label if it exists
+        const formattedScore = formatScore(score);
+        const scoreWithUnit = unitLabel ? `${formattedScore} ${unitLabel}` : formattedScore;
+        
+        shareText += `${medal} ${player.username}: ${scoreWithUnit} (${scoreContext})\n`;
       });
     }
     
