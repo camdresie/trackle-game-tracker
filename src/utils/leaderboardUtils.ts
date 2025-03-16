@@ -1,3 +1,4 @@
+
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
@@ -49,6 +50,11 @@ export const processLeaderboardData = (
   
   // Debug logging for filtering
   console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
+  
+  // Log a few scores to see the data structure
+  if (gameScores.length > 0) {
+    console.log('Sample scores data:', gameScores.slice(0, 2));
+  }
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -103,12 +109,12 @@ export const processLeaderboardData = (
     // Process today's scores - IMPORTANT: Make sure date formats match exactly
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
-      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${scoreDate}`);
+      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${scoreDate}, raw date: ${score.date}`);
       userStats.today_score = score.value;
     }
     
     // Update latest play date
-    const scoreDateTime = new Date(score.created_at).getTime();
+    const scoreDateTime = new Date(score.created_at || score.date).getTime();
     if (!userStats.latest_play || scoreDateTime > new Date(userStats.latest_play).getTime()) {
       userStats.latest_play = score.date;
     }
@@ -145,6 +151,9 @@ export const processLeaderboardData = (
   // Log how many players have today's scores
   const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
   console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
+  if (playersWithTodayScores.length > 0) {
+    console.log('Players with today scores:', playersWithTodayScores.map(p => p.username));
+  }
   
   return leaderboardPlayers;
 };
@@ -175,6 +184,14 @@ export const filterAndSortPlayers = (
   if (timeFilter === 'today') {
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
     console.log('filterAndSortPlayers - Players with today scores:', filteredPlayers.length);
+    if (filteredPlayers.length > 0) {
+      console.log('Sample players with today scores:', 
+        filteredPlayers.slice(0, 3).map(p => ({
+          username: p.username,
+          today_score: p.today_score
+        }))
+      );
+    }
   }
   
   // Search filter

@@ -39,11 +39,19 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           console.log('ALL scores by game type:', gameCounts);
           
           // Check today's scores specifically
-          const today = new Date().toISOString().split('T')[0];
+          const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+          console.log('Today\'s date for filtering:', today);
+          
           const todayScores = data.filter(score => {
+            // Ensure consistent date format comparison
             const scoreDate = new Date(score.date).toISOString().split('T')[0];
-            return scoreDate === today;
+            const isToday = scoreDate === today;
+            if (isToday) {
+              console.log('Found a score from today:', score);
+            }
+            return isToday;
           });
+          
           console.log(`ALL scores from today (${today}):`, todayScores.length);
           
           if (todayScores.length > 0) {

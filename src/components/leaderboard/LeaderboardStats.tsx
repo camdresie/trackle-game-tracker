@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 
@@ -36,6 +36,7 @@ const LeaderboardStats = ({
       
       // Then filter by date if timeFilter is 'today'
       if (timeFilter === 'today') {
+        // Ensure consistent date format comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
         return scoreDate === today;
       }
@@ -44,11 +45,29 @@ const LeaderboardStats = ({
     }).length;
   
   // Debug logging to track our calculations
-  console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
-  console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
-  console.log(`LeaderboardStats - Today's date: ${today}`);
-  console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
-  console.log(`LeaderboardStats - Calculated games played count: ${gamesPlayedCount}`);
+  useEffect(() => {
+    console.log(`LeaderboardStats - Counting games played for ${selectedGame}`);
+    console.log(`LeaderboardStats - Using timeFilter: ${timeFilter}`);
+    console.log(`LeaderboardStats - Today's date: ${today}`);
+    console.log(`LeaderboardStats - Total raw scores available: ${rawScoresData?.length || 0}`);
+    
+    // Count and log scores that match today's date
+    if (timeFilter === 'today') {
+      const todayScores = rawScoresData.filter(score => {
+        const scoreDate = new Date(score.date).toISOString().split('T')[0];
+        return scoreDate === today;
+      });
+      console.log(`LeaderboardStats - Scores found for today: ${todayScores.length}`);
+      
+      if (todayScores.length > 0) {
+        console.log('Sample today scores:', todayScores.slice(0, 2));
+      } else {
+        console.log('No scores found for today');
+      }
+    }
+    
+    console.log(`LeaderboardStats - Calculated games played count: ${gamesPlayedCount}`);
+  }, [rawScoresData, selectedGame, timeFilter, today]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;

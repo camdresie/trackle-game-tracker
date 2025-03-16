@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
@@ -28,33 +28,33 @@ const LeaderboardPlayersList = ({
   // Find the selected game object
   const gameObj = games.find(game => game.id === selectedGame);
   
-  // Log player data for debugging
-  console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
-  console.log('LeaderboardPlayersList: players count before display:', players.length);
+  // Debug logging to understand what's happening
+  useEffect(() => {
+    console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
+    console.log('LeaderboardPlayersList: players count before display:', players.length);
+    
+    if (timeFilter === 'today') {
+      const playersWithTodayScores = players.filter(p => p.today_score !== null);
+      console.log('Players with today scores:', playersWithTodayScores.length);
+      
+      if (playersWithTodayScores.length > 0) {
+        console.log('Sample players with today scores:', 
+          playersWithTodayScores.slice(0, 2).map(p => ({
+            username: p.username,
+            score: p.today_score
+          }))
+        );
+      } else {
+        console.log('No players have today scores');
+      }
+    }
+  }, [players, timeFilter]);
   
   // For today view, only show players with today's scores
+  // This should already be filtered in filterAndSortPlayers, but double-check
   const playersToDisplay = timeFilter === 'today' 
     ? players.filter(player => player.today_score !== null)
     : players;
-  
-  // Additional logging to debug today filter
-  if (timeFilter === 'today') {
-    console.log('LeaderboardPlayersList: players with today scores:', 
-      players.filter(p => p.today_score !== null).length);
-    
-    // List players with today's scores for debugging
-    const playersWithTodayScores = players.filter(p => p.today_score !== null);
-    if (playersWithTodayScores.length > 0) {
-      console.log('Players with today scores:', 
-        playersWithTodayScores.map(p => ({
-          username: p.username,
-          score: p.today_score
-        }))
-      );
-    } else {
-      console.log('No players have today scores');
-    }
-  }
   
   console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
   
