@@ -46,10 +46,18 @@ export const useLeaderboardData = (userId: string | undefined) => {
     if (scoresData) {
       console.log('Total scores retrieved:', scoresData.length);
       
+      // Count today's scores
+      const todayScores = scoresData.filter(score => score.isToday);
+      console.log('Today\'s scores count:', todayScores.length);
+      
       // Log scores by game type for selected game
       if (selectedGame && selectedGame !== 'all') {
         const selectedGameScores = scoresData.filter(s => s.game_id === selectedGame);
         console.log(`Scores for ${selectedGame}:`, selectedGameScores.length);
+        
+        // Count today's scores for selected game
+        const todayGameScores = selectedGameScores.filter(s => s.isToday);
+        console.log(`Today's scores for ${selectedGame}:`, todayGameScores.length);
       }
     }
   }, [profilesData, scoresData, selectedGame]);
@@ -80,14 +88,16 @@ export const useLeaderboardData = (userId: string | undefined) => {
     friendIds
   );
   
-  // Check if camdresie exists in our final data
+  // Debug - check today's scores in processed data
   useEffect(() => {
-    const camdresieInLeaderboard = leaderboardData.find(p => p.username === 'camdresie');
-    console.log('camdresie in processed leaderboard?', camdresieInLeaderboard ? 'YES' : 'NO', camdresieInLeaderboard);
+    const playersWithTodayScores = leaderboardData.filter(p => p.today_score !== null);
+    console.log('Players with today scores after processing:', playersWithTodayScores.length);
     
-    const camdresieInFilteredPlayers = filteredAndSortedPlayers.find(p => p.username === 'camdresie');
-    console.log('camdresie in filtered players?', camdresieInFilteredPlayers ? 'YES' : 'NO', camdresieInFilteredPlayers);
-  }, [leaderboardData, filteredAndSortedPlayers]);
+    if (timeFilter === 'today') {
+      const playersInTodayView = filteredAndSortedPlayers.filter(p => p.today_score !== null);
+      console.log('Players with today scores in filtered results:', playersInTodayView.length);
+    }
+  }, [leaderboardData, filteredAndSortedPlayers, timeFilter]);
   
   const isLoading = isLoadingGameStats || isLoadingScores;
   
