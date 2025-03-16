@@ -178,37 +178,37 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Fixed Quordle input changes handler
+  // Completely rewritten Quordle input changes handler
   const handleQuordleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    console.log(`Quordle input change for word ${index + 1}: '${inputValue}'`);
+    console.log(`Quordle input change for word ${index + 1}: '${e.target.value}'`);
     
-    // Create a copy of current values
+    // Create a new copy of the current values array
     const newQuordleValues = [...quordleValues];
     
-    // Handle empty input (like when backspace is used and field is empty)
-    if (inputValue === '') {
+    // Handle different types of input
+    if (e.target.value === '') {
+      // Empty input - this happens when user clears the field (e.g. with backspace)
       console.log(`Setting word ${index + 1} to default value 7 (empty input)`);
       newQuordleValues[index] = 7;
-      setQuordleValues(newQuordleValues);
-      return;
-    }
-    
-    // If "X" or "x" is entered, use 9 (failed attempt)
-    if (inputValue.toLowerCase() === 'x') {
+    } else if (e.target.value.toLowerCase() === 'x') {
+      // "X" input for failed attempts
       console.log(`Setting word ${index + 1} to 9 (X input)`);
       newQuordleValues[index] = 9;
-      setQuordleValues(newQuordleValues);
-      return;
+    } else {
+      // Try to parse as a number
+      const numValue = parseInt(e.target.value);
+      if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
+        console.log(`Setting word ${index + 1} to numeric value: ${numValue}`);
+        newQuordleValues[index] = numValue;
+      } else {
+        // Invalid input - ignore it and keep previous value
+        console.log(`Invalid input for word ${index + 1}: '${e.target.value}', keeping previous value: ${quordleValues[index]}`);
+        return; // Don't update state for invalid inputs
+      }
     }
     
-    // For numeric values, parse and validate
-    const numValue = parseInt(inputValue);
-    if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
-      console.log(`Setting word ${index + 1} to numeric value: ${numValue}`);
-      newQuordleValues[index] = numValue;
-      setQuordleValues(newQuordleValues);
-    }
+    // Update state with the new values
+    setQuordleValues(newQuordleValues);
   };
 
   return (
@@ -237,6 +237,7 @@ const AddScoreModal = ({
                   <div key={index} className="space-y-1">
                     <label className="text-xs text-muted-foreground">Word {index + 1}</label>
                     <Input
+                      type="text"
                       value={quordleValues[index] === 9 ? 'X' : quordleValues[index].toString()}
                       onChange={(e) => handleQuordleInputChange(index, e)}
                       className="text-center"
