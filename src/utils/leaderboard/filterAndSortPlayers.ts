@@ -3,6 +3,14 @@ import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
+ * Get the current date in Eastern Time (ET)
+ * @returns Date string in YYYY-MM-DD format for Eastern Time
+ */
+const getEasternTimeDate = (): string => {
+  return formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
+};
+
+/**
  * Filter and sort players based on selected criteria
  */
 export const filterAndSortPlayers = (
@@ -61,6 +69,16 @@ export const filterAndSortPlayers = (
   if (timeFilter === 'today') {
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
     console.log('Players after filtering for today scores:', filteredPlayers.length);
+    
+    // Log players with today scores after filtering
+    if (filteredPlayers.length > 0) {
+      console.log('Final players in today view:', filteredPlayers.map(p => ({
+        username: p.username,
+        today_score: p.today_score
+      })));
+    } else {
+      console.log('No players with today scores after filtering');
+    }
   }
   
   // Sort players
@@ -69,10 +87,10 @@ export const filterAndSortPlayers = (
       // For today view, sort by today's score
       if (['wordle', 'mini-crossword'].includes(selectedGame)) {
         // For games where lower is better
-        return a.today_score! - b.today_score!;
+        return (a.today_score || 999) - (b.today_score || 999);
       } else {
         // For games where higher is better
-        return b.today_score! - a.today_score!;
+        return (b.today_score || 0) - (a.today_score || 0);
       }
     } else {
       // Sort by the selected criteria for all-time

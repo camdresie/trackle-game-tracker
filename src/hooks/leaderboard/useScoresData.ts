@@ -49,15 +49,9 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         // Get today's date in Eastern Time 
         const today = getEasternTimeDate();
-        
-        // For development/testing, also consider scores from the day before and day after
-        const yesterday = formatInTimeZone(subDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
-        const tomorrow = formatInTimeZone(addDays(new Date(), 1), 'America/New_York', 'yyyy-MM-dd');
-        
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
-        console.log('Yesterday\'s date in Eastern Time (YYYY-MM-DD):', yesterday);
-        console.log('Tomorrow\'s date in Eastern Time (YYYY-MM-DD):', tomorrow);
         
+        // Log all raw scores for debugging
         console.log('All raw scores:', data?.map(s => ({ 
           id: s.id, 
           user_id: s.user_id, 
@@ -77,8 +71,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           // Check for today's scores
           const todayScores = formattedData.filter(score => {
             const isToday = score.formattedDate === today;
-            const isYesterday = score.formattedDate === yesterday;
-            const isTomorrow = score.formattedDate === tomorrow;
             
             if (isToday) {
               console.log('MATCH: Found TODAY score:', {
@@ -91,23 +83,12 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
               });
             }
             
-            if (isYesterday) {
-              console.log('MATCH: Found YESTERDAY score:', {
-                id: score.id,
-                user_id: score.user_id,
-                date: score.date,
-                formattedDate: score.formattedDate,
-                yesterday: yesterday,
-                value: score.value
-              });
-            }
-            
-            return isToday || isYesterday || isTomorrow; // Include all recent dates for debugging
+            return isToday;
           });
           
-          console.log(`useScoresData: Recent scores (${today}, ${yesterday}, or ${tomorrow}):`, todayScores.length);
+          console.log(`useScoresData: Found ${todayScores.length} scores from today (${today})`);
           if (todayScores.length > 0) {
-            console.log('All recent scores:', todayScores.map(s => ({
+            console.log('All today\'s scores:', todayScores.map(s => ({
               id: s.id,
               user_id: s.user_id,
               date: s.date,
