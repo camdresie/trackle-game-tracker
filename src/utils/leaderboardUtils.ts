@@ -50,13 +50,17 @@ export const processLeaderboardData = (
   
   // Debug logging for filtering
   console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
-  console.log(`processLeaderboardData - Game ${selectedGame} - Games by date:`, 
-    gameScores.reduce((acc, score) => {
-      const date = score.date;
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  );
+  
+  // Additional debug logging to check dates in scores
+  const datesInScores = gameScores.map(score => score.date);
+  console.log('processLeaderboardData - Dates in scores:', datesInScores);
+  
+  // Log count of today's scores for debugging
+  const todayScores = gameScores.filter(score => {
+    const scoreDate = new Date(score.date).toISOString().split('T')[0];
+    return scoreDate === today;
+  });
+  console.log(`processLeaderboardData - Today's scores count (${today}):`, todayScores.length);
   
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
@@ -119,10 +123,10 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Process today's scores
+    // Process today's scores - IMPORTANT: Make sure date formats match exactly
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
-      console.log(`Today's score found for user ${userStats.username}: ${score.value}`);
+      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${scoreDate}`);
       userStats.today_score = score.value;
     }
     

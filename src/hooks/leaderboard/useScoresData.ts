@@ -40,6 +40,14 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             gameCounts[score.game_id] = (gameCounts[score.game_id] || 0) + 1;
           });
           console.log('Scores per game type:', gameCounts);
+          
+          // Check how many are from today
+          const today = new Date().toISOString().split('T')[0];
+          const todayScores = data.filter(score => {
+            const scoreDate = new Date(score.date).toISOString().split('T')[0];
+            return scoreDate === today;
+          });
+          console.log(`Scores from today (${today}):`, todayScores.length);
         }
         
         // Get profiles for all user IDs
