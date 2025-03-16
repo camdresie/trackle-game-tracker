@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Score } from '@/utils/types';
 import { getGameScores } from '@/services/gameStatsService';
-import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 interface UseFriendScoresProps {
   gameId: string | undefined;
@@ -60,11 +59,35 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         console.log(`[useFriendScores] Fetching scores for friend ${friend.name} (${friend.id})`);
         
         try {
-          const scores = await getGameScores(gameId, friend.id);
+          // Direct query to ensure we're getting the latest data
+          const { data, error } = await supabase
+            .from('scores')
+            .select('*')
+            .eq('game_id', gameId)
+            .eq('user_id', friend.id)
+            .order('date', { ascending: false });
+            
+          if (error) {
+            console.error(`[useFriendScores] Database error for friend ${friend.name}:`, error);
+            return;
+          }
           
-          if (scores && scores.length > 0) {
-            console.log(`[useFriendScores] Retrieved ${scores.length} scores for friend ${friend.name}:`, scores);
-            friendScoresData[friend.id] = scores;
+          if (data && data.length > 0) {
+            console.log(`[useFriendScores] Retrieved ${data.length} raw scores for friend ${friend.name}:`, data);
+            
+            // Transform the data to match our Score type
+            const formattedScores = data.map(score => ({
+              id: score.id,
+              gameId: score.game_id,
+              playerId: score.user_id,
+              value: score.value,
+              date: score.date,
+              notes: score.notes || '',
+              createdAt: score.created_at
+            }));
+            
+            friendScoresData[friend.id] = formattedScores;
+            console.log(`[useFriendScores] Transformed scores for ${friend.name}:`, formattedScores);
           } else {
             console.log(`[useFriendScores] No scores found for friend ${friend.name}`);
             friendScoresData[friend.id] = [];
@@ -83,11 +106,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
       setFriendScores(friendScoresData);
     } catch (error) {
       console.error('[useFriendScores] Global error in fetchFriendScores:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load friend scores",
-        variant: "destructive"
-      });
+      toast.error("Failed to load friend scores");
     } finally {
       setIsLoading(false);
       setLastFetchAttempt(Date.now());

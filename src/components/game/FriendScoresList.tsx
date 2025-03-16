@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
@@ -36,6 +36,11 @@ const FriendScoresList = ({
   console.log('FriendScoresList render - Friends:', friends.length);
   console.log('FriendScoresList render - Friend score keys:', Object.keys(friendScores).length);
   console.log('FriendScoresList render - Has any scores:', hasAnyScores);
+  console.log('FriendScoresList render - Detailed scores:', Object.entries(friendScores).map(([id, scores]) => ({
+    friendId: id,
+    scoreCount: scores?.length || 0,
+    scores: scores || []
+  })));
   
   // Calculate stats for each friend
   const getFriendStats = (friendId: string) => {

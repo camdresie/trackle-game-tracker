@@ -4,6 +4,7 @@ import { useFriendsList } from './useFriendsList';
 import { useFriendScores } from './useFriendScores';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface UseGameDataProps {
   gameId: string | undefined;
@@ -67,9 +68,27 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       await baseFriendsRefresh();
       setRefreshCount(prev => prev + 1);
       
-      // If we have a gameId, also refresh friend scores
+      // If we have a gameId, also refresh friend scores directly from the database
       if (gameId) {
         console.log(`[useGameData] Refreshing scores for game ${gameId}`);
+        
+        // Manual direct query to ensure fresh data
+        for (const friend of friends) {
+          console.log(`[useGameData] Manually querying scores for friend ${friend.name}`);
+          const { data, error } = await supabase
+            .from('scores')
+            .select('*')
+            .eq('game_id', gameId)
+            .eq('user_id', friend.id);
+            
+          if (error) {
+            console.error(`[useGameData] Error querying scores for friend ${friend.name}:`, error);
+          } else {
+            console.log(`[useGameData] Found ${data?.length || 0} scores for friend ${friend.name}:`, data);
+          }
+        }
+        
+        // Now refresh scores through the hook
         await fetchFriendScores();
         toast.success("Friend data refreshed successfully");
         

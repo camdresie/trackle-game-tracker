@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
@@ -123,7 +124,26 @@ export async function getGameScores(gameId: string, userId: string) {
   try {
     console.log(`[getGameScores] Fetching scores for game:${gameId}, user:${userId}`);
     
-    // Perform the actual query without checking count first
+    // First check if there are any scores for this user and game
+    const { count, error: countError } = await supabase
+      .from('scores')
+      .select('*', { count: 'exact', head: true })
+      .eq('game_id', gameId)
+      .eq('user_id', userId);
+
+    if (countError) {
+      console.error('[getGameScores] Error checking for scores:', countError);
+      throw countError;
+    }
+
+    console.log(`[getGameScores] Found ${count || 0} scores for game ${gameId} and user ${userId}`);
+    
+    if (!count) {
+      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
+      return [];
+    }
+    
+    // Perform the actual query if we have scores
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -136,13 +156,8 @@ export async function getGameScores(gameId: string, userId: string) {
       throw error;
     }
 
-    console.log(`[getGameScores] Successfully retrieved ${data?.length || 0} scores for game ${gameId} and user ${userId}:`, data);
+    console.log(`[getGameScores] Successfully retrieved ${data?.length || 0} scores:`, data);
     
-    if (!data || data.length === 0) {
-      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
-      return [];
-    }
-
     // Transform data consistently while ensuring all fields are present
     const formattedScores = data.map(score => ({
       id: score.id || `temp-${Date.now()}`,
