@@ -33,25 +33,6 @@ export const filterAndSortPlayers = (
     })));
   }
   
-  const useFallbackForToday = timeFilter === 'today' && playersWithTodayScores.length === 0;
-  
-  // For today filter, only include players with today's scores
-  if (timeFilter === 'today' && !useFallbackForToday) {
-    filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
-    console.log('filterAndSortPlayers - Players with today scores after filtering:', filteredPlayers.length);
-    
-    if (filteredPlayers.length > 0) {
-      console.log('Sample players with today scores:', 
-        filteredPlayers.slice(0, 3).map(p => ({
-          username: p.username,
-          today_score: p.today_score
-        }))
-      );
-    } else {
-      console.log('No players found with today scores after filtering');
-    }
-  }
-  
   // Search filter
   if (searchTerm) {
     filteredPlayers = filteredPlayers.filter(player => 
@@ -77,7 +58,7 @@ export const filterAndSortPlayers = (
   
   // Sort players
   filteredPlayers.sort((a, b) => {
-    if (timeFilter === 'today' && !useFallbackForToday) {
+    if (timeFilter === 'today') {
       // If filtering by today's scores
       if (a.today_score === null && b.today_score === null) return 0;
       if (a.today_score === null) return 1;
