@@ -22,10 +22,10 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
       try {
         console.log('Fetching ALL scores data across users for game:', selectedGame);
         
-        // Query to get all scores without filtering by user ID
+        // Query to get all scores (fixed the join syntax to use profiles)
         let query = supabase
           .from('scores')
-          .select('*, profiles:user_id(id, username, full_name, avatar_url)');
+          .select('*, profiles(id, username, full_name, avatar_url)');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
