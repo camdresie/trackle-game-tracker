@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
@@ -181,7 +180,7 @@ export async function getGameScores(gameId: string, userId: string) {
   }
 }
 
-// New function to add test scores for friends using RPC function
+// Updated function to add test scores for friends using RPC function
 export async function addFriendTestScores(gameId: string, friendId: string, currentUserId: string) {
   try {
     console.log(`[addFriendTestScores] Adding test scores for friend:${friendId}, game:${gameId}`);
@@ -198,7 +197,7 @@ export async function addFriendTestScores(gameId: string, friendId: string, curr
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
     
-    // Call our stored function to add test scores
+    // Call our improved stored function to add test scores
     const { data, error } = await supabase.rpc('add_friend_test_scores', {
       p_game_id: gameId,
       p_friend_id: friendId,
@@ -213,7 +212,14 @@ export async function addFriendTestScores(gameId: string, friendId: string, curr
       return { success: false, error };
     }
     
-    console.log('[addFriendTestScores] Success:', data);
+    console.log('[addFriendTestScores] Success response from RPC function:', data);
+    
+    // Check if the data has a success field and if it's false
+    if (data && typeof data === 'object' && 'success' in data && data.success === false) {
+      console.warn('[addFriendTestScores] Function returned success: false', data);
+      return { success: false, error: data.message || 'Unknown error from function' };
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error('[addFriendTestScores] Unexpected error:', error);
