@@ -31,7 +31,7 @@ export const processLeaderboardData = (
   // Initialize user stats map
   const userStatsMap = new Map<string, LeaderboardPlayer>();
   
-  // First, let's add all users from profiles data if available
+  // First, add all users from profiles data
   if (profilesData && profilesData.length > 0) {
     profilesData.forEach(profile => {
       if (!userStatsMap.has(profile.id)) {
@@ -58,7 +58,7 @@ export const processLeaderboardData = (
   
   console.log(`processLeaderboardData - Game ${selectedGame} - Total filtered scores:`, gameScores.length);
   
-  // Log specific information about today's scores
+  // Count and log today's scores using the isToday flag
   const todayScores = gameScores.filter(score => score.isToday);
   console.log(`processLeaderboardData - Found ${todayScores.length} scores marked as today's scores`);
   
@@ -67,9 +67,10 @@ export const processLeaderboardData = (
       return {
         id: score.id,
         user_id: score.user_id,
+        username: score.profiles?.username,
         date: score.date,
-        isToday: score.isToday,
-        value: score.value
+        value: score.value,
+        isToday: score.isToday
       };
     }));
   }
@@ -138,11 +139,9 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Check if the score is from today by using the isToday flag
+    // Set today's score if the score is from today (using the isToday flag)
     if (score.isToday) {
-      console.log(`Today's score found for user ${userStats.username}: ${score.value}, ID: ${score.id}`);
-      
-      // Update the today_score for this user
+      console.log(`Setting today's score for user ${userStats.username}: ${score.value}, ID: ${score.id}`);
       userStats.today_score = score.value;
     }
     

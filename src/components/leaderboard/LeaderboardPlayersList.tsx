@@ -28,17 +28,18 @@ const LeaderboardPlayersList = ({
   // Find the selected game object
   const gameObj = games.find(game => game.id === selectedGame);
   
-  // Debug logging to understand what's happening
+  // Debug logging
   useEffect(() => {
-    console.log('LeaderboardPlayersList: timeFilter =', timeFilter);
-    console.log('LeaderboardPlayersList: players count before display:', players.length);
+    console.log(`LeaderboardPlayersList: Players received: ${players.length}`);
+    console.log(`LeaderboardPlayersList: timeFilter = ${timeFilter}`);
     
+    // Log players with today scores for debugging
     if (timeFilter === 'today') {
       const todayPlayers = players.filter(p => p.today_score !== null);
       console.log(`LeaderboardPlayersList: Players with today scores: ${todayPlayers.length} out of ${players.length}`);
       
       if (todayPlayers.length > 0) {
-        console.log('Players with today scores in LeaderboardPlayersList:', 
+        console.log('Players with today scores:', 
           todayPlayers.map(p => ({
             username: p.username,
             player_id: p.player_id,
@@ -56,7 +57,7 @@ const LeaderboardPlayersList = ({
     ? players.filter(player => player.today_score !== null)
     : players;
   
-  console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
+  console.log(`LeaderboardPlayersList: filtered players to display: ${playersToDisplay.length}`);
   
   return (
     <div className="space-y-4">

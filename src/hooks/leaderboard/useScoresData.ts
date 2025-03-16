@@ -2,7 +2,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 /**
@@ -44,30 +43,23 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
         
         // Log all dates to debug
-        const allDates = data?.map(item => item.date) || [];
-        console.log('All dates in database:', allDates);
-        
-        // Log all dates and user IDs for better debugging
-        data?.forEach(item => {
-          console.log(`Score ID: ${item.id}, User ID: ${item.user_id}, Date: ${item.date}`);
-        });
-        
-        // Explicitly log any scores with today's date
-        const todayScores = data?.filter(s => s.date === today) || [];
-        console.log(`Found ${todayScores.length} scores with today's date (${today}):`);
-        if (todayScores.length > 0) {
-          todayScores.forEach(s => {
-            console.log(`Today's score: ID ${s.id}, User ${s.user_id}, Date ${s.date}, Value ${s.value}`);
-          });
+        if (data && data.length > 0) {
+          console.log('All scores retrieved:', data.map(item => ({
+            id: item.id,
+            user_id: item.user_id,
+            username: item.profiles?.username,
+            date: item.date,
+            value: item.value
+          })));
         }
         
         // Transform and mark today's scores
         const transformedData = data?.map(item => {
-          // Mark if score is from today
+          // Use simple string comparison to check if the score's date matches today's date
           const isToday = item.date === today;
           
           if (isToday) {
-            console.log(`Marking score ${item.id} as today's score for user ${item.user_id}`);
+            console.log(`Found today's score: ID ${item.id}, User ${item.user_id}, Username: ${item.profiles?.username}, Date ${item.date}, Value ${item.value}`);
           }
           
           return {
@@ -76,6 +68,10 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             formattedDate: item.date
           };
         }) || [];
+        
+        // Count and log today's scores
+        const todayScoresCount = transformedData.filter(item => item.isToday).length;
+        console.log(`Total scores marked as today: ${todayScoresCount}`);
         
         return transformedData;
       } catch (error) {
