@@ -50,6 +50,12 @@ const PlayerCard = ({
     if (game?.id === 'wordle' && score === 0) {
       return '-';
     }
+    
+    // Format average score to two decimal places
+    if (typeof score === 'number' && !Number.isInteger(score)) {
+      return score.toFixed(2);
+    }
+    
     return score;
   };
   
