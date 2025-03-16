@@ -57,9 +57,9 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         console.log(`[useFriendScores] Fetching scores for friend: ${friend.name} (${friend.id}) and game: ${gameId}`);
         
         // First check if the scores table exists and we have access
-        const { error: tableAccessError } = await supabase
+        const { data: tableCheckData, error: tableAccessError } = await supabase
           .from('scores')
-          .select('count(*)', { count: 'exact', head: true });
+          .select('count', { count: 'exact', head: true });
           
         if (tableAccessError) {
           console.error(`[useFriendScores] Cannot access scores table:`, tableAccessError);
@@ -69,9 +69,9 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         
         // Make a standalone query to first verify if this friend has any scores at all
         // Use simplified query to isolate potential RLS issues
-        const { data, error: countError } = await supabase
+        const { data: countData, error: countError } = await supabase
           .from('scores')
-          .select('*', { count: 'exact', head: true })
+          .select('*', { count: 'exact' })
           .eq('game_id', gameId)
           .eq('user_id', friend.id);
           
@@ -79,14 +79,14 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           console.error(`[useFriendScores] RLS/Count error for ${friend.name}:`, countError);
           console.log(`[useFriendScores] Debug info: Current user: ${sessionData.session?.user.id || 'No user'}, Friend: ${friend.id}, Game: ${gameId}`);
         } else {
-          const countValue = data?.length !== undefined ? data.length : 0;
+          const countValue = countData?.length !== undefined ? countData.length : 0;
           console.log(`[useFriendScores] Found ${countValue} scores for friend ${friend.name}`);
         }
         
         // Check if we can access any scores at all (not filtered)
         const { data: anyScores, error: anyScoresError } = await supabase
           .from('scores')
-          .select('*', { count: 'exact', head: true })
+          .select('*')
           .eq('user_id', friend.id);
           
         if (anyScoresError) {
