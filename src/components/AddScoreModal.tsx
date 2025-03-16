@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -179,19 +178,23 @@ const AddScoreModal = ({
     setValue(newValue);
   };
   
-  // Handle Quordle input changes
-  const handleQuordleInputChange = (index: number, value: string) => {
+  // Handle Quordle input changes - FIX HERE
+  const handleQuordleInputChange = (index: number, inputValue: string) => {
     const newQuordleValues = [...quordleValues];
+    
     // If "X" is entered, use 9 (failed attempt)
-    if (value.toLowerCase() === 'x') {
+    if (inputValue.toLowerCase() === 'x') {
       newQuordleValues[index] = 9;
-    } else {
-      const numValue = parseInt(value);
-      if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
-        newQuordleValues[index] = numValue;
-      }
+      setQuordleValues(newQuordleValues);
+      return;
     }
-    setQuordleValues(newQuordleValues);
+    
+    // For numeric values, parse and validate
+    const numValue = parseInt(inputValue);
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
+      newQuordleValues[index] = numValue;
+      setQuordleValues(newQuordleValues);
+    }
   };
 
   return (
@@ -220,7 +223,7 @@ const AddScoreModal = ({
                   <div key={index} className="space-y-1">
                     <label className="text-xs text-muted-foreground">Word {index + 1}</label>
                     <Input
-                      value={quordleValues[index] === 9 ? 'X' : quordleValues[index]}
+                      value={quordleValues[index] === 9 ? 'X' : quordleValues[index].toString()}
                       onChange={(e) => handleQuordleInputChange(index, e.target.value)}
                       className="text-center"
                       maxLength={1}
