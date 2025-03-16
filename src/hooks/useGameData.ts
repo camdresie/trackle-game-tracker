@@ -36,7 +36,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     friends 
   });
   
-  // Log debug info for troubleshooting
+  // Enhanced debug info
   useEffect(() => {
     console.log(`[useGameData] Debug info for gameId: ${gameId || 'undefined'}`);
     console.log(`[useGameData] Game:`, game);
@@ -46,21 +46,22 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     console.log(`[useGameData] Friend scores data summary:`, 
       Object.entries(friendScores).map(([id, scores]) => ({
         friendId: id,
-        scoreCount: scores.length,
-        scoreValues: scores.map(s => s.value)
+        scoreCount: scores?.length || 0,
+        scoreValues: scores?.map(s => s.value) || []
       }))
     );
   }, [game, friends, friendScores, gameId]);
   
-  // Effect to fetch friend scores when friends or gameId changes
+  // Improved effect to fetch friend scores when friends or gameId changes
   useEffect(() => {
     if (gameId && friends.length > 0) {
+      console.log('[useGameData] Triggering fetchFriendScores due to gameId or friends change');
       fetchFriendScores();
     }
   }, [gameId, friends, fetchFriendScores]);
   
   // Enhanced refresh function that updates all data
-  const refreshFriends = async () => {
+  const refreshFriends = useCallback(async () => {
     console.log("[useGameData] Starting friend refresh process...");
     
     try {
@@ -70,9 +71,11 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       
       // Then fetch friend scores directly
       if (gameId) {
+        console.log("[useGameData] Refreshing friend scores for game:", gameId);
         await fetchFriendScores();
         toast.success("Friend data refreshed successfully");
       } else {
+        console.log("[useGameData] Cannot refresh scores - game ID not available");
         toast.error("Cannot refresh scores - game ID not available");
       }
       
@@ -81,7 +84,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       console.error("[useGameData] Error during friend refresh:", error);
       toast.error("Error refreshing friend data");
     }
-  };
+  }, [baseFriendsRefresh, fetchFriendScores, gameId]);
 
   return {
     game,

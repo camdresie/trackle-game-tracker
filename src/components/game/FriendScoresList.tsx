@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
@@ -29,14 +29,23 @@ const FriendScoresList = ({
   const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
   const [refreshing, setRefreshing] = useState(false);
   
-  // Enhanced debug logging
-  console.log('FriendScoresList render - Friends:', friends.length);
-  console.log('FriendScoresList render - Friend score keys:', Object.keys(friendScores).length);
+  // Enhanced debug logging on every render
+  useEffect(() => {
+    console.log('FriendScoresList render - Game:', game?.id);
+    console.log('FriendScoresList render - Friends:', friends);
+    console.log('FriendScoresList render - Friend scores object:', friendScores);
+    
+    // Log each friend's scores individually
+    friends.forEach(friend => {
+      console.log(`Friend ${friend.name} (${friend.id}) scores:`, 
+        friendScores[friend.id] || 'No scores found');
+    });
+  }, [friends, friendScores, game]);
   
   // Check if there are any friend scores at all (with more detailed logging)
   const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
-  console.log('FriendScoresList render - Has any scores:', hasAnyScores);
-  console.log('FriendScoresList render - Detailed scores:', Object.entries(friendScores).map(([id, scores]) => ({
+  console.log('FriendScoresList - Has any scores:', hasAnyScores);
+  console.log('FriendScoresList - Detailed scores:', Object.entries(friendScores).map(([id, scores]) => ({
     friendId: id,
     scoreCount: scores?.length || 0,
     scores: scores || []
@@ -45,6 +54,7 @@ const FriendScoresList = ({
   // Calculate stats for each friend
   const getFriendStats = (friendId: string) => {
     const scores = friendScores[friendId] || [];
+    console.log(`Calculating stats for friend ${friendId}, scores:`, scores);
     
     if (scores.length === 0) {
       return { bestScore: 0, totalScore: 0, averageScore: 0, totalGames: 0 };
@@ -63,7 +73,9 @@ const FriendScoresList = ({
       bestScore = Math.max(...scores.map(s => s.value));
     }
     
-    return { bestScore, totalScore, averageScore, totalGames };
+    const stats = { bestScore, totalScore, averageScore, totalGames };
+    console.log(`Stats for friend ${friendId}:`, stats);
+    return stats;
   };
   
   const handleAddTestScores = async (friendId: string) => {

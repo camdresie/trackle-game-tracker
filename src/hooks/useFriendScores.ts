@@ -19,7 +19,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Simplified fetch function with clear logging
+  // Enhanced fetch function with more detailed logging
   const fetchFriendScores = useCallback(async () => {
     if (!gameId) {
       console.log('[useFriendScores] Missing gameId, cannot fetch scores');
@@ -32,22 +32,26 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     }
     
     console.log(`[useFriendScores] Fetching scores for ${friends.length} friends for game:`, gameId);
+    console.log(`[useFriendScores] Friend IDs:`, friends.map(f => f.id));
     setIsLoading(true);
     
     // Initialize empty scores for all friends
     const newFriendScores: { [key: string]: Score[] } = {};
+    friends.forEach(friend => {
+      newFriendScores[friend.id] = [];
+    });
     
     try {
-      // Process each friend sequentially for clarity
+      // Process each friend sequentially with detailed logging
       for (const friend of friends) {
         if (!friend.id) {
           console.log(`[useFriendScores] Friend missing ID, skipping:`, friend);
           continue;
         }
         
-        console.log(`[useFriendScores] Fetching scores for friend: ${friend.name} (${friend.id})`);
+        console.log(`[useFriendScores] Fetching scores for friend: ${friend.name} (${friend.id}) and game: ${gameId}`);
         
-        // Direct query to Supabase
+        // Direct query to Supabase with explicit parameters
         const { data, error } = await supabase
           .from('scores')
           .select('*')
@@ -60,6 +64,8 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
           newFriendScores[friend.id] = [];
           continue;
         }
+        
+        console.log(`[useFriendScores] Raw scores data for ${friend.name}:`, data);
         
         if (!data || data.length === 0) {
           console.log(`[useFriendScores] No scores found for friend ${friend.name}`);
