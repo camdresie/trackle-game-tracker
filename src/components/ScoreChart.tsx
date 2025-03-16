@@ -113,7 +113,7 @@ const ScoreChart = ({
   
   // Calculate average for reference line
   const averageValue = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const averageLabel = 'Average Score';
+  const averageLabel = `Average Score: ${averageValue.toFixed(2)}`;
   
   return (
     <div className="w-full h-64 animate-fade-in">
