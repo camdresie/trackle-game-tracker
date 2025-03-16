@@ -33,7 +33,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         // Query to get all scores without filtering by user ID
         let query = supabase
           .from('scores')
-          .select('*');
+          .select('*, profiles:user_id(id, username, full_name, avatar_url)');
         
         // Filter by selected game if not 'all'
         if (selectedGame && selectedGame !== 'all') {
@@ -56,6 +56,11 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         const today = getEasternTimeDate();
         console.log('Today\'s date in Eastern Time (YYYY-MM-DD):', today);
         
+        // Log all dates to debug
+        const allDates = data?.map(item => item.date) || [];
+        console.log('All dates in database:', allDates);
+        console.log('Unique dates in database:', [...new Set(allDates)]);
+        
         // Get profiles for all user IDs
         const userIds = [...new Set(data?.map(item => item.user_id) || [])];
         let userProfiles: any[] = [];
@@ -74,7 +79,16 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           }
         }
         
-        // Map profile data to scores and convert database dates to Eastern Time
+        // Explicitly log any scores from today
+        const todayScores = data?.filter(s => s.date === today) || [];
+        console.log(`Database has ${todayScores.length} scores with date exactly matching today (${today}):`);
+        if (todayScores.length > 0) {
+          todayScores.forEach(s => {
+            console.log(`Today's score in DB: ID ${s.id}, User ${s.user_id}, Date ${s.date}, Value ${s.value}`);
+          });
+        }
+        
+        // Map profile data to scores and determine if each score is from today
         const transformedData = data?.map(item => {
           const profile = userProfiles.find(p => p.id === item.user_id) || {
             id: item.user_id,
@@ -83,30 +97,27 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             avatar_url: null
           };
           
-          // CRITICAL FIX: The database date field is already in YYYY-MM-DD format
-          // We need to compare it directly to today's date in Eastern Time
-          // This fixes the issue where some scores with today's date weren't being identified
-          const dbDate = item.date; // Database date in YYYY-MM-DD format
-          const isToday = dbDate === today;
+          // CRITICAL: Do a direct string comparison with the date
+          // This is more reliable than date object comparison
+          const isToday = item.date === today;
           
           if (isToday) {
-            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, ID: ${item.id}, Value: ${item.value}, DB Date: ${dbDate}, Today: ${today}`);
+            console.log(`TODAY'S SCORE FOUND in useScoresData: User ${profile.username}, ID: ${item.id}, Value: ${item.value}, DB Date: ${item.date}, Today: ${today}`);
           }
           
           return {
             ...item,
-            // Add a consistently formatted date in Eastern Time
-            formattedDate: dbDate,
-            isToday: isToday,
+            formattedDate: item.date, // Date is already in YYYY-MM-DD format
+            isToday,
             user_profile: profile
           };
         });
         
         // Count and log today's scores
-        const todayScores = transformedData?.filter(score => score.isToday) || [];
-        console.log(`useScoresData: Found ${todayScores.length} scores from today (${today})`);
-        if (todayScores.length > 0) {
-          console.log('All today\'s scores:', todayScores.map(s => ({
+        const todayTransformedScores = transformedData?.filter(score => score.isToday) || [];
+        console.log(`useScoresData: Found ${todayTransformedScores.length} scores from today (${today})`);
+        if (todayTransformedScores.length > 0) {
+          console.log('All today\'s scores:', todayTransformedScores.map(s => ({
             id: s.id,
             user_id: s.user_id,
             username: s.user_profile?.username,

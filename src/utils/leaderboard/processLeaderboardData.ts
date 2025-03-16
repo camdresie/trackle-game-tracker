@@ -67,29 +67,21 @@ export const processLeaderboardData = (
   // Debug logging for filtering
   console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
   
-  // Log a few scores to see the data structure
-  if (gameScores.length > 0) {
-    console.log('Sample scores data:', gameScores.slice(0, Math.min(5, gameScores.length)));
-    
-    // Get all score dates for debugging
-    const allDates = gameScores.map(score => {
+  // Log specific information about today's scores
+  const todayScores = gameScores.filter(score => score.isToday);
+  console.log(`processLeaderboardData - Found ${todayScores.length} scores for today (${today})`);
+  
+  if (todayScores.length > 0) {
+    console.log('Today\'s scores:', todayScores.map(score => {
       return {
         user_id: score.user_id,
         date: score.date,
         formattedDate: score.formattedDate,
         isToday: score.isToday,
-        value: score.value
+        value: score.value,
+        username: score.user_profile?.username || 'Unknown'
       };
-    });
-    
-    console.log('All scores with dates:', allDates);
-    
-    // Specifically log today's scores
-    const todayScores = allDates.filter(score => score.isToday);
-    console.log(`Found ${todayScores.length} scores for today (${today}):`);
-    if (todayScores.length > 0) {
-      console.log('Today\'s scores:', todayScores);
-    }
+    }));
   }
   
   // Create a list of user IDs with their total game counts from game stats
@@ -156,11 +148,9 @@ export const processLeaderboardData = (
       userStats.best_score = Math.max(userStats.best_score, score.value);
     }
     
-    // Check if the score is from today using the isToday flag we set in useScoresData
-    const isToday = score.isToday;
-    
-    if (isToday) {
-      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, isToday: ${isToday}`);
+    // Check if the score is from today by using the isToday flag
+    if (score.isToday) {
+      console.log(`TODAY'S SCORE FOUND for user ${userStats.username}: ${score.value}, date: ${score.date}, isToday: ${score.isToday}`);
       
       // Update the today_score for this user
       userStats.today_score = score.value;

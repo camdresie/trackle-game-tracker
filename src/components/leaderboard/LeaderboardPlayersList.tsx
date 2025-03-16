@@ -37,22 +37,24 @@ const LeaderboardPlayersList = ({
       const todayPlayers = players.filter(p => p.today_score !== null);
       console.log('Players with today scores in player list:', todayPlayers.length);
       
+      // Log all players and their today_score values
+      console.log('All players today_score values:', players.map(p => ({
+        username: p.username,
+        player_id: p.player_id,
+        today_score: p.today_score
+      })));
+      
       if (todayPlayers.length > 0) {
         console.log('Sample players with today scores:', 
           todayPlayers.slice(0, Math.min(5, todayPlayers.length)).map(p => ({
             username: p.username,
+            player_id: p.player_id,
             today_score: p.today_score
           }))
         );
       } else {
         console.log('No players have today scores in player list');
       }
-      
-      // Debug all players in today view
-      console.log('All players in today view:', players.map(p => ({
-        username: p.username, 
-        today_score: p.today_score
-      })));
     }
   }, [players, timeFilter]);
   
