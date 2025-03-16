@@ -3,15 +3,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Game } from '@/utils/types';
+import { Game, Score } from '@/utils/types';
+import GameShare from '@/components/GameShare';
 
 interface GameDetailHeaderProps {
   game: Game;
   user: any;
   onAddScore: () => void;
+  latestScore?: Score;
+  averageScore?: number;
+  bestScore?: number;
 }
 
-const GameDetailHeader = ({ game, user, onAddScore }: GameDetailHeaderProps) => {
+const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, bestScore }: GameDetailHeaderProps) => {
   return (
     <>
       <div className="mb-6">
@@ -32,12 +36,21 @@ const GameDetailHeader = ({ game, user, onAddScore }: GameDetailHeaderProps) => 
           <p className="text-muted-foreground max-w-lg mb-4">{game.description}</p>
         </div>
         
-        <Button 
-          onClick={onAddScore}
-          disabled={!user}
-        >
-          Add Today's Score
-        </Button>
+        <div className="flex items-center gap-2">
+          <GameShare 
+            game={game}
+            latestScore={latestScore}
+            averageScore={averageScore}
+            bestScore={bestScore}
+            className="mr-2"
+          />
+          <Button 
+            onClick={onAddScore}
+            disabled={!user}
+          >
+            Add Today's Score
+          </Button>
+        </div>
       </div>
     </>
   );

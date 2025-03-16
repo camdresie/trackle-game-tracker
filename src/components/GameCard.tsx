@@ -1,9 +1,7 @@
-
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
-import GameShare from './GameShare';
 
 interface GameCardProps {
   game: Game;
@@ -81,12 +79,6 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
               <span>Played today</span>
             </div>
           )}
-          <GameShare 
-            game={game}
-            latestScore={latestScore}
-            averageScore={averageScore}
-            bestScore={bestScore}
-          />
         </div>
       </div>
       

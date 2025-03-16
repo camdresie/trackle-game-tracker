@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const GameDetail = () => {
     scores,
     isLoading,
     bestScore,
+    averageScore,
     friends,
     friendScores,
     refreshFriends
@@ -53,6 +55,11 @@ const GameDetail = () => {
   const displayScores = localScores.length > 0 ? localScores : scores;
   const displayBestScore = localBestScore !== null ? localBestScore : bestScore;
   
+  // Get latest score
+  const latestScore = displayScores.length > 0 
+    ? displayScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+    : undefined;
+  
   if (!game) {
     return (
       <div className="min-h-screen bg-background">
@@ -77,6 +84,9 @@ const GameDetail = () => {
           game={game}
           user={user}
           onAddScore={() => setShowAddScore(true)}
+          latestScore={latestScore}
+          averageScore={averageScore}
+          bestScore={displayBestScore}
         />
         
         {isLoading ? (
