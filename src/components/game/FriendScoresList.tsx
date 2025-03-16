@@ -8,8 +8,8 @@ import { Game, Player, Score } from '@/utils/types';
 import { Users, RefreshCcw, AlertCircle, PlusCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { addGameScore } from '@/services/gameStatsService';
-import { supabase } from '@/lib/supabase';
+import { addFriendTestScores } from '@/services/gameStatsService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FriendScoresListProps {
   game: Game;
@@ -28,6 +28,7 @@ const FriendScoresList = ({
   onManageFriends, 
   onRefreshFriends 
 }: FriendScoresListProps) => {
+  const { user } = useAuth();
   const [hasAddedTestScores, setHasAddedTestScores] = useState(false);
   const [addingTestData, setAddingTestData] = useState(false);
   
@@ -74,76 +75,32 @@ const FriendScoresList = ({
     }
   };
   
-  // Function to add test scores for the first friend for debugging
+  // Function to add test scores for friends using the backend function
   const addTestScores = async () => {
-    if (friends.length === 0 || !game) return;
+    if (friends.length === 0 || !game || !user) return;
     
     try {
       setAddingTestData(true);
       
-      // Get the first friend
+      // We'll use the first friend for simplicity
       const friend = friends[0];
       
-      console.log(`[FriendScoresList] Inserting test scores for friend ${friend.name} (${friend.id})`);
+      console.log(`[FriendScoresList] Adding test scores for friend ${friend.name} (${friend.id})`);
       
-      // Generate some example scores directly with Supabase
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const twoDaysAgo = new Date(today);
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      // Call our service function to add test scores through a backend function
+      const result = await addFriendTestScores(game.id, friend.id, user.id);
       
-      // Format dates to YYYY-MM-DD
-      const formatDate = (date: Date) => {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      };
-      
-      // Insert test scores for the last 3 days
-      const { data, error } = await supabase
-        .from('scores')
-        .insert([
-          {
-            game_id: game.id,
-            user_id: friend.id,
-            value: 3,
-            date: formatDate(today),
-            notes: 'Test score for today'
-          },
-          {
-            game_id: game.id,
-            user_id: friend.id,
-            value: 4,
-            date: formatDate(yesterday),
-            notes: 'Test score for yesterday'
-          },
-          {
-            game_id: game.id,
-            user_id: friend.id,
-            value: 5,
-            date: formatDate(twoDaysAgo),
-            notes: 'Test score for 2 days ago'
-          }
-        ])
-        .select();
-      
-      if (error) {
-        console.error('[FriendScoresList] Error adding test scores:', error);
-        toast({
-          title: "Error",
-          description: "Failed to add test scores",
-          variant: "destructive"
-        });
-        return;
+      if (result.error) {
+        throw result.error;
       }
       
-      console.log('[FriendScoresList] Successfully added test scores:', data);
+      console.log('[FriendScoresList] Successfully added test scores:', result);
+      setHasAddedTestScores(true);
       
       // Refresh friend scores
       if (onRefreshFriends) {
         onRefreshFriends();
       }
-      
-      setHasAddedTestScores(true);
       
       toast({
         title: "Success",
@@ -153,7 +110,7 @@ const FriendScoresList = ({
       console.error('[FriendScoresList] Error in addTestScores:', error);
       toast({
         title: "Error",
-        description: "Failed to add test scores",
+        description: "Failed to add test scores. Check console for details.",
         variant: "destructive"
       });
     } finally {
@@ -177,7 +134,7 @@ const FriendScoresList = ({
               size="sm" 
               onClick={addTestScores}
               className="gap-1"
-              disabled={addingTestData || isLoading}
+              disabled={addingTestData || isLoading || !user}
             >
               <PlusCircle className="h-3 w-3" />
               {addingTestData ? 'Adding Test Data...' : 'Add Test Scores'}

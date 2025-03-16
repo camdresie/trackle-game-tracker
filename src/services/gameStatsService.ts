@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Game, Score, GameStats } from '@/utils/types';
 
@@ -178,5 +177,45 @@ export async function getGameScores(gameId: string, userId: string) {
   } catch (error) {
     console.error('[getGameScores] Unhandled error:', error);
     throw error;
+  }
+}
+
+// New function to add test scores for friends using RPC function
+export async function addFriendTestScores(gameId: string, friendId: string, currentUserId: string) {
+  try {
+    console.log(`[addFriendTestScores] Adding test scores for friend:${friendId}, game:${gameId}`);
+    
+    // Generate dates for the last 3 days
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    // Format dates to YYYY-MM-DD
+    const formatDate = (date: Date) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    
+    // Call our stored function to add test scores
+    const { data, error } = await supabase.rpc('add_friend_test_scores', {
+      p_game_id: gameId,
+      p_friend_id: friendId,
+      p_requester_id: currentUserId,
+      p_today_date: formatDate(today),
+      p_yesterday_date: formatDate(yesterday),
+      p_two_days_ago_date: formatDate(twoDaysAgo)
+    });
+    
+    if (error) {
+      console.error('[addFriendTestScores] Error:', error);
+      return { success: false, error };
+    }
+    
+    console.log('[addFriendTestScores] Success:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[addFriendTestScores] Unexpected error:', error);
+    return { success: false, error };
   }
 }
