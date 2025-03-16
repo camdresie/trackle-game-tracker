@@ -1,5 +1,6 @@
+
 import React, { useEffect } from 'react';
-import { Trophy, Users, ChevronsUpDown, Star, Loader2, Calendar } from 'lucide-react';
+import { Trophy, Users, GameController, Star, Loader2, Calendar, Award, Target, Blocks } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -73,35 +74,40 @@ const LeaderboardStats = ({
     ? todayPlayersCount 
     : activePlayers.length;
   
-  // Find the top player based on appropriate score
-  let leaderPlayer = null;
+  // Find player with highest average score
+  let highestAveragePlayer = null;
+  if (activePlayers.length > 0) {
+    highestAveragePlayer = [...activePlayers].sort((a, b) => {
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        // For games where lower is better
+        if (a.average_score === 0) return 1;
+        if (b.average_score === 0) return -1;
+        return a.average_score - b.average_score;
+      } else {
+        return b.average_score - a.average_score;
+      }
+    })[0];
+  }
+
+  // Find player with most best scores (for today view, use today's scores)
+  let bestScorePlayer = null;
   if (timeFilter === 'today' && todayScores.length > 0) {
-    // For today view, calculate the leader directly from today's scores
-    const userScores: Record<string, { userId: string, username: string, score: number }> = {};
+    // For today view, simply find the best score among today's scores
+    const userBestScores = new Map();
     
-    // Gather all today's scores by user
     todayScores.forEach(score => {
       const userId = score.user_id;
       const username = score.profiles?.username || 'Unknown';
       const value = score.value;
       
-      // For games where lower is better, keep the lowest score
-      // For other games, keep the highest score
-      if (!userScores[userId]) {
-        userScores[userId] = { userId, username, score: value };
-      } else if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-        if (value < userScores[userId].score) {
-          userScores[userId].score = value;
-        }
-      } else {
-        if (value > userScores[userId].score) {
-          userScores[userId].score = value;
-        }
+      if (!userBestScores.has(userId) || 
+          ((['wordle', 'mini-crossword'].includes(selectedGame) && value < userBestScores.get(userId).score) ||
+           (!['wordle', 'mini-crossword'].includes(selectedGame) && value > userBestScores.get(userId).score))) {
+        userBestScores.set(userId, { username, score: value });
       }
     });
     
-    // Convert to array and sort
-    const sortedUsers = Object.values(userScores).sort((a, b) => {
+    const sortedUsers = [...userBestScores.entries()].sort(([, a], [, b]) => {
       if (['wordle', 'mini-crossword'].includes(selectedGame)) {
         return a.score - b.score; // Lower is better
       } else {
@@ -109,15 +115,14 @@ const LeaderboardStats = ({
       }
     });
     
-    // Get the top player
     if (sortedUsers.length > 0) {
-      leaderPlayer = { username: sortedUsers[0].username };
+      bestScorePlayer = { username: sortedUsers[0][1].username };
     }
   } else if (activePlayers.length > 0) {
-    // For all-time view, use the existing logic
-    leaderPlayer = [...activePlayers].sort((a, b) => {
-      if (selectedGame === 'wordle' || selectedGame === 'mini-crossword') {
-        if (a.best_score === 0 && b.best_score === 0) return 0;
+    // For all-time view, use best_score
+    bestScorePlayer = [...activePlayers].sort((a, b) => {
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        // For games where lower is better
         if (a.best_score === 0) return 1;
         if (b.best_score === 0) return -1;
         return a.best_score - b.best_score;
@@ -125,6 +130,31 @@ const LeaderboardStats = ({
         return b.best_score - a.best_score;
       }
     })[0];
+  }
+
+  // Find player with most games played
+  let mostGamesPlayer = null;
+  if (timeFilter === 'today' && todayScores.length > 0) {
+    // For today view, count by user
+    const userGameCounts = new Map();
+    
+    todayScores.forEach(score => {
+      const userId = score.user_id;
+      const username = score.profiles?.username || 'Unknown';
+      userGameCounts.set(userId, {
+        username,
+        count: (userGameCounts.get(userId)?.count || 0) + 1
+      });
+    });
+    
+    const sortedUsers = [...userGameCounts.entries()].sort(([, a], [, b]) => b.count - a.count);
+    
+    if (sortedUsers.length > 0) {
+      mostGamesPlayer = { username: sortedUsers[0][1].username };
+    }
+  } else if (activePlayers.length > 0) {
+    // For all-time view, use total_games
+    mostGamesPlayer = [...activePlayers].sort((a, b) => b.total_games - a.total_games)[0];
   }
   
   return (
@@ -146,50 +176,56 @@ const LeaderboardStats = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-secondary/50 rounded-lg p-4 text-center">
           <div className="flex items-center justify-center mb-2">
-            <Users className="w-5 h-5 text-blue-500" />
+            <Award className="w-5 h-5 text-blue-500" />
           </div>
           <div className="text-2xl font-semibold">
             {isLoading ? (
               <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-            ) : (
-              playersCount || 0
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {timeFilter === 'today' ? "Today's Players" : "Active Players"}
-          </div>
-        </div>
-        
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <ChevronsUpDown className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="text-2xl font-semibold">
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-            ) : (
-              gamesPlayedCount || 0
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {timeFilter === 'today' ? "Today's Games" : "Games Played"}
-          </div>
-        </div>
-        
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
-          <div className="flex items-center justify-center mb-2">
-            <Star className="w-5 h-5 text-purple-500" />
-          </div>
-          <div className="text-2xl font-semibold">
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 mx-auto animate-spin" />
-            ) : leaderPlayer ? (
-              leaderPlayer.username
+            ) : highestAveragePlayer ? (
+              highestAveragePlayer.username
             ) : (
               '-'
             )}
           </div>
-          <div className="text-sm text-muted-foreground">Current Leader</div>
+          <div className="text-sm text-muted-foreground">
+            Highest Average Score
+          </div>
+        </div>
+        
+        <div className="bg-secondary/50 rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center mb-2">
+            <Target className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="text-2xl font-semibold">
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 mx-auto animate-spin" />
+            ) : bestScorePlayer ? (
+              bestScorePlayer.username
+            ) : (
+              '-'
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Best Score
+          </div>
+        </div>
+        
+        <div className="bg-secondary/50 rounded-lg p-4 text-center">
+          <div className="flex items-center justify-center mb-2">
+            <Blocks className="w-5 h-5 text-purple-500" />
+          </div>
+          <div className="text-2xl font-semibold">
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 mx-auto animate-spin" />
+            ) : mostGamesPlayer ? (
+              mostGamesPlayer.username
+            ) : (
+              '-'
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Most Games Played
+          </div>
         </div>
       </div>
     </div>
