@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import NavBar from '@/components/NavBar';
 import AddScoreModal from '@/components/AddScoreModal';
 import ConnectionsModal from '@/components/ConnectionsModal';
+import GameSelectionModal from '@/components/GameSelectionModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHomeData } from '@/hooks/useHomeData';
 import HomeHeader from '@/components/home/HomeHeader';
@@ -21,17 +22,12 @@ const Index = () => {
     setSelectedGame,
     showAddScore,
     setShowAddScore,
+    showGameSelection,
+    setShowGameSelection,
     showConnections,
     setShowConnections,
     handleAddScore
   } = useHomeData();
-
-  const handleShowAddScore = () => {
-    if (gamesList.length > 0) {
-      setSelectedGame(gamesList[0]);
-      setShowAddScore(true);
-    }
-  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -40,7 +36,7 @@ const Index = () => {
       <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <section className="mb-8 animate-slide-up">
           <HomeHeader 
-            onShowAddScore={handleShowAddScore}
+            onShowAddScore={() => setShowGameSelection(true)}
             onShowConnections={() => setShowConnections(true)}
             gamesList={gamesList}
           />
@@ -56,6 +52,16 @@ const Index = () => {
           isLoading={isLoading}
           gamesList={gamesList}
           scores={scores}
+        />
+        
+        <GameSelectionModal
+          open={showGameSelection}
+          onOpenChange={setShowGameSelection}
+          games={gamesList}
+          onSelectGame={(game) => {
+            setSelectedGame(game);
+            setShowAddScore(true);
+          }}
         />
         
         {selectedGame && (

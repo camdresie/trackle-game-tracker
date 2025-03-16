@@ -15,6 +15,8 @@ export interface HomeDataResult {
   setSelectedGame: (game: Game | null) => void;
   showAddScore: boolean;
   setShowAddScore: (show: boolean) => void;
+  showGameSelection: boolean;
+  setShowGameSelection: (show: boolean) => void;
   showConnections: boolean;
   setShowConnections: (show: boolean) => void;
   handleAddScore: (newScore: Score) => void;
@@ -25,6 +27,7 @@ export const useHomeData = (): HomeDataResult => {
   const { toast } = useToast();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showAddScore, setShowAddScore] = useState(false);
+  const [showGameSelection, setShowGameSelection] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
   const [scores, setScores] = useState<Score[]>([]);
   const [gamesList, setGamesList] = useState<Game[]>(games);
@@ -106,6 +109,8 @@ export const useHomeData = (): HomeDataResult => {
     setSelectedGame,
     showAddScore,
     setShowAddScore,
+    showGameSelection,
+    setShowGameSelection,
     showConnections,
     setShowConnections,
     handleAddScore
