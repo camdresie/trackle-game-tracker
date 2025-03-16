@@ -39,9 +39,9 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
       return 'Good';
     } else if (gameId === 'mini-crossword') {
       // For Mini Crossword, LOWER is better (it's time-based)
-      if (score < 120) { // Less than 2 minutes
+      if (score < 90) { // Less than 1.5 minutes
         return 'Excellent';
-      } else if (score < 240) { // Less than 4 minutes
+      } else if (score < 180) { // Less than 3 minutes
         return 'Good';
       } else {
         return 'Fair';

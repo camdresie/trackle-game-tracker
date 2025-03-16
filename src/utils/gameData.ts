@@ -1,4 +1,3 @@
-
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -32,7 +31,7 @@ export const games: Game[] = [
     description: 'Complete the NYT Mini Crossword puzzle as fast as you can.',
     icon: 'grid-3x3',
     color: 'bg-rose-500',
-    maxScore: 600  // 10 minutes in seconds
+    maxScore: 300  // Updated from 600 to 300 seconds (5 minutes)
   }
 ];
 
@@ -70,8 +69,8 @@ export const generateSampleScores = (): Score[] => {
         
         let value: number;
         if (game.id === 'mini-crossword') {
-          // Generate random completion time between 45 seconds and 8 minutes
-          value = Math.floor(Math.random() * (480 - 45) + 45);
+          // Generate random completion time between 45 seconds and 5 minutes (300 seconds)
+          value = Math.floor(Math.random() * (300 - 45) + 45);
         } else if (game.id === 'tightrope') {
           // Generate random score between 0 and 2340 for Tightrope
           value = Math.floor(Math.random() * 2341);
