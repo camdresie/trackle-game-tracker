@@ -109,7 +109,7 @@ export const processLeaderboardData = (
     // Process today's scores - IMPORTANT: Make sure date formats match exactly
     const scoreDate = new Date(score.date).toISOString().split('T')[0];
     if (scoreDate === today) {
-      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${scoreDate}, raw date: ${score.date}`);
+      console.log(`Today's score found for user ${userStats.username}: ${score.value}, date: ${score.date}, formatted date: ${scoreDate}, today: ${today}`);
       userStats.today_score = score.value;
     }
     

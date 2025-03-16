@@ -34,12 +34,16 @@ const LeaderboardPlayersList = ({
     console.log('LeaderboardPlayersList: players count before display:', players.length);
     
     if (timeFilter === 'today') {
-      const playersWithTodayScores = players.filter(p => p.today_score !== null);
-      console.log('Players with today scores in player list:', playersWithTodayScores.length);
+      const todayPlayers = players.filter(p => p.today_score !== null);
+      console.log('Players with today scores in player list:', todayPlayers.length);
+      console.log('All players in today view:', players.map(p => ({
+        username: p.username, 
+        today_score: p.today_score
+      })));
       
-      if (playersWithTodayScores.length > 0) {
+      if (todayPlayers.length > 0) {
         console.log('Sample players with today scores in player list:', 
-          playersWithTodayScores.slice(0, 2).map(p => ({
+          todayPlayers.slice(0, 2).map(p => ({
             username: p.username,
             score: p.today_score
           }))
@@ -50,11 +54,8 @@ const LeaderboardPlayersList = ({
     }
   }, [players, timeFilter]);
   
-  // Make sure we're only showing players with today's scores when that filter is active
-  // This should already be filtered in filterAndSortPlayers, but double-check
-  const playersToDisplay = timeFilter === 'today' 
-    ? players.filter(player => player.today_score !== null)
-    : players;
+  // Double-check filtering for today's players
+  const playersToDisplay = players;
   
   console.log('LeaderboardPlayersList: filtered players to display:', playersToDisplay.length);
   

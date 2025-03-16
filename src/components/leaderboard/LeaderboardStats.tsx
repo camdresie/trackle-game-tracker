@@ -36,9 +36,15 @@ const LeaderboardStats = ({
       
       // Then filter by date if timeFilter is 'today'
       if (timeFilter === 'today') {
-        // Ensure consistent date format comparison by converting to YYYY-MM-DD
+        // Format the score date as YYYY-MM-DD for consistent comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
-        return scoreDate === today;
+        const matchesToday = scoreDate === today;
+        
+        if (matchesToday) {
+          console.log(`LeaderboardStats - Today match: Score ${score.id} from ${scoreDate} equals today ${today}`);
+        }
+        
+        return matchesToday;
       }
       
       return true;
@@ -54,25 +60,34 @@ const LeaderboardStats = ({
     // Count and log scores that match today's date
     if (timeFilter === 'today') {
       const todayScores = rawScoresData.filter(score => {
+        // Format the score date as YYYY-MM-DD for consistent comparison
         const scoreDate = new Date(score.date).toISOString().split('T')[0];
         const isToday = scoreDate === today;
+        
         if (isToday) {
-          console.log(`Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}`);
+          console.log(`Score from today found: ${score.user_id}, value: ${score.value}, date: ${score.date}, scoreDate: ${scoreDate}`);
         }
+        
         return isToday;
       });
       
       console.log(`LeaderboardStats - Scores found for today (${today}): ${todayScores.length}`);
       
       if (todayScores.length > 0) {
-        console.log('Sample today scores:', todayScores.slice(0, 2));
+        console.log('Sample today scores:', todayScores.slice(0, 2).map(s => ({
+          id: s.id,
+          user_id: s.user_id,
+          date: s.date,
+          value: s.value,
+          formatted_date: new Date(s.date).toISOString().split('T')[0]
+        })));
       } else {
         console.log('No scores found for today');
       }
     }
     
     console.log(`LeaderboardStats - Final calculated games played count: ${gamesPlayedCount}`);
-  }, [rawScoresData, selectedGame, timeFilter, today]);
+  }, [rawScoresData, selectedGame, timeFilter, today, gamesPlayedCount]);
   
   // Find the top player based on appropriate score
   let leaderPlayer = null;
