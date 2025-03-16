@@ -15,6 +15,17 @@ export const useLeaderboardFilters = () => {
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('today'); // Changed default to 'today'
 
+  // Map sort options to appropriate stat categories for highlighting
+  const mapSortByToStatCategory = (sortOption: SortByOption) => {
+    const mapping: Record<SortByOption, string> = {
+      'averageScore': 'highestAverage',
+      'bestScore': 'bestScore',
+      'totalGames': 'mostGames',
+      'totalScore': 'totalScore'
+    };
+    return mapping[sortOption] || 'totalScore';
+  };
+
   // When timeFilter changes, update the sortBy appropriately
   useEffect(() => {
     if (timeFilter === 'all') {
@@ -27,7 +38,7 @@ export const useLeaderboardFilters = () => {
   return {
     selectedGame,
     setSelectedGame,
-    sortBy,
+    sortBy: mapSortByToStatCategory(sortBy),
     setSortBy,
     searchTerm,
     setSearchTerm,

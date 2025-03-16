@@ -98,6 +98,7 @@ const Leaderboard = () => {
           selectedGame={selectedGame}
           totalScoresCount={scoresData?.length || 0}
           rawScoresData={scoresData || []}
+          sortBy={sortBy} // Pass the sortBy prop
         />
       </main>
     </div>

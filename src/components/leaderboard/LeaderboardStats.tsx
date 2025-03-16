@@ -11,6 +11,7 @@ interface LeaderboardStatsProps {
   selectedGame: string;
   totalScoresCount: number; 
   rawScoresData: any[]; // Raw scores data for analysis
+  sortBy: string; // Add sortBy prop
 }
 
 const LeaderboardStats = ({ 
@@ -19,7 +20,8 @@ const LeaderboardStats = ({
   players, 
   selectedGame,
   totalScoresCount, 
-  rawScoresData
+  rawScoresData,
+  sortBy // Use this to highlight relevant stat
 }: LeaderboardStatsProps) => {
   // Get today's date in YYYY-MM-DD format for consistent comparison
   const getEasternTimeDate = (): string => {
@@ -157,6 +159,21 @@ const LeaderboardStats = ({
     mostGamesPlayer = [...activePlayers].sort((a, b) => b.total_games - a.total_games)[0];
   }
   
+  // Determine which card should be highlighted based on the sortBy selection
+  const getHighlightClass = (statType: string) => {
+    if (timeFilter === 'today') {
+      return 'bg-secondary/50'; // Always use default for today view
+    }
+    
+    const highlightMapping: Record<string, string> = {
+      'averageScore': 'highestAverage',
+      'bestScore': 'bestScore',
+      'totalGames': 'mostGames'
+    };
+    
+    return sortBy === highlightMapping[statType] ? 'bg-primary/20' : 'bg-secondary/50';
+  };
+  
   return (
     <div className="glass-card rounded-xl p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -174,7 +191,7 @@ const LeaderboardStats = ({
       </h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
+        <div className={`${getHighlightClass('averageScore')} rounded-lg p-4 text-center transition-colors duration-200`}>
           <div className="flex items-center justify-center mb-2">
             <Award className="w-5 h-5 text-blue-500" />
           </div>
@@ -192,7 +209,7 @@ const LeaderboardStats = ({
           </div>
         </div>
         
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
+        <div className={`${getHighlightClass('bestScore')} rounded-lg p-4 text-center transition-colors duration-200`}>
           <div className="flex items-center justify-center mb-2">
             <Target className="w-5 h-5 text-emerald-500" />
           </div>
@@ -210,7 +227,7 @@ const LeaderboardStats = ({
           </div>
         </div>
         
-        <div className="bg-secondary/50 rounded-lg p-4 text-center">
+        <div className={`${getHighlightClass('totalGames')} rounded-lg p-4 text-center transition-colors duration-200`}>
           <div className="flex items-center justify-center mb-2">
             <Blocks className="w-5 h-5 text-purple-500" />
           </div>
