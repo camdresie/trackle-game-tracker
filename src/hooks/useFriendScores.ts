@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Score } from '@/utils/types';
 import { getGameScores } from '@/services/gameStatsService';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface UseFriendScoresProps {
   gameId: string | undefined;
