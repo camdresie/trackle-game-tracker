@@ -1,9 +1,9 @@
-
 import React, { useEffect } from 'react';
-import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks } from 'lucide-react';
+import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks, Share2 } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent } from '@/components/ui/card';
+import LeaderboardShare from './LeaderboardShare';
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
@@ -307,19 +307,28 @@ const LeaderboardStats = ({
   
   return (
     <div className="glass-card rounded-xl p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        {timeFilter === 'all' ? (
-          <>
-            <Trophy className="w-5 h-5 text-amber-500" />
-            <span>All-Time Stats</span>
-          </>
-        ) : (
-          <>
-            <Calendar className="w-5 h-5 text-green-500" />
-            <span>Today's Stats</span>
-          </>
-        )}
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          {timeFilter === 'all' ? (
+            <>
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <span>All-Time Stats</span>
+            </>
+          ) : (
+            <>
+              <Calendar className="w-5 h-5 text-green-500" />
+              <span>Today's Stats</span>
+            </>
+          )}
+        </h2>
+        
+        {/* Share button */}
+        <LeaderboardShare 
+          players={players}
+          selectedGame={selectedGame}
+          timeFilter={timeFilter}
+        />
+      </div>
       
       {/* Stats cards - with dynamic third card */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
