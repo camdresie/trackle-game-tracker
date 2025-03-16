@@ -29,25 +29,26 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         console.log('Retrieved ALL scores data:', data?.length || 0, 'records');
         
-        // Log unique game IDs for debugging
+        // Debug logging for better visibility into score data
         if (data && data.length > 0) {
-          const gameIds = [...new Set(data.map(item => item.game_id))];
-          console.log('Game IDs in scores data:', gameIds);
-          
-          // Count by game
+          // Count by game for debugging
           const gameCounts = {};
           data.forEach(score => {
             gameCounts[score.game_id] = (gameCounts[score.game_id] || 0) + 1;
           });
-          console.log('Scores per game type:', gameCounts);
+          console.log('ALL scores by game type:', gameCounts);
           
-          // Check how many are from today
+          // Check today's scores specifically
           const today = new Date().toISOString().split('T')[0];
           const todayScores = data.filter(score => {
             const scoreDate = new Date(score.date).toISOString().split('T')[0];
             return scoreDate === today;
           });
-          console.log(`Scores from today (${today}):`, todayScores.length);
+          console.log(`ALL scores from today (${today}):`, todayScores.length);
+          
+          if (todayScores.length > 0) {
+            console.log('Sample of today scores:', todayScores.slice(0, 3));
+          }
         }
         
         // Get profiles for all user IDs
@@ -90,7 +91,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         return [];
       }
     },
-    enabled: true // Always run this query to get all scores data
+    enabled: true // Always fetch all scores data regardless of user ID
   });
 
   return { scoresData, isLoadingScores };

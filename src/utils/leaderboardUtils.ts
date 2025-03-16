@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 
@@ -51,54 +50,32 @@ export const processLeaderboardData = (
   // Debug logging for filtering
   console.log(`processLeaderboardData - Game ${selectedGame} - Filtered scores:`, gameScores.length);
   
-  // Additional debug logging to check dates in scores
-  const datesInScores = gameScores.map(score => score.date);
-  console.log('processLeaderboardData - Dates in scores:', datesInScores);
-  
-  // Log count of today's scores for debugging
-  const todayScores = gameScores.filter(score => {
-    const scoreDate = new Date(score.date).toISOString().split('T')[0];
-    return scoreDate === today;
-  });
-  console.log(`processLeaderboardData - Today's scores count (${today}):`, todayScores.length);
-  
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
     const userId = score.user_id;
     
     // If user doesn't exist in map yet, add them
     if (!userStatsMap.has(userId)) {
-      // Try to get profile info from profiles data
-      const profile = profilesData?.find(p => p.id === userId);
+      // Try to get profile info from user_profile attached to score
+      const profile = score.user_profile || {
+        id: userId,
+        username: "Unknown Player",
+        full_name: null,
+        avatar_url: null
+      };
       
-      if (profile) {
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: profile.username || "Unknown",
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-      } else {
-        // If profile not found, create minimal entry
-        userStatsMap.set(userId, {
-          player_id: userId,
-          username: "Player " + userId.substring(0, 6),
-          full_name: null,
-          avatar_url: null,
-          total_score: 0,
-          best_score: 0,
-          average_score: 0,
-          total_games: 0,
-          today_score: null,
-          latest_play: null
-        });
-      }
+      userStatsMap.set(userId, {
+        player_id: userId,
+        username: profile.username || "Unknown", 
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        total_score: 0,
+        best_score: 0,
+        average_score: 0,
+        total_games: 0,
+        today_score: null,
+        latest_play: null
+      });
     }
     
     // Now get the user stats and update them
