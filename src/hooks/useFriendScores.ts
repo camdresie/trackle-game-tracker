@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Score } from '@/utils/types';
 import { getGameScores } from '@/services/gameStatsService';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 interface UseFriendScoresProps {
   gameId: string | undefined;
@@ -21,9 +22,10 @@ interface FriendScoresResult {
 export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): FriendScoresResult => {
   const [friendScores, setFriendScores] = useState<{ [key: string]: Score[] }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastFetchAttempt, setLastFetchAttempt] = useState<number>(0);
 
   // Function to fetch friend scores with enhanced error handling and debugging
-  const fetchFriendScores = async () => {
+  const fetchFriendScores = useCallback(async () => {
     if (!gameId) {
       console.error('[useFriendScores] Missing gameId, cannot fetch scores');
       return;
@@ -41,6 +43,18 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
     const friendScoresData: { [key: string]: Score[] } = {};
     
     try {
+      // First, let's directly check if there are any scores for this game for ANY user
+      const { count, error: countError } = await supabase
+        .from('scores')
+        .select('*', { count: 'exact', head: true })
+        .eq('game_id', gameId);
+      
+      if (countError) {
+        console.error('[useFriendScores] Error checking if any scores exist:', countError);
+      } else {
+        console.log(`[useFriendScores] Total scores in database for game ${gameId}: ${count}`);
+      }
+      
       // Process each friend in parallel
       const friendsWithIds = friends.filter(friend => !!friend.id);
       console.log(`[useFriendScores] Processing ${friendsWithIds.length} friends with IDs`);
@@ -96,8 +110,9 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
       });
     } finally {
       setIsLoading(false);
+      setLastFetchAttempt(Date.now());
     }
-  };
+  }, [gameId, friends]);
 
   // Effect to fetch friend scores whenever friends list or gameId changes
   useEffect(() => {
@@ -110,7 +125,7 @@ export const useFriendScores = ({ gameId, friends }: UseFriendScoresProps): Frie
         friendsCount: friends.length 
       });
     }
-  }, [gameId, friends]);
+  }, [gameId, friends, fetchFriendScores]);
 
   return {
     friendScores,

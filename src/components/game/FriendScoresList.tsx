@@ -1,13 +1,15 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import ScoreChart from '@/components/ScoreChart';
 import { Game, Player, Score } from '@/utils/types';
-import { Users, RefreshCcw, AlertCircle, Bug } from 'lucide-react';
+import { Users, RefreshCcw, AlertCircle, PlusCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { addGameScore } from '@/services/gameStatsService';
+import { supabase } from '@/lib/supabase';
 
 interface FriendScoresListProps {
   game: Game;
@@ -26,6 +28,9 @@ const FriendScoresList = ({
   onManageFriends, 
   onRefreshFriends 
 }: FriendScoresListProps) => {
+  const [hasAddedTestScores, setHasAddedTestScores] = useState(false);
+  const [addingTestData, setAddingTestData] = useState(false);
+  
   // Debug logs on mount and when props change
   useEffect(() => {
     console.log("[FriendScoresList] Rendering with props:", { 
@@ -34,6 +39,12 @@ const FriendScoresList = ({
       friendScoresKeys: Object.keys(friendScores || {}),
       isLoading
     });
+    
+    // Check if we have any actual scores data
+    const actualScoresCount = Object.values(friendScores || {}).reduce(
+      (total, scores) => total + scores.length, 0
+    );
+    console.log(`[FriendScoresList] Total actual scores available: ${actualScoresCount}`);
   }, [game, friends, friendScores, isLoading]);
   
   // Function to handle refresh button click with enhanced feedback
@@ -62,6 +73,93 @@ const FriendScoresList = ({
       console.warn("[FriendScoresList] No refresh handler provided");
     }
   };
+  
+  // Function to add test scores for the first friend for debugging
+  const addTestScores = async () => {
+    if (friends.length === 0 || !game) return;
+    
+    try {
+      setAddingTestData(true);
+      
+      // Get the first friend
+      const friend = friends[0];
+      
+      console.log(`[FriendScoresList] Inserting test scores for friend ${friend.name} (${friend.id})`);
+      
+      // Generate some example scores directly with Supabase
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const twoDaysAgo = new Date(today);
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      
+      // Format dates to YYYY-MM-DD
+      const formatDate = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+      
+      // Insert test scores for the last 3 days
+      const { data, error } = await supabase
+        .from('scores')
+        .insert([
+          {
+            game_id: game.id,
+            user_id: friend.id,
+            value: 3,
+            date: formatDate(today),
+            notes: 'Test score for today'
+          },
+          {
+            game_id: game.id,
+            user_id: friend.id,
+            value: 4,
+            date: formatDate(yesterday),
+            notes: 'Test score for yesterday'
+          },
+          {
+            game_id: game.id,
+            user_id: friend.id,
+            value: 5,
+            date: formatDate(twoDaysAgo),
+            notes: 'Test score for 2 days ago'
+          }
+        ])
+        .select();
+      
+      if (error) {
+        console.error('[FriendScoresList] Error adding test scores:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add test scores",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('[FriendScoresList] Successfully added test scores:', data);
+      
+      // Refresh friend scores
+      if (onRefreshFriends) {
+        onRefreshFriends();
+      }
+      
+      setHasAddedTestScores(true);
+      
+      toast({
+        title: "Success",
+        description: `Added test scores for ${friend.name}`,
+      });
+    } catch (error) {
+      console.error('[FriendScoresList] Error in addTestScores:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add test scores",
+        variant: "destructive"
+      });
+    } finally {
+      setAddingTestData(false);
+    }
+  };
 
   // Detailed debug logs
   console.log("FriendScoresList rendering with friends:", friends.length);
@@ -72,18 +170,32 @@ const FriendScoresList = ({
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Friend Scores</h2>
-        {friends.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleRefreshClick}
-            className="gap-1"
-            disabled={isLoading}
-          >
-            <RefreshCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {!hasAddedTestScores && friends.length > 0 && (
+            <Button 
+              variant="outline"
+              size="sm" 
+              onClick={addTestScores}
+              className="gap-1"
+              disabled={addingTestData || isLoading}
+            >
+              <PlusCircle className="h-3 w-3" />
+              {addingTestData ? 'Adding Test Data...' : 'Add Test Scores'}
+            </Button>
+          )}
+          {friends.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefreshClick}
+              className="gap-1"
+              disabled={isLoading}
+            >
+              <RefreshCcw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          )}
+        </div>
       </div>
       
       {isLoading && friends.length > 0 ? (

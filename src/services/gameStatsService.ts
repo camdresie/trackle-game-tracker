@@ -124,6 +124,26 @@ export async function getGameScores(gameId: string, userId: string) {
   try {
     console.log(`[getGameScores] Fetching scores for game:${gameId}, user:${userId}`);
     
+    // First, check if such scores actually exist in the database
+    const { count, error: countError } = await supabase
+      .from('scores')
+      .select('*', { count: 'exact', head: true })
+      .eq('game_id', gameId)
+      .eq('user_id', userId);
+
+    if (countError) {
+      console.error('[getGameScores] Error checking if scores exist:', countError);
+      throw countError;
+    }
+
+    console.log(`[getGameScores] Found ${count} scores matching the query`);
+    
+    if (count === 0) {
+      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
+      return [];
+    }
+    
+    // Proceed with the actual query now that we know scores exist
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -136,8 +156,10 @@ export async function getGameScores(gameId: string, userId: string) {
       throw error;
     }
 
+    console.log(`[getGameScores] Successfully retrieved ${data?.length || 0} scores for game ${gameId} and user ${userId}`);
+    
     if (!data || data.length === 0) {
-      console.log(`[getGameScores] No scores found for game ${gameId} and user ${userId}`);
+      console.log(`[getGameScores] No scores found in the result for game ${gameId} and user ${userId}`);
       return [];
     }
 

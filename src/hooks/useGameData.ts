@@ -2,7 +2,7 @@
 import { useGameDetails } from './useGameDetails';
 import { useFriendsList } from './useFriendsList';
 import { useFriendScores } from './useFriendScores';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseGameDataProps {
   gameId: string | undefined;
@@ -36,32 +36,42 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     friends 
   });
   
+  // Enhanced debug function
+  const logDebugInfo = useCallback(() => {
+    console.log(`[useGameData] Debug info for gameId: ${gameId || 'undefined'}`);
+    console.log(`[useGameData] Game:`, game);
+    console.log(`[useGameData] Friends count: ${friends.length}`);
+    console.log(`[useGameData] Friend IDs:`, friends.map(f => f.id));
+    console.log(`[useGameData] Friend scores keys:`, Object.keys(friendScores));
+    console.log(`[useGameData] Friend scores data summary:`, 
+      Object.entries(friendScores).map(([id, scores]) => ({
+        friendId: id,
+        scoreCount: scores.length,
+        scoreValues: scores.map(s => s.value)
+      }))
+    );
+    console.log(`[useGameData] Friend scores loading state:`, friendScoresLoading);
+    
+    // Check if there's a mismatch between friends and friendScores
+    const friendsWithMissingScores = friends.filter(friend => 
+      !Object.keys(friendScores).includes(friend.id)
+    );
+    if (friendsWithMissingScores.length > 0) {
+      console.warn(`[useGameData] Some friends have no scores in the state:`, 
+        friendsWithMissingScores.map(f => ({ id: f.id, name: f.name }))
+      );
+    }
+  }, [game, friends, friendScores, friendScoresLoading, gameId]);
+  
   // Periodically log the state for debugging - only in development and not too often
   useEffect(() => {
     const now = Date.now();
     // Only log if more than 3 seconds since last log to avoid console spam
     if (now - lastDebugTimestamp > 3000) {
-      console.log(`[useGameData] Debug info for gameId: ${gameId || 'undefined'}`);
-      console.log(`[useGameData] Game:`, game);
-      console.log(`[useGameData] Friends count: ${friends.length}`);
-      console.log(`[useGameData] Friend IDs:`, friends.map(f => f.id));
-      console.log(`[useGameData] Friend scores keys:`, Object.keys(friendScores));
-      console.log(`[useGameData] Friend scores data for ${friends.length} friends:`, friendScores);
-      console.log(`[useGameData] Friend scores loading state:`, friendScoresLoading);
-      
-      // Check if there's a mismatch between friends and friendScores
-      const friendsWithMissingScores = friends.filter(friend => 
-        !Object.keys(friendScores).includes(friend.id)
-      );
-      if (friendsWithMissingScores.length > 0) {
-        console.warn(`[useGameData] Some friends have no scores in the state:`, 
-          friendsWithMissingScores.map(f => ({ id: f.id, name: f.name }))
-        );
-      }
-      
+      logDebugInfo();
       setLastDebugTimestamp(now);
     }
-  }, [game, friends, friendScores, friendScoresLoading, gameId, lastDebugTimestamp]);
+  }, [logDebugInfo, lastDebugTimestamp]);
   
   // Enhanced refresh function that updates all data
   const refreshFriends = async () => {
@@ -75,6 +85,9 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       if (gameId) {
         console.log(`[useGameData] Refreshing scores for game ${gameId}`);
         await fetchFriendScores();
+        
+        // Log debug information after refresh
+        logDebugInfo();
       } else {
         console.warn("[useGameData] Cannot refresh friend scores - no gameId available");
       }
