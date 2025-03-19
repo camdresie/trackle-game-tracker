@@ -27,10 +27,13 @@ const Leaderboard = () => {
     setSelectedFriendIds,
     timeFilter,
     setTimeFilter,
+    selectedGroupId,
+    setSelectedGroupId,
     filteredAndSortedPlayers,
     isLoading,
     scoresData,
-    friends
+    friends,
+    friendGroups
   } = useLeaderboardData(user?.id);
 
   // Set default game to the first game in the list if none is selected
@@ -49,6 +52,19 @@ const Leaderboard = () => {
     ? "See who's winning today" 
     : "See who's winning overall";
   
+  // Generate a more specific subtitle if filtering by a group
+  let filterSubtitle = '';
+  if (showFriendsOnly) {
+    if (selectedGroupId) {
+      const group = friendGroups?.find(g => g.id === selectedGroupId);
+      filterSubtitle = group ? `Filtering by group: ${group.name}` : '';
+    } else if (selectedFriendIds.length > 0) {
+      filterSubtitle = `Filtering by ${selectedFriendIds.length} selected friends`;
+    } else {
+      filterSubtitle = 'Filtering by all friends';
+    }
+  }
+  
   // Debug outputs for leaderboard data
   console.log('Leaderboard.tsx - timeFilter:', timeFilter);
   console.log('Leaderboard.tsx - filtered players count:', filteredAndSortedPlayers.length);
@@ -62,6 +78,7 @@ const Leaderboard = () => {
         <LeaderboardHeader 
           title={`${gameTitle} Leaderboard`}
           subtitle={subtitle}
+          extraText={filterSubtitle}
         />
         
         <div className="glass-card rounded-xl p-5 mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
@@ -79,6 +96,9 @@ const Leaderboard = () => {
             sortBy={sortBy}
             setSortBy={(value: SortByOption) => setSortBy(value)}
             friendsList={friends}
+            friendGroups={friendGroups}
+            selectedGroupId={selectedGroupId}
+            setSelectedGroupId={setSelectedGroupId}
           />
           
           <LeaderboardPlayersList
@@ -99,7 +119,7 @@ const Leaderboard = () => {
           selectedGame={selectedGame}
           totalScoresCount={scoresData?.length || 0}
           rawScoresData={scoresData || []}
-          sortBy={sortByCategory} // Use sortByCategory instead of sortBy
+          sortBy={sortByCategory}
         />
       </main>
     </div>

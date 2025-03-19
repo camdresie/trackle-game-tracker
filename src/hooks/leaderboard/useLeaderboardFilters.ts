@@ -14,6 +14,7 @@ export const useLeaderboardFilters = () => {
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('today'); // Changed default to 'today'
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // Map sort options to appropriate stat categories for highlighting
   const mapSortByToStatCategory = (sortOption: SortByOption) => {
@@ -35,6 +36,20 @@ export const useLeaderboardFilters = () => {
     }
   }, [timeFilter]);
 
+  // Reset selected friends when a group is selected
+  useEffect(() => {
+    if (selectedGroupId) {
+      setSelectedFriendIds([]);
+    }
+  }, [selectedGroupId]);
+
+  // Reset selected group when individual friends are selected
+  useEffect(() => {
+    if (selectedFriendIds.length > 0) {
+      setSelectedGroupId(null);
+    }
+  }, [selectedFriendIds]);
+
   return {
     selectedGame,
     setSelectedGame,
@@ -48,6 +63,8 @@ export const useLeaderboardFilters = () => {
     selectedFriendIds,
     setSelectedFriendIds,
     timeFilter,
-    setTimeFilter
+    setTimeFilter,
+    selectedGroupId,
+    setSelectedGroupId
   };
 };

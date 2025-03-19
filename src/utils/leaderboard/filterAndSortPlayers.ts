@@ -1,3 +1,4 @@
+
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -21,7 +22,8 @@ export const filterAndSortPlayers = (
   sortBy: string,
   selectedGame: string,
   userId?: string,
-  friendIds: string[] = []
+  friendIds: string[] = [],
+  selectedGroupMemberIds: string[] = []
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
@@ -51,7 +53,12 @@ export const filterAndSortPlayers = (
   
   // Friends filter
   if (showFriendsOnly) {
-    if (selectedFriendIds.length > 0) {
+    if (selectedGroupMemberIds.length > 0) {
+      // Show specific group members and current user
+      filteredPlayers = filteredPlayers.filter(player => 
+        player.player_id === userId || selectedGroupMemberIds.includes(player.player_id)
+      );
+    } else if (selectedFriendIds.length > 0) {
       // Show specific friends and current user
       filteredPlayers = filteredPlayers.filter(player => 
         player.player_id === userId || selectedFriendIds.includes(player.player_id)

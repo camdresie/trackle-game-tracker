@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { processLeaderboardData, filterAndSortPlayers } from '@/utils/leaderboard';
 import { useFriendsList } from '@/hooks/useFriendsList';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useProfilesData } from './useProfilesData';
 import { useGameStatsData } from './useGameStatsData';
 import { useScoresData } from './useScoresData';
@@ -22,11 +23,16 @@ export const useLeaderboardData = (userId: string | undefined) => {
     selectedFriendIds,
     setSelectedFriendIds,
     timeFilter,
-    setTimeFilter
+    setTimeFilter,
+    selectedGroupId,
+    setSelectedGroupId
   } = useLeaderboardFilters();
   
   // Get friends list
   const { friends } = useFriendsList();
+  
+  // Get friend groups
+  const { friendGroups } = useFriendGroups(friends);
   
   // Get profiles data
   const { profilesData } = useProfilesData(userId);
@@ -66,6 +72,11 @@ export const useLeaderboardData = (userId: string | undefined) => {
   // Get friend IDs
   const friendIds = friends.map(friend => friend.id);
   
+  // Get selected group member IDs
+  const selectedGroupMemberIds = selectedGroupId
+    ? (friendGroups.find(g => g.id === selectedGroupId)?.members?.map(m => m.id) || [])
+    : [];
+  
   // Process leaderboard data
   const leaderboardData = processLeaderboardData(
     gameStatsData,
@@ -86,7 +97,8 @@ export const useLeaderboardData = (userId: string | undefined) => {
     sortBy,
     selectedGame,
     userId,
-    friendIds
+    friendIds,
+    selectedGroupMemberIds
   );
   
   // Debug - check today's scores in processed data
@@ -107,7 +119,7 @@ export const useLeaderboardData = (userId: string | undefined) => {
     setSelectedGame,
     sortBy,
     setSortBy,
-    sortByCategory, // Include sortByCategory in the return value
+    sortByCategory,
     searchTerm,
     setSearchTerm,
     showFriendsOnly,
@@ -116,9 +128,12 @@ export const useLeaderboardData = (userId: string | undefined) => {
     setSelectedFriendIds,
     timeFilter,
     setTimeFilter,
+    selectedGroupId,
+    setSelectedGroupId,
     filteredAndSortedPlayers,
     isLoading,
     scoresData,
-    friends
+    friends,
+    friendGroups
   };
 };

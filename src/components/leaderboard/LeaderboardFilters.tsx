@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, UserPlus, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import {
   DropdownMenuCheckboxItem
 } from '@/components/ui/dropdown-menu';
 import { games } from '@/utils/gameData';
-import { Player } from '@/utils/types';
+import { Player, FriendGroup } from '@/utils/types';
 import { SortByOption, TimeFilter } from '@/types/leaderboard';
 
 interface LeaderboardFiltersProps {
@@ -32,6 +32,9 @@ interface LeaderboardFiltersProps {
   sortBy: SortByOption;
   setSortBy: (sort: SortByOption) => void;
   friendsList: Player[];
+  friendGroups?: FriendGroup[];
+  selectedGroupId?: string | null;
+  setSelectedGroupId?: (groupId: string | null) => void;
 }
 
 const LeaderboardFilters = ({
@@ -47,7 +50,10 @@ const LeaderboardFilters = ({
   setSelectedGame,
   sortBy,
   setSortBy,
-  friendsList
+  friendsList,
+  friendGroups = [],
+  selectedGroupId = null,
+  setSelectedGroupId = () => {}
 }: LeaderboardFiltersProps) => {
   const [friendsDropdownOpen, setFriendsDropdownOpen] = useState(false);
 
@@ -57,16 +63,19 @@ const LeaderboardFilters = ({
       // If already showing all friends, turn off friends filter
       setShowFriendsOnly(false);
       setSelectedFriendIds([]);
+      setSelectedGroupId(null);
     } else {
       // Show all friends
       setShowFriendsOnly(true);
       setSelectedFriendIds([]);
+      setSelectedGroupId(null);
     }
   };
 
   // Handle selecting/deselecting a specific friend
   const handleFriendToggle = (friendId: string) => {
     setShowFriendsOnly(true);
+    setSelectedGroupId(null);
     
     if (selectedFriendIds.includes(friendId)) {
       // Remove friend if already selected
@@ -77,9 +86,22 @@ const LeaderboardFilters = ({
     }
   };
 
+  // Handle selecting a group
+  const handleGroupSelect = (groupId: string) => {
+    setShowFriendsOnly(true);
+    setSelectedFriendIds([]);
+    setSelectedGroupId(groupId);
+  };
+
   // Get the label for the friends dropdown button
   const getFriendsButtonLabel = () => {
     if (!showFriendsOnly) return "All Players";
+    
+    if (selectedGroupId) {
+      const group = friendGroups.find(g => g.id === selectedGroupId);
+      return group ? `Group: ${group.name}` : "Selected Group";
+    }
+    
     if (selectedFriendIds.length === 0) return "All Friends";
     if (selectedFriendIds.length === 1) {
       const friend = friendsList.find(f => f.id === selectedFriendIds[0]);
@@ -122,17 +144,37 @@ const LeaderboardFilters = ({
                 onCheckedChange={() => {
                   setShowFriendsOnly(false);
                   setSelectedFriendIds([]);
+                  setSelectedGroupId(null);
                 }}
               >
                 All Players
               </DropdownMenuCheckboxItem>
               
               <DropdownMenuCheckboxItem
-                checked={showFriendsOnly && selectedFriendIds.length === 0}
+                checked={showFriendsOnly && selectedFriendIds.length === 0 && !selectedGroupId}
                 onCheckedChange={handleAllFriendsToggle}
               >
                 All Friends
               </DropdownMenuCheckboxItem>
+              
+              {friendGroups.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Friend Groups</DropdownMenuLabel>
+                    {friendGroups.map(group => (
+                      <DropdownMenuCheckboxItem
+                        key={group.id}
+                        checked={selectedGroupId === group.id}
+                        onCheckedChange={() => handleGroupSelect(group.id)}
+                      >
+                        <Users className="w-3 h-3 mr-2 inline" />
+                        {group.name} ({group.members?.length || 0})
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </>
+              )}
               
               {friendsList.length > 0 && (
                 <>
