@@ -9,7 +9,6 @@ import { GroupMessage } from '@/utils/types';
 export const useGroupMessages = (groupId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubscribed, setIsSubscribed] = useState(false);
   
   // Fetch messages for a specific group
   const { 
@@ -104,7 +103,7 @@ export const useGroupMessages = (groupId: string | null) => {
       console.log(`Cleaning up channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
-  }, [groupId, user, queryClient]); // Remove isSubscribed and refetch dependencies
+  }, [groupId, user, queryClient]);
   
   // Send a message
   const sendMessageMutation = useMutation({
@@ -125,7 +124,8 @@ export const useGroupMessages = (groupId: string | null) => {
       return data;
     },
     onSuccess: () => {
-      // No need to invalidate query as realtime will handle it
+      // Manually trigger a refetch to get the newly sent message immediately
+      refetch();
     },
     onError: (error) => {
       console.error('Error sending message:', error);

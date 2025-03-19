@@ -25,9 +25,11 @@ const MessagesPanel = ({ groupId, groupName, className = '' }: MessagesPanelProp
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (scrollAreaRef.current && messages.length > 0) {
       const scrollContainer = scrollAreaRef.current;
-      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      setTimeout(() => {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }, 100); // Short delay to ensure DOM is updated
     }
   }, [messages]);
   
@@ -35,6 +37,7 @@ const MessagesPanel = ({ groupId, groupName, className = '' }: MessagesPanelProp
     e.preventDefault();
     if (!newMessage.trim()) return;
     
+    console.log('Sending message:', newMessage);
     sendMessage(newMessage.trim());
     setNewMessage('');
   };
