@@ -45,15 +45,13 @@ export const useFriendScores = ({
       return;
     }
     
-    const friendsToFetch = [...friends];
+    // Get a list of all unique friend IDs
+    const friendsToFetch = [...new Set([...friends.map(f => f.id)])];
     
     // Add current user to friends list if includeCurrentUser is true
-    if (includeCurrentUser && user && !friends.some(f => f.id === user.id)) {
+    if (includeCurrentUser && user && !friendsToFetch.includes(user.id)) {
       console.log('[useFriendScores] Adding current user to fetch list');
-      friendsToFetch.push({
-        id: user.id,
-        name: 'You'
-      });
+      friendsToFetch.push(user.id);
     }
     
     if (friendsToFetch.length === 0) {
@@ -69,37 +67,38 @@ export const useFriendScores = ({
       // Initialize empty scores for all friends
       const newFriendScores: { [key: string]: Score[] } = {};
       
-      // Process each friend
-      const processFriend = async (friend: { id: string; name: string }) => {
-        if (!friend.id) {
-          console.log(`[useFriendScores] Friend missing ID, skipping`);
-          return;
-        }
+      // Get today's date for filtering today's scores
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch all scores in a single query
+      const { data: scoresData, error } = await supabase
+        .from('scores')
+        .select('*')
+        .eq('game_id', gameId)
+        .in('user_id', friendsToFetch);
         
-        console.log(`[useFriendScores] Fetching scores for friend: ${friend.name || 'Unknown'} (${friend.id})`);
+      if (error) {
+        console.error(`[useFriendScores] Error fetching scores:`, error);
+        toast.error("Failed to load friend scores");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log(`[useFriendScores] Retrieved ${scoresData?.length || 0} total scores`);
+      
+      // Group scores by user_id
+      if (scoresData) {
+        // Initialize empty arrays for all friends
+        friendsToFetch.forEach(friendId => {
+          newFriendScores[friendId] = [];
+        });
         
-        try {
-          // Query scores with detailed error logging
-          const { data: scoresData, error } = await supabase
-            .from('scores')
-            .select('*')
-            .eq('game_id', gameId)
-            .eq('user_id', friend.id);
-            
-          if (error) {
-            console.error(`[useFriendScores] Error fetching scores for friend:`, error);
-            newFriendScores[friend.id] = [];
-            return;
-          }
+        // Process all scores
+        scoresData.forEach(score => {
+          const userId = score.user_id;
           
-          if (!scoresData || scoresData.length === 0) {
-            console.log(`[useFriendScores] No scores found for friend ${friend.name || 'Unknown'}`);
-            newFriendScores[friend.id] = [];
-            return;
-          }
-          
-          // Map scores to our Score type
-          const formattedScores = scoresData.map(score => ({
+          // Format the score to our Score type
+          const formattedScore = {
             id: score.id,
             gameId: score.game_id,
             playerId: score.user_id,
@@ -107,21 +106,20 @@ export const useFriendScores = ({
             date: score.date,
             notes: score.notes || '',
             createdAt: score.created_at
-          }));
+          };
           
-          console.log(`[useFriendScores] Retrieved ${formattedScores.length} scores for ${friend.name || 'Unknown'}`);
-          newFriendScores[friend.id] = formattedScores;
-        } catch (error) {
-          console.error(`[useFriendScores] Exception processing friend ${friend.name || 'Unknown'}:`, error);
-          newFriendScores[friend.id] = [];
-        }
-      };
+          // Add to the appropriate user's scores array
+          newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
+          
+          // Log today's scores for debugging
+          if (score.date === today) {
+            console.log(`[useFriendScores] Found today's score for user ${userId}: ${score.value}`);
+          }
+        });
+      }
       
-      // Process all friends in parallel
-      await Promise.all(friendsToFetch.map(processFriend));
-      
-      // Include current user scores if needed and not already fetched
-      if (includeCurrentUser && user && currentUserScores.length > 0 && !newFriendScores[user.id]) {
+      // Include current user scores if provided
+      if (includeCurrentUser && user && currentUserScores.length > 0) {
         newFriendScores[user.id] = currentUserScores;
       }
       
@@ -135,6 +133,13 @@ export const useFriendScores = ({
       setIsLoading(false);
     }
   }, [gameId, friends, includeCurrentUser, user, currentUserScores]);
+
+  // Fetch scores when gameId or friends change
+  useEffect(() => {
+    if (gameId && (friends.length > 0 || includeCurrentUser)) {
+      fetchFriendScores();
+    }
+  }, [gameId, friends, includeCurrentUser, fetchFriendScores]);
 
   return {
     friendScores,

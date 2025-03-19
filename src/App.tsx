@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import GameDetail from "./pages/GameDetail";
 import Leaderboard from "./pages/Leaderboard";
+import TodayScores from "./pages/TodayScores";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -55,6 +56,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Leaderboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/today" 
+              element={
+                <ProtectedRoute>
+                  <TodayScores />
                 </ProtectedRoute>
               } 
             />

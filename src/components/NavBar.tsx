@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Award, BarChart3, User, Home, Menu, X, LogOut } from 'lucide-react';
+import { Award, BarChart3, User, Home, Menu, X, LogOut, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ const NavBar = () => {
   
   const navItems = [
     { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> },
+    { name: 'Today', path: '/today', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <BarChart3 className="w-5 h-5" /> },
     { name: 'Profile', path: '/profile', icon: <User className="w-5 h-5" /> },
   ];

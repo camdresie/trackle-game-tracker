@@ -1,10 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendsList } from './useFriendsList';
 import { useFriendGroups } from './useFriendGroups';
 import { useFriendScores } from './useFriendScores';
-import { Game, Player, Score } from '@/utils/types';
+import { Score } from '@/utils/types';
 import { toast } from 'sonner';
 
 export interface GroupScoresResult {
@@ -34,14 +34,15 @@ export const useGroupScores = (
   const [isLoading, setIsLoading] = useState(true);
   
   // Use the friendScores hook to get today's scores for friends
-  const { friendScores, fetchFriendScores, isLoading: isLoadingFriendScores } = useFriendScores({
+  const { friendScores, isLoading: isLoadingFriendScores } = useFriendScores({
     gameId: selectedGameId || undefined,
     friends: friends,
-    includeCurrentUser: true
+    includeCurrentUser: true,
+    currentUserScores: todaysScores
   });
   
   // Get the current date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
   
   // Debug logging
   useEffect(() => {
@@ -54,14 +55,6 @@ export const useGroupScores = (
     }
   }, [selectedGameId, friendGroups, friendScores, todaysScores, user]);
   
-  // Fetch friend scores when selectedGameId changes
-  useEffect(() => {
-    if (selectedGameId && friends.length > 0) {
-      console.log('[useGroupScores] Fetching friend scores for game:', selectedGameId);
-      fetchFriendScores();
-    }
-  }, [selectedGameId, friends, fetchFriendScores]);
-  
   // Get current user's score for today
   const getCurrentUserScore = (): number | null => {
     if (!user || !selectedGameId) return null;
@@ -73,6 +66,7 @@ export const useGroupScores = (
     );
     
     if (userScoreFromHook) {
+      console.log('[useGroupScores] Found user score in friendScores:', userScoreFromHook.value);
       return userScoreFromHook.value;
     }
     
@@ -81,7 +75,13 @@ export const useGroupScores = (
       score => score.gameId === selectedGameId && score.date === today
     );
     
-    return userScoreFromToday ? userScoreFromToday.value : null;
+    if (userScoreFromToday) {
+      console.log('[useGroupScores] Found user score in todaysScores:', userScoreFromToday.value);
+      return userScoreFromToday.value;
+    }
+    
+    console.log('[useGroupScores] No user score found for today');
+    return null;
   };
   
   // Process the data when everything is loaded
@@ -113,29 +113,46 @@ export const useGroupScores = (
           };
         }
         
+        // Process all members in this group
         const memberData = group.members.map(member => {
-          // Check if this friend has played the selected game today
-          const friendTodayScores = friendScores[member.id] || [];
-          const todayScore = friendTodayScores.find(
+          // Skip if this is the current user (we'll add them separately)
+          if (member.id === user?.id) {
+            console.log(`[useGroupScores] Skipping current user ${member.name}`);
+            return null;
+          }
+          
+          // Get this friend's scores
+          const friendScoresList = friendScores[member.id] || [];
+          
+          // Find today's score for this friend and this game
+          const todayScore = friendScoresList.find(
             score => score.gameId === selectedGameId && score.date === today
           );
           
-          console.log(`[useGroupScores] Friend ${member.name} has played today: ${!!todayScore}, score: ${todayScore?.value}`);
+          const hasPlayed = !!todayScore;
+          const score = todayScore ? todayScore.value : null;
+          
+          console.log(`[useGroupScores] Friend ${member.name} has played today: ${hasPlayed}, score: ${score}`);
           
           return {
             playerId: member.id,
             playerName: member.name || 'Unknown',
-            hasPlayed: !!todayScore,
-            score: todayScore ? todayScore.value : null
+            hasPlayed,
+            score
           };
-        });
+        }).filter(Boolean); // Remove null entries (current user)
         
         return {
           groupId: group.id,
           groupName: group.name,
           currentUserScore,
           currentUserHasPlayed,
-          members: memberData
+          members: memberData as {
+            playerId: string;
+            playerName: string;
+            hasPlayed: boolean;
+            score?: number | null;
+          }[]
         };
       });
       
