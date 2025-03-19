@@ -10,15 +10,15 @@ import { MessageCircle, Users } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { groups, isLoading } = useFriendGroups();
+  const { friendGroups, isLoading } = useFriendGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
-    if (groups && groups.length > 0 && !selectedGroupId) {
-      setSelectedGroupId(groups[0].id);
+    if (friendGroups && friendGroups.length > 0 && !selectedGroupId) {
+      setSelectedGroupId(friendGroups[0].id);
     }
-  }, [groups, selectedGroupId]);
+  }, [friendGroups, selectedGroupId]);
 
   return (
     <div className="min-h-screen pb-6">
@@ -39,10 +39,10 @@ const Messages = () => {
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
-        ) : groups && groups.length > 0 ? (
+        ) : friendGroups && friendGroups.length > 0 ? (
           <Tabs defaultValue={selectedGroupId || "default"} onValueChange={setSelectedGroupId} className="w-full">
             <TabsList className="mb-6">
-              {groups.map(group => (
+              {friendGroups.map(group => (
                 <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   {group.name}
@@ -50,7 +50,7 @@ const Messages = () => {
               ))}
             </TabsList>
             
-            {groups.map(group => (
+            {friendGroups.map(group => (
               <TabsContent key={group.id} value={group.id} className="mt-0">
                 <MessagesPanel 
                   groupId={group.id} 
