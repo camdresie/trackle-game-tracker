@@ -34,6 +34,12 @@ export const useHomeData = (): HomeDataResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [todaysGames, setTodaysGames] = useState<Score[]>([]);
   
+  // Debug logging
+  useEffect(() => {
+    console.log('[useHomeData] Current user:', user);
+    console.log('[useHomeData] Games list:', gamesList);
+  }, [user, gamesList]);
+  
   // Fetch user's scores and today's games
   useEffect(() => {
     const fetchUserData = async () => {
@@ -41,43 +47,25 @@ export const useHomeData = (): HomeDataResult => {
       
       try {
         setIsLoading(true);
+        console.log('[useHomeData] Fetching user data for:', user.id);
         
-        // Fetch today's games using the service
+        // Fetch today's games
         const todayScores = await getTodaysGames(user.id);
-        // Map scores to ensure all required fields
-        const mappedTodayScores: Score[] = todayScores.map(score => ({
-          id: score.id,
-          gameId: score.gameId,
-          playerId: score.playerId,
-          value: score.value,
-          date: score.date,
-          notes: score.notes,
-          createdAt: new Date().toISOString() // Always set a default createdAt
-        }));
-        console.log('Fetched today\'s scores:', mappedTodayScores);
-        setTodaysGames(mappedTodayScores);
+        console.log('[useHomeData] Fetched today\'s scores:', todayScores);
+        setTodaysGames(todayScores);
         
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];
         
         for (const game of gamesList) {
           const gameScores = await getGameScores(game.id, user.id);
-          // Map scores to ensure all required fields
-          const mappedScores: Score[] = gameScores.map(score => ({
-            id: score.id,
-            gameId: score.gameId,
-            playerId: score.playerId,
-            value: score.value,
-            date: score.date,
-            notes: score.notes,
-            createdAt: new Date().toISOString() // Always set a default createdAt
-          }));
-          allUserScores.push(...mappedScores);
+          allUserScores.push(...gameScores);
         }
         
+        console.log('[useHomeData] Fetched all user scores:', allUserScores);
         setScores(allUserScores);
       } catch (error: any) {
-        console.error('Error fetching user data:', error);
+        console.error('[useHomeData] Error fetching user data:', error);
         toast({
           title: 'Error fetching your data',
           description: error.message,

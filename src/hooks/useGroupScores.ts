@@ -41,9 +41,20 @@ export const useGroupScores = (
   // Get the current date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
   
+  // Debug logging
+  useEffect(() => {
+    if (selectedGameId) {
+      console.log('[useGroupScores] Selected game ID:', selectedGameId);
+      console.log('[useGroupScores] Friend groups:', friendGroups);
+      console.log('[useGroupScores] Friend scores:', friendScores);
+      console.log('[useGroupScores] Today\'s date:', today);
+    }
+  }, [selectedGameId, friendGroups, friendScores, today]);
+  
   // Fetch friend scores when selectedGameId changes
   useEffect(() => {
     if (selectedGameId && friends.length > 0) {
+      console.log('[useGroupScores] Fetching friend scores for game:', selectedGameId);
       fetchFriendScores();
     }
   }, [selectedGameId, friends, fetchFriendScores]);
@@ -56,14 +67,20 @@ export const useGroupScores = (
     }
     
     try {
+      console.log('[useGroupScores] Processing group data');
+      
       // Map the friendGroups to include who has played today and their scores
       const groupData = friendGroups.map(group => {
+        console.log(`[useGroupScores] Processing group ${group.name} with ${group.members.length} members`);
+        
         const memberData = group.members.map(member => {
           // Check if this friend has played the selected game today
           const friendTodayScores = friendScores[member.id] || [];
           const todayScore = friendTodayScores.find(
             score => score.gameId === selectedGameId && score.date === today
           );
+          
+          console.log(`[useGroupScores] Friend ${member.name} has played today: ${!!todayScore}`);
           
           return {
             playerId: member.id,
@@ -80,6 +97,7 @@ export const useGroupScores = (
         };
       });
       
+      console.log('[useGroupScores] Final group data:', groupData);
       setGroupPerformanceData(groupData);
       setIsLoading(false);
     } catch (error) {
