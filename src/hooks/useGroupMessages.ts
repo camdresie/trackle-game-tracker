@@ -40,6 +40,8 @@ export const useGroupMessages = (groupId: string | null) => {
         return [];
       }
       
+      console.log('Group messages data:', data);
+      
       // Transform the data to match our GroupMessage type with sender info
       return data.map(item => ({
         id: item.id,
@@ -47,11 +49,18 @@ export const useGroupMessages = (groupId: string | null) => {
         user_id: item.user_id,
         content: item.content,
         created_at: item.created_at,
-        // Extract the first (and only) profile from the array and use it as the sender
-        sender: item.profiles ? {
-          username: item.profiles.username,
-          avatar_url: item.profiles.avatar_url
-        } : undefined
+        // Handle the profiles correctly - it might be an array
+        sender: item.profiles && Array.isArray(item.profiles) && item.profiles.length > 0 
+          ? {
+              username: item.profiles[0].username,
+              avatar_url: item.profiles[0].avatar_url
+            } 
+          : item.profiles // If it's not an array but a single object
+            ? {
+                username: item.profiles.username,
+                avatar_url: item.profiles.avatar_url
+              }
+            : undefined
       })) as GroupMessage[];
     },
     enabled: !!groupId && !!user
