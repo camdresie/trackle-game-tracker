@@ -19,6 +19,9 @@ interface GroupMemberJoinResult {
   } | null;
 }
 
+// Define a type for our joined group with the isJoinedGroup flag
+type JoinedFriendGroup = FriendGroup & { isJoinedGroup: boolean };
+
 export const useFriendGroups = (friendsList: Player[] = []) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -74,19 +77,27 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       console.log('Member groups raw data:', memberGroups);
       
-      // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
-      const groupsAddedTo = memberGroups
-        .filter(item => item.friend_groups !== null) // Filter out any null entries
-        .map(item => {
-          if (item.friend_groups) {
-            return {
-              ...item.friend_groups,
-              isJoinedGroup: true
-            };
-          }
-          return null;
-        })
-        .filter((group): group is FriendGroup & { isJoinedGroup: boolean } => group !== null);
+      // Extract the actual group data and add isJoinedGroup flag
+      const groupsAddedTo: JoinedFriendGroup[] = [];
+      
+      // Process each member group and add valid ones to our array
+      memberGroups.forEach(item => {
+        if (item.friend_groups && 
+            typeof item.friend_groups === 'object' && 
+            'id' in item.friend_groups && 
+            'user_id' in item.friend_groups && 
+            'name' in item.friend_groups && 
+            'created_at' in item.friend_groups && 
+            'updated_at' in item.friend_groups) {
+          
+          groupsAddedTo.push({
+            ...item.friend_groups,
+            isJoinedGroup: true
+          });
+        } else {
+          console.warn('Skipping invalid group:', item);
+        }
+      });
       
       console.log('Groups user was added to:', groupsAddedTo);
       
@@ -95,19 +106,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Add groups the user was added to, avoiding duplicates
       groupsAddedTo.forEach(joinedGroup => {
-        // Verify the object has all the required FriendGroup properties
-        if (
-          'id' in joinedGroup && 
-          'user_id' in joinedGroup && 
-          'name' in joinedGroup && 
-          'created_at' in joinedGroup && 
-          'updated_at' in joinedGroup
-        ) {
-          if (!allGroups.some(group => group.id === joinedGroup.id)) {
-            allGroups.push(joinedGroup);
-          }
-        } else {
-          console.warn('Skipping invalid group object:', joinedGroup);
+        if (!allGroups.some(group => group.id === joinedGroup.id)) {
+          allGroups.push(joinedGroup);
         }
       });
       
