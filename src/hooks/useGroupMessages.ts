@@ -21,60 +21,52 @@ export const useGroupMessages = (groupId: string | null) => {
     queryFn: async () => {
       if (!groupId || !user) return [];
       
-      const { data, error } = await supabase
+      // First fetch the messages without trying to join with profiles
+      const { data: messagesData, error } = await supabase
         .from('group_messages')
         .select(`
           id,
           group_id,
           user_id,
           content,
-          created_at,
-          profiles(username, avatar_url)
+          created_at
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
       
       if (error) {
+        // Only show toast for actual errors, not empty results
         console.error('Error fetching group messages:', error);
-        toast.error('Failed to load messages');
+        if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          toast.error('Failed to load messages');
+        }
         return [];
       }
       
-      console.log('Group messages data:', data);
+      // If no messages, return empty array (no need to fetch profile info)
+      if (!messagesData || messagesData.length === 0) {
+        return [];
+      }
       
-      // Transform the data to match our GroupMessage type with sender info
-      return data.map(item => {
-        let senderInfo: { username: string; avatar_url?: string } | undefined = undefined;
-        
-        // Handle the profiles data correctly based on its structure
-        if (item.profiles) {
-          if (Array.isArray(item.profiles) && item.profiles.length > 0) {
-            // If profiles is an array, take the first element
-            const profile = item.profiles[0];
-            senderInfo = {
-              username: profile.username,
-              avatar_url: profile.avatar_url
-            };
-          } else {
-            // If profiles is a single object (not an array)
-            // Need to cast here to tell TypeScript it's not an array
-            const profile = item.profiles as unknown as { username: string; avatar_url?: string };
-            senderInfo = {
-              username: profile.username,
-              avatar_url: profile.avatar_url
-            };
-          }
-        }
-        
-        return {
-          id: item.id,
-          group_id: item.group_id,
-          user_id: item.user_id,
-          content: item.content,
-          created_at: item.created_at,
-          sender: senderInfo
-        };
-      }) as GroupMessage[];
+      // For each message, fetch the sender's profile information separately
+      const messagesWithSender = await Promise.all(
+        messagesData.map(async (message) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username, avatar_url')
+            .eq('id', message.user_id)
+            .single();
+          
+          return {
+            ...message,
+            sender: profileData || undefined
+          };
+        })
+      );
+      
+      console.log('Group messages with sender info:', messagesWithSender);
+      
+      return messagesWithSender as GroupMessage[];
     },
     enabled: !!groupId && !!user
   });
