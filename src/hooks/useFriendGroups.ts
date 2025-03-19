@@ -76,8 +76,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
       const groupsAddedTo = memberGroups
-        .filter((item: GroupMemberJoinResult) => item.friend_groups !== null) // Filter out any null entries
-        .map((item: GroupMemberJoinResult) => {
+        .filter((item) => item.friend_groups !== null) // Filter out any null entries
+        .map((item) => {
           return {
             ...item.friend_groups,
             isJoinedGroup: true
