@@ -43,25 +43,35 @@ export const useGroupMessages = (groupId: string | null) => {
       console.log('Group messages data:', data);
       
       // Transform the data to match our GroupMessage type with sender info
-      return data.map(item => ({
-        id: item.id,
-        group_id: item.group_id,
-        user_id: item.user_id,
-        content: item.content,
-        created_at: item.created_at,
-        // Handle the profiles correctly - it might be an array
-        sender: item.profiles && Array.isArray(item.profiles) && item.profiles.length > 0 
-          ? {
+      return data.map(item => {
+        let senderInfo = undefined;
+        
+        // Handle the profiles data correctly based on its structure
+        if (item.profiles) {
+          if (Array.isArray(item.profiles) && item.profiles.length > 0) {
+            // If profiles is an array, take the first element
+            senderInfo = {
               username: item.profiles[0].username,
               avatar_url: item.profiles[0].avatar_url
-            } 
-          : item.profiles // If it's not an array but a single object
-            ? {
-                username: item.profiles.username,
-                avatar_url: item.profiles.avatar_url
-              }
-            : undefined
-      })) as GroupMessage[];
+            };
+          } else {
+            // If profiles is a single object (not an array)
+            senderInfo = {
+              username: item.profiles.username,
+              avatar_url: item.profiles.avatar_url
+            };
+          }
+        }
+        
+        return {
+          id: item.id,
+          group_id: item.group_id,
+          user_id: item.user_id,
+          content: item.content,
+          created_at: item.created_at,
+          sender: senderInfo
+        };
+      }) as GroupMessage[];
     },
     enabled: !!groupId && !!user
   });
