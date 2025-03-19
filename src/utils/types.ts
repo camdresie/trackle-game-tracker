@@ -1,4 +1,3 @@
-
 export interface Game {
   id: string;
   name: string;
@@ -79,4 +78,16 @@ export interface FriendGroupMember {
   group_id: string;
   friend_id: string;
   added_at: string;
+}
+
+export interface GroupMessage {
+  id: string;
+  group_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  sender?: {
+    username: string;
+    avatar_url?: string;
+  };
 }

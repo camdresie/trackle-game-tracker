@@ -21,12 +21,14 @@ import {
   Edit, 
   Trash2, 
   UserPlus, 
-  Users 
+  Users, 
+  MessageCircle 
 } from 'lucide-react';
 import { FriendGroup, Player } from '@/utils/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import FriendGroupModal from './FriendGroupModal';
 import AddFriendsToGroupModal from './AddFriendsToGroupModal';
+import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import { Badge } from '@/components/ui/badge';
 import { 
   AlertDialog,
@@ -63,6 +65,7 @@ const FriendGroupsManager = ({
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addFriendsModalOpen, setAddFriendsModalOpen] = useState(false);
+  const [messagesModalOpen, setMessagesModalOpen] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<FriendGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
 
@@ -74,6 +77,11 @@ const FriendGroupsManager = ({
   const handleAddFriendsToGroup = (group: FriendGroup) => {
     setCurrentGroup(group);
     setAddFriendsModalOpen(true);
+  };
+
+  const handleOpenMessages = (group: FriendGroup) => {
+    setCurrentGroup(group);
+    setMessagesModalOpen(true);
   };
 
   const handleDeleteGroup = (groupId: string) => {
@@ -151,6 +159,10 @@ const FriendGroupsManager = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleOpenMessages(group)}>
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        <span>Messages</span>
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleEditGroup(group)}>
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Edit Group</span>
@@ -174,10 +186,19 @@ const FriendGroupsManager = ({
                 )}
               </CardHeader>
               <CardContent>
-                <div className="mb-2">
+                <div className="mb-2 flex justify-between items-center">
                   <Badge variant="outline" className="bg-secondary/50">
                     {group.members?.length || 0} {(group.members?.length || 0) === 1 ? 'Friend' : 'Friends'}
                   </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() => handleOpenMessages(group)}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Messages</span>
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {group.members && group.members.length > 0 ? (
@@ -246,6 +267,16 @@ const FriendGroupsManager = ({
           group={currentGroup}
           availableFriends={getFriendsNotInGroup(currentGroup.id)}
           onAddFriend={(friendId) => onAddFriendToGroup(currentGroup.id, friendId)}
+        />
+      )}
+
+      {/* Messages Modal */}
+      {currentGroup && (
+        <GroupMessagesModal
+          open={messagesModalOpen}
+          onOpenChange={setMessagesModalOpen}
+          groupId={currentGroup.id}
+          groupName={currentGroup.name}
         />
       )}
 
