@@ -10,7 +10,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Fetch friend groups
+  // Fetch friend groups - both created by the user and where the user is a member
   const { 
     data: friendGroups = [], 
     isLoading: isLoadingGroups,
@@ -20,19 +20,56 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
+      // First get groups created by the user
+      const { data: ownedGroups, error: ownedGroupsError } = await supabase
         .from('friend_groups')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching friend groups:', error);
-        toast.error('Failed to load friend groups');
+      if (ownedGroupsError) {
+        console.error('Error fetching owned friend groups:', ownedGroupsError);
+        toast.error('Failed to load your groups');
         return [];
       }
       
-      return data as FriendGroup[];
+      // Then get groups where the user is a member (added by friends)
+      const { data: memberGroups, error: memberGroupsError } = await supabase
+        .from('friend_group_members')
+        .select(`
+          group_id,
+          friend_groups(*)
+        `)
+        .eq('friend_id', user.id);
+      
+      if (memberGroupsError) {
+        console.error('Error fetching member friend groups:', memberGroupsError);
+        toast.error('Failed to load groups you are added to');
+        return ownedGroups || [];
+      }
+      
+      // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
+      const groupsAddedTo = memberGroups
+        .filter(item => item.friend_groups) // Filter out any null entries
+        .map(item => ({
+          ...item.friend_groups,
+          isJoinedGroup: true
+        }));
+      
+      // Combine both sets of groups, ensuring no duplicates
+      const allGroups = [...(ownedGroups || [])];
+      
+      // Add groups the user was added to, avoiding duplicates
+      groupsAddedTo.forEach(joinedGroup => {
+        if (!allGroups.some(group => group.id === joinedGroup.id)) {
+          allGroups.push(joinedGroup);
+        }
+      });
+      
+      // Sort combined groups by creation date
+      return allGroups.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ) as FriendGroup[];
     },
     enabled: !!user
   });
@@ -65,6 +102,23 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
             name: 'Unknown Friend',
           };
         });
+        
+        // For groups the user was added to, make sure to include the group owner
+        if (group.isJoinedGroup) {
+          const { data: ownerData } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url')
+            .eq('id', group.user_id)
+            .maybeSingle();
+            
+          if (ownerData && !members.some(m => m.id === ownerData.id)) {
+            members.push({
+              id: ownerData.id,
+              name: ownerData.username || 'Group Owner',
+              avatar: ownerData.avatar_url
+            });
+          }
+        }
         
         return { ...group, members };
       });
