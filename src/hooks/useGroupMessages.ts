@@ -55,7 +55,7 @@ export const useGroupMessages = (groupId: string | null) => {
             .from('profiles')
             .select('username, avatar_url')
             .eq('id', message.user_id)
-            .single();
+            .maybeSingle(); // Use maybeSingle instead of single to avoid errors
           
           return {
             ...message,
@@ -64,19 +64,23 @@ export const useGroupMessages = (groupId: string | null) => {
         })
       );
       
-      console.log('Group messages with sender info:', messagesWithSender);
-      
       return messagesWithSender as GroupMessage[];
     },
     enabled: !!groupId && !!user
   });
   
-  // Set up realtime subscription
+  // Set up realtime subscription only once when groupId changes
   useEffect(() => {
-    if (!groupId || !user || isSubscribed) return;
+    if (!groupId || !user) {
+      return;
+    }
+    
+    // Create a unique channel name based on groupId
+    const channelName = `group-messages-${groupId}`;
+    console.log(`Setting up channel: ${channelName}`);
     
     const channel = supabase
-      .channel('group-messages-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -87,19 +91,20 @@ export const useGroupMessages = (groupId: string | null) => {
         },
         (payload) => {
           console.log('New message received:', payload);
-          // Refetch to get the latest messages with sender info
-          refetch();
+          // Invalidate the query to refetch messages
+          queryClient.invalidateQueries({ queryKey: ['group-messages', groupId] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Subscription status for ${channelName}:`, status);
+      });
     
-    setIsSubscribed(true);
-    
+    // Clean up function
     return () => {
+      console.log(`Cleaning up channel: ${channelName}`);
       supabase.removeChannel(channel);
-      setIsSubscribed(false);
     };
-  }, [groupId, user, isSubscribed, refetch]);
+  }, [groupId, user, queryClient]); // Remove isSubscribed and refetch dependencies
   
   // Send a message
   const sendMessageMutation = useMutation({
@@ -121,7 +126,6 @@ export const useGroupMessages = (groupId: string | null) => {
     },
     onSuccess: () => {
       // No need to invalidate query as realtime will handle it
-      // But we could manually add the message to the cache for immediate feedback
     },
     onError: (error) => {
       console.error('Error sending message:', error);
