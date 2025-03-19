@@ -9,6 +9,7 @@ import { useHomeData } from '@/hooks/useHomeData';
 import HomeHeader from '@/components/home/HomeHeader';
 import TodaysGames from '@/components/home/TodaysGames';
 import GamesGrid from '@/components/home/GamesGrid';
+import GroupPerformance from '@/components/home/GroupPerformance';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -48,11 +49,22 @@ const Index = () => {
           />
         </section>
         
-        <GamesGrid
-          isLoading={isLoading}
-          gamesList={gamesList}
-          scores={scores}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <GamesGrid
+              isLoading={isLoading}
+              gamesList={gamesList}
+              scores={scores}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <GroupPerformance 
+              selectedGame={selectedGame}
+              todaysGames={todaysGames}
+              className="h-full"
+            />
+          </div>
+        </div>
         
         <GameSelectionModal
           open={showGameSelection}
