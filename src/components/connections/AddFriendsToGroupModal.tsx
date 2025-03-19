@@ -1,14 +1,14 @@
 
 import { useState } from 'react';
 import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FriendGroup, Player } from '@/utils/types';
@@ -43,16 +43,16 @@ const AddFriendsToGroupModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Friends to {group.name}</DialogTitle>
-          <DialogDescription>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Add Friends to {group.name}</DrawerTitle>
+          <DrawerDescription>
             Select friends to add to this group to compare game stats within your cohort.
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="my-2">
+        <div className="px-4 my-2">
           <div className="flex items-center gap-2 mb-4">
             <Badge variant="secondary">
               {group.members?.length || 0} Friends in group
@@ -87,7 +87,7 @@ const AddFriendsToGroupModal = ({
               No friends match your search.
             </div>
           ) : (
-            <ScrollArea className="h-64 rounded-md border p-2">
+            <ScrollArea className="h-[50vh] rounded-md border p-2">
               <div className="space-y-2">
                 {filteredFriends.map(friend => (
                   <div 
@@ -117,15 +117,15 @@ const AddFriendsToGroupModal = ({
           )}
         </div>
 
-        <DialogFooter>
-          <DialogClose asChild>
+        <DrawerFooter>
+          <DrawerClose asChild>
             <Button type="button">
               Done
             </Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
 

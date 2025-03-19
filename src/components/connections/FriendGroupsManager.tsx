@@ -110,6 +110,7 @@ const FriendGroupsManager = ({
         </h2>
         <Button 
           onClick={() => setCreateModalOpen(true)}
+          size="sm"
           className="flex items-center gap-1"
         >
           <PlusCircle className="h-4 w-4" />
@@ -137,7 +138,7 @@ const FriendGroupsManager = ({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {friendGroups.map(group => (
             <Card key={group.id}>
               <CardHeader className="pb-2">
@@ -209,11 +210,11 @@ const FriendGroupsManager = ({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full flex items-center justify-center gap-1"
+                  className="w-full"
                   onClick={() => handleAddFriendsToGroup(group)}
                 >
-                  <UserPlus className="h-4 w-4" />
-                  <span className="whitespace-nowrap">Add Friends</span>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  <span>Add Friends</span>
                 </Button>
               </CardFooter>
             </Card>
