@@ -44,21 +44,24 @@ export const useGroupMessages = (groupId: string | null) => {
       
       // Transform the data to match our GroupMessage type with sender info
       return data.map(item => {
-        let senderInfo = undefined;
+        let senderInfo: { username: string; avatar_url?: string } | undefined = undefined;
         
         // Handle the profiles data correctly based on its structure
         if (item.profiles) {
           if (Array.isArray(item.profiles) && item.profiles.length > 0) {
             // If profiles is an array, take the first element
+            const profile = item.profiles[0];
             senderInfo = {
-              username: item.profiles[0].username,
-              avatar_url: item.profiles[0].avatar_url
+              username: profile.username,
+              avatar_url: profile.avatar_url
             };
           } else {
             // If profiles is a single object (not an array)
+            // Need to cast here to tell TypeScript it's not an array
+            const profile = item.profiles as unknown as { username: string; avatar_url?: string };
             senderInfo = {
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url
+              username: profile.username,
+              avatar_url: profile.avatar_url
             };
           }
         }
