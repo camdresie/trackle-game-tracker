@@ -10,8 +10,21 @@ import { MessageCircle, Users } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { friendGroups, isLoading } = useFriendGroups();
+  const { friendGroups, isLoading, refetchGroups } = useFriendGroups();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  // Debugging: Log the friend groups data
+  useEffect(() => {
+    console.log('Friend groups in Messages page:', friendGroups);
+    console.log('Is loading:', isLoading);
+  }, [friendGroups, isLoading]);
+
+  // Ensure we fetch the latest groups when the component mounts
+  useEffect(() => {
+    if (user) {
+      refetchGroups();
+    }
+  }, [user, refetchGroups]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
