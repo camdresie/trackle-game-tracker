@@ -20,6 +20,13 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     todaysGames
   );
   
+  console.log('[GroupPerformance] Render with data:', {
+    selectedGame: selectedGame?.name,
+    isLoading,
+    groupsCount: groupPerformanceData.length,
+    todaysGamesCount: todaysGames.length
+  });
+  
   if (isLoading) {
     return (
       <Card className={`${className}`}>
@@ -107,24 +114,28 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               <div key={group.groupId} className="rounded-md border p-3">
                 <h3 className="font-medium mb-2">{group.groupName}</h3>
                 <div className="space-y-1">
-                  {group.members.map((member) => (
-                    <div 
-                      key={member.playerId} 
-                      className="flex items-center justify-between text-sm py-1 border-b last:border-0"
-                    >
-                      <span>{member.playerName}</span>
-                      <div className="flex items-center gap-2">
-                        {member.hasPlayed ? (
-                          <>
-                            <span className="text-sm font-medium">{member.score}</span>
-                            <Check className="w-4 h-4 text-green-500" />
-                          </>
-                        ) : (
-                          <X className="w-4 h-4 text-muted-foreground" />
-                        )}
+                  {group.members.length > 0 ? (
+                    group.members.map((member) => (
+                      <div 
+                        key={member.playerId} 
+                        className="flex items-center justify-between text-sm py-1 border-b last:border-0"
+                      >
+                        <span>{member.playerName}</span>
+                        <div className="flex items-center gap-2">
+                          {member.hasPlayed ? (
+                            <>
+                              <span className="text-sm font-medium">{member.score}</span>
+                              <Check className="w-4 h-4 text-green-500" />
+                            </>
+                          ) : (
+                            <X className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No members in this group</div>
+                  )}
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   {group.members.filter(m => m.hasPlayed).length} of {group.members.length} played today

@@ -57,7 +57,7 @@ export const useGroupScores = (
       console.log('[useGroupScores] Fetching friend scores for game:', selectedGameId);
       fetchFriendScores();
     }
-  }, [selectedGameId, friends, fetchFriendScores]);
+  }, [selectedGameId, friends]);
   
   // Process the data when everything is loaded
   useEffect(() => {
@@ -71,7 +71,15 @@ export const useGroupScores = (
       
       // Map the friendGroups to include who has played today and their scores
       const groupData = friendGroups.map(group => {
-        console.log(`[useGroupScores] Processing group ${group.name} with ${group.members.length} members`);
+        console.log(`[useGroupScores] Processing group ${group.name} with ${group.members?.length || 0} members`);
+        
+        if (!group.members) {
+          return {
+            groupId: group.id,
+            groupName: group.name,
+            members: []
+          };
+        }
         
         const memberData = group.members.map(member => {
           // Check if this friend has played the selected game today
@@ -80,11 +88,11 @@ export const useGroupScores = (
             score => score.gameId === selectedGameId && score.date === today
           );
           
-          console.log(`[useGroupScores] Friend ${member.name} has played today: ${!!todayScore}`);
+          console.log(`[useGroupScores] Friend ${member.name} has played today: ${!!todayScore}, score: ${todayScore?.value}`);
           
           return {
             playerId: member.id,
-            playerName: member.name,
+            playerName: member.name || 'Unknown',
             hasPlayed: !!todayScore,
             score: todayScore ? todayScore.value : null
           };

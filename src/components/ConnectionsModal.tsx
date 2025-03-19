@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -488,7 +487,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   }, [friends]);
 
-  // Enhanced modal open effect with more thorough cache clearing and data refresh
+  // Fix the infinite loop issue by removing the problematic refetchFriends dependency
   useEffect(() => {
     if (open && currentPlayerId) {
       console.log('Modal opened, preparing to fetch fresh friends data');
@@ -502,22 +501,23 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       queryClient.removeQueries({ queryKey: ['pending-requests'] });
       
       // Wait to ensure DB consistency before fetching fresh data
-      setTimeout(async () => {
+      const timer = setTimeout(() => {
         console.log('Executing delayed friends data fetch with fresh cache');
-        try {
-          await refetchFriends();
-          console.log('Friends data refetch completed successfully');
-        } catch (error) {
-          console.error('Error during friends refetch:', error);
-          toast({
-            title: "Error",
-            description: "Failed to refresh friends list",
-            variant: "destructive"
+        refetchFriends()
+          .then(() => console.log('Friends data refetch completed successfully'))
+          .catch(error => {
+            console.error('Error during friends refetch:', error);
+            toast({
+              title: "Error",
+              description: "Failed to refresh friends list",
+              variant: "destructive"
+            });
           });
-        }
       }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [open, currentPlayerId, queryClient, refetchFriends]);
+  }, [open, currentPlayerId, queryClient]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
