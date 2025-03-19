@@ -1,9 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { Search, UserPlus, Users, GamepadIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -111,147 +112,156 @@ const LeaderboardFilters = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-      <div className="flex items-center gap-4 w-full sm:w-auto">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input 
-            placeholder="Search players..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <DropdownMenu open={friendsDropdownOpen} onOpenChange={setFriendsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className={`flex items-center gap-1 ${showFriendsOnly ? 'bg-primary/10' : ''}`}
-              >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">{getFriendsButtonLabel()}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="start">
-              <DropdownMenuLabel>Filter By Friends</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuCheckboxItem
-                checked={!showFriendsOnly}
-                onCheckedChange={() => {
-                  setShowFriendsOnly(false);
-                  setSelectedFriendIds([]);
-                  setSelectedGroupId(null);
-                }}
-              >
-                All Players
-              </DropdownMenuCheckboxItem>
-              
-              <DropdownMenuCheckboxItem
-                checked={showFriendsOnly && selectedFriendIds.length === 0 && !selectedGroupId}
-                onCheckedChange={handleAllFriendsToggle}
-              >
-                All Friends
-              </DropdownMenuCheckboxItem>
-              
-              {friendGroups.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Friend Groups</DropdownMenuLabel>
-                    {friendGroups.map(group => (
-                      <DropdownMenuCheckboxItem
-                        key={group.id}
-                        checked={selectedGroupId === group.id}
-                        onCheckedChange={() => handleGroupSelect(group.id)}
-                      >
-                        <Users className="w-3 h-3 mr-2 inline" />
-                        {group.name} ({group.members?.length || 0})
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuGroup>
-                </>
-              )}
-              
-              {friendsList.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Select Specific Friends</DropdownMenuLabel>
-                    {friendsList.map(friend => (
-                      <DropdownMenuCheckboxItem
-                        key={friend.id}
-                        checked={selectedFriendIds.includes(friend.id)}
-                        onCheckedChange={() => handleFriendToggle(friend.id)}
-                      >
-                        {friend.name}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuGroup>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <div className="flex flex-col gap-4 mb-6">
+      {/* Game Selector Pills */}
+      <div className="w-full overflow-x-auto py-2">
+        <ToggleGroup 
+          type="single" 
+          value={selectedGame} 
+          onValueChange={(value) => value && setSelectedGame(value)}
+          className="flex items-center gap-2 min-w-max"
+        >
+          {games.map(game => (
+            <ToggleGroupItem 
+              key={game.id} 
+              value={game.id}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                selectedGame === game.id 
+                  ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
+                  : 'border border-muted hover:bg-muted/10'
+              }`}
+            >
+              <GamepadIcon className="w-3.5 h-3.5" />
+              <span>{game.name}</span>
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
       
-      <div className="flex items-center gap-4 w-full sm:w-auto">
-        <div className="w-full sm:w-auto">
-          <Select 
-            value={timeFilter} 
-            onValueChange={(value) => setTimeFilter(value as TimeFilter)}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Time Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today Only</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input 
+              placeholder="Search players..." 
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <DropdownMenu open={friendsDropdownOpen} onOpenChange={setFriendsDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className={`flex items-center gap-1 ${showFriendsOnly ? 'bg-primary/10' : ''}`}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span className="hidden sm:inline">{getFriendsButtonLabel()}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start">
+                <DropdownMenuLabel>Filter By Friends</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuCheckboxItem
+                  checked={!showFriendsOnly}
+                  onCheckedChange={() => {
+                    setShowFriendsOnly(false);
+                    setSelectedFriendIds([]);
+                    setSelectedGroupId(null);
+                  }}
+                >
+                  All Players
+                </DropdownMenuCheckboxItem>
+                
+                <DropdownMenuCheckboxItem
+                  checked={showFriendsOnly && selectedFriendIds.length === 0 && !selectedGroupId}
+                  onCheckedChange={handleAllFriendsToggle}
+                >
+                  All Friends
+                </DropdownMenuCheckboxItem>
+                
+                {friendGroups.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Friend Groups</DropdownMenuLabel>
+                      {friendGroups.map(group => (
+                        <DropdownMenuCheckboxItem
+                          key={group.id}
+                          checked={selectedGroupId === group.id}
+                          onCheckedChange={() => handleGroupSelect(group.id)}
+                        >
+                          <Users className="w-3 h-3 mr-2 inline" />
+                          {group.name} ({group.members?.length || 0})
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </>
+                )}
+                
+                {friendsList.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Select Specific Friends</DropdownMenuLabel>
+                      {friendsList.map(friend => (
+                        <DropdownMenuCheckboxItem
+                          key={friend.id}
+                          checked={selectedFriendIds.includes(friend.id)}
+                          onCheckedChange={() => handleFriendToggle(friend.id)}
+                        >
+                          {friend.name}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuGroup>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
-        <div className="w-full sm:w-auto">
-          <Select 
-            value={selectedGame} 
-            onValueChange={setSelectedGame}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Game" />
-            </SelectTrigger>
-            <SelectContent>
-              {games.map(game => (
-                <SelectItem key={game.id} value={game.id}>
-                  {game.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="w-full sm:w-auto">
-          <Select 
-            value={sortBy} 
-            onValueChange={(value) => setSortBy(value as SortByOption)}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              {timeFilter === 'today' ? (
-                <SelectItem value="totalScore">Today's Score</SelectItem>
-              ) : (
-                <>
-                  <SelectItem value="averageScore">Average Score</SelectItem>
-                  <SelectItem value="bestScore">Best Score</SelectItem>
-                  <SelectItem value="totalGames">Games Played</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <div className="w-full sm:w-auto">
+            <Select 
+              value={timeFilter} 
+              onValueChange={(value) => setTimeFilter(value as TimeFilter)}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Time Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today Only</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="w-full sm:w-auto">
+            <Select 
+              value={sortBy} 
+              onValueChange={(value) => setSortBy(value as SortByOption)}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeFilter === 'today' ? (
+                  <SelectItem value="totalScore">Today's Score</SelectItem>
+                ) : (
+                  <>
+                    <SelectItem value="averageScore">Average Score</SelectItem>
+                    <SelectItem value="bestScore">Best Score</SelectItem>
+                    <SelectItem value="totalGames">Games Played</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
     </div>
