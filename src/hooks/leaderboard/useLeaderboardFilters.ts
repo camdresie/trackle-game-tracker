@@ -9,11 +9,11 @@ import { games } from '@/utils/gameData';
 export const useLeaderboardFilters = () => {
   // Initialize with the first game instead of 'all'
   const [selectedGame, setSelectedGame] = useState<string>(games.length > 0 ? games[0].id : '');
-  const [sortBy, setSortBy] = useState<SortByOption>('totalScore');
+  const [sortBy, setSortBy] = useState<SortByOption>('averageScore'); // Changed default to match "all" time view
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showFriendsOnly, setShowFriendsOnly] = useState(false);
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('today'); // Changed default to 'today'
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all'); // Changed default to 'all'
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // Map sort options to appropriate stat categories for highlighting
