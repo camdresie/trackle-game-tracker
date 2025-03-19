@@ -6,16 +6,10 @@ import { useHomeData } from '@/hooks/useHomeData';
 import { useGroupScores } from '@/hooks/useGroupScores';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Game } from '@/utils/types';
-import { Users, Trophy, ChevronRight, Gamepad2, CalendarDays } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { games } from '@/utils/gameData';
 
 const TodayScores = () => {
   const { user } = useAuth();
@@ -35,7 +29,7 @@ const TodayScores = () => {
     todaysGames
   );
   
-  // Handler for game selection in the dropdown
+  // Handler for game selection 
   const handleGameSelect = (gameId: string) => {
     const game = gamesList.find(g => g.id === gameId) || null;
     setSelectedGame(game);
@@ -61,47 +55,40 @@ const TodayScores = () => {
             <h1 className="text-2xl font-bold tracking-tight">Today's Scores</h1>
             <p className="text-muted-foreground">{today}</p>
           </div>
-          
-          <div className="w-full md:w-auto">
-            <Select
-              value={selectedGame?.id || ""}
-              onValueChange={handleGameSelect}
-            >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Select a game">
-                  {selectedGame ? (
-                    <div className="flex items-center">
-                      <span className={`inline-block w-3 h-3 rounded-full ${selectedGame.color} mr-2`}></span>
-                      {selectedGame.name}
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-muted-foreground">
-                      <Gamepad2 className="w-4 h-4 mr-2" />
-                      Select a game
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {gamesList.map((game: Game) => (
-                  <SelectItem key={game.id} value={game.id}>
-                    <div className="flex items-center">
-                      <span className={`inline-block w-3 h-3 rounded-full ${game.color} mr-2`}></span>
-                      {game.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        </div>
+        
+        {/* Game Selector Pills - Styled like the leaderboard */}
+        <div className="w-full overflow-x-auto py-2 mb-6">
+          <ToggleGroup 
+            type="single" 
+            value={selectedGame?.id || ""} 
+            onValueChange={(value) => value && handleGameSelect(value)}
+            className="flex items-center gap-2 min-w-max"
+          >
+            {games.map(game => (
+              <ToggleGroupItem 
+                key={game.id} 
+                value={game.id}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+                  selectedGame?.id === game.id 
+                    ? `${game.color} text-white hover:bg-opacity-90`
+                    : 'border border-muted hover:bg-muted/10'
+                )}
+              >
+                <GamepadIcon className="w-3.5 h-3.5" />
+                <span>{game.name}</span>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
         
         {!selectedGame ? (
           <Card className="p-8 flex flex-col items-center justify-center text-center">
-            <Gamepad2 className="w-12 h-12 text-muted-foreground mb-4" />
+            <GamepadIcon className="w-12 h-12 text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">Select a Game</h2>
             <p className="text-muted-foreground">
-              Choose a game from the dropdown to see how you compare with your friends.
+              Choose a game from the options above to see how you compare with your friends.
             </p>
           </Card>
         ) : isLoading || isHomeDataLoading ? (
