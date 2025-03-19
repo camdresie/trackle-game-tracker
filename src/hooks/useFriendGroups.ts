@@ -76,8 +76,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
       const groupsAddedTo = memberGroups
-        .filter((item) => item.friend_groups !== null) // Filter out any null entries
-        .map((item) => {
+        .filter(item => item.friend_groups !== null) // Filter out any null entries
+        .map(item => {
           return {
             ...item.friend_groups,
             isJoinedGroup: true
@@ -91,8 +91,11 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Add groups the user was added to, avoiding duplicates
       groupsAddedTo.forEach(joinedGroup => {
-        if (!allGroups.some(group => group.id === joinedGroup.id)) {
-          allGroups.push(joinedGroup);
+        // Explicitly type joinedGroup and check that it has the required property
+        if (joinedGroup && typeof joinedGroup === 'object' && 'id' in joinedGroup) {
+          if (!allGroups.some(group => group.id === joinedGroup.id)) {
+            allGroups.push(joinedGroup as FriendGroup);
+          }
         }
       });
       
