@@ -6,6 +6,19 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { FriendGroup, Player } from '@/utils/types';
 
+// Define a type for the join result from the friend_group_members query
+interface GroupMemberJoinResult {
+  group_id: string;
+  friend_groups: {
+    id: string;
+    user_id: string;
+    name: string;
+    description?: string;
+    created_at: string;
+    updated_at: string;
+  } | null;
+}
+
 export const useFriendGroups = (friendsList: Player[] = []) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -63,8 +76,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
       const groupsAddedTo = memberGroups
-        .filter(item => item.friend_groups) // Filter out any null entries
-        .map(item => {
+        .filter((item: GroupMemberJoinResult) => item.friend_groups !== null) // Filter out any null entries
+        .map((item: GroupMemberJoinResult) => {
           return {
             ...item.friend_groups,
             isJoinedGroup: true
