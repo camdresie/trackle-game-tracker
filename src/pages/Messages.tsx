@@ -32,6 +32,7 @@ const Messages = () => {
   // Ensure we fetch the latest groups when the component mounts or when friends list changes
   useEffect(() => {
     if (user && friends && friends.length > 0) {
+      console.log('Refreshing groups in Messages page');
       refetchGroups();
     }
   }, [user, friends, refetchGroups]);
@@ -39,6 +40,7 @@ const Messages = () => {
   // Auto-select the first group when groups are loaded
   useEffect(() => {
     if (friendGroups && friendGroups.length > 0 && !selectedGroupId) {
+      console.log('Auto-selecting first group:', friendGroups[0].id);
       setSelectedGroupId(friendGroups[0].id);
     }
   }, [friendGroups, selectedGroupId]);
@@ -68,7 +70,7 @@ const Messages = () => {
               {friendGroups.map(group => (
                 <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  {group.name}
+                  {group.name} {group.isJoinedGroup ? '(Joined)' : ''}
                 </TabsTrigger>
               ))}
             </TabsList>

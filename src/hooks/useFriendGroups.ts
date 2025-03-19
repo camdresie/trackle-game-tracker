@@ -20,6 +20,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     queryFn: async () => {
       if (!user) return [];
       
+      console.log('Fetching groups for user:', user.id);
+      
       // First get groups created by the user
       const { data: ownedGroups, error: ownedGroupsError } = await supabase
         .from('friend_groups')
@@ -33,12 +35,14 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         return [];
       }
       
+      console.log('Owned groups:', ownedGroups);
+      
       // Then get groups where the user is a member (added by friends)
       const { data: memberGroups, error: memberGroupsError } = await supabase
         .from('friend_group_members')
         .select(`
           group_id,
-          friend_groups(id, user_id, name, description, created_at, updated_at)
+          friend_groups:friend_groups(id, user_id, name, description, created_at, updated_at)
         `)
         .eq('friend_id', user.id);
       
@@ -47,6 +51,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         toast.error('Failed to load groups you are added to');
         return ownedGroups || [];
       }
+      
+      console.log('Member groups raw data:', memberGroups);
       
       // Extract the actual group data from memberGroups and add a flag to indicate it's a joined group
       const groupsAddedTo = memberGroups
@@ -60,6 +66,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
           };
         });
       
+      console.log('Groups user was added to:', groupsAddedTo);
+      
       // Combine both sets of groups, ensuring no duplicates
       const allGroups = [...(ownedGroups || [])];
       
@@ -71,9 +79,13 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       });
       
       // Sort combined groups by creation date
-      return allGroups.sort((a, b) => 
+      const sortedGroups = allGroups.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       ) as FriendGroup[];
+      
+      console.log('All groups combined:', sortedGroups);
+      
+      return sortedGroups;
     },
     enabled: !!user
   });
@@ -88,6 +100,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       if (!user || friendGroups.length === 0) return [];
       
       const groupsWithMembersPromises = friendGroups.map(async (group) => {
+        console.log(`Fetching members for group ${group.id}`);
+        
         const { data, error } = await supabase
           .from('friend_group_members')
           .select('*')
@@ -97,6 +111,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
           console.error(`Error fetching members for group ${group.id}:`, error);
           return { ...group, members: [] };
         }
+        
+        console.log(`Members data for group ${group.id}:`, data);
         
         // Map members from friend IDs to Player objects
         const members = data.map(memberData => {
@@ -109,6 +125,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         
         // For groups the user was added to, make sure to include the group owner
         if (group.isJoinedGroup) {
+          console.log(`Getting owner for joined group ${group.id}, owner ID: ${group.user_id}`);
+          
           const { data: ownerData } = await supabase
             .from('profiles')
             .select('id, username, avatar_url')
@@ -116,6 +134,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
             .maybeSingle();
             
           if (ownerData && !members.some(m => m.id === ownerData.id)) {
+            console.log(`Adding owner to group members:`, ownerData);
             members.push({
               id: ownerData.id,
               name: ownerData.username || 'Group Owner',

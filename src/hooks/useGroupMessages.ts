@@ -20,6 +20,8 @@ export const useGroupMessages = (groupId: string | null) => {
     queryFn: async () => {
       if (!groupId || !user) return [];
       
+      console.log(`Fetching messages for group: ${groupId}`);
+      
       // First fetch the messages without trying to join with profiles
       const { data: messagesData, error } = await supabase
         .from('group_messages')
@@ -41,6 +43,8 @@ export const useGroupMessages = (groupId: string | null) => {
         }
         return [];
       }
+      
+      console.log(`Retrieved ${messagesData?.length || 0} messages for group ${groupId}:`, messagesData);
       
       // If no messages, return empty array (no need to fetch profile info)
       if (!messagesData || messagesData.length === 0) {
@@ -65,7 +69,8 @@ export const useGroupMessages = (groupId: string | null) => {
       
       return messagesWithSender as GroupMessage[];
     },
-    enabled: !!groupId && !!user
+    enabled: !!groupId && !!user,
+    refetchInterval: 5000 // Add polling to fetch new messages every 5 seconds
   });
   
   // Set up realtime subscription only once when groupId changes
@@ -109,6 +114,8 @@ export const useGroupMessages = (groupId: string | null) => {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
+      
+      console.log(`Sending message to group ${groupId}:`, content);
       
       const { data, error } = await supabase
         .from('group_messages')

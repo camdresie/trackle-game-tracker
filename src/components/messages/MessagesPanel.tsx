@@ -23,17 +23,23 @@ const MessagesPanel = ({ groupId, groupName, className = '' }: MessagesPanelProp
   const [newMessage, setNewMessage] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
+  console.log(`Rendering MessagesPanel for group ${groupId} with ${messages.length} messages`);
+  
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollAreaRef.current && messages.length > 0) {
+      console.log('Auto-scrolling to bottom of messages');
       const scrollContainer = scrollAreaRef.current;
+      
       setTimeout(() => {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
       }, 100); // Short delay to ensure DOM is updated
     }
   }, [messages]);
   
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
     
