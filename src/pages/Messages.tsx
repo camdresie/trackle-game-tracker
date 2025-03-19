@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
+import { useFriendsList } from '@/hooks/useFriendsList';
 import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -10,21 +11,22 @@ import { MessageCircle, Users } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { friendGroups, isLoading, refetchGroups } = useFriendGroups();
+  const { friends, isLoading: isFriendsLoading } = useFriendsList();
+  const { friendGroups, isLoading: isGroupsLoading, refetchGroups } = useFriendGroups(friends);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
   // Debugging: Log the friend groups data
   useEffect(() => {
     console.log('Friend groups in Messages page:', friendGroups);
-    console.log('Is loading:', isLoading);
-  }, [friendGroups, isLoading]);
+    console.log('Is loading:', isGroupsLoading || isFriendsLoading);
+  }, [friendGroups, isGroupsLoading, isFriendsLoading]);
 
-  // Ensure we fetch the latest groups when the component mounts
+  // Ensure we fetch the latest groups when the component mounts or when friends list changes
   useEffect(() => {
-    if (user) {
+    if (user && friends && friends.length > 0) {
       refetchGroups();
     }
-  }, [user, refetchGroups]);
+  }, [user, friends, refetchGroups]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
@@ -48,7 +50,7 @@ const Messages = () => {
           </p>
         </div>
 
-        {isLoading ? (
+        {(isGroupsLoading || isFriendsLoading) ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
