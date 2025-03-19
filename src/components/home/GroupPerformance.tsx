@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Users } from 'lucide-react';
+import { Check, X, Users, Gamepad2 } from 'lucide-react';
 import { Game } from '@/utils/types';
 import { useGroupScores } from '@/hooks/useGroupScores';
 
@@ -50,9 +50,12 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Select a game to see how your friend groups are performing today
-          </p>
+          <div className="flex flex-col items-center justify-center h-40 text-center gap-2 text-muted-foreground">
+            <Gamepad2 className="h-10 w-10 opacity-40" />
+            <p className="text-sm">
+              Select a game above to see how your friend groups are performing today
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -65,12 +68,20 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="w-5 h-5" />
             <span>Friend Groups</span>
+            {selectedGame && (
+              <Badge variant="outline" className={`ml-auto ${selectedGame.color} bg-opacity-15`}>
+                {selectedGame.name}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            You don't have any friend groups yet. Create groups to track your friends' performance!
-          </p>
+          <div className="flex flex-col items-center justify-center h-40 text-center gap-2 text-muted-foreground">
+            <Users className="h-10 w-10 opacity-40" />
+            <p className="text-sm">
+              You don't have any friend groups yet. Create groups to track your friends' performance!
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
