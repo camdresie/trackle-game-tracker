@@ -54,7 +54,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
         `)
         .eq('status', 'accepted')
         .or(`user_id.eq.${currentPlayerId},friend_id.eq.${currentPlayerId}`)
-        .order('id', { ascending: false }); // Order by most recent to ensure we see new changes
+        .order('id', { ascending: false });
       
       if (error) {
         console.error('Error fetching friends:', error);
