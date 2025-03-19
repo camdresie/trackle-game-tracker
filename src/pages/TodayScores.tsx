@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
@@ -22,6 +22,14 @@ const TodayScores = () => {
   } = useHomeData();
   
   const [activeTab, setActiveTab] = useState<'groups' | 'friends'>('groups');
+  
+  // Set default game to Wordle on component mount
+  useEffect(() => {
+    if (!selectedGame && gamesList.length > 0) {
+      const wordleGame = gamesList.find(g => g.id === 'wordle') || gamesList[0];
+      setSelectedGame(wordleGame);
+    }
+  }, [gamesList, selectedGame, setSelectedGame]);
   
   // Fetch group performance data for selected game
   const { isLoading, groupPerformanceData } = useGroupScores(
