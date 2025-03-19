@@ -45,12 +45,23 @@ export const useFriendScores = ({
       return;
     }
     
-    if (friends.length === 0 && (!includeCurrentUser || !user)) {
+    const friendsToFetch = [...friends];
+    
+    // Add current user to friends list if includeCurrentUser is true
+    if (includeCurrentUser && user && !friends.some(f => f.id === user.id)) {
+      console.log('[useFriendScores] Adding current user to fetch list');
+      friendsToFetch.push({
+        id: user.id,
+        name: 'You'
+      });
+    }
+    
+    if (friendsToFetch.length === 0) {
       console.log('[useFriendScores] No friends or current user to fetch scores for');
       return;
     }
     
-    console.log(`[useFriendScores] Fetching scores for ${friends.length} friends for game:`, gameId);
+    console.log(`[useFriendScores] Fetching scores for ${friendsToFetch.length} friends/users for game:`, gameId);
     
     setIsLoading(true);
     
@@ -107,10 +118,10 @@ export const useFriendScores = ({
       };
       
       // Process all friends in parallel
-      await Promise.all(friends.map(processFriend));
+      await Promise.all(friendsToFetch.map(processFriend));
       
-      // Include current user scores if needed
-      if (includeCurrentUser && user && currentUserScores.length > 0) {
+      // Include current user scores if needed and not already fetched
+      if (includeCurrentUser && user && currentUserScores.length > 0 && !newFriendScores[user.id]) {
         newFriendScores[user.id] = currentUserScores;
       }
       

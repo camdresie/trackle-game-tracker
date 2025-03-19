@@ -12,6 +12,8 @@ export interface GroupScoresResult {
   groupPerformanceData: {
     groupId: string;
     groupName: string;
+    currentUserScore: number | null;
+    currentUserHasPlayed: boolean;
     members: {
       playerId: string;
       playerName: string;
@@ -35,7 +37,7 @@ export const useGroupScores = (
   const { friendScores, fetchFriendScores, isLoading: isLoadingFriendScores } = useFriendScores({
     gameId: selectedGameId || undefined,
     friends: friends,
-    includeCurrentUser: false
+    includeCurrentUser: true
   });
   
   // Get the current date in YYYY-MM-DD format
@@ -47,9 +49,10 @@ export const useGroupScores = (
       console.log('[useGroupScores] Selected game ID:', selectedGameId);
       console.log('[useGroupScores] Friend groups:', friendGroups);
       console.log('[useGroupScores] Friend scores:', friendScores);
-      console.log('[useGroupScores] Today\'s date:', today);
+      console.log('[useGroupScores] Today\'s scores:', todaysScores);
+      console.log('[useGroupScores] Current user ID:', user?.id);
     }
-  }, [selectedGameId, friendGroups, friendScores, today]);
+  }, [selectedGameId, friendGroups, friendScores, todaysScores, user]);
   
   // Fetch friend scores when selectedGameId changes
   useEffect(() => {
@@ -57,7 +60,29 @@ export const useGroupScores = (
       console.log('[useGroupScores] Fetching friend scores for game:', selectedGameId);
       fetchFriendScores();
     }
-  }, [selectedGameId, friends]);
+  }, [selectedGameId, friends, fetchFriendScores]);
+  
+  // Get current user's score for today
+  const getCurrentUserScore = (): number | null => {
+    if (!user || !selectedGameId) return null;
+    
+    // First check in friendScores if includeCurrentUser was true
+    const userScoresFromHook = friendScores[user.id] || [];
+    const userScoreFromHook = userScoresFromHook.find(
+      score => score.gameId === selectedGameId && score.date === today
+    );
+    
+    if (userScoreFromHook) {
+      return userScoreFromHook.value;
+    }
+    
+    // Then check in todaysScores as fallback
+    const userScoreFromToday = todaysScores.find(
+      score => score.gameId === selectedGameId && score.date === today
+    );
+    
+    return userScoreFromToday ? userScoreFromToday.value : null;
+  };
   
   // Process the data when everything is loaded
   useEffect(() => {
@@ -68,6 +93,11 @@ export const useGroupScores = (
     
     try {
       console.log('[useGroupScores] Processing group data');
+      const currentUserScore = getCurrentUserScore();
+      const currentUserHasPlayed = currentUserScore !== null;
+      
+      console.log('[useGroupScores] Current user score:', currentUserScore);
+      console.log('[useGroupScores] Current user has played:', currentUserHasPlayed);
       
       // Map the friendGroups to include who has played today and their scores
       const groupData = friendGroups.map(group => {
@@ -77,6 +107,8 @@ export const useGroupScores = (
           return {
             groupId: group.id,
             groupName: group.name,
+            currentUserScore,
+            currentUserHasPlayed,
             members: []
           };
         }
@@ -101,6 +133,8 @@ export const useGroupScores = (
         return {
           groupId: group.id,
           groupName: group.name,
+          currentUserScore,
+          currentUserHasPlayed,
           members: memberData
         };
       });
@@ -113,7 +147,7 @@ export const useGroupScores = (
       toast.error('Failed to load group performance data');
       setIsLoading(false);
     }
-  }, [friendGroups, friendScores, selectedGameId, isLoadingGroups, isLoadingFriendScores, today]);
+  }, [friendGroups, friendScores, selectedGameId, isLoadingGroups, isLoadingFriendScores, today, todaysScores, user]);
   
   return {
     isLoading: isLoading || isLoadingGroups || isLoadingFriendScores,
