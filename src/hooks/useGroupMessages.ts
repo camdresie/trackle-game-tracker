@@ -29,7 +29,7 @@ export const useGroupMessages = (groupId: string | null) => {
           user_id,
           content,
           created_at,
-          profiles:user_id(username, avatar_url)
+          profiles(username, avatar_url)
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
@@ -48,9 +48,9 @@ export const useGroupMessages = (groupId: string | null) => {
         content: item.content,
         created_at: item.created_at,
         // Extract the first (and only) profile from the array and use it as the sender
-        sender: item.profiles && item.profiles.length > 0 ? {
-          username: item.profiles[0].username,
-          avatar_url: item.profiles[0].avatar_url
+        sender: item.profiles ? {
+          username: item.profiles.username,
+          avatar_url: item.profiles.avatar_url
         } : undefined
       })) as GroupMessage[];
     },
