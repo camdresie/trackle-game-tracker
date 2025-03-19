@@ -11,15 +11,23 @@ import { MessageCircle, Users } from 'lucide-react';
 
 const Messages = () => {
   const { user } = useAuth();
-  const { friends, isLoading: isFriendsLoading } = useFriendsList();
+  const { friends, refreshFriends } = useFriendsList();
   const { friendGroups, isLoading: isGroupsLoading, refetchGroups } = useFriendGroups(friends);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+
+  // Handle friends loading state
+  useEffect(() => {
+    if (friends) {
+      setIsLoadingFriends(false);
+    }
+  }, [friends]);
 
   // Debugging: Log the friend groups data
   useEffect(() => {
     console.log('Friend groups in Messages page:', friendGroups);
-    console.log('Is loading:', isGroupsLoading || isFriendsLoading);
-  }, [friendGroups, isGroupsLoading, isFriendsLoading]);
+    console.log('Is loading:', isGroupsLoading || isLoadingFriends);
+  }, [friendGroups, isGroupsLoading, isLoadingFriends]);
 
   // Ensure we fetch the latest groups when the component mounts or when friends list changes
   useEffect(() => {
@@ -50,7 +58,7 @@ const Messages = () => {
           </p>
         </div>
 
-        {(isGroupsLoading || isFriendsLoading) ? (
+        {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
