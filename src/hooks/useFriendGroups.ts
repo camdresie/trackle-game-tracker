@@ -78,11 +78,15 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       const groupsAddedTo = memberGroups
         .filter(item => item.friend_groups !== null) // Filter out any null entries
         .map(item => {
-          return {
-            ...item.friend_groups,
-            isJoinedGroup: true
-          };
-        });
+          if (item.friend_groups) {
+            return {
+              ...item.friend_groups,
+              isJoinedGroup: true
+            };
+          }
+          return null;
+        })
+        .filter((group): group is FriendGroup & { isJoinedGroup: boolean } => group !== null);
       
       console.log('Groups user was added to:', groupsAddedTo);
       
@@ -91,11 +95,19 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       
       // Add groups the user was added to, avoiding duplicates
       groupsAddedTo.forEach(joinedGroup => {
-        // Explicitly type joinedGroup and check that it has the required property
-        if (joinedGroup && typeof joinedGroup === 'object' && 'id' in joinedGroup) {
+        // Verify the object has all the required FriendGroup properties
+        if (
+          'id' in joinedGroup && 
+          'user_id' in joinedGroup && 
+          'name' in joinedGroup && 
+          'created_at' in joinedGroup && 
+          'updated_at' in joinedGroup
+        ) {
           if (!allGroups.some(group => group.id === joinedGroup.id)) {
-            allGroups.push(joinedGroup as FriendGroup);
+            allGroups.push(joinedGroup);
           }
+        } else {
+          console.warn('Skipping invalid group object:', joinedGroup);
         }
       });
       
