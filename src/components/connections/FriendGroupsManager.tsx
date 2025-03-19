@@ -209,11 +209,11 @@ const FriendGroupsManager = ({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-1"
                   onClick={() => handleAddFriendsToGroup(group)}
                 >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Friends
+                  <UserPlus className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Add Friends</span>
                 </Button>
               </CardFooter>
             </Card>

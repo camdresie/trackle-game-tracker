@@ -103,9 +103,9 @@ const AddFriendsToGroupModal = ({
                     </div>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleAddFriend(friend.id)}
-                      className="gap-1"
+                      className="w-8 h-8 p-0"
                     >
                       <UserPlus className="h-4 w-4" />
                       <span className="sr-only">Add {friend.name}</span>
