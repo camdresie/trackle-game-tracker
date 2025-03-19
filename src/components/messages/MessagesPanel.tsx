@@ -8,16 +8,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SendIcon, Users } from 'lucide-react';
+import { SendIcon, Users, UserPlus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
 interface MessagesPanelProps {
   groupId: string;
   groupName: string;
+  isJoinedGroup?: boolean;
   className?: string;
 }
 
-const MessagesPanel = ({ groupId, groupName, className = '' }: MessagesPanelProps) => {
+const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = '' }: MessagesPanelProps) => {
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, isSending } = useGroupMessages(groupId);
   const [newMessage, setNewMessage] = useState('');
@@ -98,8 +100,13 @@ const MessagesPanel = ({ groupId, groupName, className = '' }: MessagesPanelProp
     <Card className={`${className} flex flex-col`}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="w-5 h-5" />
+          {isJoinedGroup ? <UserPlus className="w-5 h-5" /> : <Users className="w-5 h-5" />}
           <span>{groupName} Messages</span>
+          {isJoinedGroup && (
+            <Badge variant="outline" className="ml-1 bg-secondary/30">
+              Joined Group
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       

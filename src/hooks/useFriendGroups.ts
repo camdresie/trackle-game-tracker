@@ -42,7 +42,14 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         .from('friend_group_members')
         .select(`
           group_id,
-          friend_groups:friend_groups(id, user_id, name, description, created_at, updated_at)
+          friend_groups:friend_groups(
+            id, 
+            user_id, 
+            name, 
+            description, 
+            created_at, 
+            updated_at
+          )
         `)
         .eq('friend_id', user.id);
       
@@ -58,10 +65,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       const groupsAddedTo = memberGroups
         .filter(item => item.friend_groups) // Filter out any null entries
         .map(item => {
-          // Properly typecast and access the friend_groups data
-          const groupData = item.friend_groups as any;
           return {
-            ...groupData,
+            ...item.friend_groups,
             isJoinedGroup: true
           };
         });

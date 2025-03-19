@@ -7,7 +7,8 @@ import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
-import { MessageCircle, Users } from 'lucide-react';
+import { MessageCircle, Users, UserPlus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -31,11 +32,11 @@ const Messages = () => {
 
   // Ensure we fetch the latest groups when the component mounts or when friends list changes
   useEffect(() => {
-    if (user && friends && friends.length > 0) {
+    if (user) {
       console.log('Refreshing groups in Messages page');
       refetchGroups();
     }
-  }, [user, friends, refetchGroups]);
+  }, [user, refetchGroups]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
@@ -66,11 +67,16 @@ const Messages = () => {
           </div>
         ) : friendGroups && friendGroups.length > 0 ? (
           <Tabs defaultValue={selectedGroupId || "default"} onValueChange={setSelectedGroupId} className="w-full">
-            <TabsList className="mb-6">
+            <TabsList className="mb-6 flex-wrap">
               {friendGroups.map(group => (
                 <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  {group.name} {group.isJoinedGroup ? '(Joined)' : ''}
+                  {group.isJoinedGroup ? <UserPlus className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  {group.name}
+                  {group.isJoinedGroup && (
+                    <Badge variant="outline" className="ml-1 bg-secondary/30">
+                      Joined
+                    </Badge>
+                  )}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -79,7 +85,8 @@ const Messages = () => {
               <TabsContent key={group.id} value={group.id} className="mt-0">
                 <MessagesPanel 
                   groupId={group.id} 
-                  groupName={group.name} 
+                  groupName={group.name}
+                  isJoinedGroup={group.isJoinedGroup}
                   className="h-[600px]"
                 />
               </TabsContent>
