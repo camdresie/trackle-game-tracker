@@ -10,6 +10,7 @@ import MessagesPanel from '@/components/messages/MessagesPanel';
 import { MessageCircle, Users, UserPlus, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
+import { toast } from 'sonner';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -62,11 +63,15 @@ const Messages = () => {
 
   // Handle invitation response
   const handleAcceptInvitation = (invitationId: string) => {
+    console.log('Accepting group invitation:', invitationId);
     respondToInvitation({ invitationId, status: 'accepted' });
+    toast.success('Group invitation accepted');
   };
 
   const handleDeclineInvitation = (invitationId: string) => {
+    console.log('Declining group invitation:', invitationId);
     respondToInvitation({ invitationId, status: 'rejected' });
+    toast.success('Group invitation declined');
   };
 
   // Filter groups to only show ones the user owns or has accepted invitations to
@@ -90,12 +95,22 @@ const Messages = () => {
         </div>
 
         {/* Group Invitations */}
-        <GroupInvitationsList
-          invitations={pendingInvitations}
-          isLoading={isGroupsLoading}
-          onAccept={handleAcceptInvitation}
-          onDecline={handleDeclineInvitation}
-        />
+        {pendingInvitations && pendingInvitations.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Group Invitations
+              <Badge variant="destructive" className="ml-2">{pendingInvitations.length}</Badge>
+            </h2>
+            
+            <GroupInvitationsList
+              invitations={pendingInvitations}
+              isLoading={isGroupsLoading}
+              onAccept={handleAcceptInvitation}
+              onDecline={handleDeclineInvitation}
+            />
+          </div>
+        )}
 
         {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">

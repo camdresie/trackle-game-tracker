@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, X, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 interface GroupInvitation {
   id: string;
@@ -51,13 +52,17 @@ const GroupInvitationsList = ({
       <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
         <UserPlus className="h-5 w-5" />
         <span>Group Invitations</span>
+        <Badge className="bg-primary">{invitations.length}</Badge>
       </h3>
       
       <div className="space-y-3">
         {invitations.map((invitation) => (
-          <Card key={invitation.id} className="border-dashed">
+          <Card key={invitation.id} className="border-dashed border-amber-300 bg-amber-50/10">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{invitation.groupName}</CardTitle>
+              <CardTitle className="text-base flex items-center">
+                {invitation.groupName}
+                <Badge variant="outline" className="ml-2">Invitation</Badge>
+              </CardTitle>
               <CardDescription>You've been invited to join this group</CardDescription>
             </CardHeader>
             <CardFooter className="pt-0 flex justify-end gap-2">

@@ -45,11 +45,12 @@ export const useGroupScores = (
     console.log('[useGroupScores] Friend groups:', friendGroups);
   }, [today, todaysScores, selectedGameId, friendGroups]);
 
-  // Fetch group members with their profiles
+  // Fetch group members with their profiles - improved query to properly join profile data
   useEffect(() => {
     const fetchGroupMembers = async () => {
       if (!friendGroups || friendGroups.length === 0) {
         console.log('[useGroupScores] No friend groups available');
+        setGroupMembers([]);
         return;
       }
 
@@ -66,14 +67,15 @@ export const useGroupScores = (
           
         if (error) throw error;
         
-        if (!members) {
+        if (!members || members.length === 0) {
           console.log('[useGroupScores] No members found');
+          setGroupMembers([]);
           return;
         }
         
         console.log('[useGroupScores] Found members:', members);
         
-        // Then get all profiles for these members
+        // Then get all profiles for these members in a separate query
         const memberIds = members.map(m => m.friend_id);
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
@@ -82,12 +84,18 @@ export const useGroupScores = (
           
         if (profilesError) throw profilesError;
         
+        if (!profiles) {
+          console.log('[useGroupScores] No profiles found for members');
+          setGroupMembers([]);
+          return;
+        }
+        
         // Combine member data with profiles
         const membersWithProfiles = members.map(member => {
-          const profile = profiles?.find(p => p.id === member.friend_id);
+          const profile = profiles.find(p => p.id === member.friend_id);
           return {
             ...member,
-            profiles: profile
+            profiles: profile || { id: member.friend_id, username: 'Unknown User' }
           };
         });
         
@@ -97,11 +105,14 @@ export const useGroupScores = (
       } catch (error) {
         console.error('[useGroupScores] Error fetching group members:', error);
         toast.error('Failed to load group members');
+        setGroupMembers([]);
       }
     };
 
     if (friendGroups && friendGroups.length > 0) {
       fetchGroupMembers();
+    } else {
+      setGroupMembers([]);
     }
   }, [friendGroups]);
 
@@ -136,7 +147,7 @@ export const useGroupScores = (
           
           return {
             playerId: member.friend_id,
-            playerName: member.profiles?.username || member.profiles?.full_name || 'Unknown',
+            playerName: member.profiles?.username || member.profiles?.full_name || 'Unknown User',
             hasPlayed: !!todayScore,
             score: todayScore?.value || null
           };
