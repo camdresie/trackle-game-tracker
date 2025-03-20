@@ -196,7 +196,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     enabled: !!searchQuery && searchQuery.length >= 2 && open
   });
   
-  // Use the friend groups hook
+  // Use the friend groups hook - removing pendingInvitations reference
   const {
     friendGroups,
     isLoading: isLoadingGroups,
@@ -204,7 +204,8 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     deleteGroup,
     updateGroup,
     addFriendToGroup,
-    removeFriendFromGroup
+    removeFriendFromGroup,
+    refetchGroups
   } = useFriendGroups(displayedFriends);
   
   // Filter out users that are already friends
@@ -326,7 +327,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     }
   });
 
-  // Completely refactored remove friend mutation to ensure connection is properly deleted
+  // Remove friend mutation
   const removeFriendMutation = useMutation({
     mutationFn: async (connectionId: string) => {
       console.log('Starting enhanced connection removal process for ID:', connectionId);
@@ -517,7 +518,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
       
       return () => clearTimeout(timer);
     }
-  }, [open, currentPlayerId, queryClient]);
+  }, [open, currentPlayerId, queryClient, refetchFriends]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -22,7 +23,6 @@ interface GroupMemberJoinResult {
 // Define a type for our joined group with the isJoinedGroup flag
 type JoinedFriendGroup = FriendGroup & { 
   isJoinedGroup: boolean;
-  status: 'pending' | 'accepted' | 'rejected'; 
 };
 
 export const useFriendGroups = (friendsList: Player[] = []) => {
@@ -61,7 +61,6 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         .from('friend_group_members')
         .select(`
           group_id,
-          status,
           friend_groups:friend_groups(*)
         `)
         .eq('friend_id', user.id);
@@ -93,8 +92,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
             description: groupData.description ? String(groupData.description) : undefined,
             created_at: String(groupData.created_at),
             updated_at: String(groupData.updated_at),
-            isJoinedGroup: true,
-            status: item.status as 'pending' | 'accepted' | 'rejected' || 'pending'
+            isJoinedGroup: true
           };
           
           groupsAddedTo.push(validGroup);
@@ -141,7 +139,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         
         const { data, error } = await supabase
           .from('friend_group_members')
-          .select('*, friend_id, status')
+          .select('*, friend_id')
           .eq('group_id', group.id);
         
         if (error) {
@@ -152,9 +150,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         console.log(`Members data for group ${group.id}:`, data);
         
         // Map members from friend IDs to Player objects
-        const members = data
-          .filter(memberData => memberData.status === 'accepted')
-          .map(memberData => {
+        const members = data.map(memberData => {
             const friend = friendsList.find(f => f.id === memberData.friend_id);
             return friend || {
               id: memberData.friend_id,
@@ -190,49 +186,6 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     enabled: !!user && friendGroups.length > 0 && friendsList.length > 0
   });
 
-  // Get pending group invitations
-  const { 
-    data: pendingInvitations = [],
-    isLoading: isLoadingInvitations,
-    refetch: refetchInvitations
-  } = useQuery({
-    queryKey: ['group-invitations', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('friend_group_members')
-        .select(`
-          id,
-          group_id,
-          status,
-          friend_groups:friend_groups(*)
-        `)
-        .eq('friend_id', user.id)
-        .eq('status', 'pending');
-      
-      if (error) {
-        console.error('Error fetching group invitations:', error);
-        return [];
-      }
-
-      console.log('Pending group invitations:', data);
-      
-      return data.map(invitation => {
-        const groupData = invitation.friend_groups as Record<string, any>;
-        
-        return {
-          id: invitation.id,
-          groupId: invitation.group_id,
-          groupName: groupData?.name || 'Unknown Group',
-          groupOwner: groupData?.user_id || '',
-          status: invitation.status
-        };
-      });
-    },
-    enabled: !!user
-  });
-  
   // Create a new friend group
   const createGroupMutation = useMutation({
     mutationFn: async ({ name, description }: { name: string, description?: string }) => {
@@ -308,15 +261,15 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Add a friend to a group with pending status
+  // Add a friend to a group directly (no pending status)
   const addFriendToGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
-      console.log(`Adding friend ${friendId} to group ${groupId} with status: pending`);
+      console.log(`Adding friend ${friendId} to group ${groupId}`);
       
       // First check if the friend is already a member of this group
       const { data: existingMember, error: checkError } = await supabase
         .from('friend_group_members')
-        .select('id, status')
+        .select('id')
         .eq('group_id', groupId)
         .eq('friend_id', friendId)
         .maybeSingle();
@@ -332,13 +285,12 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         return existingMember;
       }
       
-      // Add friend to group only if they're not already a member
+      // Add friend to group directly without pending status
       const { data, error } = await supabase
         .from('friend_group_members')
         .insert({
           group_id: groupId,
-          friend_id: friendId,
-          status: 'pending'  // Explicitly set status
+          friend_id: friendId
         })
         .select()
         .single();
@@ -353,31 +305,6 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     onError: (error) => {
       console.error('Error adding friend to group:', error);
       toast.error('Failed to add friend to group');
-    }
-  });
-  
-  // Response to a group invitation
-  const respondToInvitationMutation = useMutation({
-    mutationFn: async ({ invitationId, status }: { invitationId: string, status: 'accepted' | 'rejected' }) => {
-      const { error } = await supabase
-        .from('friend_group_members')
-        .update({ status })
-        .eq('id', invitationId);
-      
-      if (error) throw error;
-      return { invitationId, status };
-    },
-    onSuccess: (data) => {
-      const action = data.status === 'accepted' ? 'accepted' : 'declined';
-      toast.success(`Group invitation ${action}`);
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-      refetchGroups();
-    },
-    onError: (error) => {
-      console.error('Error responding to invitation:', error);
-      toast.error('Failed to respond to group invitation');
     }
   });
   
@@ -405,15 +332,12 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
 
   return {
     friendGroups: friendGroups,  
-    pendingInvitations,
-    isLoading: isLoadingGroups || isLoadingInvitations,
+    isLoading: isLoadingGroups,
     createGroup: createGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
     updateGroup: updateGroupMutation.mutate,
     addFriendToGroup: addFriendToGroupMutation.mutate,
-    respondToInvitation: respondToInvitationMutation.mutate,
     removeFriendFromGroup: removeFriendFromGroupMutation.mutate,
-    refetchGroups,
-    refetchInvitations
+    refetchGroups
   };
 };
