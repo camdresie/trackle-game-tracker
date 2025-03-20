@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -309,17 +308,37 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Add a friend to a group with pending status - FIXED: explicitly set status to 'pending'
+  // Add a friend to a group with pending status
   const addFriendToGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
       console.log(`Adding friend ${friendId} to group ${groupId} with status: pending`);
       
+      // First check if the friend is already a member of this group
+      const { data: existingMember, error: checkError } = await supabase
+        .from('friend_group_members')
+        .select('id, status')
+        .eq('group_id', groupId)
+        .eq('friend_id', friendId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking if friend is already in group:', checkError);
+        throw new Error('Failed to check group membership');
+      }
+      
+      // If the friend is already in the group, return early with the existing record
+      if (existingMember) {
+        console.log('Friend is already a member of this group:', existingMember);
+        return existingMember;
+      }
+      
+      // Add friend to group only if they're not already a member
       const { data, error } = await supabase
         .from('friend_group_members')
         .insert({
           group_id: groupId,
           friend_id: friendId,
-          status: 'pending'  // Explicitly set this to ensure it's included
+          status: 'pending'  // Explicitly set status
         })
         .select()
         .single();
@@ -385,7 +404,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
   });
 
   return {
-    friendGroups: friendGroups,  // Changed to return raw friendGroups instead of groupsWithMembers to fix filtering issue
+    friendGroups: friendGroups,  
     pendingInvitations,
     isLoading: isLoadingGroups || isLoadingInvitations,
     createGroup: createGroupMutation.mutate,
