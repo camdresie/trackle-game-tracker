@@ -90,10 +90,18 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
             'created_at' in item.friend_groups && 
             'updated_at' in item.friend_groups) {
           
-          groupsAddedTo.push({
-            ...item.friend_groups,
+          // Create a properly typed object with correct string types
+          const validGroup: JoinedFriendGroup = {
+            id: String(item.friend_groups.id),
+            user_id: String(item.friend_groups.user_id),
+            name: String(item.friend_groups.name),
+            description: item.friend_groups.description ? String(item.friend_groups.description) : undefined,
+            created_at: String(item.friend_groups.created_at),
+            updated_at: String(item.friend_groups.updated_at),
             isJoinedGroup: true
-          });
+          };
+          
+          groupsAddedTo.push(validGroup);
         } else {
           console.warn('Skipping invalid group:', item);
         }
