@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Game, Score } from '@/utils/types';
 import { games } from '@/utils/gameData';
-import { getGameScores, getTodaysGames } from '@/services/gameStatsService';
+import { getGameScores } from '@/services/gameStatsService';
+import { getTodaysGames } from '@/services/todayService';
 
 export interface HomeDataResult {
   isLoading: boolean;

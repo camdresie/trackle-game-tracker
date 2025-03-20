@@ -23,6 +23,8 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
       throw error;
     }
     
+    console.log(`[getTodaysGames] Raw data from Supabase:`, data);
+    
     // Transform the data to match our Score type
     const scores = data.map(score => ({
       id: score.id,

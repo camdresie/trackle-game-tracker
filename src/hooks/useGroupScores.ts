@@ -37,6 +37,13 @@ export const useGroupScores = (
   // Use the current date for filtering today's scores
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[useGroupScores] Today\'s date:', today);
+    console.log('[useGroupScores] Today\'s scores:', todaysScores);
+    console.log('[useGroupScores] Selected game ID:', selectedGameId);
+  }, [today, todaysScores, selectedGameId]);
+
   // Fetch group members with their profiles
   useEffect(() => {
     const fetchGroupMembers = async () => {
@@ -63,10 +70,10 @@ export const useGroupScores = (
           .eq('status', 'accepted');
 
         if (error) throw error;
-        console.log('Fetched group members:', members);
+        console.log('[useGroupScores] Fetched group members:', members);
         setGroupMembers(members || []);
       } catch (error) {
-        console.error('Error fetching group members:', error);
+        console.error('[useGroupScores] Error fetching group members:', error);
         toast.error('Failed to load group members');
       }
     };
@@ -89,7 +96,7 @@ export const useGroupScores = (
     if (!friendGroups) return [];
 
     return friendGroups.map(group => {
-      // Get all members for this group - fixed the bug here
+      // Get all members for this group
       const getGroupMembers = (allMembers: any[]) => {
         return allMembers
           .filter(member => member.group_id === group.id)
@@ -102,18 +109,26 @@ export const useGroupScores = (
       };
 
       const members = getGroupMembers(groupMembers);
-      console.log(`Processing group ${group.name} with ${members.length} members`);
+      console.log(`[useGroupScores] Processing group ${group.name} with ${members.length} members`);
 
-      // Get current user's score for today
-      const currentUserScore = user && todaysScores.find(
+      // Find current user's score for today and this game
+      console.log(`[useGroupScores] Looking for score with gameId=${selectedGameId} in today's scores:`, todaysScores);
+      const userTodayScore = user && todaysScores.find(
         score => score.gameId === selectedGameId && 
                  score.playerId === user.id && 
                  score.date === today
-      )?.value || null;
+      );
+      
+      console.log(`[useGroupScores] Current user's today score for ${selectedGameId}:`, userTodayScore);
+      
+      const currentUserScore = userTodayScore?.value || null;
+      const currentUserHasPlayed = !!userTodayScore;
 
       // Update member scores
       members.forEach(member => {
         const memberScores = friendScores[member.playerId] || [];
+        console.log(`[useGroupScores] Scores for member ${member.playerName}:`, memberScores);
+        
         const todayScore = memberScores.find(
           score => score.gameId === selectedGameId && score.date === today
         );
@@ -121,14 +136,14 @@ export const useGroupScores = (
         member.hasPlayed = !!todayScore;
         member.score = todayScore?.value || null;
 
-        console.log(`Member ${member.playerName} today's score:`, todayScore?.value);
+        console.log(`[useGroupScores] Member ${member.playerName} today's score:`, todayScore?.value);
       });
 
       return {
         groupId: group.id,
         groupName: group.name,
         currentUserScore,
-        currentUserHasPlayed: currentUserScore !== null,
+        currentUserHasPlayed,
         members
       };
     });
