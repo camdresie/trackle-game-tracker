@@ -13,6 +13,14 @@ interface TodaysGamesProps {
 const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) => {
   const navigate = useNavigate();
 
+  // Debug logging
+  console.log('TodaysGames component rendering with:', { 
+    isLoading, 
+    todaysGamesCount: todaysGames?.length, 
+    todaysGames,
+    gamesList 
+  });
+
   if (isLoading) {
     return (
       <div className="glass-card rounded-xl p-4 flex items-center gap-4">
@@ -21,7 +29,7 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
     );
   }
 
-  if (todaysGames.length === 0) {
+  if (!todaysGames || todaysGames.length === 0) {
     return (
       <div className="glass-card rounded-xl p-4 flex items-center gap-4">
         <div className="p-2 bg-muted rounded-lg">
@@ -51,7 +59,10 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
         <div className="flex gap-2 pb-1">
           {todaysGames.map(score => {
             const game = gamesList.find(g => g.id === score.gameId);
-            if (!game) return null;
+            if (!game) {
+              console.log(`Could not find game for score:`, score);
+              return null;
+            }
             
             return (
               <div 

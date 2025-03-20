@@ -49,8 +49,14 @@ const Messages = () => {
   // Auto-select the first group when groups are loaded
   useEffect(() => {
     if (friendGroups && friendGroups.length > 0 && !selectedGroupId) {
-      console.log('Auto-selecting first group:', friendGroups[0].id);
-      setSelectedGroupId(friendGroups[0].id);
+      const visibleGroups = friendGroups.filter(group => 
+        !group.isJoinedGroup || (group.isJoinedGroup && group.status === 'accepted')
+      );
+      
+      if (visibleGroups.length > 0) {
+        console.log('Auto-selecting first group:', visibleGroups[0].id);
+        setSelectedGroupId(visibleGroups[0].id);
+      }
     }
   }, [friendGroups, selectedGroupId]);
 

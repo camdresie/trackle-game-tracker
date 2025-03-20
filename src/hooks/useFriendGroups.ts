@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -309,15 +308,17 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Add a friend to a group with pending status
+  // Add a friend to a group with pending status - FIXED: explicitly set status to 'pending'
   const addFriendToGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
+      console.log(`Adding friend ${friendId} to group ${groupId} with status: pending`);
+      
       const { data, error } = await supabase
         .from('friend_group_members')
         .insert({
           group_id: groupId,
           friend_id: friendId,
-          status: 'pending'
+          status: 'pending'  // Explicitly set this to ensure it's included
         })
         .select()
         .single();
@@ -383,9 +384,9 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
   });
 
   return {
-    friendGroups: groupsWithMembers,
+    friendGroups: friendGroups,  // Changed to return raw friendGroups instead of groupsWithMembers to fix filtering issue
     pendingInvitations,
-    isLoading: isLoadingGroups || isLoadingMembers || isLoadingInvitations,
+    isLoading: isLoadingGroups || isLoadingInvitations,
     createGroup: createGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
     updateGroup: updateGroupMutation.mutate,

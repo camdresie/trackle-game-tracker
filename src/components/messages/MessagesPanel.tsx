@@ -23,21 +23,15 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
   const { user } = useAuth();
   const { messages, isLoading, sendMessage, isSending } = useGroupMessages(groupId);
   const [newMessage, setNewMessage] = useState('');
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  console.log(`Rendering MessagesPanel for group ${groupId} with ${messages.length} messages`);
+  console.log(`Rendering MessagesPanel for group ${groupId} with ${messages?.length || 0} messages`);
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current && messages.length > 0) {
+    if (messagesEndRef.current && messages && messages.length > 0) {
       console.log('Auto-scrolling to bottom of messages');
-      const scrollContainer = scrollAreaRef.current;
-      
-      setTimeout(() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        }
-      }, 100); // Short delay to ensure DOM is updated
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
   
@@ -46,9 +40,18 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
     if (!newMessage.trim()) return;
     
     console.log('Sending message:', newMessage);
-    sendMessage(newMessage.trim());
-    setNewMessage('');
+    try {
+      await sendMessage(newMessage.trim());
+      setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
+  
+  // Debug log to see messages structure
+  useEffect(() => {
+    console.log('Messages array in MessagesPanel:', messages);
+  }, [messages]);
   
   const renderMessage = (message: GroupMessage) => {
     const isCurrentUser = user?.id === message.user_id;
@@ -111,12 +114,12 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
       </CardHeader>
       
       <CardContent className="flex-grow overflow-hidden p-0">
-        <ScrollArea ref={scrollAreaRef} className="h-[300px] px-6 pt-4">
+        <ScrollArea className="h-[300px] px-6 pt-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Loading messages...
             </div>
-          ) : messages.length === 0 ? (
+          ) : !messages || messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center gap-2 text-muted-foreground p-4">
               <Users className="h-10 w-10 opacity-40" />
               <p>No messages yet. Be the first to send a message!</p>
@@ -124,6 +127,7 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
           ) : (
             <div className="space-y-2">
               {messages.map(renderMessage)}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
