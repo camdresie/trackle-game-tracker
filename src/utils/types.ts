@@ -72,6 +72,8 @@ export interface FriendGroup {
   created_at: string;
   updated_at: string;
   members?: Player[];
+  isJoinedGroup?: boolean;
+  status?: 'pending' | 'accepted' | 'rejected';
 }
 
 export interface FriendGroupMember {

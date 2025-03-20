@@ -57,18 +57,21 @@ export type Database = {
           friend_id: string
           group_id: string
           id: string
+          status: string
         }
         Insert: {
           added_at?: string
           friend_id: string
           group_id: string
           id?: string
+          status?: string
         }
         Update: {
           added_at?: string
           friend_id?: string
           group_id?: string
           id?: string
+          status?: string
         }
         Relationships: [
           {
