@@ -9,7 +9,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, UserPlus } from 'lucide-react';
+import { Check, X, UserPlus, Bell } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
@@ -57,11 +57,12 @@ const GroupInvitationsList = ({
       
       <div className="space-y-3">
         {invitations.map((invitation) => (
-          <Card key={invitation.id} className="border-dashed border-amber-300 bg-amber-50/10">
+          <Card key={invitation.id} className="border-2 border-amber-300 bg-amber-50/10 shadow-sm hover:shadow-md transition-all">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 text-amber-500" />
                 {invitation.groupName}
-                <Badge variant="outline" className="ml-2">Invitation</Badge>
+                <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-300">Invitation</Badge>
               </CardTitle>
               <CardDescription>You've been invited to join this group</CardDescription>
             </CardHeader>
@@ -70,7 +71,7 @@ const GroupInvitationsList = ({
                 variant="outline" 
                 size="sm"
                 onClick={() => onDecline(invitation.id)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 border-destructive/50 text-destructive hover:bg-destructive/10"
               >
                 <X className="h-4 w-4" />
                 <span>Decline</span>
@@ -78,7 +79,7 @@ const GroupInvitationsList = ({
               <Button 
                 size="sm"
                 onClick={() => onAccept(invitation.id)}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700"
               >
                 <Check className="h-4 w-4" />
                 <span>Accept</span>

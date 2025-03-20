@@ -7,7 +7,7 @@ import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
-import { MessageCircle, Users, UserPlus, Mail } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, Mail, Bell } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 import { toast } from 'sonner';
@@ -94,21 +94,31 @@ const Messages = () => {
           </p>
         </div>
 
-        {/* Group Invitations */}
+        {/* Group Invitations Alert */}
         {pendingInvitations && pendingInvitations.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Group Invitations
-              <Badge variant="destructive" className="ml-2">{pendingInvitations.length}</Badge>
-            </h2>
-            
-            <GroupInvitationsList
-              invitations={pendingInvitations}
-              isLoading={isGroupsLoading}
-              onAccept={handleAcceptInvitation}
-              onDecline={handleDeclineInvitation}
-            />
+          <div className="mb-6 animate-pulse">
+            <Card className="border-2 border-amber-400 bg-amber-50/20 shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-amber-500" />
+                  Group Invitations
+                  <Badge variant="destructive" className="ml-2">{pendingInvitations.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  You have {pendingInvitations.length} pending group {pendingInvitations.length === 1 ? 'invitation' : 'invitations'}.
+                  Please review and respond to them below.
+                </p>
+                
+                <GroupInvitationsList
+                  invitations={pendingInvitations}
+                  isLoading={isGroupsLoading}
+                  onAccept={handleAcceptInvitation}
+                  onDecline={handleDeclineInvitation}
+                />
+              </CardContent>
+            </Card>
           </div>
         )}
 
