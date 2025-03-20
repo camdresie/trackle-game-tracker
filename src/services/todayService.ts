@@ -1,7 +1,6 @@
 
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
-import { format } from 'date-fns';
 
 /**
  * Get today's games for a user

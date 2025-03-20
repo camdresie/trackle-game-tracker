@@ -45,7 +45,7 @@ export const useGroupScores = (
     console.log('[useGroupScores] Friend groups:', friendGroups);
   }, [today, todaysScores, selectedGameId, friendGroups]);
 
-  // Fetch group members with their profiles - FIXED THIS FUNCTION
+  // Fetch group members with their profiles
   useEffect(() => {
     const fetchGroupMembers = async () => {
       if (!friendGroups || friendGroups.length === 0) {
@@ -55,28 +55,45 @@ export const useGroupScores = (
 
       try {
         const groupIds = friendGroups.map(group => group.id);
-        console.log('[useGroupScores] Fetching members for group IDs:', groupIds);
+        console.log('[useGroupScores] Fetching members for groups:', groupIds);
         
-        // Fix the query to correctly fetch friend_id and profiles - THIS IS THE KEY FIX
+        // First get all members for these groups
         const { data: members, error } = await supabase
           .from('friend_group_members')
-          .select(`
-            id,
-            group_id,
-            friend_id,
-            status,
-            profiles: friend_id(
-              id,
-              username,
-              full_name
-            )
-          `)
+          .select('id, group_id, friend_id, status')
           .in('group_id', groupIds)
           .eq('status', 'accepted');
-
+          
         if (error) throw error;
-        console.log('[useGroupScores] Fetched group members:', members);
-        setGroupMembers(members || []);
+        
+        if (!members) {
+          console.log('[useGroupScores] No members found');
+          return;
+        }
+        
+        console.log('[useGroupScores] Found members:', members);
+        
+        // Then get all profiles for these members
+        const memberIds = members.map(m => m.friend_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, full_name')
+          .in('id', memberIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Combine member data with profiles
+        const membersWithProfiles = members.map(member => {
+          const profile = profiles?.find(p => p.id === member.friend_id);
+          return {
+            ...member,
+            profiles: profile
+          };
+        });
+        
+        console.log('[useGroupScores] Members with profiles:', membersWithProfiles);
+        setGroupMembers(membersWithProfiles);
+        
       } catch (error) {
         console.error('[useGroupScores] Error fetching group members:', error);
         toast.error('Failed to load group members');
@@ -104,30 +121,28 @@ export const useGroupScores = (
     }
 
     console.log('[useGroupScores] Processing groups:', friendGroups);
+    console.log('[useGroupScores] Group members:', groupMembers);
+    console.log('[useGroupScores] Friend scores:', friendScores);
     
     return friendGroups.map(group => {
       // Get all members for this group
-      const getGroupMembers = (allMembers: any[]) => {
-        if (!allMembers || !Array.isArray(allMembers)) {
-          console.warn('[useGroupScores] allMembers is not an array:', allMembers);
-          return [];
-        }
-        
-        return allMembers
-          .filter(member => member && member.group_id === group.id)
-          .map(member => ({
+      const members = groupMembers
+        .filter(member => member.group_id === group.id)
+        .map(member => {
+          const memberScores = friendScores[member.friend_id] || [];
+          const todayScore = memberScores.find(score => 
+            score.gameId === selectedGameId && score.date === today
+          );
+          
+          return {
             playerId: member.friend_id,
             playerName: member.profiles?.username || member.profiles?.full_name || 'Unknown',
-            hasPlayed: false, // Will be updated below
-            score: null // Will be updated below
-          }));
-      };
-
-      const members = getGroupMembers(groupMembers);
-      console.log(`[useGroupScores] Processing group ${group.name} with ${members.length} members`);
+            hasPlayed: !!todayScore,
+            score: todayScore?.value || null
+          };
+        });
 
       // Find current user's score for today and this game
-      console.log(`[useGroupScores] Looking for score with gameId=${selectedGameId} in today's scores:`, todaysScores);
       const userTodayScore = user && todaysScores.find(
         score => score.gameId === selectedGameId && 
                  score.playerId === user.id && 
@@ -138,21 +153,6 @@ export const useGroupScores = (
       
       const currentUserScore = userTodayScore?.value || null;
       const currentUserHasPlayed = !!userTodayScore;
-
-      // Update member scores
-      members.forEach(member => {
-        const memberScores = friendScores[member.playerId] || [];
-        console.log(`[useGroupScores] Scores for member ${member.playerName}:`, memberScores);
-        
-        const todayScore = memberScores.find(
-          score => score.gameId === selectedGameId && score.date === today
-        );
-        
-        member.hasPlayed = !!todayScore;
-        member.score = todayScore?.value || null;
-
-        console.log(`[useGroupScores] Member ${member.playerName} today's score:`, todayScore?.value);
-      });
 
       return {
         groupId: group.id,
