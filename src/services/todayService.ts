@@ -16,7 +16,8 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
       .from('scores')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', today);
+      .gte('date', today) // Use greater than or equal to get today's date
+      .lte('date', today); // Use less than or equal to get today's date
       
     if (error) {
       console.error('[getTodaysGames] Error fetching today\'s games:', error);

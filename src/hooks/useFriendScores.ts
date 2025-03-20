@@ -31,6 +31,7 @@ export const useFriendScores = ({
   // Add current user's scores to friendScores when they change
   useEffect(() => {
     if (includeCurrentUser && user && currentUserScores.length > 0) {
+      console.log('[useFriendScores] Adding current user scores:', currentUserScores);
       setFriendScores(prev => ({
         ...prev,
         [user.id]: currentUserScores
@@ -120,6 +121,7 @@ export const useFriendScores = ({
       
       // Include current user scores if provided
       if (includeCurrentUser && user && currentUserScores.length > 0) {
+        console.log('[useFriendScores] Adding current user scores to results:', currentUserScores);
         newFriendScores[user.id] = currentUserScores;
       }
       
