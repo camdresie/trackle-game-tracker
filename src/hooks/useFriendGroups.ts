@@ -9,7 +9,6 @@ import { FriendGroup, Player } from '@/utils/types';
 // Define a type for the join result from the friend_group_members query
 interface GroupMemberJoinResult {
   group_id: string;
-  status: string;
   friend_groups: {
     id: string;
     user_id: string;
