@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Drawer,
   DrawerContent,
@@ -15,7 +15,7 @@ import { FriendGroup, Player } from '@/utils/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Search, X } from 'lucide-react';
+import { UserPlus, Search, X, Check } from 'lucide-react';
 
 interface AddFriendsToGroupModalProps {
   open: boolean;
@@ -33,14 +33,31 @@ const AddFriendsToGroupModal = ({
   onAddFriend
 }: AddFriendsToGroupModalProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [processingFriends, setProcessingFriends] = useState<Record<string, boolean>>({});
 
   const filteredFriends = availableFriends.filter(friend => 
     friend.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddFriend = (friendId: string) => {
+    // Set processing state for this friend
+    setProcessingFriends(prev => ({ ...prev, [friendId]: true }));
+    
+    // Call the provided callback to add the friend
     onAddFriend(friendId);
+    
+    // Clear the processing state after a short delay (for better UX)
+    setTimeout(() => {
+      setProcessingFriends(prev => ({ ...prev, [friendId]: false }));
+    }, 1000);
   };
+
+  // Reset processing state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setProcessingFriends({});
+    }
+  }, [open]);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -102,12 +119,17 @@ const AddFriendsToGroupModal = ({
                       <span>{friend.name}</span>
                     </div>
                     <Button
-                      variant="ghost"
+                      variant={processingFriends[friend.id] ? "outline" : "ghost"}
                       size="icon"
                       onClick={() => handleAddFriend(friend.id)}
                       className="w-8 h-8 p-0"
+                      disabled={processingFriends[friend.id]}
                     >
-                      <UserPlus className="h-4 w-4" />
+                      {processingFriends[friend.id] ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <UserPlus className="h-4 w-4" />
+                      )}
                       <span className="sr-only">Add {friend.name}</span>
                     </Button>
                   </div>

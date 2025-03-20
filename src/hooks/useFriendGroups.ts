@@ -284,7 +284,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         return existingMember;
       }
       
-      // Add friend to group directly without pending status
+      // Add friend to group directly
       const { data, error } = await supabase
         .from('friend_group_members')
         .insert({
@@ -294,7 +294,12 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding friend to group:', error);
+        throw error;
+      }
+      
+      console.log('Successfully added friend to group:', data);
       return data;
     },
     onSuccess: () => {
