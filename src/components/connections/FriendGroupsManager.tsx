@@ -22,7 +22,8 @@ import {
   Trash2, 
   UserPlus, 
   Users, 
-  MessageCircle 
+  MessageCircle,
+  Clock
 } from 'lucide-react';
 import { FriendGroup, Player } from '@/utils/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -109,6 +110,11 @@ const FriendGroupsManager = ({
     );
   };
 
+  // Filter groups to only show ones the user owns or has accepted invitations to
+  const visibleGroups = friendGroups.filter(group => 
+    !group.isJoinedGroup || (group.isJoinedGroup && (group as any).status === 'accepted')
+  );
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -130,7 +136,7 @@ const FriendGroupsManager = ({
         <div className="text-center py-8 text-muted-foreground">
           Loading friend groups...
         </div>
-      ) : friendGroups.length === 0 ? (
+      ) : visibleGroups.length === 0 ? (
         <Card className="border border-dashed">
           <CardContent className="pt-6 text-center">
             <div className="mb-4">
@@ -147,99 +153,122 @@ const FriendGroupsManager = ({
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {friendGroups.map(group => (
-            <Card key={group.id}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{group.name}</CardTitle>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleOpenMessages(group)}>
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        <span>Messages</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleEditGroup(group)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Edit Group</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleAddFriendsToGroup(group)}>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        <span>Add Friends</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setGroupToDelete(group.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete Group</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {group.description && (
-                  <CardDescription>{group.description}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="mb-2 flex justify-between items-center">
-                  <Badge variant="outline" className="bg-secondary/50">
-                    {group.members?.length || 0} {(group.members?.length || 0) === 1 ? 'Friend' : 'Friends'}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1"
-                    onClick={() => handleOpenMessages(group)}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    <span>Messages</span>
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {group.members && group.members.length > 0 ? (
-                    group.members.map(member => (
-                      <div key={member.id} className="relative group">
-                        <Avatar className="h-8 w-8 border-2 border-background">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-4 w-4 rounded-full"
-                            onClick={() => onRemoveFriendFromGroup(group.id, member.id)}
-                          >
-                            <Trash2 className="h-2 w-2" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">
-                      No friends in this group yet
+          {visibleGroups.map(group => {
+            const isPending = group.isJoinedGroup && (group as any).status === 'pending';
+            
+            return (
+              <Card key={group.id} className={isPending ? 'border-dashed opacity-70' : ''}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {group.name}
+                        {isPending && (
+                          <Badge variant="outline" className="ml-1 bg-amber-500/20 text-amber-700">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                      </CardTitle>
                     </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenMessages(group)}>
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          <span>Messages</span>
+                        </DropdownMenuItem>
+                        {!group.isJoinedGroup && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleEditGroup(group)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit Group</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleAddFriendsToGroup(group)}>
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              <span>Add Friends</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setGroupToDelete(group.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete Group</span>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {group.description && (
+                    <CardDescription>{group.description}</CardDescription>
                   )}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full"
-                  onClick={() => handleAddFriendsToGroup(group)}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  <span>Add Friends</span>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-2 flex justify-between items-center">
+                    <Badge variant="outline" className="bg-secondary/50">
+                      {group.members?.length || 0} {(group.members?.length || 0) === 1 ? 'Friend' : 'Friends'}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                      onClick={() => handleOpenMessages(group)}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      <span>Messages</span>
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {group.members && group.members.length > 0 ? (
+                      group.members.map(member => (
+                        <div key={member.id} className="relative group">
+                          <Avatar className="h-8 w-8 border-2 border-background">
+                            <AvatarImage src={member.avatar} />
+                            <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                          </Avatar>
+                          {!group.isJoinedGroup && (
+                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-4 w-4 rounded-full"
+                                onClick={() => onRemoveFriendFromGroup(group.id, member.id)}
+                              >
+                                <Trash2 className="h-2 w-2" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground py-2">
+                        No friends in this group yet
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                {!group.isJoinedGroup && (
+                  <CardFooter>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => handleAddFriendsToGroup(group)}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      <span>Add Friends</span>
+                    </Button>
+                  </CardFooter>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 

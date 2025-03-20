@@ -7,13 +7,20 @@ import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
-import { MessageCircle, Users, UserPlus } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 
 const Messages = () => {
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
-  const { friendGroups, isLoading: isGroupsLoading, refetchGroups } = useFriendGroups(friends);
+  const { 
+    friendGroups, 
+    pendingInvitations,
+    isLoading: isGroupsLoading, 
+    refetchGroups,
+    respondToInvitation
+  } = useFriendGroups(friends);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
 
@@ -27,8 +34,9 @@ const Messages = () => {
   // Debugging: Log the friend groups data
   useEffect(() => {
     console.log('Friend groups in Messages page:', friendGroups);
+    console.log('Pending invitations:', pendingInvitations);
     console.log('Is loading:', isGroupsLoading || isLoadingFriends);
-  }, [friendGroups, isGroupsLoading, isLoadingFriends]);
+  }, [friendGroups, pendingInvitations, isGroupsLoading, isLoadingFriends]);
 
   // Ensure we fetch the latest groups when the component mounts or when friends list changes
   useEffect(() => {
@@ -46,6 +54,20 @@ const Messages = () => {
     }
   }, [friendGroups, selectedGroupId]);
 
+  // Handle invitation response
+  const handleAcceptInvitation = (invitationId: string) => {
+    respondToInvitation({ invitationId, status: 'accepted' });
+  };
+
+  const handleDeclineInvitation = (invitationId: string) => {
+    respondToInvitation({ invitationId, status: 'rejected' });
+  };
+
+  // Filter groups to only show ones the user owns or has accepted invitations to
+  const visibleGroups = friendGroups.filter(group => 
+    !group.isJoinedGroup || (group.isJoinedGroup && group.status === 'accepted')
+  );
+
   return (
     <div className="min-h-screen pb-6">
       <NavBar />
@@ -61,14 +83,22 @@ const Messages = () => {
           </p>
         </div>
 
+        {/* Group Invitations */}
+        <GroupInvitationsList
+          invitations={pendingInvitations}
+          isLoading={isGroupsLoading}
+          onAccept={handleAcceptInvitation}
+          onDecline={handleDeclineInvitation}
+        />
+
         {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
-        ) : friendGroups && friendGroups.length > 0 ? (
+        ) : visibleGroups && visibleGroups.length > 0 ? (
           <Tabs defaultValue={selectedGroupId || "default"} onValueChange={setSelectedGroupId} className="w-full">
             <TabsList className="mb-6 flex-wrap">
-              {friendGroups.map(group => (
+              {visibleGroups.map(group => (
                 <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
                   {group.isJoinedGroup ? <UserPlus className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   {group.name}
@@ -81,7 +111,7 @@ const Messages = () => {
               ))}
             </TabsList>
             
-            {friendGroups.map(group => (
+            {visibleGroups.map(group => (
               <TabsContent key={group.id} value={group.id} className="mt-0">
                 <MessagesPanel 
                   groupId={group.id} 
