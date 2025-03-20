@@ -55,6 +55,12 @@ export const useHomeData = (): HomeDataResult => {
         console.log('[useHomeData] Fetched today\'s scores:', todayScores);
         setTodaysGames(todayScores);
         
+        // Log each game score for debugging
+        todayScores.forEach(score => {
+          const game = gamesList.find(g => g.id === score.gameId);
+          console.log(`[useHomeData] Today's game: ${game?.name || 'Unknown'} (ID: ${score.gameId}), Score: ${score.value}`);
+        });
+        
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];
         
@@ -84,10 +90,25 @@ export const useHomeData = (): HomeDataResult => {
     setScores((prevScores) => [...prevScores, newScore]);
     
     // Also update today's games if the score is from today
-    const today = new Date().toISOString().split('T')[0];
-    if (newScore.date === today) {
-      setTodaysGames((prevGames) => [...prevGames, newScore]);
-    }
+    setTodaysGames((prevGames) => {
+      // Check if this is a duplicate
+      const existingScoreIndex = prevGames.findIndex(
+        game => game.gameId === newScore.gameId && game.date === newScore.date
+      );
+      
+      if (existingScoreIndex >= 0) {
+        // Replace the existing score
+        const updatedGames = [...prevGames];
+        updatedGames[existingScoreIndex] = newScore;
+        return updatedGames;
+      } else {
+        // Add as a new score
+        return [...prevGames, newScore];
+      }
+    });
+    
+    console.log('[useHomeData] Added new score:', newScore);
+    console.log('[useHomeData] Updated today\'s games:', [...todaysGames, newScore]);
   };
 
   return {

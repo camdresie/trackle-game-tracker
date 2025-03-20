@@ -43,6 +43,12 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
     );
   }
 
+  // More detailed logging to debug specific games
+  todaysGames.forEach(score => {
+    const game = gamesList.find(g => g.id === score.gameId);
+    console.log(`Today's game: ${game?.name || 'Unknown'} (ID: ${score.gameId}), Score: ${score.value}`);
+  });
+
   return (
     <div className="glass-card rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <div className="p-2 bg-accent/20 rounded-lg">

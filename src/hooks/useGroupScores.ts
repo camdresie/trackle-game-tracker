@@ -7,6 +7,7 @@ import { useFriendScores } from './useFriendScores';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export interface GroupScoresResult {
   isLoading: boolean;
@@ -24,6 +25,17 @@ export interface GroupScoresResult {
   }[];
 }
 
+/**
+ * Get the current date in Eastern Time (ET)
+ * @returns Date string in YYYY-MM-DD format for Eastern Time
+ */
+const getEasternTimeDate = (): string => {
+  // Get current date in Eastern Time for consistency
+  const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
+  console.log("[useGroupScores] Eastern timezone today's date:", easternTime);
+  return easternTime;
+};
+
 export const useGroupScores = (
   selectedGameId: string | null,
   todaysScores: Score[]
@@ -34,8 +46,8 @@ export const useGroupScores = (
   const [isLoading, setIsLoading] = useState(true);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
 
-  // Use the current date for filtering today's scores
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  // Use Eastern Time for date consistency across the app
+  const today = useMemo(() => getEasternTimeDate(), []);
 
   // Debug logging
   useEffect(() => {
@@ -134,6 +146,7 @@ export const useGroupScores = (
     console.log('[useGroupScores] Processing groups:', friendGroups);
     console.log('[useGroupScores] Group members:', groupMembers);
     console.log('[useGroupScores] Friend scores:', friendScores);
+    console.log('[useGroupScores] Today\'s scores for current user:', todaysScores);
     
     return friendGroups.map(group => {
       // Get all members for this group
@@ -144,6 +157,10 @@ export const useGroupScores = (
           const todayScore = memberScores.find(score => 
             score.gameId === selectedGameId && score.date === today
           );
+          
+          console.log(`[useGroupScores] Member ${member.profiles?.username} scores for game ${selectedGameId}:`, 
+            memberScores.filter(score => score.gameId === selectedGameId));
+          console.log(`[useGroupScores] Today's score for ${member.profiles?.username}:`, todayScore);
           
           return {
             playerId: member.friend_id,
@@ -156,8 +173,7 @@ export const useGroupScores = (
       // Find current user's score for today and this game
       const userTodayScore = user && todaysScores.find(
         score => score.gameId === selectedGameId && 
-                 score.playerId === user.id && 
-                 score.date === today
+                 score.playerId === user.id
       );
       
       console.log(`[useGroupScores] Current user's today score for ${selectedGameId}:`, userTodayScore);

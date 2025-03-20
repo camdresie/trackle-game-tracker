@@ -1,14 +1,26 @@
 
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
+import { formatInTimeZone } from 'date-fns-tz';
+
+/**
+ * Get today's date in Eastern Time (ET)
+ * @returns Date string in YYYY-MM-DD format for Eastern Time
+ */
+const getEasternTimeDate = (): string => {
+  // Get current date in Eastern Time for consistency
+  const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
+  console.log("[getTodaysGames] Eastern timezone today's date:", easternTime);
+  return easternTime;
+};
 
 /**
  * Get today's games for a user
  */
 export const getTodaysGames = async (userId: string): Promise<Score[]> => {
   try {
-    // Get today's date in YYYY-MM-DD format using local timezone
-    const today = new Date().toISOString().split('T')[0];
+    // Get today's date in YYYY-MM-DD format using Eastern Time for consistency
+    const today = getEasternTimeDate();
     console.log(`[getTodaysGames] Fetching games for user ${userId} on ${today}`);
     
     const { data, error } = await supabase
