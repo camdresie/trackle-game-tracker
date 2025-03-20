@@ -260,51 +260,59 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Add a friend to a group directly (no pending status)
+  // Add a friend to a group directly
   const addFriendToGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
       console.log(`Adding friend ${friendId} to group ${groupId}`);
       
-      // First check if the friend is already a member of this group
-      const { data: existingMember, error: checkError } = await supabase
-        .from('friend_group_members')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('friend_id', friendId)
-        .maybeSingle();
-      
-      if (checkError) {
-        console.error('Error checking if friend is already in group:', checkError);
-        throw new Error('Failed to check group membership');
-      }
-      
-      // If the friend is already in the group, return early with the existing record
-      if (existingMember) {
-        console.log('Friend is already a member of this group:', existingMember);
-        return existingMember;
-      }
-      
-      // Add friend to group directly
-      const { data, error } = await supabase
-        .from('friend_group_members')
-        .insert({
-          group_id: groupId,
-          friend_id: friendId
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error adding friend to group:', error);
+      try {
+        // First check if the friend is already a member of this group
+        const { data: existingMember, error: checkError } = await supabase
+          .from('friend_group_members')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('friend_id', friendId)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('Error checking if friend is already in group:', checkError);
+          throw new Error('Failed to check group membership');
+        }
+        
+        // If the friend is already in the group, return early with the existing record
+        if (existingMember) {
+          console.log('Friend is already a member of this group:', existingMember);
+          return existingMember;
+        }
+        
+        // Add friend to group directly
+        const { data, error } = await supabase
+          .from('friend_group_members')
+          .insert({
+            group_id: groupId,
+            friend_id: friendId
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error adding friend to group:', error);
+          throw error;
+        }
+        
+        console.log('Successfully added friend to group:', data);
+        return data;
+      } catch (error) {
+        console.error('Error in addFriendToGroup mutation:', error);
         throw error;
       }
-      
-      console.log('Successfully added friend to group:', data);
-      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Friend added to group');
+      
+      // Invalidate all relevant queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
     },
     onError: (error) => {
       console.error('Error adding friend to group:', error);
@@ -335,8 +343,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
   });
 
   return {
-    friendGroups: friendGroups,  
-    isLoading: isLoadingGroups,
+    friendGroups: groupsWithMembers.length > 0 ? groupsWithMembers : friendGroups,  
+    isLoading: isLoadingGroups || isLoadingMembers,
     createGroup: createGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
     updateGroup: updateGroupMutation.mutate,
