@@ -8,6 +8,7 @@ import { format } from 'date-fns';
  */
 export const getTodaysGames = async (userId: string): Promise<Score[]> => {
   try {
+    // Get today's date in YYYY-MM-DD format using local timezone
     const today = format(new Date(), 'yyyy-MM-dd');
     console.log(`[getTodaysGames] Fetching games for user ${userId} on ${today}`);
     
