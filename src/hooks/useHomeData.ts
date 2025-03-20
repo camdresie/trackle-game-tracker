@@ -82,6 +82,7 @@ export const useHomeData = (): HomeDataResult => {
   
   const handleAddScore = (newScore: Score) => {
     setScores((prevScores) => [...prevScores, newScore]);
+    
     // Also update today's games if the score is from today
     const today = new Date().toISOString().split('T')[0];
     if (newScore.date === today) {

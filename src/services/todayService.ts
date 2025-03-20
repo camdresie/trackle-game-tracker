@@ -9,15 +9,14 @@ import { format } from 'date-fns';
 export const getTodaysGames = async (userId: string): Promise<Score[]> => {
   try {
     // Get today's date in YYYY-MM-DD format using local timezone
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = new Date().toISOString().split('T')[0];
     console.log(`[getTodaysGames] Fetching games for user ${userId} on ${today}`);
     
     const { data, error } = await supabase
       .from('scores')
       .select('*')
       .eq('user_id', userId)
-      .gte('date', today) // Use greater than or equal to get today's date
-      .lte('date', today); // Use less than or equal to get today's date
+      .eq('date', today);
       
     if (error) {
       console.error('[getTodaysGames] Error fetching today\'s games:', error);

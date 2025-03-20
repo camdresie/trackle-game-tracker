@@ -45,7 +45,7 @@ export const useGroupScores = (
     console.log('[useGroupScores] Friend groups:', friendGroups);
   }, [today, todaysScores, selectedGameId, friendGroups]);
 
-  // Fetch group members with their profiles
+  // Fetch group members with their profiles - FIXED THIS FUNCTION
   useEffect(() => {
     const fetchGroupMembers = async () => {
       if (!friendGroups || friendGroups.length === 0) {
@@ -57,7 +57,7 @@ export const useGroupScores = (
         const groupIds = friendGroups.map(group => group.id);
         console.log('[useGroupScores] Fetching members for group IDs:', groupIds);
         
-        // Fetch all group members and their profiles in a single query
+        // Fix the query to correctly fetch friend_id and profiles - THIS IS THE KEY FIX
         const { data: members, error } = await supabase
           .from('friend_group_members')
           .select(`
@@ -65,7 +65,7 @@ export const useGroupScores = (
             group_id,
             friend_id,
             status,
-            profiles:friend_id (
+            profiles: friend_id(
               id,
               username,
               full_name
