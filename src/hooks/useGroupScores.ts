@@ -89,17 +89,19 @@ export const useGroupScores = (
     if (!friendGroups) return [];
 
     return friendGroups.map(group => {
-      // Get all members for this group
-      const groupMembers = members => members
-        .filter(member => member.group_id === group.id)
-        .map(member => ({
-          playerId: member.friend_id,
-          playerName: member.profiles?.username || 'Unknown',
-          hasPlayed: false, // Will be updated below
-          score: null // Will be updated below
-        }));
+      // Get all members for this group - fixed the bug here
+      const getGroupMembers = (allMembers: any[]) => {
+        return allMembers
+          .filter(member => member.group_id === group.id)
+          .map(member => ({
+            playerId: member.friend_id,
+            playerName: member.profiles?.username || 'Unknown',
+            hasPlayed: false, // Will be updated below
+            score: null // Will be updated below
+          }));
+      };
 
-      const members = groupMembers(groupMembers);
+      const members = getGroupMembers(groupMembers);
       console.log(`Processing group ${group.name} with ${members.length} members`);
 
       // Get current user's score for today
