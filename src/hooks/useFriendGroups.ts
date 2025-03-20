@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -58,14 +57,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         .from('friend_group_members')
         .select(`
           group_id,
-          friend_groups:friend_groups(
-            id, 
-            user_id, 
-            name, 
-            description, 
-            created_at, 
-            updated_at
-          )
+          friend_groups:friend_groups(*)
         `)
         .eq('friend_id', user.id);
       
@@ -84,11 +76,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       memberGroups.forEach(item => {
         if (item.friend_groups && 
             typeof item.friend_groups === 'object' && 
-            'id' in item.friend_groups && 
-            'user_id' in item.friend_groups && 
-            'name' in item.friend_groups && 
-            'created_at' in item.friend_groups && 
-            'updated_at' in item.friend_groups) {
+            'id' in item.friend_groups) {
           
           // Create a properly typed object with correct string types
           const groupData = item.friend_groups as Record<string, any>;
@@ -167,7 +155,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         });
         
         // For groups the user was added to, make sure to include the group owner
-        if (group.isJoinedGroup) {
+        if ('isJoinedGroup' in group && group.isJoinedGroup) {
           console.log(`Getting owner for joined group ${group.id}, owner ID: ${group.user_id}`);
           
           const { data: ownerData } = await supabase
