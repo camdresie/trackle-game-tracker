@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useFriendsList } from '@/hooks/useFriendsList';
+import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
+import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 import { MessageCircle, Users, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -18,6 +20,16 @@ const Messages = () => {
     isLoading: isGroupsLoading, 
     refetch: refetchGroups
   } = useFriendGroups(friends);
+  
+  // Get group invitations
+  const { 
+    invitations, 
+    isLoading: isLoadingInvitations,
+    acceptInvitation,
+    declineInvitation,
+    refetch: refetchInvitations
+  } = useGroupInvitations();
+  
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
 
@@ -31,16 +43,18 @@ const Messages = () => {
   // Debugging: Log the friend groups data
   useEffect(() => {
     console.log('Friend groups in Messages page:', friendGroups);
+    console.log('Group invitations:', invitations);
     console.log('Is loading:', isGroupsLoading || isLoadingFriends);
-  }, [friendGroups, isGroupsLoading, isLoadingFriends]);
+  }, [friendGroups, invitations, isGroupsLoading, isLoadingFriends]);
 
-  // Ensure we fetch the latest groups when the component mounts or when friends list changes
+  // Ensure we fetch the latest groups and invitations when the component mounts
   useEffect(() => {
     if (user) {
-      console.log('Refreshing groups in Messages page');
+      console.log('Refreshing groups and invitations in Messages page');
       refetchGroups();
+      refetchInvitations();
     }
-  }, [user, refetchGroups]);
+  }, [user, refetchGroups, refetchInvitations]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
@@ -49,6 +63,15 @@ const Messages = () => {
       setSelectedGroupId(friendGroups[0].id);
     }
   }, [friendGroups, selectedGroupId]);
+
+  // Handle accepting a group invitation
+  const handleAcceptInvitation = (invitationId: string) => {
+    acceptInvitation(invitationId);
+    // After accepting, wait a moment and refresh the groups list
+    setTimeout(() => {
+      refetchGroups();
+    }, 1000);
+  };
 
   return (
     <div className="min-h-screen pb-6">
@@ -64,6 +87,14 @@ const Messages = () => {
             Chat with your friend groups
           </p>
         </div>
+
+        {/* Group Invitations - Show at the top if there are any */}
+        <GroupInvitationsList 
+          invitations={invitations}
+          isLoading={isLoadingInvitations}
+          onAccept={handleAcceptInvitation}
+          onDecline={declineInvitation}
+        />
 
         {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">
