@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GroupInvitation } from '@/hooks/useGroupInvitations';
@@ -22,14 +22,16 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   alwaysShow = false
 }) => {
   // Debug: Log the invitations data
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('GroupInvitationsList - Invitations:', invitations);
-  }, [invitations]);
+    console.log('GroupInvitationsList - Count:', invitations?.length || 0);
+    console.log('GroupInvitationsList - Loading:', isLoading);
+  }, [invitations, isLoading]);
 
   // If loading, show a clean skeleton with fixed height to prevent layout shifts
   if (isLoading) {
     return (
-      <Card className="p-4 mb-6 overflow-hidden">
+      <Card className="p-4 mb-6 overflow-hidden border-muted/30">
         <div className="flex items-center gap-2 mb-3">
           <Skeleton className="h-5 w-5" />
           <Skeleton className="h-5 w-40" />

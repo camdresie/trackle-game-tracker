@@ -41,7 +41,7 @@ export const useGroupInvitations = () => {
             group_id,
             friend_id,
             status,
-            friend_groups:friend_groups(id, name, user_id)
+            friend_groups(id, name, user_id)
           `)
           .eq('friend_id', user.id)
           .eq('status', 'pending');
@@ -94,7 +94,7 @@ export const useGroupInvitations = () => {
           }
         }
         
-        console.log('INVITATIONS QUERY - Formatted invitations found:', invitationsData);
+        console.log('INVITATIONS QUERY - Formatted invitations found:', invitationsData.length);
         return invitationsData;
       } catch (err) {
         console.error('INVITATIONS QUERY - Unexpected error in fetchInvitations:', err);
@@ -103,8 +103,9 @@ export const useGroupInvitations = () => {
       }
     },
     enabled: !!user,
-    refetchInterval: 10000, // Refresh more frequently (every 10 seconds)
-    staleTime: 2000, // Consider data stale after 2 seconds
+    // Increase refetch frequency for better responsiveness
+    refetchInterval: 5000, // Refresh more frequently (every 5 seconds)
+    staleTime: 1000, // Consider data stale after 1 second
     refetchOnMount: true,
     refetchOnWindowFocus: true
   });
@@ -150,7 +151,7 @@ export const useGroupInvitations = () => {
       
       const { data, error } = await supabase
         .from('friend_group_members')
-        .delete()
+        .update({ status: 'rejected' })
         .eq('id', invitationId)
         .select();
       

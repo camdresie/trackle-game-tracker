@@ -43,12 +43,13 @@ const Messages = () => {
     }
   }, [friends]);
 
-  // Debugging: Log the friend groups data
+  // Debugging: Log the friend groups and invitations data
   useEffect(() => {
     console.log('Friend groups in Messages page:', friendGroups);
     console.log('Group invitations:', invitations);
-    console.log('Is loading:', isGroupsLoading || isLoadingFriends);
-  }, [friendGroups, invitations, isGroupsLoading, isLoadingFriends]);
+    console.log('Invitations count:', invitations?.length || 0);
+    console.log('Is loading invitations:', isLoadingInvitations);
+  }, [friendGroups, invitations, isLoadingInvitations]);
 
   // Ensure we fetch the latest groups and invitations when the component mounts
   useEffect(() => {
@@ -56,17 +57,22 @@ const Messages = () => {
       console.log('MESSAGES PAGE - Refreshing data on mount');
       refetchGroups();
       
-      // Force refresh invitations
+      // Force refresh invitations immediately
       forceRefreshInvitations();
       
+      // Schedule regular refreshes of invitations
+      const intervalId = setInterval(() => {
+        refetchInvitations();
+      }, 10000); // Every 10 seconds
+      
       // After the first load, mark invitations as initialized
-      // This helps prevent UI flashing by ensuring we only show the invitations component
-      // after we're sure we've tried to load data at least once
       setTimeout(() => {
         setInvitationsInitialized(true);
       }, 1000);
+      
+      return () => clearInterval(intervalId);
     }
-  }, [user, refetchGroups, forceRefreshInvitations]);
+  }, [user, refetchGroups, forceRefreshInvitations, refetchInvitations]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
