@@ -62,7 +62,7 @@ export const useGroupMessages = (groupId: string | null) => {
           
           return {
             ...message,
-            sender: profileData || undefined
+            sender: profileData || { username: 'Unknown User' }
           };
         })
       );
@@ -117,6 +117,39 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Sending message to group ${groupId}:`, content);
       
+      // First, check if the user is an owner or a member of the group
+      let isOwnerOrMember = false;
+      
+      // Check if user is owner
+      const { data: isOwner } = await supabase
+        .from('friend_groups')
+        .select('id')
+        .eq('id', groupId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (isOwner) {
+        isOwnerOrMember = true;
+      } else {
+        // Check if user is accepted member
+        const { data: isMember } = await supabase
+          .from('friend_group_members')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('friend_id', user.id)
+          .eq('status', 'accepted')
+          .maybeSingle();
+        
+        if (isMember) {
+          isOwnerOrMember = true;
+        }
+      }
+      
+      if (!isOwnerOrMember) {
+        throw new Error('You are not authorized to send messages in this group');
+      }
+      
+      // Now insert the message
       const { data, error } = await supabase
         .from('group_messages')
         .insert({
@@ -127,7 +160,11 @@ export const useGroupMessages = (groupId: string | null) => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {
