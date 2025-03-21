@@ -117,12 +117,12 @@ export const useGroupInvitations = () => {
         const groupId = invitation.groupId;
         console.log('Found group ID for invitation:', groupId);
         
-        // Use RPC to ensure the update works reliably
+        // Use RPC to ensure the update works reliably - Fix the SQL query syntax
         const updateQuery = `
           UPDATE friend_group_members 
           SET status = 'accepted' 
           WHERE id = '${invitationId}'
-          RETURNING id, status;
+          RETURNING id, status
         `;
         
         const { data: updateResult, error: updateError } = await supabase.rpc('direct_sql_query', {

@@ -117,7 +117,7 @@ const Messages = () => {
         ]);
         
         setProcessingInvitation(false);
-      }, 6000); // Increased timeout to ensure database operations complete
+      }, 8000); // Increased timeout to ensure database operations complete
     } catch (error) {
       console.error('Error handling invitation accept:', error);
       toast.error('Failed to process invitation');
