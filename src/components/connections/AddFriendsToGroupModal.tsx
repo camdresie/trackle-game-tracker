@@ -39,6 +39,7 @@ const AddFriendsToGroupModal = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [processingFriends, setProcessingFriends] = useState<Record<string, boolean>>({});
   const [pendingInvites, setPendingInvites] = useState<Record<string, boolean>>({});
+  const [invitedFriends, setInvitedFriends] = useState<Record<string, 'pending' | 'rejected'>>({});
 
   // Get friends that match the search term
   const filteredFriends = availableFriends.filter(friend => 
@@ -55,7 +56,7 @@ const AddFriendsToGroupModal = ({
             .from('friend_group_members')
             .select('friend_id, status')
             .eq('group_id', group.id)
-            .eq('status', 'pending');
+            .in('status', ['pending', 'rejected']);
             
           if (error) {
             console.error('Error checking pending invites:', error);
@@ -66,11 +67,15 @@ const AddFriendsToGroupModal = ({
           
           // Update pending invites state
           const pendingMap: Record<string, boolean> = {};
+          const invitedMap: Record<string, 'pending' | 'rejected'> = {};
+          
           data?.forEach(item => {
-            pendingMap[item.friend_id] = true;
+            pendingMap[item.friend_id] = item.status === 'pending';
+            invitedMap[item.friend_id] = item.status as 'pending' | 'rejected';
           });
           
           setPendingInvites(pendingMap);
+          setInvitedFriends(invitedMap);
         } catch (err) {
           console.error('Error in checkPendingInvites:', err);
         }
@@ -95,6 +100,7 @@ const AddFriendsToGroupModal = ({
       
       // Update pending invites (optimistically)
       setPendingInvites(prev => ({ ...prev, [friendId]: true }));
+      setInvitedFriends(prev => ({ ...prev, [friendId]: 'pending' }));
       
       console.log(`INVITATION FLOW - Invitation sent successfully to friendId=${friendId}`);
     } catch (error) {
@@ -114,6 +120,35 @@ const AddFriendsToGroupModal = ({
       setSearchTerm('');
     }
   }, [open]);
+
+  // Get the status badge for a friend based on their invitation status
+  const getFriendStatusBadge = (friendId: string) => {
+    const status = invitedFriends[friendId];
+    
+    if (!status) {
+      return null;
+    }
+    
+    if (status === 'pending') {
+      return (
+        <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-300">
+          <Clock className="w-3 h-3 mr-1" />
+          Invitation Pending
+        </Badge>
+      );
+    }
+    
+    if (status === 'rejected') {
+      return (
+        <Badge variant="outline" className="ml-2 bg-red-50 text-red-700 border-red-300">
+          <X className="w-3 h-3 mr-1" />
+          Invitation Declined
+        </Badge>
+      );
+    }
+    
+    return null;
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -172,7 +207,10 @@ const AddFriendsToGroupModal = ({
                         <AvatarImage src={friend.avatar} />
                         <AvatarFallback>{friend.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
-                      <span>{friend.name}</span>
+                      <div className="flex flex-col">
+                        <span>{friend.name}</span>
+                        {getFriendStatusBadge(friend.id)}
+                      </div>
                     </div>
                     {pendingInvites[friend.id] ? (
                       <Button
