@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
-import { MessageCircle, Users, UserPlus, RotateCw, Bug } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, RotateCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -31,13 +32,11 @@ const Messages = () => {
     acceptInvitation,
     declineInvitation,
     refetch: refetchInvitations,
-    forceRefresh: forceRefreshInvitations
   } = useGroupInvitations();
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
-  const [showDebug, setShowDebug] = useState(true); // Set to true by default to help diagnose the issue
   
   // Handle friends loading state
   useEffect(() => {
@@ -46,70 +45,42 @@ const Messages = () => {
     }
   }, [friends]);
 
-  // Debugging: Log the friend groups and invitations data
-  useEffect(() => {
-    console.log('Friend groups in Messages page:', friendGroups);
-    console.log('Group invitations:', invitations);
-    console.log('Invitations count:', invitations?.length || 0);
-    console.log('Is loading invitations:', isLoadingInvitations);
-  }, [friendGroups, invitations, isLoadingInvitations]);
-
   // Ensure we fetch the latest groups and invitations when the component mounts
   useEffect(() => {
     if (user) {
-      console.log('MESSAGES PAGE - Refreshing data on mount');
       refetchGroups();
+      refetchInvitations();
       
-      // Force refresh invitations immediately and more frequently
-      forceRefreshInvitations();
-      
-      // Schedule more frequent refreshes of invitations
-      const intervalId = setInterval(() => {
-        console.log('MESSAGES PAGE - Running scheduled invitation refresh');
-        forceRefreshInvitations(); // Use forceRefresh instead of regular refetch
-      }, 2000); // Every 2 seconds instead of 5
-      
-      // After the first load, mark invitations as initialized
+      // Mark invitations as initialized after the first load
       setTimeout(() => {
         setInvitationsInitialized(true);
-      }, 500); // Reduced from 1000ms
-      
-      return () => clearInterval(intervalId);
+      }, 500);
     }
-  }, [user, refetchGroups, forceRefreshInvitations, refetchInvitations]);
+  }, [user, refetchGroups, refetchInvitations]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {
     if (friendGroups && friendGroups.length > 0 && !selectedGroupId) {
-      console.log('Auto-selecting first group:', friendGroups[0].id);
       setSelectedGroupId(friendGroups[0].id);
     }
   }, [friendGroups, selectedGroupId]);
 
   // Handle accepting a group invitation
   const handleAcceptInvitation = (invitationId: string) => {
-    console.log('Accepting invitation with ID:', invitationId);
     toast.info('Processing invitation...');
     acceptInvitation(invitationId);
     
     // After accepting, wait a moment and refresh the groups list
     setTimeout(() => {
       refetchGroups();
-      // Also refresh the invitations list to remove the accepted one
-      forceRefreshInvitations();
+      refetchInvitations();
     }, 1000);
   };
 
   const handleManualRefresh = () => {
-    toast.info('Manually refreshing invitations and groups...');
-    forceRefreshInvitations();
+    toast.info('Refreshing invitations and groups...');
+    refetchInvitations();
     refetchGroups();
-    queryClient.removeQueries({ queryKey: ['group-invitations'] });
-    queryClient.removeQueries({ queryKey: ['friend-groups'] });
-  };
-
-  const toggleDebug = () => {
-    setShowDebug(!showDebug);
   };
 
   return (
@@ -128,63 +99,16 @@ const Messages = () => {
             </p>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              onClick={handleManualRefresh}
-              className="flex items-center gap-1"
-            >
-              <RotateCw className="h-4 w-4" />
-              <span>Refresh</span>
-            </Button>
-            
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={toggleDebug}
-              className="flex items-center gap-1"
-            >
-              <Bug className="h-4 w-4" />
-              <span>Debug</span>
-            </Button>
-          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleManualRefresh}
+            className="flex items-center gap-1"
+          >
+            <RotateCw className="h-4 w-4" />
+            <span>Refresh</span>
+          </Button>
         </div>
-        
-        {showDebug && (
-          <Card className="p-4 mb-6 bg-slate-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="text-xs space-y-2">
-              <div>
-                <strong>User ID:</strong> {user?.id || 'Not logged in'}
-              </div>
-              <div>
-                <strong>Friends:</strong> {friends?.length || 0} loaded
-              </div>
-              <div>
-                <strong>Friend Groups:</strong> {friendGroups?.length || 0} loaded
-              </div>
-              <div>
-                <strong>Invitations State:</strong> {invitations?.length || 0} pending, loading: {isLoadingInvitations ? 'yes' : 'no'}, initialized: {invitationsInitialized ? 'yes' : 'no'}
-              </div>
-              {invitations && invitations.length > 0 && (
-                <div>
-                  <strong>First Invitation:</strong> {JSON.stringify(invitations[0], null, 2)}
-                </div>
-              )}
-              <div>
-                <strong>Direct Database Check:</strong>
-                <pre>
-                  {`SELECT * FROM friend_group_members 
-WHERE friend_id = '${user?.id}' 
-AND status = 'pending'`}
-                </pre>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Group Invitations - Only show if invitations have been initialized */}
         {invitationsInitialized && (

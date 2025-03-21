@@ -29,10 +29,8 @@ export const useGroupInvitations = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
-      
       try {
-        // Use the new direct_sql_query function to get pending invitations
+        // Use the direct_sql_query function to get pending invitations
         const directQuery = `
           SELECT 
             fgm.id, 
@@ -58,14 +56,11 @@ export const useGroupInvitations = () => {
         });
         
         if (directQueryError) {
-          console.error('INVITATIONS QUERY - Direct query error:', directQueryError);
+          console.error('Error fetching invitations:', directQueryError);
           throw directQueryError;
         }
         
-        console.log('INVITATIONS QUERY - Direct query results:', directResults);
-        
         if (!directResults || directResults.length === 0) {
-          console.log('INVITATIONS QUERY - No pending invitations found in direct query');
           return [];
         }
         
@@ -78,21 +73,20 @@ export const useGroupInvitations = () => {
           status: item.status
         }));
         
-        console.log('INVITATIONS QUERY - Formatted invitations:', invitationsData);
         return invitationsData;
       } catch (err) {
-        console.error('INVITATIONS QUERY - Unexpected error:', err);
+        console.error('Error loading invitations:', err);
         toast.error('Error loading invitations');
         return [];
       }
     },
     enabled: !!user,
-    // Use a very short refetch interval to ensure we catch new invitations quickly
-    refetchInterval: 1000, 
-    staleTime: 0,
+    // Reduced refetch intervals to prevent too many database calls
+    refetchInterval: 30000, // Now every 30 seconds instead of 1 second
+    staleTime: 15000, // Add a stale time of 15 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 3
+    retry: 1 // Limit retries to reduce database calls
   });
   
   // Mark initial load as complete after first query
@@ -105,8 +99,6 @@ export const useGroupInvitations = () => {
   // Accept a group invitation
   const acceptInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      console.log('Accepting invitation:', invitationId);
-      
       const { data, error } = await supabase
         .from('friend_group_members')
         .update({ status: 'accepted' })
@@ -132,8 +124,6 @@ export const useGroupInvitations = () => {
   // Decline a group invitation
   const declineInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      console.log('Declining invitation:', invitationId);
-      
       const { data, error } = await supabase
         .from('friend_group_members')
         .update({ status: 'rejected' })
@@ -153,12 +143,8 @@ export const useGroupInvitations = () => {
     }
   });
   
-  // Add a manual trigger for refetching invitations
+  // Add a manual trigger for refetching invitations, but don't use this in an interval
   const forceRefresh = async () => {
-    console.log('INVITATIONS QUERY - Manually refreshing invitations');
-    // Clear cache first
-    queryClient.removeQueries({ queryKey: ['group-invitations'] });
-    // Then refetch
     return await refetch();
   };
   
