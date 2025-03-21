@@ -51,6 +51,10 @@ const Messages = () => {
   useEffect(() => {
     if (user) {
       console.log('Messages component mounted, fetching groups and invitations');
+      // Clear cache before fetching
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      
       refetchGroups();
       refetchInvitations();
       
@@ -59,7 +63,7 @@ const Messages = () => {
         setInvitationsInitialized(true);
       }, 500);
     }
-  }, [user, refetchGroups, refetchInvitations]);
+  }, [user, refetchGroups, refetchInvitations, queryClient]);
 
   // Auto-select the first group when groups are loaded or when groups change
   useEffect(() => {
@@ -101,19 +105,19 @@ const Messages = () => {
         // Clear all related caches first
         queryClient.removeQueries({ queryKey: ['group-invitations'] });
         queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+        queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
         
         // Then refetch everything with fresh data
         await Promise.all([
           refetchGroups(),
           refetchInvitations(),
-          queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
-          queryClient.invalidateQueries({ queryKey: ['friend-group-members'] }),
-          queryClient.invalidateQueries({ queryKey: ['group-invitations'] }),
           queryClient.invalidateQueries() // Invalidate all queries to be safe
         ]);
         
         setProcessingInvitation(false);
-      }, 4000); // Increased timeout to ensure database operations complete
+      }, 5000); // Increased timeout to ensure database operations complete
     } catch (error) {
       console.error('Error handling invitation accept:', error);
       toast.error('Failed to process invitation');
@@ -127,14 +131,14 @@ const Messages = () => {
     // Clear caches first
     queryClient.removeQueries({ queryKey: ['group-invitations'] });
     queryClient.removeQueries({ queryKey: ['friend-groups'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+    queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
     
     // Then fetch fresh data
     await Promise.all([
       refetchInvitations(),
-      refetchGroups(),
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] }),
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] })
+      refetchGroups()
     ]);
     
     toast.success('Refreshed successfully');

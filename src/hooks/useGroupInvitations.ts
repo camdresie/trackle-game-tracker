@@ -117,31 +117,37 @@ export const useGroupInvitations = () => {
         const groupId = invitation.groupId;
         console.log('Found group ID for invitation:', groupId);
         
-        // FIXED: Direct update using the friend_group_members table
+        // Update the invitation status to accepted
         const { error: updateError } = await supabase
           .from('friend_group_members')
           .update({ status: 'accepted' })
-          .eq('id', invitationId)
-          .select();
+          .eq('id', invitationId);
         
         if (updateError) {
           console.error('Error accepting invitation:', updateError);
           throw updateError;
         }
         
-        // Verify the update was successful - This is critical for confirmation
-        const { data: verifyUpdate, error: verifyError } = await supabase
+        // Simplify verification: Just check if the update was successful without trying to get the record
+        // This avoids the "no rows returned" error when trying to use .single()
+        const { data: verifyData, error: verifyError } = await supabase
           .from('friend_group_members')
           .select('status')
-          .eq('id', invitationId)
-          .single();
+          .eq('id', invitationId);
           
         if (verifyError) {
           console.error('Error verifying invitation update:', verifyError);
           throw new Error('Could not verify invitation update');
         }
         
-        if (!verifyUpdate || verifyUpdate.status !== 'accepted') {
+        if (!verifyData || verifyData.length === 0) {
+          console.error('Verification failed - no record found after update');
+          throw new Error('Failed to find updated invitation record');
+        }
+        
+        const verifyUpdate = verifyData[0];
+        
+        if (verifyUpdate.status !== 'accepted') {
           console.error('Verification failed - invitation status not updated correctly');
           throw new Error('Failed to update invitation status');
         }
