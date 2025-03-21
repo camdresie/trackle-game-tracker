@@ -28,7 +28,8 @@ const Messages = () => {
     isLoading: isLoadingInvitations,
     acceptInvitation,
     declineInvitation,
-    refetch: refetchInvitations
+    refetch: refetchInvitations,
+    forceRefresh: forceRefreshInvitations
   } = useGroupInvitations();
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -51,11 +52,22 @@ const Messages = () => {
   // Ensure we fetch the latest groups and invitations when the component mounts
   useEffect(() => {
     if (user) {
-      console.log('Refreshing groups and invitations in Messages page');
+      console.log('MESSAGES PAGE - Refreshing data on mount');
       refetchGroups();
-      refetchInvitations();
+      
+      // Force refresh invitations multiple times with a delay
+      // This handles potential race conditions with invitation creation
+      forceRefreshInvitations();
+      
+      const refreshIntervals = [1000, 3000, 6000];
+      refreshIntervals.forEach(delay => {
+        setTimeout(() => {
+          console.log(`MESSAGES PAGE - Delayed refresh after ${delay}ms`);
+          forceRefreshInvitations();
+        }, delay);
+      });
     }
-  }, [user, refetchGroups, refetchInvitations]);
+  }, [user, refetchGroups, forceRefreshInvitations]);
 
   // Auto-select the first group when groups are loaded
   useEffect(() => {

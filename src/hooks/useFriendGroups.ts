@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -160,6 +159,36 @@ export const useFriendGroups = (friends: Player[]) => {
       groupId: string, 
       friendId: string 
     }) => {
+      console.log(`ADDING FRIEND TO GROUP - Started: friendId=${friendId}, groupId=${groupId}`);
+      
+      // First, check if the group exists
+      const { data: groupData, error: groupError } = await supabase
+        .from('friend_groups')
+        .select('*')
+        .eq('id', groupId)
+        .maybeSingle();
+        
+      if (groupError || !groupData) {
+        console.error('Error verifying group exists:', groupError || 'Group not found');
+        throw new Error(groupError?.message || 'Group not found');
+      }
+      
+      console.log(`ADDING FRIEND TO GROUP - Group verified: ${groupData.name}`);
+      
+      // Check if the friend exists
+      const { data: friendData, error: friendError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', friendId)
+        .maybeSingle();
+        
+      if (friendError || !friendData) {
+        console.error('Error verifying friend exists:', friendError || 'Friend not found');
+        throw new Error(friendError?.message || 'Friend not found');
+      }
+      
+      console.log(`ADDING FRIEND TO GROUP - Friend verified: ${friendData.username || friendId}`);
+      
       // Check if the friend is already in the group
       const { data: existingMember, error: checkError } = await supabase
         .from('friend_group_members')
@@ -180,7 +209,8 @@ export const useFriendGroups = (friends: Player[]) => {
       }
       
       // Otherwise, add them as pending
-      console.log(`Adding friend ${friendId} to group ${groupId}`);
+      console.log(`ADDING FRIEND TO GROUP - About to insert: groupId=${groupId}, friendId=${friendId}`);
+      
       const { data, error } = await supabase
         .from('friend_group_members')
         .insert({
@@ -196,12 +226,15 @@ export const useFriendGroups = (friends: Player[]) => {
         throw error;
       }
       
+      console.log('ADDING FRIEND TO GROUP - Success! New member record:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success('Friend invitation sent');
+      console.log('Invitation successfully sent, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
     },
     onError: (error) => {
       console.error('Error in addFriendToGroupMutation:', error);

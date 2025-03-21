@@ -27,63 +27,82 @@ export const useGroupInvitations = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      console.log('Fetching group invitations for user:', user.id);
+      console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
       
-      // Get all friend_group_members entries where this user is the friend_id
-      // and has NOT been processed yet by the user (they are pending invitations)
-      const { data, error } = await supabase
-        .from('friend_group_members')
-        .select(`
-          id,
-          group_id,
-          friend_id,
-          status,
-          friend_groups:friend_groups(id, name, user_id)
-        `)
-        .eq('friend_id', user.id)
-        .eq('status', 'pending');
-      
-      if (error) {
-        console.error('Error fetching group invitations:', error);
-        toast.error('Failed to load group invitations');
+      try {
+        // Get all friend_group_members entries where this user is the friend_id
+        // and has NOT been processed yet by the user (they are pending invitations)
+        const { data, error } = await supabase
+          .from('friend_group_members')
+          .select(`
+            id,
+            group_id,
+            friend_id,
+            status,
+            friend_groups:friend_groups(id, name, user_id)
+          `)
+          .eq('friend_id', user.id)
+          .eq('status', 'pending');
+        
+        if (error) {
+          console.error('INVITATIONS QUERY - Error fetching group invitations:', error);
+          toast.error('Failed to load group invitations');
+          return [];
+        }
+        
+        console.log('INVITATIONS QUERY - Raw group invitation data:', data);
+        
+        // If no invitations found
+        if (!data || data.length === 0) {
+          console.log('INVITATIONS QUERY - No pending invitations found for user:', user.id);
+          return [];
+        }
+        
+        // Format the invitations for display
+        const invitationsData: GroupInvitation[] = [];
+        
+        for (const item of data) {
+          if (item.friend_groups) {
+            const group = item.friend_groups as any;
+            
+            console.log(`INVITATIONS QUERY - Processing group invitation: group=${group.name}, id=${item.id}`);
+            
+            // Get group owner's username
+            const { data: ownerData, error: ownerError } = await supabase
+              .from('profiles')
+              .select('username')
+              .eq('id', group.user_id)
+              .maybeSingle();
+            
+            if (ownerError) {
+              console.error('INVITATIONS QUERY - Error fetching owner profile:', ownerError);
+            }
+            
+            invitationsData.push({
+              id: item.id,
+              groupId: group.id,
+              groupName: group.name,
+              groupOwner: ownerData?.username || 'Unknown User',
+              status: item.status
+            });
+            
+            console.log(`INVITATIONS QUERY - Added invitation to result: groupName=${group.name}, id=${item.id}`);
+          } else {
+            console.error('INVITATIONS QUERY - Missing friend_groups data for item:', item);
+          }
+        }
+        
+        console.log('INVITATIONS QUERY - Formatted invitations found:', invitationsData);
+        return invitationsData;
+      } catch (err) {
+        console.error('INVITATIONS QUERY - Unexpected error in fetchInvitations:', err);
+        toast.error('Error loading invitations');
         return [];
       }
-      
-      console.log('Raw group invitation data:', data);
-      
-      // Format the invitations for display
-      const invitationsData: GroupInvitation[] = [];
-      
-      for (const item of data) {
-        if (item.friend_groups) {
-          const group = item.friend_groups as any;
-          
-          // Get group owner's username
-          const { data: ownerData, error: ownerError } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', group.user_id)
-            .single();
-          
-          if (ownerError) {
-            console.error('Error fetching owner profile:', ownerError);
-          }
-          
-          invitationsData.push({
-            id: item.id,
-            groupId: group.id,
-            groupName: group.name,
-            groupOwner: ownerData?.username || 'Unknown User',
-            status: item.status
-          });
-        }
-      }
-      
-      console.log('Formatted invitations found:', invitationsData);
-      return invitationsData;
     },
     enabled: !!user,
-    refetchInterval: 10000 // Add periodic refresh every 10 seconds
+    refetchInterval: 10000, // Refresh every 10 seconds
+    staleTime: 5000 // Consider data stale after 5 seconds
   });
   
   // Accept a group invitation
@@ -137,11 +156,18 @@ export const useGroupInvitations = () => {
     }
   });
   
+  // Add a manual trigger for refetching invitations
+  const forceRefresh = () => {
+    console.log('INVITATIONS QUERY - Manually refreshing invitations');
+    return refetch();
+  };
+  
   return {
     invitations,
     isLoading,
     acceptInvitation: acceptInvitationMutation.mutate,
     declineInvitation: declineInvitationMutation.mutate,
-    refetch
+    refetch,
+    forceRefresh
   };
 };

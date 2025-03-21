@@ -41,17 +41,23 @@ const AddFriendsToGroupModal = ({
   );
 
   const handleAddFriend = (friendId: string) => {
+    console.log(`INVITATION FLOW - User clicked to add friend ${friendId} to group ${group.id}`);
+    
     // Set processing state for this friend
     setProcessingFriends(prev => ({ ...prev, [friendId]: true }));
     
     try {
+      // Log before calling the provided callback
+      console.log(`INVITATION FLOW - About to call onAddFriend with friendId=${friendId}`);
+      
       // Call the provided callback to add the friend
       onAddFriend(friendId);
       
       // Show success toast
-      toast.success("Friend added to group");
+      toast.success("Friend invitation sent");
+      console.log(`INVITATION FLOW - Invitation sent successfully to friendId=${friendId}`);
     } catch (error) {
-      console.error("Error adding friend to group:", error);
+      console.error("INVITATION FLOW - Error adding friend to group:", error);
       toast.error("Failed to add friend to group");
     }
     
