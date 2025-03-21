@@ -37,6 +37,7 @@ const Messages = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
+  const [acceptedInvitation, setAcceptedInvitation] = useState(false);
   
   // Handle friends loading state
   useEffect(() => {
@@ -58,29 +59,54 @@ const Messages = () => {
     }
   }, [user, refetchGroups, refetchInvitations]);
 
-  // Auto-select the first group when groups are loaded
+  // Auto-select the first group when groups are loaded or when groups change
   useEffect(() => {
-    if (friendGroups && friendGroups.length > 0 && !selectedGroupId) {
-      setSelectedGroupId(friendGroups[0].id);
+    if (friendGroups && friendGroups.length > 0) {
+      // Only auto-select if no group is selected or after accepting an invitation
+      if (!selectedGroupId || acceptedInvitation) {
+        setSelectedGroupId(friendGroups[0].id);
+        setAcceptedInvitation(false); // Reset the flag
+      }
     }
-  }, [friendGroups, selectedGroupId]);
+  }, [friendGroups, selectedGroupId, acceptedInvitation]);
 
   // Handle accepting a group invitation
-  const handleAcceptInvitation = (invitationId: string) => {
+  const handleAcceptInvitation = async (invitationId: string) => {
     toast.info('Processing invitation...');
-    acceptInvitation(invitationId);
     
-    // After accepting, wait a moment and refresh the groups list
-    setTimeout(() => {
-      refetchGroups();
-      refetchInvitations();
-    }, 1000);
+    try {
+      // Accept the invitation
+      acceptInvitation(invitationId);
+      
+      // Set flag to trigger group selection update
+      setAcceptedInvitation(true);
+      
+      // Immediately refetch data to update UI
+      setTimeout(async () => {
+        await Promise.all([
+          refetchGroups(),
+          refetchInvitations(),
+          queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
+          queryClient.invalidateQueries({ queryKey: ['friend-group-members'] })
+        ]);
+        
+        toast.success('Group invitation accepted');
+      }, 500);
+    } catch (error) {
+      console.error('Error handling invitation accept:', error);
+      toast.error('Failed to process invitation');
+    }
   };
 
-  const handleManualRefresh = () => {
+  const handleManualRefresh = async () => {
     toast.info('Refreshing invitations and groups...');
-    refetchInvitations();
-    refetchGroups();
+    await Promise.all([
+      refetchInvitations(),
+      refetchGroups(),
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
+      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] })
+    ]);
+    toast.success('Refreshed successfully');
   };
 
   return (
@@ -127,7 +153,11 @@ const Messages = () => {
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
         ) : friendGroups && friendGroups.length > 0 ? (
-          <Tabs defaultValue={selectedGroupId || "default"} onValueChange={setSelectedGroupId} className="w-full">
+          <Tabs 
+            value={selectedGroupId || undefined} 
+            onValueChange={setSelectedGroupId} 
+            className="w-full"
+          >
             <TabsList className="mb-6 flex-wrap">
               {friendGroups.map(group => (
                 <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">

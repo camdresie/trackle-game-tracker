@@ -110,7 +110,6 @@ export const useGroupInvitations = () => {
       return data;
     },
     onSuccess: () => {
-      toast.success('Group invitation accepted');
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
