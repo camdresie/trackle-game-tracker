@@ -104,10 +104,11 @@ export const useGroupInvitations = () => {
     },
     enabled: !!user,
     // Increase refetch frequency for better responsiveness
-    refetchInterval: 5000, // Refresh more frequently (every 5 seconds)
-    staleTime: 1000, // Consider data stale after 1 second
+    refetchInterval: 3000, // Refresh even more frequently (every 3 seconds)
+    staleTime: 500, // Consider data stale after 0.5 seconds
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    retry: 3 // Retry failed requests up to 3 times
   });
   
   // Mark initial load as complete after first query
@@ -169,12 +170,12 @@ export const useGroupInvitations = () => {
   });
   
   // Add a manual trigger for refetching invitations
-  const forceRefresh = () => {
+  const forceRefresh = async () => {
     console.log('INVITATIONS QUERY - Manually refreshing invitations');
     // Clear cache first
     queryClient.removeQueries({ queryKey: ['group-invitations'] });
     // Then refetch
-    return refetch();
+    return await refetch();
   };
   
   return {

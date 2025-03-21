@@ -62,8 +62,9 @@ const Messages = () => {
       
       // Schedule regular refreshes of invitations
       const intervalId = setInterval(() => {
+        console.log('MESSAGES PAGE - Running scheduled invitation refresh');
         refetchInvitations();
-      }, 10000); // Every 10 seconds
+      }, 5000); // Every 5 seconds
       
       // After the first load, mark invitations as initialized
       setTimeout(() => {
@@ -122,6 +123,7 @@ const Messages = () => {
           />
         )}
 
+        {/* Friend groups for messaging */}
         {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
