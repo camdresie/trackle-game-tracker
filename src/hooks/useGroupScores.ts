@@ -70,11 +70,12 @@ export const useGroupScores = (
         const groupIds = friendGroups.map(group => group.id);
         console.log('[useGroupScores] Fetching members for groups:', groupIds);
         
-        // Updated query: Removed the status filter since the column no longer exists
+        // Updated query: Include status filter to only get accepted members
         const { data: members, error } = await supabase
           .from('friend_group_members')
-          .select('id, group_id, friend_id')
-          .in('group_id', groupIds);
+          .select('id, group_id, friend_id, status')
+          .in('group_id', groupIds)
+          .eq('status', 'accepted');
           
         if (error) throw error;
         

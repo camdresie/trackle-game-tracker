@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useGroupScores } from '@/hooks/useGroupScores';
+import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -12,6 +13,7 @@ import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle }
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
+import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 
 const TodayScores = () => {
   const { user } = useAuth();
@@ -26,6 +28,14 @@ const TodayScores = () => {
   const [activeTab, setActiveTab] = useState<'groups' | 'friends'>('groups');
   const [showMessages, setShowMessages] = useState(false);
   const [selectedGroupForMessages, setSelectedGroupForMessages] = useState<{id: string, name: string} | null>(null);
+  
+  // Get group invitations
+  const { 
+    invitations, 
+    isLoading: isLoadingInvitations,
+    acceptInvitation,
+    declineInvitation 
+  } = useGroupInvitations();
   
   // Set default game to Wordle on component mount
   useEffect(() => {
@@ -74,6 +84,14 @@ const TodayScores = () => {
             <p className="text-muted-foreground">{today}</p>
           </div>
         </div>
+        
+        {/* Group Invitations - Show at the top if there are any */}
+        <GroupInvitationsList 
+          invitations={invitations}
+          isLoading={isLoadingInvitations}
+          onAccept={acceptInvitation}
+          onDecline={declineInvitation}
+        />
         
         {/* Game Selector Pills - Styled like the leaderboard */}
         <div className="w-full overflow-x-auto py-2 mb-6">

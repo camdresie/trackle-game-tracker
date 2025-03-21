@@ -62,7 +62,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
           group_id,
           friend_groups:friend_groups(*)
         `)
-        .eq('friend_id', user.id);
+        .eq('friend_id', user.id)
+        .eq('status', 'accepted');
       
       if (memberGroupsError) {
         console.error('Error fetching member friend groups:', memberGroupsError);
@@ -139,7 +140,8 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         const { data, error } = await supabase
           .from('friend_group_members')
           .select('*, friend_id')
-          .eq('group_id', group.id);
+          .eq('group_id', group.id)
+          .eq('status', 'accepted');
         
         if (error) {
           console.error(`Error fetching members for group ${group.id}:`, error);
@@ -260,7 +262,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Add a friend to a group directly
+  // Add a friend to a group directly (now as an invitation)
   const addFriendToGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
       console.log(`Adding friend ${friendId} to group ${groupId}`);
@@ -269,7 +271,7 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         // First check if the friend is already a member of this group
         const { data: existingMember, error: checkError } = await supabase
           .from('friend_group_members')
-          .select('id')
+          .select('id, status')
           .eq('group_id', groupId)
           .eq('friend_id', friendId)
           .maybeSingle();
@@ -281,16 +283,17 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
         
         // If the friend is already in the group, return early with the existing record
         if (existingMember) {
-          console.log('Friend is already a member of this group:', existingMember);
+          console.log('Friend is already a member or has a pending invitation to this group:', existingMember);
           return existingMember;
         }
         
-        // Add friend to group directly
+        // Add friend to group as a pending invitation
         const { data, error } = await supabase
           .from('friend_group_members')
           .insert({
             group_id: groupId,
-            friend_id: friendId
+            friend_id: friendId,
+            status: 'pending'
           })
           .select()
           .single();
@@ -308,11 +311,12 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       }
     },
     onSuccess: (data) => {
-      toast.success('Friend added to group');
+      toast.success('Friend invitation sent');
       
       // Invalidate all relevant queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
     },
     onError: (error) => {
       console.error('Error adding friend to group:', error);
