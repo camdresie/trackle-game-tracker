@@ -105,34 +105,63 @@ export const useGroupInvitations = () => {
     mutationFn: async (invitationId: string) => {
       console.log('Accepting invitation with ID:', invitationId);
       
-      // First get the invitation details to have the group_id
-      const { data: invitationDetails, error: invitationError } = await supabase
-        .from('friend_group_members')
-        .select('group_id')
-        .eq('id', invitationId)
-        .maybeSingle();
-      
-      if (invitationError || !invitationDetails) {
-        console.error('Error fetching invitation details:', invitationError);
-        throw new Error('Failed to find invitation');
-      }
-      
-      const groupId = invitationDetails.group_id;
-      console.log('Found group ID for invitation:', groupId);
-      
-      // Now update the status to 'accepted'
-      const { data, error } = await supabase
-        .from('friend_group_members')
-        .update({ status: 'accepted' })
-        .eq('id', invitationId);
-      
-      if (error) {
-        console.error('Error accepting invitation:', error);
+      try {
+        // Get the invitation details directly from our invitations array first
+        const invitation = invitations.find(inv => inv.id === invitationId);
+        
+        if (!invitation) {
+          console.error('Invitation not found in local state:', invitationId);
+          // Fall back to database query if not found in local state
+          const { data: invitationDetails, error: invitationError } = await supabase
+            .from('friend_group_members')
+            .select('group_id')
+            .eq('id', invitationId)
+            .single();
+          
+          if (invitationError || !invitationDetails) {
+            console.error('Error fetching invitation details:', invitationError);
+            throw new Error('Failed to find invitation');
+          }
+          
+          const groupId = invitationDetails.group_id;
+          console.log('Found group ID for invitation from DB:', groupId);
+          
+          // Now update the status to 'accepted'
+          const { error } = await supabase
+            .from('friend_group_members')
+            .update({ status: 'accepted' })
+            .eq('id', invitationId);
+          
+          if (error) {
+            console.error('Error accepting invitation:', error);
+            throw error;
+          }
+          
+          console.log('Successfully accepted invitation from DB lookup');
+          return { invitationId, groupId };
+        }
+        
+        // If we have the invitation in local state, use that info
+        const groupId = invitation.groupId;
+        console.log('Found group ID for invitation from local state:', groupId);
+        
+        // Now update the status to 'accepted'
+        const { error } = await supabase
+          .from('friend_group_members')
+          .update({ status: 'accepted' })
+          .eq('id', invitationId);
+        
+        if (error) {
+          console.error('Error accepting invitation:', error);
+          throw error;
+        }
+        
+        console.log('Successfully accepted invitation');
+        return { invitationId, groupId };
+      } catch (error) {
+        console.error('Error in acceptInvitationMutation:', error);
         throw error;
       }
-      
-      console.log('Successfully accepted invitation');
-      return { invitationId, groupId };
     },
     onSuccess: (data) => {
       console.log('Invitation accepted successfully, invalidating queries');
