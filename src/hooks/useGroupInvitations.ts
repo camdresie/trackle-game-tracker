@@ -64,6 +64,9 @@ export const useGroupInvitations = () => {
         const invitationsData: GroupInvitation[] = [];
         
         for (const item of data) {
+          // Debug the structure of each invitation item
+          console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
+          
           if (item.friend_groups) {
             const group = item.friend_groups as any;
             
@@ -95,6 +98,7 @@ export const useGroupInvitations = () => {
         }
         
         console.log('INVITATIONS QUERY - Formatted invitations found:', invitationsData.length);
+        console.log('INVITATIONS QUERY - Final invitations data:', JSON.stringify(invitationsData, null, 2));
         return invitationsData;
       } catch (err) {
         console.error('INVITATIONS QUERY - Unexpected error in fetchInvitations:', err);
@@ -104,11 +108,11 @@ export const useGroupInvitations = () => {
     },
     enabled: !!user,
     // Increase refetch frequency for better responsiveness
-    refetchInterval: 3000, // Refresh even more frequently (every 3 seconds)
-    staleTime: 500, // Consider data stale after 0.5 seconds
+    refetchInterval: 3000, 
+    staleTime: 500, 
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 3 // Retry failed requests up to 3 times
+    retry: 3 
   });
   
   // Mark initial load as complete after first query

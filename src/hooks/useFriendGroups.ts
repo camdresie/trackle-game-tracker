@@ -167,7 +167,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .select('*')
         .eq('id', groupId)
         .maybeSingle();
-        
+      
       if (groupError || !groupData) {
         console.error('Error verifying group exists:', groupError || 'Group not found');
         throw new Error(groupError?.message || 'Group not found');
@@ -181,7 +181,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .select('*')
         .eq('id', friendId)
         .maybeSingle();
-        
+      
       if (friendError || !friendData) {
         console.error('Error verifying friend exists:', friendError || 'Friend not found');
         throw new Error(friendError?.message || 'Friend not found');
@@ -196,7 +196,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .eq('group_id', groupId)
         .eq('friend_id', friendId)
         .maybeSingle();
-        
+      
       if (checkError) {
         console.error('Error checking if friend is in group:', checkError);
         throw checkError;
@@ -227,7 +227,7 @@ export const useFriendGroups = (friends: Player[]) => {
         })
         .select()
         .single();
-        
+      
       if (error) {
         console.error('Error adding friend to group:', error);
         throw error;
@@ -250,7 +250,7 @@ export const useFriendGroups = (friends: Player[]) => {
       const errorMessage = error instanceof Error 
         ? error.message 
         : 'Failed to add friend to group';
-        
+      
       // Show different toast for 'already invited' error
       if (errorMessage.includes('already')) {
         toast.info(errorMessage);
@@ -268,7 +268,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .delete()
         .eq('group_id', groupId)
         .eq('friend_id', friendId);
-        
+      
       if (error) throw error;
       return { groupId, friendId };
     },
@@ -290,7 +290,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .from('friend_group_members')
         .delete()
         .eq('group_id', groupId);
-        
+      
       if (membersError) throw membersError;
       
       // Then delete the group itself
@@ -300,7 +300,7 @@ export const useFriendGroups = (friends: Player[]) => {
         .eq('id', groupId)
         .select()
         .single();
-        
+      
       if (error) throw error;
       return data;
     },

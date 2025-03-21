@@ -26,6 +26,10 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
     console.log('GroupInvitationsList - Invitations:', invitations);
     console.log('GroupInvitationsList - Count:', invitations?.length || 0);
     console.log('GroupInvitationsList - Loading:', isLoading);
+    
+    if (invitations && invitations.length > 0) {
+      console.log('GroupInvitationsList - First invitation details:', JSON.stringify(invitations[0], null, 2));
+    }
   }, [invitations, isLoading]);
 
   // If loading, show a clean skeleton with fixed height to prevent layout shifts

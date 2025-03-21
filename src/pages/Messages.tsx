@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
-import { MessageCircle, Users, UserPlus } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, RotateCw, Bug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ const Messages = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Handle friends loading state
   useEffect(() => {
@@ -97,20 +99,81 @@ const Messages = () => {
     }, 1000);
   };
 
+  const handleManualRefresh = () => {
+    toast.info('Manually refreshing invitations and groups...');
+    forceRefreshInvitations();
+    refetchGroups();
+  };
+
+  const toggleDebug = () => {
+    setShowDebug(!showDebug);
+  };
+
   return (
     <div className="min-h-screen pb-6">
       <NavBar />
       
       <div className="container max-w-6xl mx-auto pt-20 px-4">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <MessageCircle className="h-8 w-8" />
-            Messages
-          </h1>
-          <p className="text-muted-foreground">
-            Chat with your friend groups
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <MessageCircle className="h-8 w-8" />
+              Messages
+            </h1>
+            <p className="text-muted-foreground">
+              Chat with your friend groups
+            </p>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleManualRefresh}
+              className="flex items-center gap-1"
+            >
+              <RotateCw className="h-4 w-4" />
+              <span>Refresh</span>
+            </Button>
+            
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={toggleDebug}
+              className="flex items-center gap-1"
+            >
+              <Bug className="h-4 w-4" />
+              <span>Debug</span>
+            </Button>
+          </div>
         </div>
+        
+        {showDebug && (
+          <Card className="p-4 mb-6 bg-slate-50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
+              <div>
+                <strong>User ID:</strong> {user?.id || 'Not logged in'}
+              </div>
+              <div>
+                <strong>Friends:</strong> {friends?.length || 0} loaded
+              </div>
+              <div>
+                <strong>Friend Groups:</strong> {friendGroups?.length || 0} loaded
+              </div>
+              <div>
+                <strong>Invitations State:</strong> {invitations?.length || 0} pending, loading: {isLoadingInvitations ? 'yes' : 'no'}, initialized: {invitationsInitialized ? 'yes' : 'no'}
+              </div>
+              {invitations && invitations.length > 0 && (
+                <div>
+                  <strong>First Invitation:</strong> {JSON.stringify(invitations[0], null, 2)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Group Invitations - Only show if invitations have been initialized */}
         {invitationsInitialized && (
