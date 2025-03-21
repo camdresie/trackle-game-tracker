@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -16,12 +16,14 @@ export interface GroupInvitation {
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
   
   // Fetch all group invitations for the current user
   const {
     data: invitations = [],
     isLoading,
-    refetch
+    refetch,
+    isError
   } = useQuery({
     queryKey: ['group-invitations', user?.id],
     queryFn: async () => {
@@ -101,11 +103,18 @@ export const useGroupInvitations = () => {
       }
     },
     enabled: !!user,
-    refetchInterval: 5000, // Refresh more frequently (every 5 seconds)
+    refetchInterval: 10000, // Refresh more frequently (every 10 seconds)
     staleTime: 2000, // Consider data stale after 2 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true
   });
+  
+  // Mark initial load as complete after first query
+  useEffect(() => {
+    if (!isLoading && !isInitialLoadComplete) {
+      setIsInitialLoadComplete(true);
+    }
+  }, [isLoading, isInitialLoadComplete]);
   
   // Accept a group invitation
   const acceptInvitationMutation = useMutation({
@@ -169,7 +178,8 @@ export const useGroupInvitations = () => {
   
   return {
     invitations,
-    isLoading,
+    isLoading: isLoading && !isInitialLoadComplete, // Only show loading state on initial load
+    isError,
     acceptInvitation: acceptInvitationMutation.mutate,
     declineInvitation: declineInvitationMutation.mutate,
     refetch,

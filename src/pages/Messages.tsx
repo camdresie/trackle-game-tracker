@@ -34,6 +34,7 @@ const Messages = () => {
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+  const [invitationsInitialized, setInvitationsInitialized] = useState(false);
 
   // Handle friends loading state
   useEffect(() => {
@@ -55,17 +56,15 @@ const Messages = () => {
       console.log('MESSAGES PAGE - Refreshing data on mount');
       refetchGroups();
       
-      // Force refresh invitations multiple times with a delay
-      // This handles potential race conditions with invitation creation
+      // Force refresh invitations
       forceRefreshInvitations();
       
-      const refreshIntervals = [1000, 3000, 6000];
-      refreshIntervals.forEach(delay => {
-        setTimeout(() => {
-          console.log(`MESSAGES PAGE - Delayed refresh after ${delay}ms`);
-          forceRefreshInvitations();
-        }, delay);
-      });
+      // After the first load, mark invitations as initialized
+      // This helps prevent UI flashing by ensuring we only show the invitations component
+      // after we're sure we've tried to load data at least once
+      setTimeout(() => {
+        setInvitationsInitialized(true);
+      }, 1000);
     }
   }, [user, refetchGroups, forceRefreshInvitations]);
 
@@ -106,14 +105,16 @@ const Messages = () => {
           </p>
         </div>
 
-        {/* Group Invitations - Always show with empty state */}
-        <GroupInvitationsList 
-          invitations={invitations}
-          isLoading={isLoadingInvitations}
-          onAccept={handleAcceptInvitation}
-          onDecline={declineInvitation}
-          alwaysShow={true}
-        />
+        {/* Group Invitations - Only show if invitations have been initialized */}
+        {invitationsInitialized && (
+          <GroupInvitationsList 
+            invitations={invitations}
+            isLoading={isLoadingInvitations}
+            onAccept={handleAcceptInvitation}
+            onDecline={declineInvitation}
+            alwaysShow={true}
+          />
+        )}
 
         {(isGroupsLoading || isLoadingFriends) ? (
           <div className="flex items-center justify-center h-64">

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GroupInvitation } from '@/hooks/useGroupInvitations';
 import { Check, X, AlertCircle, Users, InboxIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface GroupInvitationsListProps {
   invitations: GroupInvitation[];
@@ -25,18 +26,24 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
     console.log('GroupInvitationsList - Invitations:', invitations);
   }, [invitations]);
 
+  // If loading, show a clean skeleton with fixed height to prevent layout shifts
   if (isLoading) {
     return (
-      <Card className="p-4 mb-6 animate-pulse">
-        <div className="h-16 bg-muted/30 rounded"></div>
+      <Card className="p-4 mb-6 overflow-hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <Skeleton className="h-5 w-5" />
+          <Skeleton className="h-5 w-40" />
+        </div>
+        <Skeleton className="h-16 w-full" />
       </Card>
     );
   }
   
+  // If no invitations and not set to always show, return null (don't render anything)
   if (!invitations || invitations.length === 0) {
     console.log('No invitations to display');
     
-    // If alwaysShow is true, show an empty state
+    // If alwaysShow is true, show an empty state with fixed height
     if (alwaysShow) {
       return (
         <Card className="p-4 mb-6 border-muted/50">
@@ -45,7 +52,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
             <h3 className="font-medium">Group Invitations</h3>
           </div>
           
-          <div className="py-8 flex flex-col items-center justify-center text-center text-muted-foreground">
+          <div className="py-6 flex flex-col items-center justify-center text-center text-muted-foreground">
             <InboxIcon className="w-10 h-10 mb-2 opacity-50" />
             <p>No pending group invitations</p>
             <p className="text-sm mt-1">When someone invites you to a group, it will appear here</p>
@@ -57,6 +64,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
     return null;
   }
   
+  // If there are invitations, show them
   return (
     <Card className="p-4 mb-6 border-accent/50">
       <div className="flex items-center gap-2 mb-3 text-accent">
