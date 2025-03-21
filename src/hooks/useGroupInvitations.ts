@@ -106,81 +106,48 @@ export const useGroupInvitations = () => {
       console.log('Accepting invitation with ID:', invitationId);
       
       try {
-        // Get the invitation details directly from our invitations array first
+        // Find the invitation in our local state first
         const invitation = invitations.find(inv => inv.id === invitationId);
         
         if (!invitation) {
           console.error('Invitation not found in local state:', invitationId);
-          // Fall back to database query if not found in local state
-          const { data: invitationDetails, error: invitationError } = await supabase
-            .from('friend_group_members')
-            .select('group_id')
-            .eq('id', invitationId)
-            .single();
-          
-          if (invitationError || !invitationDetails) {
-            console.error('Error fetching invitation details:', invitationError);
-            throw new Error('Failed to find invitation');
-          }
-          
-          const groupId = invitationDetails.group_id;
-          console.log('Found group ID for invitation from DB:', groupId);
-          
-          // Now update the status to 'accepted'
-          const { error } = await supabase
-            .from('friend_group_members')
-            .update({ status: 'accepted' })
-            .eq('id', invitationId);
-          
-          if (error) {
-            console.error('Error accepting invitation:', error);
-            throw error;
-          }
-          
-          // Verify the update was successful
-          const { data: verifyUpdate, error: verifyError } = await supabase
-            .from('friend_group_members')
-            .select('status')
-            .eq('id', invitationId)
-            .single();
-            
-          if (verifyError || !verifyUpdate || verifyUpdate.status !== 'accepted') {
-            console.error('Verification failed - invitation status not updated:', verifyError || 'Status not updated');
-            throw new Error('Failed to update invitation status');
-          }
-          
-          console.log('Successfully accepted invitation from DB lookup, verified update');
-          return { invitationId, groupId };
+          throw new Error('Failed to find invitation');
         }
         
-        // If we have the invitation in local state, use that info
         const groupId = invitation.groupId;
-        console.log('Found group ID for invitation from local state:', groupId);
+        console.log('Found group ID for invitation:', groupId);
         
-        // Now update the status to 'accepted'
-        const { error } = await supabase
+        // FIXED: Direct update using the friend_group_members table
+        const { error: updateError } = await supabase
           .from('friend_group_members')
           .update({ status: 'accepted' })
-          .eq('id', invitationId);
+          .eq('id', invitationId)
+          .select();
         
-        if (error) {
-          console.error('Error accepting invitation:', error);
-          throw error;
+        if (updateError) {
+          console.error('Error accepting invitation:', updateError);
+          throw updateError;
         }
         
-        // Verify the update was successful
+        // Verify the update was successful - This is critical for confirmation
         const { data: verifyUpdate, error: verifyError } = await supabase
           .from('friend_group_members')
           .select('status')
           .eq('id', invitationId)
           .single();
           
-        if (verifyError || !verifyUpdate || verifyUpdate.status !== 'accepted') {
-          console.error('Verification failed - invitation status not updated:', verifyError || 'Status not updated');
+        if (verifyError) {
+          console.error('Error verifying invitation update:', verifyError);
+          throw new Error('Could not verify invitation update');
+        }
+        
+        if (!verifyUpdate || verifyUpdate.status !== 'accepted') {
+          console.error('Verification failed - invitation status not updated correctly');
           throw new Error('Failed to update invitation status');
         }
         
-        console.log('Successfully accepted invitation, verified update');
+        console.log('Successfully accepted invitation, verified status:', verifyUpdate.status);
+        
         return { invitationId, groupId };
       } catch (error) {
         console.error('Error in acceptInvitationMutation:', error);
@@ -189,17 +156,23 @@ export const useGroupInvitations = () => {
     },
     onSuccess: (data) => {
       console.log('Invitation accepted successfully, invalidating queries');
-      // More aggressive cache invalidation
+      
+      // Aggressive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
       queryClient.removeQueries({ queryKey: ['group-invitations', user?.id] });
-      queryClient.invalidateQueries(); // Invalidate all queries to be extra safe
+      
+      // Force refetch after a short delay to ensure DB has updated
+      setTimeout(() => {
+        refetch();
+      }, 500);
+      
       toast.success('You have joined the group!');
     },
     onError: (error) => {
       console.error('Error in acceptInvitationMutation:', error);
-      toast.error('Failed to accept invitation');
+      toast.error('Failed to accept invitation. Please try again.');
     }
   });
   
@@ -209,7 +182,7 @@ export const useGroupInvitations = () => {
       console.log('Declining invitation with ID:', invitationId);
       
       // Actually delete the invitation instead of just updating status
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('friend_group_members')
         .delete()
         .eq('id', invitationId);
@@ -233,7 +206,7 @@ export const useGroupInvitations = () => {
     }
   });
   
-  // Add a manual trigger for refetching invitations, but don't use this in an interval
+  // Add a manual trigger for refetching invitations
   const forceRefresh = async () => {
     console.log('Force refreshing invitations');
     return await refetch();
