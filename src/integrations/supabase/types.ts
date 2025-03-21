@@ -268,6 +268,12 @@ export type Database = {
         }
         Returns: Json
       }
+      direct_sql_query: {
+        Args: {
+          sql_query: string
+        }
+        Returns: Json
+      }
       force_delete_connection: {
         Args: {
           connection_id: string

@@ -23,7 +23,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
 }) => {
   // Debug: Log the invitations data with more detail
   useEffect(() => {
-    console.log('GroupInvitationsList - Invitations:', invitations);
+    console.log('GroupInvitationsList - Invitations received:', invitations);
     console.log('GroupInvitationsList - Count:', invitations?.length || 0);
     console.log('GroupInvitationsList - Loading:', isLoading);
     
@@ -47,7 +47,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   
   // If no invitations and not set to always show, return null (don't render anything)
   if (!invitations || invitations.length === 0) {
-    console.log('No invitations to display');
+    console.log('GroupInvitationsList - No invitations to display');
     
     // If alwaysShow is true, show an empty state with fixed height
     if (alwaysShow) {
