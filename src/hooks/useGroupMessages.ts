@@ -110,7 +110,7 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message - simplified version with direct insert
+  // Send a message - enhanced version with better error logging
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
@@ -118,7 +118,32 @@ export const useGroupMessages = (groupId: string | null) => {
       console.log(`Sending message to group ${groupId}:`, content);
       
       try {
-        // Directly insert the message - RLS policy will handle authorization
+        // First log group membership status for debugging
+        console.log(`Checking membership status for user ${user.id} in group ${groupId}`);
+        
+        // Get group details to check if user is owner or member
+        const { data: groupData } = await supabase
+          .from('friend_groups')
+          .select('user_id')
+          .eq('id', groupId)
+          .maybeSingle();
+        
+        const isOwner = groupData?.user_id === user.id;
+        console.log(`User is group owner: ${isOwner}`);
+        
+        if (!isOwner) {
+          // Check if user is an accepted member
+          const { data: memberData } = await supabase
+            .from('friend_group_members')
+            .select('status')
+            .eq('group_id', groupId)
+            .eq('friend_id', user.id)
+            .maybeSingle();
+            
+          console.log(`Member status check: ${memberData?.status || 'not a member'}`);
+        }
+        
+        // Now insert the message - the RLS policy will handle authorization
         const { data, error } = await supabase
           .from('group_messages')
           .insert({
@@ -132,9 +157,10 @@ export const useGroupMessages = (groupId: string | null) => {
         if (error) {
           console.error('Error sending message:', error);
           
-          // Check if it's an RLS error
+          // Handle specific error types
           if (error.code === '42501') {
-            throw new Error('You are not authorized to send messages in this group');
+            console.error('RLS policy violation - user not authorized to send messages in this group');
+            throw new Error('You do not have permission to send messages in this group');
           }
           
           throw error;
@@ -142,7 +168,7 @@ export const useGroupMessages = (groupId: string | null) => {
         
         console.log('Message sent successfully:', data);
         return data;
-      } catch (err) {
+      } catch (err: any) {
         console.error('Exception in sendMessage:', err);
         throw err;
       }
@@ -155,7 +181,7 @@ export const useGroupMessages = (groupId: string | null) => {
       console.error('Error sending message:', error);
       
       // More specific error message
-      if (error.message.includes('not authorized')) {
+      if (error.message?.includes('not authorized') || error.message?.includes('permission')) {
         toast.error('You do not have permission to send messages in this group');
       } else {
         toast.error('Failed to send message');
