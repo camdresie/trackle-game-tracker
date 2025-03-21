@@ -71,6 +71,8 @@ export const useGroupInvitations = () => {
           // The issue was that we were incorrectly trying to access properties on the array
           // instead of on individual elements
           if (item.friend_groups) {
+            // The friend_groups is a single object, not an array in this case
+            // because it's a nested select for a single related record
             const group = item.friend_groups;
             
             console.log(`INVITATIONS QUERY - Processing group invitation: group=${group.name}, id=${item.id}`);
