@@ -97,16 +97,23 @@ const Messages = () => {
       // Immediately refetch data to update UI
       setTimeout(async () => {
         console.log('Refreshing data after accepting invitation');
+        
+        // Clear all related caches first
+        queryClient.removeQueries({ queryKey: ['group-invitations'] });
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        
+        // Then refetch everything with fresh data
         await Promise.all([
           refetchGroups(),
           refetchInvitations(),
           queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
           queryClient.invalidateQueries({ queryKey: ['friend-group-members'] }),
+          queryClient.invalidateQueries({ queryKey: ['group-invitations'] }),
           queryClient.invalidateQueries() // Invalidate all queries to be safe
         ]);
         
         setProcessingInvitation(false);
-      }, 3000); // Increased timeout to ensure database operations complete
+      }, 4000); // Increased timeout to ensure database operations complete
     } catch (error) {
       console.error('Error handling invitation accept:', error);
       toast.error('Failed to process invitation');
@@ -116,12 +123,20 @@ const Messages = () => {
 
   const handleManualRefresh = async () => {
     toast.info('Refreshing invitations and groups...');
+    
+    // Clear caches first
+    queryClient.removeQueries({ queryKey: ['group-invitations'] });
+    queryClient.removeQueries({ queryKey: ['friend-groups'] });
+    
+    // Then fetch fresh data
     await Promise.all([
       refetchInvitations(),
       refetchGroups(),
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] }),
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] })
+      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] }),
+      queryClient.invalidateQueries({ queryKey: ['group-invitations'] })
     ]);
+    
     toast.success('Refreshed successfully');
   };
 

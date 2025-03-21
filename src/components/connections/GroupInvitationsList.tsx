@@ -97,6 +97,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
                 variant="outline" 
                 className="flex items-center gap-1 border-red-300 hover:bg-red-50 hover:text-red-600"
                 onClick={() => onDecline(invitation.id)}
+                disabled={isLoading}
               >
                 <X className="w-4 h-4" />
                 <span>Decline</span>
@@ -105,6 +106,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
                 size="sm" 
                 className="flex items-center gap-1 bg-accent hover:bg-accent/80"
                 onClick={() => onAccept(invitation.id)}
+                disabled={isLoading}
               >
                 <Check className="w-4 h-4" />
                 <span>Accept</span>

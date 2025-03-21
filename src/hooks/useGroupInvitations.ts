@@ -137,7 +137,19 @@ export const useGroupInvitations = () => {
             throw error;
           }
           
-          console.log('Successfully accepted invitation from DB lookup');
+          // Verify the update was successful
+          const { data: verifyUpdate, error: verifyError } = await supabase
+            .from('friend_group_members')
+            .select('status')
+            .eq('id', invitationId)
+            .single();
+            
+          if (verifyError || !verifyUpdate || verifyUpdate.status !== 'accepted') {
+            console.error('Verification failed - invitation status not updated:', verifyError || 'Status not updated');
+            throw new Error('Failed to update invitation status');
+          }
+          
+          console.log('Successfully accepted invitation from DB lookup, verified update');
           return { invitationId, groupId };
         }
         
@@ -156,7 +168,19 @@ export const useGroupInvitations = () => {
           throw error;
         }
         
-        console.log('Successfully accepted invitation');
+        // Verify the update was successful
+        const { data: verifyUpdate, error: verifyError } = await supabase
+          .from('friend_group_members')
+          .select('status')
+          .eq('id', invitationId)
+          .single();
+          
+        if (verifyError || !verifyUpdate || verifyUpdate.status !== 'accepted') {
+          console.error('Verification failed - invitation status not updated:', verifyError || 'Status not updated');
+          throw new Error('Failed to update invitation status');
+        }
+        
+        console.log('Successfully accepted invitation, verified update');
         return { invitationId, groupId };
       } catch (error) {
         console.error('Error in acceptInvitationMutation:', error);
@@ -169,6 +193,7 @@ export const useGroupInvitations = () => {
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations', user?.id] });
       queryClient.invalidateQueries(); // Invalidate all queries to be extra safe
       toast.success('You have joined the group!');
     },

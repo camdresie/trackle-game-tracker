@@ -35,60 +35,75 @@ export const useFriendGroups = (friends: Player[]) => {
         
         console.log('Fetching friend groups for user:', user.id);
         
-        // Get groups where current user is owner
-        const { data: ownedGroups, error: ownedError } = await supabase
-          .from('friend_groups')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (ownedError) {
-          console.error('Error fetching owned groups:', ownedError);
-          throw ownedError;
+        // More comprehensive SQL query using direct_sql_query
+        const directQuery = `
+          WITH owned_groups AS (
+            SELECT 
+              fg.id, 
+              fg.name, 
+              fg.description, 
+              fg.user_id,
+              fg.created_at, 
+              fg.updated_at, 
+              false as is_joined_group,
+              'owner' as status
+            FROM 
+              friend_groups fg
+            WHERE 
+              fg.user_id = '${user.id}'
+          ),
+          member_groups AS (
+            SELECT 
+              fg.id, 
+              fg.name, 
+              fg.description, 
+              fg.user_id,
+              fg.created_at, 
+              fg.updated_at, 
+              true as is_joined_group,
+              fgm.status
+            FROM 
+              friend_group_members fgm
+            JOIN 
+              friend_groups fg ON fgm.group_id = fg.id
+            WHERE 
+              fgm.friend_id = '${user.id}'
+              AND fgm.status = 'accepted'
+          )
+          SELECT * FROM owned_groups
+          UNION ALL
+          SELECT * FROM member_groups
+        `;
+        
+        const { data: directResults, error: directQueryError } = await supabase.rpc('direct_sql_query', { 
+          sql_query: directQuery 
+        });
+        
+        if (directQueryError) {
+          console.error('Error fetching groups:', directQueryError);
+          throw directQueryError;
         }
         
-        console.log('Owned groups:', ownedGroups?.length || 0);
+        console.log('Direct query friend groups results:', directResults);
         
-        // Get groups where current user is a member (with accepted status)
-        const { data: memberGroups, error: memberError } = await supabase
-          .from('friend_group_members')
-          .select('friend_groups(*), status')
-          .eq('friend_id', user.id)
-          .eq('status', 'accepted');
-          
-        if (memberError) {
-          console.error('Error fetching member groups:', memberError);
-          throw memberError;
+        if (!directResults || directResults.length === 0) {
+          return [];
         }
         
-        console.log('Member groups:', memberGroups?.length || 0);
-        if (memberGroups && memberGroups.length > 0) {
-          console.log('First member group:', memberGroups[0]);
-        }
+        // Format the groups from the direct query results
+        const groupsData: FriendGroup[] = directResults.map(item => ({
+          id: item.id,
+          name: item.name,
+          user_id: item.user_id,
+          description: item.description,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          isJoinedGroup: item.is_joined_group,
+          status: item.status
+        }));
         
-        // Combine owned and member groups
-        const groups: FriendGroup[] = [...(ownedGroups || [])];
-        
-        // Add member groups if they exist and aren't already included
-        if (memberGroups) {
-          memberGroups.forEach(item => {
-            if (item.friend_groups) {
-              // Convert the friend_groups to FriendGroup and mark as joined group
-              const group = item.friend_groups as unknown as FriendGroup;
-              group.isJoinedGroup = true;
-              group.status = item.status;
-              
-              // Only add if not already in the list (to avoid duplicates)
-              if (!groups.some(g => g.id === group.id)) {
-                console.log('Adding joined group to list:', group.name);
-                groups.push(group);
-              }
-            }
-          });
-        }
-        
-        console.log('Combined groups:', groups.length);
-        return groups;
-        
+        console.log('Formatted group data:', groupsData);
+        return groupsData;
       } catch (error) {
         console.error('Error in useFriendGroups:', error);
         toast.error('Failed to load friend groups');
