@@ -101,8 +101,10 @@ export const useGroupInvitations = () => {
       }
     },
     enabled: !!user,
-    refetchInterval: 10000, // Refresh every 10 seconds
-    staleTime: 5000 // Consider data stale after 5 seconds
+    refetchInterval: 5000, // Refresh more frequently (every 5 seconds)
+    staleTime: 2000, // Consider data stale after 2 seconds
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
   
   // Accept a group invitation
@@ -159,6 +161,9 @@ export const useGroupInvitations = () => {
   // Add a manual trigger for refetching invitations
   const forceRefresh = () => {
     console.log('INVITATIONS QUERY - Manually refreshing invitations');
+    // Clear cache first
+    queryClient.removeQueries({ queryKey: ['group-invitations'] });
+    // Then refetch
     return refetch();
   };
   

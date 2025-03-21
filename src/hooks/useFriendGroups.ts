@@ -202,9 +202,16 @@ export const useFriendGroups = (friends: Player[]) => {
         throw checkError;
       }
       
-      // If already a member, return that record
+      // If already a member, check status and provide appropriate feedback
       if (existingMember) {
         console.log('Friend is already in this group:', existingMember);
+        
+        if (existingMember.status === 'pending') {
+          throw new Error('Invitation already sent and pending response');
+        } else if (existingMember.status === 'accepted') {
+          throw new Error('Friend is already a member of this group');
+        }
+        
         return existingMember;
       }
       
@@ -238,7 +245,18 @@ export const useFriendGroups = (friends: Player[]) => {
     },
     onError: (error) => {
       console.error('Error in addFriendToGroupMutation:', error);
-      toast.error('Failed to add friend to group');
+      
+      // Provide more specific error messages based on the error
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to add friend to group';
+        
+      // Show different toast for 'already invited' error
+      if (errorMessage.includes('already')) {
+        toast.info(errorMessage);
+      } else {
+        toast.error(errorMessage);
+      }
     }
   });
   

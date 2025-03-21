@@ -15,8 +15,10 @@ import { FriendGroup, Player } from '@/utils/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Search, X, Check } from 'lucide-react';
+import { UserPlus, Search, X, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AddFriendsToGroupModalProps {
   open: boolean;
@@ -33,12 +35,50 @@ const AddFriendsToGroupModal = ({
   availableFriends,
   onAddFriend
 }: AddFriendsToGroupModalProps) => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [processingFriends, setProcessingFriends] = useState<Record<string, boolean>>({});
+  const [pendingInvites, setPendingInvites] = useState<Record<string, boolean>>({});
 
+  // Get friends that match the search term
   const filteredFriends = availableFriends.filter(friend => 
     friend.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  // Check for existing pending invitations when the modal opens
+  useEffect(() => {
+    if (open && user && group?.id) {
+      const checkPendingInvites = async () => {
+        try {
+          console.log(`Checking pending invites for group ${group.id}`);
+          const { data, error } = await supabase
+            .from('friend_group_members')
+            .select('friend_id, status')
+            .eq('group_id', group.id)
+            .eq('status', 'pending');
+            
+          if (error) {
+            console.error('Error checking pending invites:', error);
+            return;
+          }
+          
+          console.log('Pending invites data:', data);
+          
+          // Update pending invites state
+          const pendingMap: Record<string, boolean> = {};
+          data?.forEach(item => {
+            pendingMap[item.friend_id] = true;
+          });
+          
+          setPendingInvites(pendingMap);
+        } catch (err) {
+          console.error('Error in checkPendingInvites:', err);
+        }
+      };
+      
+      checkPendingInvites();
+    }
+  }, [open, user, group?.id]);
 
   const handleAddFriend = (friendId: string) => {
     console.log(`INVITATION FLOW - User clicked to add friend ${friendId} to group ${group.id}`);
@@ -53,12 +93,12 @@ const AddFriendsToGroupModal = ({
       // Call the provided callback to add the friend
       onAddFriend(friendId);
       
-      // Show success toast
-      toast.success("Friend invitation sent");
+      // Update pending invites (optimistically)
+      setPendingInvites(prev => ({ ...prev, [friendId]: true }));
+      
       console.log(`INVITATION FLOW - Invitation sent successfully to friendId=${friendId}`);
     } catch (error) {
       console.error("INVITATION FLOW - Error adding friend to group:", error);
-      toast.error("Failed to add friend to group");
     }
     
     // Clear the processing state after a short delay (for better UX)
@@ -134,20 +174,32 @@ const AddFriendsToGroupModal = ({
                       </Avatar>
                       <span>{friend.name}</span>
                     </div>
-                    <Button
-                      variant={processingFriends[friend.id] ? "outline" : "ghost"}
-                      size="icon"
-                      onClick={() => handleAddFriend(friend.id)}
-                      className="w-8 h-8 p-0"
-                      disabled={processingFriends[friend.id]}
-                    >
-                      {processingFriends[friend.id] ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <UserPlus className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">Add {friend.name}</span>
-                    </Button>
+                    {pendingInvites[friend.id] ? (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="w-8 h-8 p-0 cursor-not-allowed"
+                        disabled
+                      >
+                        <Clock className="h-4 w-4 text-yellow-500" />
+                        <span className="sr-only">Invitation pending for {friend.name}</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant={processingFriends[friend.id] ? "outline" : "ghost"}
+                        size="icon"
+                        onClick={() => handleAddFriend(friend.id)}
+                        className="w-8 h-8 p-0"
+                        disabled={processingFriends[friend.id]}
+                      >
+                        {processingFriends[friend.id] ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <UserPlus className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Add {friend.name}</span>
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
