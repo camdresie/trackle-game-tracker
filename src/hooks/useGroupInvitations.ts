@@ -45,7 +45,7 @@ export const useGroupInvitations = () => {
       console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
       
       try {
-        // Get all pending invitations with group details
+        // Get all pending invitations with group details - using a simpler query first
         const { data, error } = await supabase
           .from('friend_group_members')
           .select(`
@@ -64,7 +64,10 @@ export const useGroupInvitations = () => {
           return [];
         }
         
+        // Log the raw data to help diagnose issues
         console.log('INVITATIONS QUERY - Raw group invitation data:', data);
+        console.log('INVITATIONS QUERY - Raw data type:', typeof data);
+        console.log('INVITATIONS QUERY - Raw data length:', data?.length || 0);
         
         // If no invitations found
         if (!data || data.length === 0) {
@@ -75,18 +78,22 @@ export const useGroupInvitations = () => {
         // Format the invitations for display
         const invitationsData: GroupInvitation[] = [];
         
-        // Use a type assertion through unknown to handle the type conversion safely
-        const typedData = data as unknown as FriendGroupMemberWithGroup[];
-        
-        for (const item of typedData) {
+        // Process each invitation item
+        for (const item of data) {
           // Debug the structure of each invitation item
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
           // Check if the item has friend_groups data
           if (item.friend_groups) {
-            // The friend_groups is a single object, not an array in this case
-            // because it's a nested select for a single related record
-            const group = item.friend_groups;
+            // Get the group data - it could be an array or a single object depending on how Supabase returns it
+            const group = Array.isArray(item.friend_groups) 
+              ? item.friend_groups[0] 
+              : item.friend_groups;
+              
+            if (!group) {
+              console.error('INVITATIONS QUERY - Missing group data in friend_groups');
+              continue;
+            }
             
             console.log(`INVITATIONS QUERY - Processing group invitation: group=${group.name}, id=${item.id}`);
             
@@ -127,7 +134,7 @@ export const useGroupInvitations = () => {
     enabled: !!user,
     // Increase refetch frequency for better responsiveness
     refetchInterval: 3000, 
-    staleTime: 0, // Changed from 500 to 0 to always get fresh data
+    staleTime: 0, // Always get fresh data
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     retry: 5 // Increased retries
