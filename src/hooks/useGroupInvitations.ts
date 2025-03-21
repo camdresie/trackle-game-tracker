@@ -49,6 +49,8 @@ export const useGroupInvitations = () => {
         return [];
       }
       
+      console.log('Raw group invitation data:', data);
+      
       // Format the invitations for display
       const invitationsData: GroupInvitation[] = [];
       
@@ -73,7 +75,7 @@ export const useGroupInvitations = () => {
         }
       }
       
-      console.log('Invitations found:', invitationsData);
+      console.log('Formatted invitations found:', invitationsData);
       return invitationsData;
     },
     enabled: !!user

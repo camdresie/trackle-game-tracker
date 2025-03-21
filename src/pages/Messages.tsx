@@ -66,10 +66,13 @@ const Messages = () => {
 
   // Handle accepting a group invitation
   const handleAcceptInvitation = (invitationId: string) => {
+    console.log('Accepting invitation with ID:', invitationId);
     acceptInvitation(invitationId);
     // After accepting, wait a moment and refresh the groups list
     setTimeout(() => {
       refetchGroups();
+      // Also refresh the invitations list to remove the accepted one
+      refetchInvitations();
     }, 1000);
   };
 
@@ -89,6 +92,7 @@ const Messages = () => {
         </div>
 
         {/* Group Invitations - Show at the top if there are any */}
+        {/* Force the invitations UI to show for debugging */}
         <GroupInvitationsList 
           invitations={invitations}
           isLoading={isLoadingInvitations}

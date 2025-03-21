@@ -18,6 +18,11 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   onAccept,
   onDecline
 }) => {
+  // Debug: Log the invitations data
+  React.useEffect(() => {
+    console.log('GroupInvitationsList - Invitations:', invitations);
+  }, [invitations]);
+
   if (isLoading) {
     return (
       <Card className="p-4 mb-6 animate-pulse">
@@ -27,6 +32,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   }
   
   if (!invitations || invitations.length === 0) {
+    console.log('No invitations to display');
     return null;
   }
   
@@ -34,7 +40,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
     <Card className="p-4 mb-6 border-accent/50">
       <div className="flex items-center gap-2 mb-3 text-accent">
         <AlertCircle className="w-5 h-5" />
-        <h3 className="font-medium">Group Invitations</h3>
+        <h3 className="font-medium">Group Invitations ({invitations.length})</h3>
       </div>
       
       <div className="space-y-3">
