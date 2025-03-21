@@ -1,25 +1,9 @@
 
 import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, UserPlus, Bell } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-
-interface GroupInvitation {
-  id: string;
-  groupId: string;
-  groupName: string;
-  groupOwner: string;
-  status: string;
-}
+import { GroupInvitation } from '@/hooks/useGroupInvitations';
+import { Check, X, AlertCircle, Users } from 'lucide-react';
 
 interface GroupInvitationsListProps {
   invitations: GroupInvitation[];
@@ -28,18 +12,17 @@ interface GroupInvitationsListProps {
   onDecline: (invitationId: string) => void;
 }
 
-const GroupInvitationsList = ({ 
-  invitations, 
-  isLoading, 
-  onAccept, 
-  onDecline 
-}: GroupInvitationsListProps) => {
+const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
+  invitations,
+  isLoading,
+  onAccept,
+  onDecline
+}) => {
   if (isLoading) {
     return (
-      <div className="space-y-2 mb-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 w-full" />
-      </div>
+      <Card className="p-4 mb-6 animate-pulse">
+        <div className="h-16 bg-muted/30 rounded"></div>
+      </Card>
     );
   }
   
@@ -48,47 +31,45 @@ const GroupInvitationsList = ({
   }
   
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
-        <UserPlus className="h-5 w-5" />
-        <span>Group Invitations</span>
-        <Badge className="bg-primary">{invitations.length}</Badge>
-      </h3>
+    <Card className="p-4 mb-6 border-accent/50">
+      <div className="flex items-center gap-2 mb-3 text-accent">
+        <AlertCircle className="w-5 h-5" />
+        <h3 className="font-medium">Group Invitations</h3>
+      </div>
       
       <div className="space-y-3">
         {invitations.map((invitation) => (
-          <Card key={invitation.id} className="border-2 border-amber-300 bg-amber-50/10 shadow-sm hover:shadow-md transition-all">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4 text-amber-500" />
-                {invitation.groupName}
-                <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-300">Invitation</Badge>
-              </CardTitle>
-              <CardDescription>You've been invited to join this group</CardDescription>
-            </CardHeader>
-            <CardFooter className="pt-0 flex justify-end gap-2">
+          <div key={invitation.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{invitation.groupName}</p>
+                <p className="text-sm text-muted-foreground">From {invitation.groupOwner}</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
               <Button 
+                size="sm" 
                 variant="outline" 
-                size="sm"
+                className="flex items-center gap-1 border-red-300 hover:bg-red-50 hover:text-red-600"
                 onClick={() => onDecline(invitation.id)}
-                className="flex items-center gap-1 border-destructive/50 text-destructive hover:bg-destructive/10"
               >
-                <X className="h-4 w-4" />
+                <X className="w-4 h-4" />
                 <span>Decline</span>
               </Button>
               <Button 
-                size="sm"
+                size="sm" 
+                className="flex items-center gap-1 bg-accent hover:bg-accent/80"
                 onClick={() => onAccept(invitation.id)}
-                className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700"
               >
-                <Check className="h-4 w-4" />
+                <Check className="w-4 h-4" />
                 <span>Accept</span>
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 };
 

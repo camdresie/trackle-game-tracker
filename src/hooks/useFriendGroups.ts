@@ -1,212 +1,112 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { Player } from '@/utils/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { FriendGroup, Player } from '@/utils/types';
+import { toast } from 'sonner';
 
-// Define a type for the join result from the friend_group_members query
-interface GroupMemberJoinResult {
-  group_id: string;
-  friend_groups: {
-    id: string;
-    user_id: string;
-    name: string;
-    description?: string;
-    created_at: string;
-    updated_at: string;
-  } | null;
+export interface FriendGroup {
+  id: string;
+  name: string;
+  user_id: string; // owner ID
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  members?: Player[];
 }
 
-// Define a type for our joined group with the isJoinedGroup flag
-type JoinedFriendGroup = FriendGroup & { 
-  isJoinedGroup: boolean;
-};
-
-export const useFriendGroups = (friendsList: Player[] = []) => {
+export const useFriendGroups = (friends: Player[]) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Fetch friend groups - both created by the user and where the user is a member
+  // Get all friend groups where the current user is either owner or a member
   const { 
     data: friendGroups = [], 
-    isLoading: isLoadingGroups,
-    refetch: refetchGroups
+    isLoading, 
+    refetch
   } = useQuery({
     queryKey: ['friend-groups', user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      
-      console.log('Fetching groups for user:', user.id);
-      
-      // First get groups created by the user
-      const { data: ownedGroups, error: ownedGroupsError } = await supabase
-        .from('friend_groups')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (ownedGroupsError) {
-        console.error('Error fetching owned friend groups:', ownedGroupsError);
-        toast.error('Failed to load your groups');
+      try {
+        if (!user) return [];
+        
+        console.log('Fetching friend groups for user:', user.id);
+        
+        // Get groups where current user is owner
+        const { data: ownedGroups, error: ownedError } = await supabase
+          .from('friend_groups')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        if (ownedError) {
+          console.error('Error fetching owned groups:', ownedError);
+          throw ownedError;
+        }
+        
+        console.log('Owned groups:', ownedGroups?.length || 0);
+        
+        // Get groups where current user is a member (with accepted status)
+        const { data: memberGroups, error: memberError } = await supabase
+          .from('friend_group_members')
+          .select('friend_groups(*)')
+          .eq('friend_id', user.id)
+          .eq('status', 'accepted');
+          
+        if (memberError) {
+          console.error('Error fetching member groups:', memberError);
+          throw memberError;
+        }
+        
+        console.log('Member groups:', memberGroups?.length || 0);
+        
+        // Combine owned and member groups
+        const groups: FriendGroup[] = [...(ownedGroups || [])];
+        
+        // Add member groups if they exist and aren't already included
+        if (memberGroups) {
+          memberGroups.forEach(item => {
+            if (item.friend_groups) {
+              const group = item.friend_groups as FriendGroup;
+              // Only add if not already in the list (to avoid duplicates)
+              if (!groups.some(g => g.id === group.id)) {
+                groups.push(group);
+              }
+            }
+          });
+        }
+        
+        console.log('Combined groups:', groups.length);
+        return groups;
+        
+      } catch (error) {
+        console.error('Error in useFriendGroups:', error);
+        toast.error('Failed to load friend groups');
         return [];
       }
-      
-      console.log('Owned groups:', ownedGroups);
-      
-      // Then get groups where the user is a member (added by friends)
-      const { data: memberGroups, error: memberGroupsError } = await supabase
-        .from('friend_group_members')
-        .select(`
-          group_id,
-          friend_groups:friend_groups(*)
-        `)
-        .eq('friend_id', user.id)
-        .eq('status', 'accepted');
-      
-      if (memberGroupsError) {
-        console.error('Error fetching member friend groups:', memberGroupsError);
-        toast.error('Failed to load groups you are added to');
-        return ownedGroups || [];
-      }
-      
-      console.log('Member groups raw data:', memberGroups);
-      
-      // Extract the actual group data and add isJoinedGroup flag
-      const groupsAddedTo: JoinedFriendGroup[] = [];
-      
-      // Process each member group and add valid ones to our array
-      memberGroups.forEach(item => {
-        if (item.friend_groups && 
-            typeof item.friend_groups === 'object' && 
-            'id' in item.friend_groups) {
-          
-          // Create a properly typed object with correct string types
-          const groupData = item.friend_groups as Record<string, any>;
-          
-          const validGroup: JoinedFriendGroup = {
-            id: String(groupData.id),
-            user_id: String(groupData.user_id),
-            name: String(groupData.name),
-            description: groupData.description ? String(groupData.description) : undefined,
-            created_at: String(groupData.created_at),
-            updated_at: String(groupData.updated_at),
-            isJoinedGroup: true
-          };
-          
-          groupsAddedTo.push(validGroup);
-        } else {
-          console.warn('Skipping invalid group:', item);
-        }
-      });
-      
-      console.log('Groups user was added to:', groupsAddedTo);
-      
-      // Combine both sets of groups, ensuring no duplicates
-      const allGroups = [...(ownedGroups || [])];
-      
-      // Add groups the user was added to, avoiding duplicates
-      groupsAddedTo.forEach(joinedGroup => {
-        if (!allGroups.some(group => group.id === joinedGroup.id)) {
-          allGroups.push(joinedGroup);
-        }
-      });
-      
-      // Sort combined groups by creation date
-      const sortedGroups = allGroups.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      ) as FriendGroup[];
-      
-      console.log('All groups combined:', sortedGroups);
-      
-      return sortedGroups;
     },
-    enabled: !!user
+    enabled: !!user && friends !== undefined
   });
   
-  // Fetch members for all groups
-  const { 
-    data: groupsWithMembers = [],
-    isLoading: isLoadingMembers
-  } = useQuery({
-    queryKey: ['friend-group-members', user?.id, friendGroups],
-    queryFn: async () => {
-      if (!user || friendGroups.length === 0) return [];
-      
-      const groupsWithMembersPromises = friendGroups.map(async (group) => {
-        console.log(`Fetching members for group ${group.id}`);
-        
-        const { data, error } = await supabase
-          .from('friend_group_members')
-          .select('*, friend_id')
-          .eq('group_id', group.id)
-          .eq('status', 'accepted');
-        
-        if (error) {
-          console.error(`Error fetching members for group ${group.id}:`, error);
-          return { ...group, members: [] };
-        }
-        
-        console.log(`Members data for group ${group.id}:`, data);
-        
-        // Map members from friend IDs to Player objects
-        const members = data.map(memberData => {
-            const friend = friendsList.find(f => f.id === memberData.friend_id);
-            return friend || {
-              id: memberData.friend_id,
-              name: 'Unknown Friend',
-            };
-          });
-        
-        // For groups the user was added to, make sure to include the group owner
-        if ('isJoinedGroup' in group && group.isJoinedGroup) {
-          console.log(`Getting owner for joined group ${group.id}, owner ID: ${group.user_id}`);
-          
-          const { data: ownerData } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url')
-            .eq('id', group.user_id)
-            .maybeSingle();
-            
-          if (ownerData && !members.some(m => m.id === ownerData.id)) {
-            console.log(`Adding owner to group members:`, ownerData);
-            members.push({
-              id: ownerData.id,
-              name: ownerData.username || 'Group Owner',
-              avatar: ownerData.avatar_url
-            });
-          }
-        }
-        
-        return { ...group, members };
-      });
-      
-      return Promise.all(groupsWithMembersPromises);
-    },
-    enabled: !!user && friendGroups.length > 0 && friendsList.length > 0
-  });
-
   // Create a new friend group
   const createGroupMutation = useMutation({
     mutationFn: async ({ name, description }: { name: string, description?: string }) => {
-      if (!user) throw new Error('Not authenticated');
+      if (!user) throw new Error('User not authenticated');
       
       const { data, error } = await supabase
         .from('friend_groups')
         .insert({
-          user_id: user.id,
           name,
-          description
+          description,
+          user_id: user.id
         })
         .select()
         .single();
-      
+        
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      toast.success('Friend group created');
+      toast.success('Friend group created successfully');
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
     },
     onError: (error) => {
@@ -215,111 +115,60 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
     }
   });
   
-  // Delete a friend group
-  const deleteGroupMutation = useMutation({
-    mutationFn: async (groupId: string) => {
-      const { error } = await supabase
-        .from('friend_groups')
-        .delete()
-        .eq('id', groupId);
+  // Add a friend to a group
+  const addFriendToGroupMutation = useMutation({
+    mutationFn: async ({ 
+      groupId, 
+      friendId 
+    }: { 
+      groupId: string, 
+      friendId: string 
+    }) => {
+      // Check if the friend is already in the group
+      const { data: existingMember, error: checkError } = await supabase
+        .from('friend_group_members')
+        .select('*')
+        .eq('group_id', groupId)
+        .eq('friend_id', friendId)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking if friend is in group:', checkError);
+        throw checkError;
+      }
       
-      if (error) throw error;
-      return groupId;
-    },
-    onSuccess: (groupId) => {
-      toast.success('Friend group deleted');
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-    },
-    onError: (error) => {
-      console.error('Error deleting friend group:', error);
-      toast.error('Failed to delete friend group');
-    }
-  });
-  
-  // Update a friend group
-  const updateGroupMutation = useMutation({
-    mutationFn: async ({ id, name, description }: { id: string, name: string, description?: string }) => {
+      // If already a member, return that record
+      if (existingMember) {
+        console.log('Friend is already in this group:', existingMember);
+        return existingMember;
+      }
+      
+      // Otherwise, add them as pending
+      console.log(`Adding friend ${friendId} to group ${groupId}`);
       const { data, error } = await supabase
-        .from('friend_groups')
-        .update({
-          name,
-          description
+        .from('friend_group_members')
+        .insert({
+          group_id: groupId,
+          friend_id: friendId,
+          status: 'pending' // Add as pending until they accept
         })
-        .eq('id', id)
         .select()
         .single();
+        
+      if (error) {
+        console.error('Error adding friend to group:', error);
+        throw error;
+      }
       
-      if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      toast.success('Friend group updated');
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-    },
-    onError: (error) => {
-      console.error('Error updating friend group:', error);
-      toast.error('Failed to update friend group');
-    }
-  });
-  
-  // Add a friend to a group directly (now as an invitation)
-  const addFriendToGroupMutation = useMutation({
-    mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
-      console.log(`Adding friend ${friendId} to group ${groupId}`);
-      
-      try {
-        // First check if the friend is already a member of this group
-        const { data: existingMember, error: checkError } = await supabase
-          .from('friend_group_members')
-          .select('id, status')
-          .eq('group_id', groupId)
-          .eq('friend_id', friendId)
-          .maybeSingle();
-        
-        if (checkError) {
-          console.error('Error checking if friend is already in group:', checkError);
-          throw new Error('Failed to check group membership');
-        }
-        
-        // If the friend is already in the group, return early with the existing record
-        if (existingMember) {
-          console.log('Friend is already a member or has a pending invitation to this group:', existingMember);
-          return existingMember;
-        }
-        
-        // Add friend to group as a pending invitation
-        const { data, error } = await supabase
-          .from('friend_group_members')
-          .insert({
-            group_id: groupId,
-            friend_id: friendId,
-            status: 'pending'
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error adding friend to group:', error);
-          throw error;
-        }
-        
-        console.log('Successfully added friend to group:', data);
-        return data;
-      } catch (error) {
-        console.error('Error in addFriendToGroup mutation:', error);
-        throw error;
-      }
-    },
-    onSuccess: (data) => {
       toast.success('Friend invitation sent');
-      
-      // Invalidate all relevant queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
     },
     onError: (error) => {
-      console.error('Error adding friend to group:', error);
+      console.error('Error in addFriendToGroupMutation:', error);
       toast.error('Failed to add friend to group');
     }
   });
@@ -327,12 +176,12 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
   // Remove a friend from a group
   const removeFriendFromGroupMutation = useMutation({
     mutationFn: async ({ groupId, friendId }: { groupId: string, friendId: string }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('friend_group_members')
         .delete()
         .eq('group_id', groupId)
         .eq('friend_id', friendId);
-      
+        
       if (error) throw error;
       return { groupId, friendId };
     },
@@ -345,15 +194,46 @@ export const useFriendGroups = (friendsList: Player[] = []) => {
       toast.error('Failed to remove friend from group');
     }
   });
-
+  
+  // Delete a friend group
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      // First delete all group members
+      const { error: membersError } = await supabase
+        .from('friend_group_members')
+        .delete()
+        .eq('group_id', groupId);
+        
+      if (membersError) throw membersError;
+      
+      // Then delete the group itself
+      const { data, error } = await supabase
+        .from('friend_groups')
+        .delete()
+        .eq('id', groupId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Friend group deleted');
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting friend group:', error);
+      toast.error('Failed to delete friend group');
+    }
+  });
+  
   return {
-    friendGroups: groupsWithMembers.length > 0 ? groupsWithMembers : friendGroups,  
-    isLoading: isLoadingGroups || isLoadingMembers,
+    friendGroups,
+    isLoading,
     createGroup: createGroupMutation.mutate,
-    deleteGroup: deleteGroupMutation.mutate,
-    updateGroup: updateGroupMutation.mutate,
     addFriendToGroup: addFriendToGroupMutation.mutate,
     removeFriendFromGroup: removeFriendFromGroupMutation.mutate,
-    refetchGroups
+    deleteGroup: deleteGroupMutation.mutate,
+    refetch
   };
 };

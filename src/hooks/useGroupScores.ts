@@ -77,7 +77,11 @@ export const useGroupScores = (
           .in('group_id', groupIds)
           .eq('status', 'accepted');
           
-        if (error) throw error;
+        if (error) {
+          console.error('[useGroupScores] Error fetching group members:', error);
+          toast.error('Failed to load group members');
+          throw error;
+        }
         
         if (!members || members.length === 0) {
           console.log('[useGroupScores] No members found');
@@ -94,7 +98,11 @@ export const useGroupScores = (
           .select('id, username, full_name')
           .in('id', memberIds);
           
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('[useGroupScores] Error fetching profiles:', profilesError);
+          toast.error('Failed to load member profiles');
+          throw profilesError;
+        }
         
         if (!profiles) {
           console.log('[useGroupScores] No profiles found for members');
