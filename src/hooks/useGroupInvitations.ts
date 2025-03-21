@@ -59,11 +59,15 @@ export const useGroupInvitations = () => {
           const group = item.friend_groups as any;
           
           // Get group owner's username
-          const { data: ownerData } = await supabase
+          const { data: ownerData, error: ownerError } = await supabase
             .from('profiles')
             .select('username')
             .eq('id', group.user_id)
             .single();
+          
+          if (ownerError) {
+            console.error('Error fetching owner profile:', ownerError);
+          }
           
           invitationsData.push({
             id: item.id,
@@ -78,7 +82,8 @@ export const useGroupInvitations = () => {
       console.log('Formatted invitations found:', invitationsData);
       return invitationsData;
     },
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 10000 // Add periodic refresh every 10 seconds
   });
   
   // Accept a group invitation

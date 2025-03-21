@@ -3,20 +3,22 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GroupInvitation } from '@/hooks/useGroupInvitations';
-import { Check, X, AlertCircle, Users } from 'lucide-react';
+import { Check, X, AlertCircle, Users, InboxIcon } from 'lucide-react';
 
 interface GroupInvitationsListProps {
   invitations: GroupInvitation[];
   isLoading: boolean;
   onAccept: (invitationId: string) => void;
   onDecline: (invitationId: string) => void;
+  alwaysShow?: boolean;
 }
 
 const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   invitations,
   isLoading,
   onAccept,
-  onDecline
+  onDecline,
+  alwaysShow = false
 }) => {
   // Debug: Log the invitations data
   React.useEffect(() => {
@@ -33,6 +35,25 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   
   if (!invitations || invitations.length === 0) {
     console.log('No invitations to display');
+    
+    // If alwaysShow is true, show an empty state
+    if (alwaysShow) {
+      return (
+        <Card className="p-4 mb-6 border-muted/50">
+          <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+            <InboxIcon className="w-5 h-5" />
+            <h3 className="font-medium">Group Invitations</h3>
+          </div>
+          
+          <div className="py-8 flex flex-col items-center justify-center text-center text-muted-foreground">
+            <InboxIcon className="w-10 h-10 mb-2 opacity-50" />
+            <p>No pending group invitations</p>
+            <p className="text-sm mt-1">When someone invites you to a group, it will appear here</p>
+          </div>
+        </Card>
+      );
+    }
+    
     return null;
   }
   

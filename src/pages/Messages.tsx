@@ -11,6 +11,7 @@ import MessagesPanel from '@/components/messages/MessagesPanel';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 import { MessageCircle, Users, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -67,7 +68,9 @@ const Messages = () => {
   // Handle accepting a group invitation
   const handleAcceptInvitation = (invitationId: string) => {
     console.log('Accepting invitation with ID:', invitationId);
+    toast.info('Processing invitation...');
     acceptInvitation(invitationId);
+    
     // After accepting, wait a moment and refresh the groups list
     setTimeout(() => {
       refetchGroups();
@@ -91,13 +94,13 @@ const Messages = () => {
           </p>
         </div>
 
-        {/* Group Invitations - Show at the top if there are any */}
-        {/* Force the invitations UI to show for debugging */}
+        {/* Group Invitations - Always show with empty state */}
         <GroupInvitationsList 
           invitations={invitations}
           isLoading={isLoadingInvitations}
           onAccept={handleAcceptInvitation}
           onDecline={declineInvitation}
+          alwaysShow={true}
         />
 
         {(isGroupsLoading || isLoadingFriends) ? (
