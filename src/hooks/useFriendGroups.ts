@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +14,8 @@ export interface FriendGroup {
   created_at: string;
   updated_at: string;
   members?: Player[];
+  isJoinedGroup?: boolean;
+  status?: 'pending' | 'accepted' | 'rejected';
 }
 
 export const useFriendGroups = (friends: Player[]) => {
@@ -66,7 +69,10 @@ export const useFriendGroups = (friends: Player[]) => {
         if (memberGroups) {
           memberGroups.forEach(item => {
             if (item.friend_groups) {
-              const group = item.friend_groups as FriendGroup;
+              // Convert the friend_groups to FriendGroup and mark as joined group
+              const group = item.friend_groups as unknown as FriendGroup;
+              group.isJoinedGroup = true;
+              
               // Only add if not already in the list (to avoid duplicates)
               if (!groups.some(g => g.id === group.id)) {
                 groups.push(group);
@@ -112,6 +118,36 @@ export const useFriendGroups = (friends: Player[]) => {
     onError: (error) => {
       console.error('Error creating friend group:', error);
       toast.error('Failed to create friend group');
+    }
+  });
+
+  // Update an existing friend group
+  const updateGroupMutation = useMutation({
+    mutationFn: async ({ id, name, description }: { id: string, name: string, description?: string }) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      const { data, error } = await supabase
+        .from('friend_groups')
+        .update({
+          name,
+          description,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', user.id) // Ensure user owns the group
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Friend group updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+    },
+    onError: (error) => {
+      console.error('Error updating friend group:', error);
+      toast.error('Failed to update friend group');
     }
   });
   
@@ -231,9 +267,11 @@ export const useFriendGroups = (friends: Player[]) => {
     friendGroups,
     isLoading,
     createGroup: createGroupMutation.mutate,
+    updateGroup: updateGroupMutation.mutate,
     addFriendToGroup: addFriendToGroupMutation.mutate,
     removeFriendFromGroup: removeFriendFromGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
-    refetch
+    refetch,
+    refetchGroups: refetch // Alias for backward compatibility
   };
 };

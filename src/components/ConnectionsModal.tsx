@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -196,16 +197,16 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
     enabled: !!searchQuery && searchQuery.length >= 2 && open
   });
   
-  // Use the friend groups hook - removing pendingInvitations reference
+  // Use the friend groups hook
   const {
     friendGroups,
     isLoading: isLoadingGroups,
     createGroup,
-    deleteGroup,
     updateGroup,
+    deleteGroup,
     addFriendToGroup,
     removeFriendFromGroup,
-    refetchGroups
+    refetch: refetchGroups
   } = useFriendGroups(displayedFriends);
   
   // Filter out users that are already friends

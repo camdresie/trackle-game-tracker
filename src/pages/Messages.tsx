@@ -16,7 +16,7 @@ const Messages = () => {
   const { 
     friendGroups,
     isLoading: isGroupsLoading, 
-    refetchGroups
+    refetch: refetchGroups
   } = useFriendGroups(friends);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
