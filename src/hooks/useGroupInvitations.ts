@@ -117,42 +117,32 @@ export const useGroupInvitations = () => {
         const groupId = invitation.groupId;
         console.log('Found group ID for invitation:', groupId);
         
-        // Update the invitation status to accepted
-        const { error: updateError } = await supabase
-          .from('friend_group_members')
-          .update({ status: 'accepted' })
-          .eq('id', invitationId);
+        // Use RPC to ensure the update works reliably
+        const updateQuery = `
+          UPDATE friend_group_members 
+          SET status = 'accepted' 
+          WHERE id = '${invitationId}'
+          RETURNING id, status;
+        `;
+        
+        const { data: updateResult, error: updateError } = await supabase.rpc('direct_sql_query', {
+          sql_query: updateQuery
+        });
         
         if (updateError) {
           console.error('Error accepting invitation:', updateError);
           throw updateError;
         }
         
-        // Simplify verification: Just check if the update was successful without trying to get the record
-        // This avoids the "no rows returned" error when trying to use .single()
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('friend_group_members')
-          .select('status')
-          .eq('id', invitationId);
-          
-        if (verifyError) {
-          console.error('Error verifying invitation update:', verifyError);
-          throw new Error('Could not verify invitation update');
+        console.log('Update result:', updateResult);
+        
+        if (!updateResult || updateResult.length === 0) {
+          console.error('No rows updated - invitation may not exist');
+          throw new Error('Failed to update invitation - record may have been deleted');
         }
         
-        if (!verifyData || verifyData.length === 0) {
-          console.error('Verification failed - no record found after update');
-          throw new Error('Failed to find updated invitation record');
-        }
-        
-        const verifyUpdate = verifyData[0];
-        
-        if (verifyUpdate.status !== 'accepted') {
-          console.error('Verification failed - invitation status not updated correctly');
-          throw new Error('Failed to update invitation status');
-        }
-        
-        console.log('Successfully accepted invitation, verified status:', verifyUpdate.status);
+        // Log success and return information
+        console.log('Successfully accepted invitation, data returned:', updateResult[0]);
         
         return { invitationId, groupId };
       } catch (error) {

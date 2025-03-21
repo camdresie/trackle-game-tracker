@@ -35,13 +35,13 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   // If loading, show a clean skeleton with fixed height to prevent layout shifts
   if (isLoading) {
     return (
-      <Card className="p-4 mb-6 overflow-hidden border-muted/30">
-        <div className="flex items-center gap-2 mb-3">
-          <Skeleton className="h-5 w-5" />
-          <Skeleton className="h-5 w-40" />
+      <Card className="p-4 mb-6 overflow-hidden border-accent/50">
+        <div className="flex items-center gap-2 mb-3 text-accent">
+          <AlertCircle className="w-5 h-5" />
+          <h3 className="font-medium">Group Invitations</h3>
         </div>
         <div className="flex items-center justify-center h-16">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
           <span className="ml-2 text-muted-foreground">Processing invitation...</span>
         </div>
       </Card>
