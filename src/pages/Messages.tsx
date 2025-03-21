@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useFriendsList } from '@/hooks/useFriendsList';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
+import { useQueryClient } from '@tanstack/react-query';
 import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
 const Messages = () => {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
   const { 
@@ -36,8 +37,8 @@ const Messages = () => {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
-
+  const [showDebug, setShowDebug] = useState(true); // Set to true by default to help diagnose the issue
+  
   // Handle friends loading state
   useEffect(() => {
     if (friends) {
@@ -59,19 +60,19 @@ const Messages = () => {
       console.log('MESSAGES PAGE - Refreshing data on mount');
       refetchGroups();
       
-      // Force refresh invitations immediately
+      // Force refresh invitations immediately and more frequently
       forceRefreshInvitations();
       
-      // Schedule regular refreshes of invitations
+      // Schedule more frequent refreshes of invitations
       const intervalId = setInterval(() => {
         console.log('MESSAGES PAGE - Running scheduled invitation refresh');
-        refetchInvitations();
-      }, 5000); // Every 5 seconds
+        forceRefreshInvitations(); // Use forceRefresh instead of regular refetch
+      }, 2000); // Every 2 seconds instead of 5
       
       // After the first load, mark invitations as initialized
       setTimeout(() => {
         setInvitationsInitialized(true);
-      }, 1000);
+      }, 500); // Reduced from 1000ms
       
       return () => clearInterval(intervalId);
     }
@@ -95,7 +96,7 @@ const Messages = () => {
     setTimeout(() => {
       refetchGroups();
       // Also refresh the invitations list to remove the accepted one
-      refetchInvitations();
+      forceRefreshInvitations();
     }, 1000);
   };
 
@@ -103,6 +104,8 @@ const Messages = () => {
     toast.info('Manually refreshing invitations and groups...');
     forceRefreshInvitations();
     refetchGroups();
+    queryClient.removeQueries({ queryKey: ['group-invitations'] });
+    queryClient.removeQueries({ queryKey: ['friend-groups'] });
   };
 
   const toggleDebug = () => {
@@ -171,6 +174,14 @@ const Messages = () => {
                   <strong>First Invitation:</strong> {JSON.stringify(invitations[0], null, 2)}
                 </div>
               )}
+              <div>
+                <strong>Direct Database Check:</strong>
+                <pre>
+                  {`SELECT * FROM friend_group_members 
+WHERE friend_id = '${user?.id}' 
+AND status = 'pending'`}
+                </pre>
+              </div>
             </CardContent>
           </Card>
         )}

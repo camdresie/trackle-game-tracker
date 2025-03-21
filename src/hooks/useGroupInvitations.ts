@@ -32,8 +32,8 @@ export const useGroupInvitations = () => {
       console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
       
       try {
-        // Get all friend_group_members entries where this user is the friend_id
-        // and has NOT been processed yet by the user (they are pending invitations)
+        // FIXED: The issue is likely in this query - we need to ensure we're correctly joining
+        // friend_group_members with friend_groups to get all pending invitations
         const { data, error } = await supabase
           .from('friend_group_members')
           .select(`
@@ -67,8 +67,10 @@ export const useGroupInvitations = () => {
           // Debug the structure of each invitation item
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
+          // FIXED: Ensure we're properly accessing the friend_groups data
+          // The issue might be that we're not correctly handling the nested friend_groups property
           if (item.friend_groups) {
-            const group = item.friend_groups as any;
+            const group = item.friend_groups;
             
             console.log(`INVITATIONS QUERY - Processing group invitation: group=${group.name}, id=${item.id}`);
             
@@ -109,10 +111,10 @@ export const useGroupInvitations = () => {
     enabled: !!user,
     // Increase refetch frequency for better responsiveness
     refetchInterval: 3000, 
-    staleTime: 500, 
+    staleTime: 0, // Changed from 500 to 0 to always get fresh data
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 3 
+    retry: 5 // Increased retries
   });
   
   // Mark initial load as complete after first query

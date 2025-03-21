@@ -21,7 +21,7 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   onDecline,
   alwaysShow = false
 }) => {
-  // Debug: Log the invitations data
+  // Debug: Log the invitations data with more detail
   useEffect(() => {
     console.log('GroupInvitationsList - Invitations:', invitations);
     console.log('GroupInvitationsList - Count:', invitations?.length || 0);
@@ -84,8 +84,8 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-muted-foreground" />
               <div>
-                <p className="font-medium">{invitation.groupName}</p>
-                <p className="text-sm text-muted-foreground">From {invitation.groupOwner}</p>
+                <p className="font-medium">{invitation.groupName || "Unknown Group"}</p>
+                <p className="text-sm text-muted-foreground">From {invitation.groupOwner || "Unknown User"}</p>
               </div>
             </div>
             <div className="flex gap-2">
