@@ -99,12 +99,12 @@ export const useGroupInvitations = () => {
   // Accept a group invitation
   const acceptInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
+      // Fix: Don't use .single() which requires exactly one result
       const { data, error } = await supabase
         .from('friend_group_members')
         .update({ status: 'accepted' })
         .eq('id', invitationId)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
       return data;
@@ -124,6 +124,7 @@ export const useGroupInvitations = () => {
   // Decline a group invitation
   const declineInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
+      // Fix: Don't use .single() which requires exactly one result
       const { data, error } = await supabase
         .from('friend_group_members')
         .update({ status: 'rejected' })
