@@ -68,7 +68,8 @@ export const useGroupInvitations = () => {
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
           // FIXED: Ensure we're properly accessing the friend_groups data
-          // The issue might be that we're not correctly handling the nested friend_groups property
+          // The issue was that we were incorrectly trying to access properties on the array
+          // instead of on individual elements
           if (item.friend_groups) {
             const group = item.friend_groups;
             
