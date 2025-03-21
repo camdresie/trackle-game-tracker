@@ -117,37 +117,45 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Sending message to group ${groupId}:`, content);
       
-      // First, check if the user is an owner or a member of the group
-      let isOwnerOrMember = false;
+      // Using a direct SQL query to check membership more reliably
+      const membershipCheckQuery = `
+        SELECT 
+          CASE 
+            WHEN EXISTS (
+              SELECT 1 FROM friend_groups 
+              WHERE id = '${groupId}' AND user_id = '${user.id}'
+            ) THEN 'owner'
+            WHEN EXISTS (
+              SELECT 1 FROM friend_group_members 
+              WHERE group_id = '${groupId}' 
+              AND friend_id = '${user.id}' 
+              AND status = 'accepted'
+            ) THEN 'member'
+            ELSE 'none'
+          END as role
+      `;
       
-      // Check if user is owner
-      const { data: isOwner } = await supabase
-        .from('friend_groups')
-        .select('id')
-        .eq('id', groupId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Execute the query using the direct_sql_query function
+      const { data: roleResult, error: roleError } = await supabase.rpc('direct_sql_query', {
+        sql_query: membershipCheckQuery
+      });
       
-      if (isOwner) {
-        isOwnerOrMember = true;
-      } else {
-        // Check if user is accepted member
-        const { data: isMember } = await supabase
-          .from('friend_group_members')
-          .select('id')
-          .eq('group_id', groupId)
-          .eq('friend_id', user.id)
-          .eq('status', 'accepted')
-          .maybeSingle();
-        
-        if (isMember) {
-          isOwnerOrMember = true;
-        }
+      if (roleError) {
+        console.error('Error checking membership:', roleError);
+        throw new Error('Failed to verify group membership');
       }
       
-      if (!isOwnerOrMember) {
+      console.log('Membership check result:', roleResult);
+      
+      // Extract the role from the result
+      const role = roleResult?.[0]?.role || 'none';
+      
+      if (role === 'none') {
+        console.error('User is not authorized to send messages in this group');
         throw new Error('You are not authorized to send messages in this group');
       }
+      
+      console.log(`User is a ${role} of the group, proceeding to send message`);
       
       // Now insert the message
       const { data, error } = await supabase
@@ -161,10 +169,11 @@ export const useGroupMessages = (groupId: string | null) => {
         .single();
       
       if (error) {
-        console.error('Error details:', error);
+        console.error('Error sending message:', error);
         throw error;
       }
       
+      console.log('Message sent successfully:', data);
       return data;
     },
     onSuccess: () => {
