@@ -50,7 +50,7 @@ export const useFriendGroups = (friends: Player[]) => {
         // Get groups where current user is a member (with accepted status)
         const { data: memberGroups, error: memberError } = await supabase
           .from('friend_group_members')
-          .select('friend_groups(*)')
+          .select('friend_groups(*), status')
           .eq('friend_id', user.id)
           .eq('status', 'accepted');
           
@@ -71,6 +71,7 @@ export const useFriendGroups = (friends: Player[]) => {
               // Convert the friend_groups to FriendGroup and mark as joined group
               const group = item.friend_groups as unknown as FriendGroup;
               group.isJoinedGroup = true;
+              group.status = item.status;
               
               // Only add if not already in the list (to avoid duplicates)
               if (!groups.some(g => g.id === group.id)) {
@@ -89,7 +90,9 @@ export const useFriendGroups = (friends: Player[]) => {
         return [];
       }
     },
-    enabled: !!user && friends !== undefined
+    enabled: !!user && friends !== undefined,
+    staleTime: 10000, // Add stale time to reduce unnecessary fetches
+    refetchOnWindowFocus: false // Don't refetch on window focus to prevent flicker
   });
   
   // Create a new friend group
