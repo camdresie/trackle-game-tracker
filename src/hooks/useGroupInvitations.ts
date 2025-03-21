@@ -13,6 +13,19 @@ export interface GroupInvitation {
   status: string;
 }
 
+// Define the type for the data returned from Supabase
+interface FriendGroupMemberWithGroup {
+  id: string;
+  group_id: string;
+  friend_id: string;
+  status: string;
+  friend_groups: {
+    id: string;
+    name: string;
+    user_id: string;
+  };
+}
+
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -32,8 +45,7 @@ export const useGroupInvitations = () => {
       console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
       
       try {
-        // FIXED: The issue is likely in this query - we need to ensure we're correctly joining
-        // friend_group_members with friend_groups to get all pending invitations
+        // Get all pending invitations with group details
         const { data, error } = await supabase
           .from('friend_group_members')
           .select(`
@@ -63,13 +75,11 @@ export const useGroupInvitations = () => {
         // Format the invitations for display
         const invitationsData: GroupInvitation[] = [];
         
-        for (const item of data) {
+        for (const item of data as FriendGroupMemberWithGroup[]) {
           // Debug the structure of each invitation item
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
-          // FIXED: Ensure we're properly accessing the friend_groups data
-          // The issue was that we were incorrectly trying to access properties on the array
-          // instead of on individual elements
+          // Check if the item has friend_groups data
           if (item.friend_groups) {
             // The friend_groups is a single object, not an array in this case
             // because it's a nested select for a single related record
