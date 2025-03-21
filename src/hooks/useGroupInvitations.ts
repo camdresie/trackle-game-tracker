@@ -13,19 +13,6 @@ export interface GroupInvitation {
   status: string;
 }
 
-// Define the type for the data returned from Supabase
-interface FriendGroupMemberWithGroup {
-  id: string;
-  group_id: string;
-  friend_id: string;
-  status: string;
-  friend_groups: {
-    id: string;
-    name: string;
-    user_id: string;
-  } | null;  // This can be null if there's no associated group
-}
-
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -45,7 +32,21 @@ export const useGroupInvitations = () => {
       console.log('INVITATIONS QUERY - Fetching group invitations for user:', user.id);
       
       try {
-        // Get all pending invitations with group details - using a simpler query first
+        // Perform a direct query to check for pending invitations first
+        const checkQuery = `
+          SELECT * FROM friend_group_members 
+          WHERE friend_id = '${user.id}' 
+          AND status = 'pending'
+        `;
+        
+        const { data: directCheck, error: directCheckError } = await supabase.rpc('direct_sql_query', { sql_query: checkQuery });
+        
+        console.log('INVITATIONS QUERY - Direct check results:', directCheck);
+        if (directCheckError) {
+          console.error('INVITATIONS QUERY - Direct check error:', directCheckError);
+        }
+        
+        // Get all pending invitations with group details using explicit join
         const { data, error } = await supabase
           .from('friend_group_members')
           .select(`
@@ -53,7 +54,7 @@ export const useGroupInvitations = () => {
             group_id,
             friend_id,
             status,
-            friend_groups(id, name, user_id)
+            friend_groups:group_id(id, name, user_id)
           `)
           .eq('friend_id', user.id)
           .eq('status', 'pending');
@@ -64,15 +65,59 @@ export const useGroupInvitations = () => {
           return [];
         }
         
-        // Log the raw data to help diagnose issues
-        console.log('INVITATIONS QUERY - Raw group invitation data:', data);
+        // Log the raw data
+        console.log('INVITATIONS QUERY - Raw group invitation data:', JSON.stringify(data, null, 2));
         console.log('INVITATIONS QUERY - Raw data type:', typeof data);
         console.log('INVITATIONS QUERY - Raw data length:', data?.length || 0);
         
         // If no invitations found
         if (!data || data.length === 0) {
           console.log('INVITATIONS QUERY - No pending invitations found for user:', user.id);
-          return [];
+          
+          // Try alternative query if the first one fails
+          const { data: altData, error: altError } = await supabase
+            .from('friend_group_members')
+            .select('*')
+            .eq('friend_id', user.id)
+            .eq('status', 'pending');
+            
+          console.log('INVITATIONS QUERY - Alternative query results:', altData);
+          
+          if (altError || !altData || altData.length === 0) {
+            return [];
+          }
+          
+          // If we found invitations with the alternative query but not the first one,
+          // there might be an issue with the join - process them manually
+          const invitationsData: GroupInvitation[] = [];
+          
+          for (const item of altData) {
+            // Get group details in a separate query
+            const { data: groupData } = await supabase
+              .from('friend_groups')
+              .select('id, name, user_id')
+              .eq('id', item.group_id)
+              .single();
+              
+            if (groupData) {
+              // Get group owner's username
+              const { data: ownerData } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('id', groupData.user_id)
+                .maybeSingle();
+                
+              invitationsData.push({
+                id: item.id,
+                groupId: groupData.id,
+                groupName: groupData.name,
+                groupOwner: ownerData?.username || 'Unknown User',
+                status: item.status
+              });
+            }
+          }
+          
+          return invitationsData;
         }
         
         // Format the invitations for display
@@ -80,12 +125,11 @@ export const useGroupInvitations = () => {
         
         // Process each invitation item
         for (const item of data) {
-          // Debug the structure of each invitation item
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
           // Check if the item has friend_groups data
           if (item.friend_groups) {
-            // Get the group data - it could be an array or a single object depending on how Supabase returns it
+            // Get the group data - it could be an array or a single object
             const group = Array.isArray(item.friend_groups) 
               ? item.friend_groups[0] 
               : item.friend_groups;
@@ -133,11 +177,11 @@ export const useGroupInvitations = () => {
     },
     enabled: !!user,
     // Increase refetch frequency for better responsiveness
-    refetchInterval: 3000, 
+    refetchInterval: 1500, // Even more frequent checks 
     staleTime: 0, // Always get fresh data
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    retry: 5 // Increased retries
+    retry: 5
   });
   
   // Mark initial load as complete after first query
