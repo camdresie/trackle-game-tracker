@@ -110,79 +110,56 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message
+  // Send a message - simplified version with direct insert
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
       
       console.log(`Sending message to group ${groupId}:`, content);
       
-      // Using a direct SQL query to check membership more reliably
-      const membershipCheckQuery = `
-        SELECT 
-          CASE 
-            WHEN EXISTS (
-              SELECT 1 FROM friend_groups 
-              WHERE id = '${groupId}' AND user_id = '${user.id}'
-            ) THEN 'owner'
-            WHEN EXISTS (
-              SELECT 1 FROM friend_group_members 
-              WHERE group_id = '${groupId}' 
-              AND friend_id = '${user.id}' 
-              AND status = 'accepted'
-            ) THEN 'member'
-            ELSE 'none'
-          END as role
-      `;
-      
-      // Execute the query using the direct_sql_query function
-      const { data: roleResult, error: roleError } = await supabase.rpc('direct_sql_query', {
-        sql_query: membershipCheckQuery
-      });
-      
-      if (roleError) {
-        console.error('Error checking membership:', roleError);
-        throw new Error('Failed to verify group membership');
+      try {
+        // Directly insert the message - RLS policy will handle authorization
+        const { data, error } = await supabase
+          .from('group_messages')
+          .insert({
+            group_id: groupId,
+            user_id: user.id,
+            content
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Error sending message:', error);
+          
+          // Check if it's an RLS error
+          if (error.code === '42501') {
+            throw new Error('You are not authorized to send messages in this group');
+          }
+          
+          throw error;
+        }
+        
+        console.log('Message sent successfully:', data);
+        return data;
+      } catch (err) {
+        console.error('Exception in sendMessage:', err);
+        throw err;
       }
-      
-      console.log('Membership check result:', roleResult);
-      
-      // Extract the role from the result
-      const role = roleResult?.[0]?.role || 'none';
-      
-      if (role === 'none') {
-        console.error('User is not authorized to send messages in this group');
-        throw new Error('You are not authorized to send messages in this group');
-      }
-      
-      console.log(`User is a ${role} of the group, proceeding to send message`);
-      
-      // Now insert the message
-      const { data, error } = await supabase
-        .from('group_messages')
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          content
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error sending message:', error);
-        throw error;
-      }
-      
-      console.log('Message sent successfully:', data);
-      return data;
     },
     onSuccess: () => {
       // Manually trigger a refetch to get the newly sent message immediately
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      
+      // More specific error message
+      if (error.message.includes('not authorized')) {
+        toast.error('You do not have permission to send messages in this group');
+      } else {
+        toast.error('Failed to send message');
+      }
     }
   });
   
