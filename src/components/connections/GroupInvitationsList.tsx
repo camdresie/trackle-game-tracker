@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GroupInvitation } from '@/hooks/useGroupInvitations';
-import { Check, X, AlertCircle, Users, InboxIcon } from 'lucide-react';
+import { Check, X, AlertCircle, Users, InboxIcon, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface GroupInvitationsListProps {
@@ -40,7 +40,10 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
           <Skeleton className="h-5 w-5" />
           <Skeleton className="h-5 w-40" />
         </div>
-        <Skeleton className="h-16 w-full" />
+        <div className="flex items-center justify-center h-16">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Processing invitation...</span>
+        </div>
       </Card>
     );
   }

@@ -30,6 +30,8 @@ export const useGroupInvitations = () => {
       if (!user) return [];
       
       try {
+        console.log('Fetching invitations for user:', user.id);
+        
         // Use the direct_sql_query function to get pending invitations
         const directQuery = `
           SELECT 
@@ -59,6 +61,8 @@ export const useGroupInvitations = () => {
           console.error('Error fetching invitations:', directQueryError);
           throw directQueryError;
         }
+        
+        console.log('Invitations query results:', directResults);
         
         if (!directResults || directResults.length === 0) {
           return [];
@@ -99,23 +103,48 @@ export const useGroupInvitations = () => {
   // Accept a group invitation
   const acceptInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      // Fix: Don't use .single() which requires exactly one result
+      console.log('Accepting invitation with ID:', invitationId);
+      
+      // First get the invitation details to have the group_id
+      const { data: invitationDetails, error: invitationError } = await supabase
+        .from('friend_group_members')
+        .select('group_id')
+        .eq('id', invitationId)
+        .maybeSingle();
+      
+      if (invitationError || !invitationDetails) {
+        console.error('Error fetching invitation details:', invitationError);
+        throw new Error('Failed to find invitation');
+      }
+      
+      const groupId = invitationDetails.group_id;
+      console.log('Found group ID for invitation:', groupId);
+      
+      // Now update the status to 'accepted'
       const { data, error } = await supabase
         .from('friend_group_members')
         .update({ status: 'accepted' })
-        .eq('id', invitationId)
-        .select();
+        .eq('id', invitationId);
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error accepting invitation:', error);
+        throw error;
+      }
+      
+      console.log('Successfully accepted invitation');
+      return { invitationId, groupId };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Invitation accepted successfully, invalidating queries');
+      // More aggressive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+      queryClient.invalidateQueries(); // Invalidate all queries to be extra safe
+      toast.success('You have joined the group!');
     },
     onError: (error) => {
-      console.error('Error accepting invitation:', error);
+      console.error('Error in acceptInvitationMutation:', error);
       toast.error('Failed to accept invitation');
     }
   });
@@ -123,28 +152,36 @@ export const useGroupInvitations = () => {
   // Decline a group invitation
   const declineInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      // Fix: Don't use .single() which requires exactly one result
+      console.log('Declining invitation with ID:', invitationId);
+      
+      // Actually delete the invitation instead of just updating status
       const { data, error } = await supabase
         .from('friend_group_members')
-        .update({ status: 'rejected' })
-        .eq('id', invitationId)
-        .select();
+        .delete()
+        .eq('id', invitationId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error declining invitation:', error);
+        throw error;
+      }
+      
+      console.log('Successfully declined invitation');
       return invitationId;
     },
     onSuccess: () => {
-      toast.success('Group invitation declined');
+      console.log('Invitation declined successfully, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+      toast.success('Group invitation declined');
     },
     onError: (error) => {
-      console.error('Error declining invitation:', error);
+      console.error('Error in declineInvitationMutation:', error);
       toast.error('Failed to decline invitation');
     }
   });
   
   // Add a manual trigger for refetching invitations, but don't use this in an interval
   const forceRefresh = async () => {
+    console.log('Force refreshing invitations');
     return await refetch();
   };
   

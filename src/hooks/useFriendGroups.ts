@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -60,6 +61,9 @@ export const useFriendGroups = (friends: Player[]) => {
         }
         
         console.log('Member groups:', memberGroups?.length || 0);
+        if (memberGroups && memberGroups.length > 0) {
+          console.log('First member group:', memberGroups[0]);
+        }
         
         // Combine owned and member groups
         const groups: FriendGroup[] = [...(ownedGroups || [])];
@@ -75,6 +79,7 @@ export const useFriendGroups = (friends: Player[]) => {
               
               // Only add if not already in the list (to avoid duplicates)
               if (!groups.some(g => g.id === group.id)) {
+                console.log('Adding joined group to list:', group.name);
                 groups.push(group);
               }
             }
@@ -91,8 +96,9 @@ export const useFriendGroups = (friends: Player[]) => {
       }
     },
     enabled: !!user && friends !== undefined,
-    staleTime: 10000, // Add stale time to reduce unnecessary fetches
-    refetchOnWindowFocus: false // Don't refetch on window focus to prevent flicker
+    staleTime: 5000, // Shorter stale time to refresh more frequently
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    refetchOnMount: true // Always refetch when component mounts
   });
   
   // Create a new friend group
