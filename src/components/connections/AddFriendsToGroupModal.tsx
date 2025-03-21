@@ -16,7 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { UserPlus, Search, X, Check } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AddFriendsToGroupModalProps {
   open: boolean;
@@ -33,7 +33,6 @@ const AddFriendsToGroupModal = ({
   availableFriends,
   onAddFriend
 }: AddFriendsToGroupModalProps) => {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [processingFriends, setProcessingFriends] = useState<Record<string, boolean>>({});
 
@@ -50,17 +49,10 @@ const AddFriendsToGroupModal = ({
       onAddFriend(friendId);
       
       // Show success toast
-      toast({
-        title: "Success",
-        description: "Friend added to group"
-      });
+      toast.success("Friend added to group");
     } catch (error) {
       console.error("Error adding friend to group:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add friend to group",
-        variant: "destructive"
-      });
+      toast.error("Failed to add friend to group");
     }
     
     // Clear the processing state after a short delay (for better UX)
