@@ -23,7 +23,7 @@ interface FriendGroupMemberWithGroup {
     id: string;
     name: string;
     user_id: string;
-  };
+  } | null;  // This can be null if there's no associated group
 }
 
 export const useGroupInvitations = () => {
@@ -75,7 +75,10 @@ export const useGroupInvitations = () => {
         // Format the invitations for display
         const invitationsData: GroupInvitation[] = [];
         
-        for (const item of data as FriendGroupMemberWithGroup[]) {
+        // Use a type assertion through unknown to handle the type conversion safely
+        const typedData = data as unknown as FriendGroupMemberWithGroup[];
+        
+        for (const item of typedData) {
           // Debug the structure of each invitation item
           console.log('INVITATIONS QUERY - Processing invitation item:', JSON.stringify(item, null, 2));
           
