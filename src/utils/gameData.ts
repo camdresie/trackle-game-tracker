@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -32,6 +33,14 @@ export const games: Game[] = [
     icon: 'merge',
     color: 'bg-teal-500',
     maxScore: 5
+  },
+  {
+    id: 'nerdle',
+    name: 'Nerdle',
+    description: 'Guess the math equation in seven or fewer tries.',
+    icon: 'calculator',
+    color: 'bg-cyan-500',
+    maxScore: 7
   },
   {
     id: 'tightrope',
