@@ -69,7 +69,7 @@ export const games = [
   {
     id: 'tightrope',
     name: 'Tightrope',
-    description: 'Balance your path across the word grid.',
+    description: 'Balance your path across the tightrope by answering trivia questions.',
     icon: 'link',
     color: 'bg-blue-400',
     maxScore: 2340,
