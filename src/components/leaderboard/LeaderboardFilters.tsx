@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, UserPlus, Users, GamepadIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,10 @@ const LeaderboardFilters = ({
   setSelectedGroupId = () => {}
 }: LeaderboardFiltersProps) => {
   const [friendsDropdownOpen, setFriendsDropdownOpen] = useState(false);
+  
+  // Split games into two rows
+  const firstRowGames = games.slice(0, Math.ceil(games.length / 2));
+  const secondRowGames = games.slice(Math.ceil(games.length / 2));
 
   // Handle selecting/deselecting all friends
   const handleAllFriendsToggle = () => {
@@ -113,18 +118,14 @@ const LeaderboardFilters = ({
 
   return (
     <div className="flex flex-col gap-4 mb-6">
-      {/* Game Selector Pills */}
-      <div className="w-full overflow-x-auto py-2">
-        <ToggleGroup 
-          type="single" 
-          value={selectedGame} 
-          onValueChange={(value) => value && setSelectedGame(value)}
-          className="flex items-center gap-2 min-w-max"
-        >
-          {games.map(game => (
-            <ToggleGroupItem 
-              key={game.id} 
-              value={game.id}
+      {/* Game Selector Pills - Two Rows */}
+      <div className="w-full">
+        {/* First Row */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {firstRowGames.map(game => (
+            <button
+              key={game.id}
+              onClick={() => setSelectedGame(game.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
                 selectedGame === game.id 
                   ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
@@ -133,9 +134,27 @@ const LeaderboardFilters = ({
             >
               <GamepadIcon className="w-3.5 h-3.5" />
               <span>{game.name}</span>
-            </ToggleGroupItem>
+            </button>
           ))}
-        </ToggleGroup>
+        </div>
+        
+        {/* Second Row */}
+        <div className="flex flex-wrap gap-2">
+          {secondRowGames.map(game => (
+            <button
+              key={game.id}
+              onClick={() => setSelectedGame(game.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                selectedGame === game.id 
+                  ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
+                  : 'border border-muted hover:bg-muted/10'
+              }`}
+            >
+              <GamepadIcon className="w-3.5 h-3.5" />
+              <span>{game.name}</span>
+            </button>
+          ))}
+        </div>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
