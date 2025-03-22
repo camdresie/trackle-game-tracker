@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -43,9 +44,21 @@ const GameDetail = () => {
   }, [scores, bestScore]);
   
   const handleAddScore = (newScore: Score) => {
-    setLocalScores(prev => [newScore, ...prev]);
+    // Check if we're updating an existing score
+    const existingScoreIndex = localScores.findIndex(s => s.id === newScore.id);
     
-    if (newScore.gameId === 'wordle') {
+    if (existingScoreIndex >= 0) {
+      // Update existing score
+      const updatedScores = [...localScores];
+      updatedScores[existingScoreIndex] = newScore;
+      setLocalScores(updatedScores);
+    } else {
+      // Add new score
+      setLocalScores(prev => [newScore, ...prev]);
+    }
+    
+    // Update best score
+    if (newScore.gameId === 'wordle' || newScore.gameId === 'mini-crossword') {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.min(prev, newScore.value));
     } else {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev, newScore.value));
@@ -76,8 +89,6 @@ const GameDetail = () => {
   }
 
   return (
-    
-
     <div className="min-h-screen bg-background">
       <NavBar />
       
@@ -170,6 +181,7 @@ const GameDetail = () => {
           onOpenChange={setShowAddScore}
           game={game}
           onAddScore={handleAddScore}
+          existingScores={displayScores}
         />
       )}
       

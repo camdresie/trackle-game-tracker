@@ -19,38 +19,69 @@ import { formatInTimeZone } from 'date-fns-tz';
 import QuordleScoreInput from './scores/QuordleScoreInput';
 import StandardScoreInput from './scores/StandardScoreInput';
 import { getDefaultValue, calculateQuordleScore } from '@/utils/scoreUtils';
+import { getTodayInEasternTime } from '@/utils/dateUtils';
 
 interface AddScoreModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   game: Game;
   onAddScore: (score: Score) => void;
+  existingScores?: Score[];
 }
 
 const AddScoreModal = ({ 
   open, 
   onOpenChange, 
   game,
-  onAddScore 
+  onAddScore,
+  existingScores = [] 
 }: AddScoreModalProps) => {
   const { user } = useAuth();
   const [value, setValue] = useState(getDefaultValue(game));
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [existingScoreId, setExistingScoreId] = useState<string | null>(null);
   
   // For Quordle, we use separate inputs for each word
   const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
   
   // Set the date to today's date in Eastern Time when the modal opens
+  // and check if we're editing an existing score
   useEffect(() => {
     if (open) {
       // Get today's date in Eastern Time (ET) in YYYY-MM-DD format
-      const todayInET = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
+      const todayInET = getTodayInEasternTime();
       console.log('Setting date picker to today in Eastern Time:', todayInET);
       setDate(todayInET);
+      
+      // Check if there's already a score for today
+      const todayScore = existingScores.find(score => score.date === todayInET);
+      
+      if (todayScore) {
+        console.log('Found existing score for today:', todayScore);
+        setIsEditMode(true);
+        setExistingScoreId(todayScore.id);
+        setValue(todayScore.value);
+        setNotes(todayScore.notes || '');
+        
+        // For Quordle, we need to reverse engineer the individual values
+        if (game.id === 'quordle') {
+          // This is a simplified approach - in a real app you would store the individual values
+          const estimatedValues = [7, 7, 7, 7];
+          setQuordleValues(estimatedValues);
+        }
+      } else {
+        // Reset values if no score exists
+        setIsEditMode(false);
+        setExistingScoreId(null);
+        setValue(getDefaultValue(game));
+        setQuordleValues([7, 7, 7, 7]);
+        setNotes('');
+      }
     }
-  }, [open]);
+  }, [open, existingScores, game]);
   
   const handleSubmit = async () => {
     if (!user) {
@@ -70,10 +101,11 @@ const AddScoreModal = ({
         value: scoreValue,
         date,
         notes: notes || undefined,
-        createdAt: new Date().toISOString() // Add createdAt field
+        createdAt: new Date().toISOString(), // Add createdAt field
+        id: existingScoreId || undefined // Include ID if editing
       };
       
-      const { stats, score } = await addGameScore(newScore);
+      const { stats, score } = await addGameScore(newScore, isEditMode);
       
       // Update local UI with the new score
       onAddScore({
@@ -81,7 +113,7 @@ const AddScoreModal = ({
         ...newScore
       });
       
-      toast.success(`Your ${game.name} score has been saved.`);
+      toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
       onOpenChange(false);
       
       // Reset form
@@ -91,7 +123,7 @@ const AddScoreModal = ({
       setNotes('');
     } catch (error) {
       console.error('Error adding score:', error);
-      toast.error('Failed to save score. Please try again.');
+      toast.error(`Failed to ${isEditMode ? 'update' : 'save'} score. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +142,9 @@ const AddScoreModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md animate-scale-in">
         <DialogHeader>
-          <DialogTitle>Add {game.name} Score</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? `Edit ${game.name} Score` : `Add ${game.name} Score`}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="py-4 space-y-4">
@@ -120,8 +154,14 @@ const AddScoreModal = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              max={formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd')}
+              max={getTodayInEasternTime()}
+              disabled={isEditMode} // Prevent editing the date in edit mode
             />
+            {isEditMode && (
+              <p className="text-xs text-muted-foreground">
+                You can only edit today's score. The date cannot be changed.
+              </p>
+            )}
           </div>
           
           {game.id === 'quordle' ? (
@@ -157,7 +197,7 @@ const AddScoreModal = ({
             onClick={handleSubmit} 
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : 'Save Score'}
+            {isSubmitting ? 'Saving...' : isEditMode ? 'Update Score' : 'Save Score'}
           </Button>
         </DialogFooter>
       </DialogContent>
