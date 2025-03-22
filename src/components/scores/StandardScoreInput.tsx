@@ -33,6 +33,8 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       newValue = Math.max(0, Math.min(game.maxScore || 5, inputValue));
     } else if (game.id === 'nerdle') {
       newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
+    } else if (game.id === 'spelling-bee') {
+      newValue = Math.max(0, Math.min(game.maxScore || 137, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }

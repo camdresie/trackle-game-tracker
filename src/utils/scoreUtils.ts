@@ -1,3 +1,4 @@
+
 import { Game } from '@/utils/types';
 
 // Calculate what "good score" means for each game
@@ -12,6 +13,8 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
   } else if (game.id === 'nerdle') {
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+  } else if (game.id === 'spelling-bee') {
+    return value >= 90 ? 'Excellent' : value >= 50 ? 'Good' : 'Fair';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
     return value < 90 ? 'Excellent' : value < 180 ? 'Good' : 'Fair';
@@ -24,7 +27,6 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
       : 0;
     return score <= 20 ? 'Excellent' : score <= 28 ? 'Good' : 'Fair';
   } else if (game.id === 'squardle') {
-    // Updated thresholds - Excellent starts at 150 points
     return value >= 150 ? 'Excellent' : value >= 100 ? 'Good' : 'Fair';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
@@ -44,6 +46,8 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
   } else if (game.id === 'nerdle') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+  } else if (game.id === 'spelling-bee') {
+    return value >= 90 ? 'text-emerald-500' : value >= 50 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
     return value < 90 ? 'text-emerald-500' : value < 180 ? 'text-amber-500' : 'text-rose-500';
@@ -53,7 +57,6 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
       : 0;
     return score <= 20 ? 'text-emerald-500' : score <= 28 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'squardle') {
-    // Updated color thresholds to match the new score thresholds
     return value >= 150 ? 'text-emerald-500' : value >= 100 ? 'text-amber-500' : 'text-rose-500';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
@@ -65,7 +68,6 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
 export const getSliderMarkers = (game: Game) => {
   if (game.id === 'wordle' || game.id === 'framed') {
     // For Wordle and Framed with fixed positions (1-6)
-    // We display exactly the possible discrete values to ensure perfect alignment
     return [1, 2, 3, 4, 5, 6];
   } else if (game.id === 'connections') {
     // For Connections with range 4-8
@@ -76,6 +78,9 @@ export const getSliderMarkers = (game: Game) => {
   } else if (game.id === 'nerdle') {
     // For Nerdle with range 1-7
     return [1, 2, 3, 4, 5, 6, 7];
+  } else if (game.id === 'spelling-bee') {
+    // For Spelling Bee with range 0-137
+    return [0, 35, 70, 105, 137];
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword with range 0-300
     return [0, 60, 120, 180, 240, 300];
@@ -111,6 +116,7 @@ export const getDefaultValue = (game: Game) => {
          game.id === 'connections' ? 6 : // Default to middle value for Connections
          game.id === 'betweenle' ? 3 : // Default to middle value for Betweenle
          game.id === 'nerdle' ? 4 : // Default to middle value for Nerdle
+         game.id === 'spelling-bee' ? 68 : // Default to middle value for Spelling Bee (approx 137/2)
          game.id === 'mini-crossword' ? 120 : // Default to 2 minutes for Mini Crossword
          game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
          game.id === 'squardle' ? 150 : // Default to middle value for Squardle (300/2)

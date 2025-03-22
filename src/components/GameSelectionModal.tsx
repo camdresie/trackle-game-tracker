@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Game } from '@/utils/types';
-import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge, Calculator } from 'lucide-react';
+import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge, Calculator, Type } from 'lucide-react';
 
 interface GameSelectionModalProps {
   open: boolean;
@@ -36,6 +36,8 @@ const GameSelectionModal = ({
         return <GitMerge className="h-5 w-5" />;
       case 'nerdle':
         return <Calculator className="h-5 w-5" />;
+      case 'spelling-bee':
+        return <Type className="h-5 w-5" />;
       case 'tightrope':
         return <Layout className="h-5 w-5" />;
       case 'quordle':

@@ -1,4 +1,3 @@
-
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -43,12 +42,20 @@ export const games: Game[] = [
     maxScore: 7
   },
   {
+    id: 'spelling-bee',
+    name: 'Spelling Bee',
+    description: 'Make words using seven letters with one required letter.',
+    icon: 'type',
+    color: 'bg-yellow-400',
+    maxScore: 137
+  },
+  {
     id: 'tightrope',
     name: 'Tightrope',
     description: 'Walk the trivia tightrope to make it to the other side!',
     icon: 'layout-grid',
     color: 'bg-blue-500',
-    maxScore: 2340  // Updated from 5000 to 2340
+    maxScore: 2340
   },
   {
     id: 'quordle',
@@ -56,7 +63,7 @@ export const games: Game[] = [
     description: 'Solve four Wordle-style puzzles at once.',
     icon: 'grid',
     color: 'bg-purple-500',
-    maxScore: 36  // Updated from 9 to 36 (9 per word × 4 words)
+    maxScore: 36
   },
   {
     id: 'mini-crossword',
@@ -64,7 +71,7 @@ export const games: Game[] = [
     description: 'Complete the NYT Mini Crossword puzzle as fast as you can.',
     icon: 'grid-3x3',
     color: 'bg-rose-500',
-    maxScore: 300  // Updated from 600 to 300 seconds (5 minutes)
+    maxScore: 300
   },
   {
     id: 'squardle',
