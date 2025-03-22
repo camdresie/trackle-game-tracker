@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
@@ -8,8 +9,8 @@ import { getLabelByGame } from '@/utils/gameData';
 interface GameCardProps {
   game: Game;
   latestScore?: Score;
-  averageScore?: number;
-  bestScore?: number;
+  averageScore?: number | null;
+  bestScore?: number | null;
 }
 
 const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps) => {
@@ -61,8 +62,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   };
 
   // Format the average score to show only up to 2 decimal places when needed
-  const formatAverageScore = (score?: number) => {
-    if (score === undefined) return '-';
+  const formatAverageScore = (score?: number | null) => {
+    if (score === undefined || score === null) return '-';
     
     // If it's a whole number, return it as is
     if (Number.isInteger(score)) return score.toString();
