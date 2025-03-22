@@ -171,7 +171,7 @@ const Messages = () => {
         </div>
 
         {/* Group Invitations - Only show if invitations have been initialized and there are invitations */}
-        {invitationsInitialized && (
+        {invitationsInitialized && invitations && invitations.length > 0 && (
           <GroupInvitationsList 
             invitations={invitations}
             isLoading={isLoadingInvitations || processingInvitation}
@@ -211,7 +211,7 @@ const Messages = () => {
                   groupId={group.id} 
                   groupName={group.name}
                   isJoinedGroup={group.isJoinedGroup}
-                  className="h-[600px]"
+                  className="h-[700px]"
                 />
               </TabsContent>
             ))}

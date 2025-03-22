@@ -114,7 +114,7 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
       </CardHeader>
       
       <CardContent className="flex-grow overflow-hidden p-0">
-        <ScrollArea className="h-[300px] px-6 pt-4">
+        <ScrollArea className="h-full px-6 pt-4 pb-2">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Loading messages...
@@ -125,7 +125,7 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
               <p>No messages yet. Be the first to send a message!</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 min-h-[400px]">
               {messages.map(renderMessage)}
               <div ref={messagesEndRef} />
             </div>
