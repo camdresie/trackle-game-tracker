@@ -71,33 +71,9 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     return 0;
   };
   
-  // Calculate marker positions with proper spacing
-  const calculateMarkerPosition = (markerValue: number, index: number): string => {
-    if (!isDiscreteGame) return '';
-    
-    const min = getMinValue();
-    const max = game.maxScore || 100;
-    const range = max - min;
-    
-    // Special handling for Nerdle
-    if (game.id === 'nerdle') {
-      // For Nerdle (1-7), we need to ensure the markers are evenly distributed
-      const percentage = ((markerValue - min) / range) * 100;
-      return `left: ${percentage}%`;
-    }
-    
-    return '';
-  };
-  
-  // Get help text based on game
-  const getHelpText = () => {
-    if (game.id === 'squardle') {
-      return "Enter remaining guesses (10 = perfect score, 0 = failed)";
-    }
-    return null;
-  };
-  
-  const helpText = getHelpText();
+  // Only show help text for Squardle
+  const showHelpText = game.id === 'squardle';
+  const helpText = showHelpText ? "Enter remaining guesses (10 = perfect score, 0 = failed)" : null;
   
   return (
     <div className="space-y-3">
@@ -135,7 +111,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
         </div>
       </div>
       
-      {game.id === 'squardle' && (
+      {showHelpText && (
         <div className="text-xs text-muted-foreground mt-1">
           For Squardle, enter the number of guesses remaining (10 = perfect score, 0 = failed).
         </div>
