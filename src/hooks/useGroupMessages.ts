@@ -22,16 +22,28 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Fetching messages for group: ${groupId}`);
       
-      // Fetch messages and join with profiles in a separate query
+      // First check if user has access to this group (as owner or member)
+      const { data: accessCheck, error: accessError } = await supabase.rpc('can_user_access_group', {
+        p_group_id: groupId,
+        p_user_id: user.id
+      });
+      
+      if (accessError) {
+        console.error('Error checking group access:', accessError);
+        toast.error('You do not have access to this group');
+        return [];
+      }
+      
+      if (!accessCheck) {
+        console.log('User does not have access to this group');
+        toast.error('You do not have access to this group');
+        return [];
+      }
+      
+      // Fetch just the messages first
       const { data: messagesData, error } = await supabase
         .from('group_messages')
-        .select(`
-          id,
-          group_id,
-          user_id,
-          content,
-          created_at
-        `)
+        .select('id, group_id, user_id, content, created_at')
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
       
@@ -122,13 +134,25 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message - rely on RLS policies
+  // Send a message
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
       
       console.log(`Sending message to group ${groupId}:`, content);
       
+      // First explicitly check if user can access this group
+      const { data: canAccess, error: accessError } = await supabase.rpc('can_user_access_group', {
+        p_group_id: groupId,
+        p_user_id: user.id
+      });
+      
+      if (accessError || !canAccess) {
+        console.error('Error checking access:', accessError || 'Access denied');
+        throw new Error('You do not have permission to send messages in this group');
+      }
+      
+      // If access check passes, insert the message
       const { data, error } = await supabase
         .from('group_messages')
         .insert({
@@ -153,7 +177,7 @@ export const useGroupMessages = (groupId: string | null) => {
     },
     onError: (error: any) => {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      toast.error(error.message || 'Failed to send message');
     }
   });
   
