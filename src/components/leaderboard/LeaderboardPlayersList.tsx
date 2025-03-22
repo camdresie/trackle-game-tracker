@@ -77,35 +77,37 @@ const LeaderboardPlayersList = ({
           <p className="text-muted-foreground">Loading leaderboard data...</p>
         </div>
       ) : playersToDisplay.length > 0 ? (
-        playersToDisplay.map((player, index) => (
-          <PlayerCard 
-            key={player.player_id}
-            player={{
-              id: player.player_id,
-              name: player.username,
-              avatar: player.avatar_url || undefined
-            }}
-            rank={index + 1}
-            scores={[]} // We'll load these on demand
-            game={gameObj}
-            stats={{
-              // For today view, use today's score; otherwise use best score
-              bestScore: timeFilter === 'today' 
-                ? (player.today_score !== null ? player.today_score : 0)
-                : player.best_score,
-              totalScore: timeFilter === 'today' 
-                ? (player.today_score !== null ? player.today_score : 0)
-                : player.total_score,
-              averageScore: timeFilter === 'today'
-                ? (player.today_score !== null ? player.today_score : 0)
-                : Math.round(player.average_score * 10) / 10,
-              // Always show total games played regardless of timeFilter
-              totalGames: player.total_games
-            }}
-            className="hover:scale-[1.01] transition-transform duration-200"
-            showTodayOnly={timeFilter === 'today'} // Pass the timeFilter as a boolean
-          />
-        ))
+        <div className="space-y-3">
+          {playersToDisplay.map((player, index) => (
+            <PlayerCard 
+              key={player.player_id}
+              player={{
+                id: player.player_id,
+                name: player.username,
+                avatar: player.avatar_url || undefined
+              }}
+              rank={index + 1}
+              scores={[]} // We'll load these on demand
+              game={gameObj}
+              stats={{
+                // For today view, use today's score; otherwise use best score
+                bestScore: timeFilter === 'today' 
+                  ? (player.today_score !== null ? player.today_score : 0)
+                  : player.best_score,
+                totalScore: timeFilter === 'today' 
+                  ? (player.today_score !== null ? player.today_score : 0)
+                  : player.total_score,
+                averageScore: timeFilter === 'today'
+                  ? (player.today_score !== null ? player.today_score : 0)
+                  : Math.round(player.average_score * 10) / 10,
+                // Always show total games played regardless of timeFilter
+                totalGames: player.total_games
+              }}
+              className="hover:scale-[1.01] transition-transform duration-200"
+              showTodayOnly={timeFilter === 'today'} // Pass the timeFilter as a boolean
+            />
+          ))}
+        </div>
       ) : (
         <div className="text-center py-8">
           <User className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
