@@ -5,6 +5,8 @@ import { Game } from '@/utils/types';
 export const getScoreLabel = (value: number, game: Game, quordleValues?: number[]) => {
   if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+  } else if (game.id === 'connections') {
+    return value <= 5 ? 'Excellent' : value <= 7 ? 'Good' : 'Fair';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
     return value < 90 ? 'Excellent' : value < 180 ? 'Good' : 'Fair';
@@ -29,6 +31,8 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
 export const getScoreColor = (value: number, game: Game, quordleValues?: number[]) => {
   if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+  } else if (game.id === 'connections') {
+    return value <= 5 ? 'text-emerald-500' : value <= 7 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
     return value < 90 ? 'text-emerald-500' : value < 180 ? 'text-amber-500' : 'text-rose-500';
@@ -52,6 +56,9 @@ export const getSliderMarkers = (game: Game) => {
     // For Wordle and Framed with fixed positions (1-6)
     // We display exactly the possible discrete values to ensure perfect alignment
     return [1, 2, 3, 4, 5, 6];
+  } else if (game.id === 'connections') {
+    // For Connections with range 4-8
+    return [4, 5, 6, 7, 8];
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword with range 0-300
     return [0, 60, 120, 180, 240, 300];
@@ -84,6 +91,7 @@ export const calculateQuordleScore = (quordleValues: number[]) => {
 // Get default value based on game type
 export const getDefaultValue = (game: Game) => {
   return game.id === 'wordle' || game.id === 'framed' ? 3 : 
+         game.id === 'connections' ? 6 : // Default to middle value for Connections
          game.id === 'mini-crossword' ? 120 : // Default to 2 minutes for Mini Crossword
          game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
          game.id === 'squardle' ? 150 : // Default to middle value for Squardle (300/2)

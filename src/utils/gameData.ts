@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -16,6 +17,14 @@ export const games: Game[] = [
     icon: 'film',
     color: 'bg-amber-500',
     maxScore: 6
+  },
+  {
+    id: 'connections',
+    name: 'Connections',
+    description: 'Group words into categories with limited guesses.',
+    icon: 'link',
+    color: 'bg-yellow-500',
+    maxScore: 8
   },
   {
     id: 'tightrope',
@@ -233,6 +242,7 @@ export const getLabelByGame = (gameId: string): string => {
   switch (gameId) {
     case 'wordle':
     case 'framed':
+    case 'connections':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';

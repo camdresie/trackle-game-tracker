@@ -27,6 +27,8 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     
     if (game.id === 'wordle' || game.id === 'framed') {
       newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
+    } else if (game.id === 'connections') {
+      newValue = Math.max(4, Math.min(game.maxScore || 8, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }
@@ -41,11 +43,18 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     onScoreChange(val[0]);
   };
 
-  // Set step to 1 for discrete games (Wordle, Framed) and use appropriate scaling for others
-  const isDiscreteGame = game.id === 'wordle' || game.id === 'framed';
+  // Set step to 1 for discrete games (Wordle, Framed, Connections) and use appropriate scaling for others
+  const isDiscreteGame = game.id === 'wordle' || game.id === 'framed' || game.id === 'connections';
   
   // Get markers for the slider
   const markers = getSliderMarkers(game);
+  
+  // Get min value based on game
+  const getMinValue = () => {
+    if (game.id === 'connections') return 4;
+    if (game.id === 'wordle' || game.id === 'framed') return 1;
+    return 0;
+  };
   
   return (
     <div className="space-y-3">
@@ -57,7 +66,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
             value={value}
             onChange={handleInputChange}
             className="w-20 text-right"
-            min={game.id === 'wordle' || game.id === 'framed' ? 1 : 0}
+            min={getMinValue()}
             max={game.maxScore}
           />
           <span className="text-xs text-muted-foreground">
@@ -70,7 +79,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       </div>
       
       <Slider
-        min={game.id === 'wordle' || game.id === 'framed' ? 1 : 0}
+        min={getMinValue()}
         max={game.maxScore}
         step={1}
         value={[value]}
@@ -83,7 +92,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
           <div 
             key={i} 
             className={`flex-shrink-0 w-6 text-center ${isDiscreteGame ? 'discrete-marker' : ''}`}
-            style={isDiscreteGame ? { marginLeft: markerValue === 1 ? '-0.35rem' : '0' } : {}}
+            style={isDiscreteGame ? { marginLeft: markerValue === getMinValue() ? '-0.35rem' : '0' } : {}}
           >
             {markerValue}
           </div>
