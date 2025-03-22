@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
+import { getFormattedTodayInEasternTime } from '@/utils/dateUtils';
 
 const TodayScores = () => {
   const { user } = useAuth();
@@ -62,12 +63,8 @@ const TodayScores = () => {
     setShowMessages(true);
   };
   
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric'
-  });
+  // Get today's date in Eastern Time for consistency
+  const today = getFormattedTodayInEasternTime();
   
   // Determine if lower scores are better for the selected game
   const isLowerBetter = selectedGame?.id === 'wordle' || selectedGame?.id === 'mini-crossword';

@@ -26,3 +26,15 @@ export const isToday = (dateString: string): boolean => {
   
   return result;
 };
+
+/**
+ * Format the current date in Eastern Time with a user-friendly format
+ * This is used for display purposes on the UI
+ */
+export const getFormattedTodayInEasternTime = (): string => {
+  return formatInTimeZone(
+    new Date(),
+    'America/New_York',
+    'EEEE, MMMM d, yyyy'
+  );
+};
