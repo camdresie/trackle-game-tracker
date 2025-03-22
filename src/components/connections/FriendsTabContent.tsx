@@ -21,9 +21,8 @@ interface FriendsTabContentProps {
 
 const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTabContentProps) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [displayedFriends, setDisplayedFriends] = useState<Player[]>([]);
 
-  // Use the extracted hooks
+  // Use the extracted hooks with simplified dependencies
   const { 
     data: friends = [], 
     isLoading: loadingFriends,
@@ -38,7 +37,7 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
   const { 
     data: searchResults = [], 
     isLoading: loadingSearch 
-  } = useConnectionSearch(searchQuery, currentPlayerId, open);
+  } = useConnectionSearch(searchQuery, currentPlayerId, open && searchQuery.length >= 2);
 
   const {
     addFriend,
@@ -56,29 +55,15 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
     !friends.some(friend => friend.id === user.id)
   );
 
-  // Update displayedFriends when friends data changes
-  useEffect(() => {
-    if (friends && Array.isArray(friends)) {
-      console.log('Friends list received new friends data:', friends);
-      setDisplayedFriends(friends);
-    } else {
-      setDisplayedFriends([]);
-    }
-  }, [friends]);
-
-  // Fix the infinite loop issue by not depending on refetchFriends
+  // Simplified effect to refresh data when the tab opens
   useEffect(() => {
     if (open && currentPlayerId) {
-      console.log('Friends tab opened, preparing to fetch fresh friends data');
+      console.log('Friends tab opened, fetching fresh data');
       
-      // Reset displayed friends immediately
-      setDisplayedFriends([]);
-      
-      // Wait to ensure DB consistency before fetching fresh data
+      // Simple timeout to ensure DB consistency
       const timer = setTimeout(() => {
-        console.log('Executing delayed friends data fetch with fresh cache');
         refetchFriends()
-          .then(() => console.log('Friends data refetch completed successfully'))
+          .then(() => console.log('Friends data refetch completed'))
           .catch(error => console.error('Error during friends refetch:', error));
       }, 500);
       
@@ -89,7 +74,6 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
   const handleRemoveFriend = (connectionId: string) => {
     console.log('Handling remove friend for connection ID:', connectionId);
     
-    // Verify we have a valid connection ID
     if (!connectionId) {
       console.error("Cannot remove friend: missing connection information");
       return;

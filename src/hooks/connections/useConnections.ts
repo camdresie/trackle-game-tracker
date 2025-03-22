@@ -13,7 +13,6 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
     queryFn: async () => {
       console.log('Fetching friends for user:', currentPlayerId);
       
-      // This time we'll ensure we get the most up-to-date data by adding cache-busting
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`
@@ -38,18 +37,13 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
         return [];
       }
 
-      console.log('Raw friends data:', JSON.stringify(connections, null, 2));
-      
       // Transform the data into the expected format
       return connections.map(conn => {
         // Determine which profile to use based on the relationship direction
         const isUserInitiator = conn.user_id === currentPlayerId;
         const profileData = isUserInitiator ? conn.friend : conn.user;
         
-        // Log profile data for debugging
-        console.log('Connection:', conn.id, 'Profile data:', profileData);
-        
-        // Handle profile data safely regardless of whether it's an array or object
+        // Handle profile data safely
         let formattedProfile = null;
         
         if (Array.isArray(profileData) && profileData.length > 0) {
@@ -67,13 +61,12 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
           id: formattedProfile.id,
           name: formattedProfile.username || formattedProfile.full_name || 'Unknown User',
           avatar: formattedProfile.avatar_url,
-          connectionId: conn.id, // Add connectionId to the friend object to facilitate removal
+          connectionId: conn.id, // Include connectionId for removal
         } as Player;
       }).filter(Boolean) as Player[];
     },
     enabled: enabled && !!currentPlayerId,
-    staleTime: 0, // Don't cache this data
-    refetchOnWindowFocus: true,
-    refetchOnMount: true
+    staleTime: 0, // Always get fresh data
+    refetchOnWindowFocus: true
   });
 };
