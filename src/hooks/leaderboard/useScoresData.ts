@@ -9,16 +9,10 @@ import { formatInTimeZone } from 'date-fns-tz';
  * @returns Date string in YYYY-MM-DD format for Eastern Time
  */
 const getEasternTimeDate = (): string => {
-  // Get current date in user's local timezone first (more reliable for testing)
-  const today = new Date().toISOString().split('T')[0];
-  console.log("Local timezone today's date:", today);
-  
-  // Also get the date in Eastern Time for comparison
+  // Always use Eastern Time for consistent date handling across the application
   const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
   console.log("Eastern timezone today's date:", easternTime);
-  
-  // For now, use local timezone date to ensure we see today's scores
-  return today;
+  return easternTime;
 };
 
 /**
@@ -66,9 +60,9 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             profilesMap.set(profile.id, profile);
           });
           
-          // Get today's date in the appropriate format
+          // Get today's date in Eastern Time for consistent comparison
           const today = getEasternTimeDate();
-          console.log('Today\'s date (YYYY-MM-DD) for comparison:', today);
+          console.log('Today\'s date (ET/YYYY-MM-DD) for comparison:', today);
           
           // Transform and combine the data
           const transformedData = scoresData.map(item => {

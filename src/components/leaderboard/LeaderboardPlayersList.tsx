@@ -99,7 +99,17 @@ const LeaderboardPlayersList = ({
       ) : (
         <div className="text-center py-8">
           <User className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">No players found</p>
+          {timeFilter === 'today' ? (
+            <>
+              <p className="text-muted-foreground">No scores found for today</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Either no one has logged today's scores yet, or there may be a timezone mismatch
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground">No players found</p>
+          )}
+          
           {showFriendsOnly && (
             <Button 
               variant="link" 
@@ -109,6 +119,7 @@ const LeaderboardPlayersList = ({
               View all players
             </Button>
           )}
+          
           {timeFilter === 'today' && (
             <Button 
               variant="link" 
