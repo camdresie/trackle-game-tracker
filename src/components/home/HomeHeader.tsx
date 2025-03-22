@@ -31,16 +31,9 @@ const HomeHeader = ({
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-      <div className="flex items-center gap-2">
-        <img 
-          src="/lovable-uploads/d15dd151-d315-44b0-b08b-77ec26d6aa77.png" 
-          alt="Trackle" 
-          className="h-10 w-auto hidden sm:block" 
-        />
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Trackle</h1>
-          <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Trackle</h1>
+        <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
       </div>
       
       <div className="flex flex-wrap gap-2">
