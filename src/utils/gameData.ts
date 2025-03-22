@@ -1,3 +1,4 @@
+
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -77,7 +78,7 @@ export const games: Game[] = [
     id: 'squardle',
     name: 'Squardle',
     description: 'Solve word puzzles in a square grid format.',
-    icon: 'grid-3x3',
+    icon: 'square',
     color: 'bg-indigo-500',
     maxScore: 300
   }
