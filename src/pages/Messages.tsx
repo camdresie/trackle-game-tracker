@@ -8,8 +8,9 @@ import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
+import ConnectionsModal from '@/components/ConnectionsModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
-import { MessageCircle, Users, UserPlus, RotateCw } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, RotateCw, UsersRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const Messages = () => {
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
   const [acceptedInvitation, setAcceptedInvitation] = useState(false);
   const [processingInvitation, setProcessingInvitation] = useState(false);
+  const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
   
   // Handle friends loading state
   useEffect(() => {
@@ -217,18 +219,44 @@ const Messages = () => {
             ))}
           </Tabs>
         ) : (
-          <Card>
+          <Card className="border border-dashed bg-card/50">
             <CardHeader>
-              <CardTitle>No Groups Found</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <UsersRound className="h-5 w-5 text-muted-foreground" />
+                No Groups Found
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                You don't have any friend groups yet. Create a friend group to start messaging.
-              </p>
+            <CardContent className="flex flex-col items-center pb-6">
+              <div className="text-center mb-6">
+                <p className="text-muted-foreground mb-2">
+                  You don't have any friend groups yet. Create a friend group to start messaging.
+                </p>
+                <p className="text-sm text-muted-foreground/80">
+                  Friend groups allow you to chat and compete with specific sets of friends.
+                </p>
+              </div>
+              
+              <Button 
+                onClick={() => setConnectionsModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <UsersRound className="h-4 w-4" />
+                <span>Manage Friends & Groups</span>
+              </Button>
             </CardContent>
           </Card>
         )}
       </div>
+      
+      {/* Connections Modal for managing friends and groups */}
+      {user && (
+        <ConnectionsModal
+          open={connectionsModalOpen}
+          onOpenChange={setConnectionsModalOpen}
+          currentPlayerId={user.id}
+          onFriendRemoved={refreshFriends}
+        />
+      )}
     </div>
   );
 };
