@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks, Share2 } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -346,37 +347,19 @@ const LeaderboardStats = ({
           </CardContent>
         </Card>
         
-        {timeFilter === 'today' ? (
-          // For today view, show total scores instead of games played
-          <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-center mb-2">
-                <Star className="w-5 h-5 text-amber-500" />
-              </div>
-              <div className="text-2xl font-semibold">
-                {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : todayScores.length}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Total Scores Today
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          // Show games played for all-time view
-          <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-center mb-2">
-                <Gamepad className="w-5 h-5 text-rose-500" />
-              </div>
-              <div className="text-2xl font-semibold">
-                {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : gamesPlayedCount}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Games Played
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+          <CardContent className="p-0">
+            <div className="flex items-center justify-center mb-2">
+              <Gamepad className="w-5 h-5 text-rose-500" />
+            </div>
+            <div className="text-2xl font-semibold">
+              {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : gamesPlayedCount}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Games Played
+            </div>
+          </CardContent>
+        </Card>
         
         {/* Dynamic third card based on filter selection */}
         {renderDynamicLeaderCard()}

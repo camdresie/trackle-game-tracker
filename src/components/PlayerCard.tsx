@@ -100,11 +100,18 @@ const PlayerCard = ({
       
       <div className="hidden sm:flex items-center gap-6">
         {showTodayOnly ? (
-          // In today view, only show today's score, removing the games total
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Today's Score</p>
-            <p className="font-semibold">{formatScore(bestScore)}</p>
-          </div>
+          // Even in today view, show total games played all time
+          <>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Games Total</p>
+              <p className="font-semibold">{totalGames}</p>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground">Today's Score</p>
+              <p className="font-semibold">{formatScore(bestScore)}</p>
+            </div>
+          </>
         ) : (
           // Show all stats in "All Time" mode
           <>
