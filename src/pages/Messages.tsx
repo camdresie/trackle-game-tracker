@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
@@ -171,14 +170,13 @@ const Messages = () => {
           </Button>
         </div>
 
-        {/* Group Invitations - Only show if invitations have been initialized */}
+        {/* Group Invitations - Only show if invitations have been initialized and there are invitations */}
         {invitationsInitialized && (
           <GroupInvitationsList 
             invitations={invitations}
             isLoading={isLoadingInvitations || processingInvitation}
             onAccept={handleAcceptInvitation}
             onDecline={declineInvitation}
-            alwaysShow={true}
           />
         )}
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -85,13 +84,15 @@ const TodayScores = () => {
           </div>
         </div>
         
-        {/* Group Invitations - Show at the top if there are any */}
-        <GroupInvitationsList 
-          invitations={invitations}
-          isLoading={isLoadingInvitations}
-          onAccept={acceptInvitation}
-          onDecline={declineInvitation}
-        />
+        {/* Group Invitations - Show only if there are any */}
+        {invitations && invitations.length > 0 && (
+          <GroupInvitationsList 
+            invitations={invitations}
+            isLoading={isLoadingInvitations}
+            onAccept={acceptInvitation}
+            onDecline={declineInvitation}
+          />
+        )}
         
         {/* Game Selector Pills - Styled like the leaderboard */}
         <div className="w-full overflow-x-auto py-2 mb-6">
