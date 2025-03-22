@@ -4,13 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { getScoreColor, getScoreLabel, getSliderMarkers } from '@/utils/scoreUtils';
 import { Game } from '@/utils/types';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
 
 interface StandardScoreInputProps {
   game: Game;
@@ -71,28 +64,28 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     return 0;
   };
   
-  // Only show help text for Squardle
-  const showHelpText = game.id === 'squardle';
-  const helpText = showHelpText ? "Enter remaining guesses (10 = perfect score, 0 = failed)" : null;
+  // Calculate marker positions with proper spacing
+  const calculateMarkerPosition = (markerValue: number, index: number): string => {
+    if (!isDiscreteGame) return '';
+    
+    const min = getMinValue();
+    const max = game.maxScore || 100;
+    const range = max - min;
+    
+    // Special handling for Nerdle
+    if (game.id === 'nerdle') {
+      // For Nerdle (1-7), we need to ensure the markers are evenly distributed
+      const percentage = ((markerValue - min) / range) * 100;
+      return `left: ${percentage}%`;
+    }
+    
+    return '';
+  };
   
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-1.5">
-          <label className="text-sm font-medium">Score</label>
-          {helpText && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info size={16} className="text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-xs">
-                  {helpText}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
+        <label className="text-sm font-medium">Score</label>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -110,12 +103,6 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
           </span>
         </div>
       </div>
-      
-      {showHelpText && (
-        <div className="text-xs text-muted-foreground mt-1">
-          For Squardle, enter the number of guesses remaining (10 = perfect score, 0 = failed).
-        </div>
-      )}
       
       <Slider
         min={getMinValue()}
