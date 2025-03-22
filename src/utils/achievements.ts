@@ -1,4 +1,3 @@
-
 import { Game, Score, Achievement } from './types';
 import { getGameById, games } from './gameData';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +13,8 @@ export const generalAchievements: Achievement[] = [
     color: 'bg-green-500',
     earned: false,
     criteria: (scores: Score[]) => scores.length > 0,
-    category: 'general'
+    category: 'general',
+    target: 1
   },
   {
     id: 'all-games',
@@ -28,7 +28,8 @@ export const generalAchievements: Achievement[] = [
       const uniqueGames = new Set(scores.map(score => score.gameId));
       return uniqueGames.size >= games.length;
     },
-    category: 'general'
+    category: 'general',
+    target: games.length
   },
   {
     id: 'daily-player',
@@ -59,7 +60,8 @@ export const generalAchievements: Achievement[] = [
 
       return maxStreak >= 7;
     },
-    category: 'general'
+    category: 'general',
+    target: 7
   },
   {
     id: 'game-enthusiast',
@@ -70,7 +72,8 @@ export const generalAchievements: Achievement[] = [
     color: 'bg-purple-500',
     earned: false,
     criteria: (scores: Score[]) => scores.length >= 50,
-    category: 'general'
+    category: 'general',
+    target: 50
   }
 ];
 
@@ -86,7 +89,8 @@ export const wordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').length > 0,
     category: 'wordle',
-    gameId: 'wordle'
+    gameId: 'wordle',
+    target: 1
   },
   {
     id: 'wordle-master',
@@ -98,7 +102,8 @@ export const wordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value <= 2),
     category: 'wordle',
-    gameId: 'wordle'
+    gameId: 'wordle',
+    target: 2
   },
   {
     id: 'wordle-streak',
@@ -131,7 +136,8 @@ export const wordleAchievements: Achievement[] = [
       return maxStreak >= 7;
     },
     category: 'wordle',
-    gameId: 'wordle'
+    gameId: 'wordle',
+    target: 7
   },
   {
     id: 'wordle-persistence',
@@ -143,7 +149,8 @@ export const wordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'wordle').some(score => score.value === 6),
     category: 'wordle',
-    gameId: 'wordle'
+    gameId: 'wordle',
+    target: 6
   }
 ];
 
@@ -159,7 +166,8 @@ export const quordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length > 0,
     category: 'quordle',
-    gameId: 'quordle'
+    gameId: 'quordle',
+    target: 1
   },
   {
     id: 'quordle-master',
@@ -171,7 +179,8 @@ export const quordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.value <= 5),
     category: 'quordle',
-    gameId: 'quordle'
+    gameId: 'quordle',
+    target: 5
   },
   {
     id: 'quordle-expert',
@@ -183,7 +192,8 @@ export const quordleAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'quordle').length >= 10,
     category: 'quordle',
-    gameId: 'quordle'
+    gameId: 'quordle',
+    target: 10
   }
 ];
 
@@ -199,7 +209,8 @@ export const tightropeAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length > 0,
     category: 'tightrope',
-    gameId: 'tightrope'
+    gameId: 'tightrope',
+    target: 1
   },
   {
     id: 'tightrope-master',
@@ -211,7 +222,8 @@ export const tightropeAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.gameId === 'tightrope' && score.value >= 4000),
     category: 'tightrope',
-    gameId: 'tightrope'
+    gameId: 'tightrope',
+    target: 4000
   },
   {
     id: 'tightrope-adept',
@@ -223,7 +235,8 @@ export const tightropeAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'tightrope').length >= 15,
     category: 'tightrope',
-    gameId: 'tightrope'
+    gameId: 'tightrope',
+    target: 15
   }
 ];
 
@@ -239,7 +252,8 @@ export const crosswordAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length > 0,
     category: 'mini-crossword',
-    gameId: 'mini-crossword'
+    gameId: 'mini-crossword',
+    target: 1
   },
   {
     id: 'crossword-speed',
@@ -251,7 +265,8 @@ export const crosswordAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.some(score => score.value < 60),
     category: 'mini-crossword',
-    gameId: 'mini-crossword'
+    gameId: 'mini-crossword',
+    target: 60
   },
   {
     id: 'crossword-expert',
@@ -263,7 +278,8 @@ export const crosswordAchievements: Achievement[] = [
     earned: false,
     criteria: (scores: Score[]) => scores.filter(s => s.gameId === 'mini-crossword').length >= 20,
     category: 'mini-crossword',
-    gameId: 'mini-crossword'
+    gameId: 'mini-crossword',
+    target: 20
   },
   {
     id: 'crossword-master',
@@ -278,7 +294,8 @@ export const crosswordAchievements: Achievement[] = [
       return underTwoMinutes.length >= 5;
     },
     category: 'mini-crossword',
-    gameId: 'mini-crossword'
+    gameId: 'mini-crossword',
+    target: 5
   }
 ];
 
