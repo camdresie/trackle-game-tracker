@@ -48,7 +48,7 @@ const NavBar = () => {
           </button>
           
           {isMenuOpen && (
-            <div className="absolute top-16 left-0 w-full glass animate-fade-in p-2 border-b">
+            <div className="absolute top-16 left-0 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md animate-fade-in p-2 border-b shadow-md">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
