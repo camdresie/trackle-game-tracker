@@ -53,6 +53,8 @@ export interface Achievement {
   unlockedAt?: string;
   name?: string;
   criteria?: any;
+  color?: string;
+  earned?: boolean;
 }
 
 // Game Stats
