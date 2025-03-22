@@ -33,6 +33,7 @@ const GameSelectionModal = ({
       case 'quordle':
         return <GridIcon className="h-5 w-5" />;
       case 'mini-crossword':
+      case 'squardle':
         return <Grid3X3 className="h-5 w-5" />;
       default:
         return <Puzzle className="h-5 w-5" />;

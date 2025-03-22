@@ -32,6 +32,14 @@ export const games: Game[] = [
     icon: 'grid-3x3',
     color: 'bg-rose-500',
     maxScore: 300  // Updated from 600 to 300 seconds (5 minutes)
+  },
+  {
+    id: 'squardle',
+    name: 'Squardle',
+    description: 'Solve word puzzles in a square grid format.',
+    icon: 'grid-3x3',
+    color: 'bg-indigo-500',
+    maxScore: 300
   }
 ];
 
@@ -221,6 +229,8 @@ export const getLabelByGame = (gameId: string): string => {
       return 'seconds';
     case 'quordle':
       return 'tries';
+    case 'squardle':
+      return 'points';
     default:
       return 'points';
   }
