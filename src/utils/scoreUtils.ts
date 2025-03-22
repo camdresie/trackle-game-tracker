@@ -6,6 +6,7 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
   if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
   } else if (game.id === 'connections') {
+    if (value === 8) return 'Loss';
     return value <= 5 ? 'Excellent' : value <= 7 ? 'Good' : 'Fair';
   } else if (game.id === 'betweenle') {
     return value >= 4 ? 'Excellent' : value >= 2 ? 'Good' : value > 0 ? 'Fair' : 'Loss';
@@ -34,6 +35,7 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
   if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'connections') {
+    if (value === 8) return 'text-gray-500';
     return value <= 5 ? 'text-emerald-500' : value <= 7 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'betweenle') {
     return value >= 4 ? 'text-emerald-500' : value >= 2 ? 'text-amber-500' : value > 0 ? 'text-rose-500' : 'text-gray-500';
