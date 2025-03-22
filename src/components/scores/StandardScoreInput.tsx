@@ -25,7 +25,9 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     // Ensure value is within valid range
     let newValue = inputValue;
     
-    if (game.id === 'wordle' || game.id === 'framed') {
+    if (game.id === 'wordle') {
+      newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
+    } else if (game.id === 'framed') {
       newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
     } else if (game.id === 'connections') {
       newValue = Math.max(4, Math.min(game.maxScore || 8, inputValue));

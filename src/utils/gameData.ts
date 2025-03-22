@@ -9,7 +9,7 @@ export const games = [
     description: 'Guess the 5-letter word in 6 tries or less.',
     icon: 'puzzle',
     color: 'bg-emerald-500',
-    maxScore: 6,
+    maxScore: 7, // Updated to 7 to account for loss
     externalUrl: 'https://www.nytimes.com/games/wordle/'
   },
   {
@@ -107,7 +107,10 @@ export const calculateBestScore = (scores: any[], game: any) => {
   // For these games, lower scores are better
   if (['wordle', 'framed', 'mini-crossword', 'nerdle'].includes(game.id)) {
     // Filter out zeros for games where 0 is not a valid score
-    const validScores = scores.filter(score => score.value > 0);
+    // For Wordle, also filter out 7 (loss) when calculating best score
+    const validScores = scores.filter(score => 
+      score.value > 0 && (game.id !== 'wordle' || score.value < 7)
+    );
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
   } else {
