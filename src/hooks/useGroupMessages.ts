@@ -10,7 +10,7 @@ export const useGroupMessages = (groupId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Fetch messages for a specific group
+  // Fetch messages for a specific group with a more efficient join
   const { 
     data: messages = [], 
     isLoading,
@@ -22,7 +22,7 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Fetching messages for group: ${groupId}`);
       
-      // First fetch the messages without trying to join with profiles
+      // Use a better query that joins with profiles to get sender info in one go
       const { data: messagesData, error } = await supabase
         .from('group_messages')
         .select(`
@@ -30,13 +30,16 @@ export const useGroupMessages = (groupId: string | null) => {
           group_id,
           user_id,
           content,
-          created_at
+          created_at,
+          profiles:user_id (
+            username,
+            avatar_url
+          )
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
       
       if (error) {
-        // Only show toast for actual errors, not empty results
         console.error('Error fetching group messages:', error);
         if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
           toast.error('Failed to load messages');
@@ -46,28 +49,17 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Retrieved ${messagesData?.length || 0} messages for group ${groupId}:`, messagesData);
       
-      // If no messages, return empty array (no need to fetch profile info)
-      if (!messagesData || messagesData.length === 0) {
-        return [];
-      }
+      // Transform the result to match our GroupMessage type
+      const formattedMessages = messagesData?.map(message => ({
+        id: message.id,
+        group_id: message.group_id,
+        user_id: message.user_id,
+        content: message.content,
+        created_at: message.created_at,
+        sender: message.profiles || { username: 'Unknown User' }
+      })) || [];
       
-      // For each message, fetch the sender's profile information separately
-      const messagesWithSender = await Promise.all(
-        messagesData.map(async (message) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username, avatar_url')
-            .eq('id', message.user_id)
-            .maybeSingle(); // Use maybeSingle instead of single to avoid errors
-          
-          return {
-            ...message,
-            sender: profileData || { username: 'Unknown User' }
-          };
-        })
-      );
-      
-      return messagesWithSender as GroupMessage[];
+      return formattedMessages as GroupMessage[];
     },
     enabled: !!groupId && !!user,
     refetchInterval: 5000 // Add polling to fetch new messages every 5 seconds
@@ -110,14 +102,13 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message - simplified version that relies on RLS policies
+  // Send a message - rely on RLS policies
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
       
       console.log(`Sending message to group ${groupId}:`, content);
       
-      // The RLS policies will now handle permissions, so we can simplify this function
       const { data, error } = await supabase
         .from('group_messages')
         .insert({
