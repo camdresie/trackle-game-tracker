@@ -1,3 +1,4 @@
+
 import { Database } from '@/types/database.types';
 
 // Game 
@@ -19,6 +20,7 @@ export interface Score {
   value: number;
   date: string;
   createdAt: string;
+  notes?: string;
 }
 
 // User profile
@@ -49,6 +51,8 @@ export interface Achievement {
   icon: string;
   target: number;
   unlockedAt?: string;
+  name?: string;
+  criteria?: any;
 }
 
 // Game Stats
@@ -62,4 +66,42 @@ export interface GameStats {
   current_streak: number;
   longest_streak: number;
   updated_at: string;
+}
+
+// Player (used for friends and other users)
+export interface Player {
+  id: string;
+  name: string;
+  avatar?: string;
+  connectionId?: string;
+  status?: string;
+}
+
+// Friend Group
+export interface FriendGroup {
+  id: string;
+  name: string;
+  description?: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  members?: Player[];
+  pendingMembers?: Player[];
+  pendingCount?: number;
+  isJoinedGroup?: boolean;
+  status?: 'pending' | 'accepted' | 'rejected';
+}
+
+// Group Message
+export interface GroupMessage {
+  id: string;
+  group_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  sender?: {
+    username: string;
+    avatar_url?: string;
+    id: string;
+  };
 }
