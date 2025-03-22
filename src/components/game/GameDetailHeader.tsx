@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Game, Score } from '@/utils/types';
 import GameShare from '@/components/GameShare';
@@ -16,6 +16,12 @@ interface GameDetailHeaderProps {
 }
 
 const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, bestScore }: GameDetailHeaderProps) => {
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    if (game.externalUrl) {
+      window.open(game.externalUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+  
   return (
     <>
       <div className="mb-6">
@@ -37,6 +43,16 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
         </div>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          {game.externalUrl && (
+            <Button 
+              variant="outline" 
+              onClick={handleExternalLinkClick}
+              className="w-full sm:w-auto mb-2 sm:mb-0 mr-2"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Play Game
+            </Button>
+          )}
           <GameShare 
             game={game}
             latestScore={latestScore}
