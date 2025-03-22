@@ -33,10 +33,10 @@ import { getPlayerAchievements, getAchievementsByCategory } from '@/utils/achiev
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserGameStats, getPlayedGames } from '@/services/gameStatsService';
+import { getUserGameStats, getPlayedGames, getUserRankByTotalGamesPlayed } from '@/services/statsService';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useFriendsList } from '@/hooks/useFriendsList'; // Updated import
+import { useFriendsList } from '@/hooks/useFriendsList'; 
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -69,6 +69,17 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  // Use React Query to fetch user rank
+  const {
+    data: userRank = { rank: 1, totalUsers: 1 },
+    isLoading: isLoadingRank,
+    error: rankError
+  } = useQuery({
+    queryKey: ['userRank', user?.id],
+    queryFn: () => user ? getUserRankByTotalGamesPlayed(user.id) : Promise.resolve({ rank: 1, totalUsers: 1 }),
+    enabled: !!user,
+  });
+
   // Show error if needed
   useEffect(() => {
     if (statsError) {
@@ -79,7 +90,11 @@ const Profile = () => {
       console.error('Error loading played games:', gamesError);
       toast.error('Failed to load your games');
     }
-  }, [statsError, gamesError]);
+    if (rankError) {
+      console.error('Error calculating rank:', rankError);
+      toast.error('Failed to calculate your ranking');
+    }
+  }, [statsError, gamesError, rankError]);
   
   // Get achievements based on stats
   const [playerAchievements, setPlayerAchievements] = useState<Achievement[]>([]);
@@ -110,7 +125,6 @@ const Profile = () => {
   // Calculate profile statistics
   const totalGamesPlayed = gameStats.reduce((total, stat) => total + stat.total_plays, 0);
   const uniqueGamesPlayed = playedGameIds.length;
-  const playerRank = 1; // We'll implement proper ranking later
   
   // Get icon component based on string name
   const getIconByName = (iconName: string) => {
@@ -137,7 +151,7 @@ const Profile = () => {
   const playedGames = games.filter(game => playedGameIds.includes(game.id));
   
   // Loading state
-  if (isLoadingStats || isLoadingGames) {
+  if (isLoadingStats || isLoadingGames || isLoadingRank) {
     return (
       <div className="min-h-screen bg-background">
         <NavBar />
@@ -155,6 +169,9 @@ const Profile = () => {
     console.log("Friend removed, refreshing friends data...");
     await refreshFriends();
   };
+
+  // Generate the rank label
+  const rankLabel = `#${userRank.rank} Most Games Played`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -189,7 +206,7 @@ const Profile = () => {
                 <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4">
                   <div className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">
                     <Trophy className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm">Rank #{playerRank}</span>
+                    <span className="text-sm">{rankLabel}</span>
                   </div>
                   
                   <div className="flex items-center gap-1 bg-secondary px-3 py-1 rounded-full">

@@ -55,3 +55,52 @@ export const getPlayedGames = async (userId: string): Promise<string[]> => {
     throw error;
   }
 };
+
+/**
+ * Get the user's rank based on total games played
+ */
+export const getUserRankByTotalGamesPlayed = async (userId: string): Promise<{ rank: number, totalUsers: number }> => {
+  try {
+    console.log(`[getUserRank] Calculating rank for user ${userId}`);
+    
+    // Get all users' total game counts
+    const { data, error } = await supabase
+      .from('game_stats')
+      .select('user_id, total_plays');
+      
+    if (error) {
+      console.error('[getUserRank] Error fetching game stats for ranking:', error);
+      throw error;
+    }
+    
+    // Calculate total plays per user
+    const userTotalPlays = new Map<string, number>();
+    
+    data.forEach(stat => {
+      const currentUserId = stat.user_id;
+      const currentTotalPlays = stat.total_plays || 0;
+      
+      if (userTotalPlays.has(currentUserId)) {
+        userTotalPlays.set(currentUserId, userTotalPlays.get(currentUserId)! + currentTotalPlays);
+      } else {
+        userTotalPlays.set(currentUserId, currentTotalPlays);
+      }
+    });
+    
+    // Convert to array and sort by total plays (descending)
+    const sortedUsers = Array.from(userTotalPlays.entries())
+      .sort((a, b) => b[1] - a[1]);
+    
+    // Find the user's rank
+    const userIndex = sortedUsers.findIndex(([id]) => id === userId);
+    const rank = userIndex !== -1 ? userIndex + 1 : sortedUsers.length;
+    
+    console.log(`[getUserRank] User ${userId} is ranked ${rank} out of ${sortedUsers.length} by total games played`);
+    
+    return { rank, totalUsers: sortedUsers.length };
+  } catch (error) {
+    console.error('[getUserRank] Exception in getUserRank:', error);
+    // Default to rank 1 if there's an error
+    return { rank: 1, totalUsers: 1 };
+  }
+};

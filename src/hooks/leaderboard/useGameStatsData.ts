@@ -69,3 +69,42 @@ export const useGameStatsData = (
 
   return { gameStatsData, isLoadingGameStats };
 };
+
+// Helper function to get user rank based on total games played
+export const getUserRankByGamesPlayed = (
+  gameStatsData: GameStatsWithProfile[] | undefined,
+  userId: string
+): { rank: number, totalUsers: number, label: string } => {
+  if (!gameStatsData || gameStatsData.length === 0) {
+    return { rank: 1, totalUsers: 1, label: 'Most Games Played' };
+  }
+
+  // First, we need to aggregate the total_plays for each user across all games
+  const userTotalPlays = new Map<string, number>();
+  
+  // Calculate total plays for each user
+  gameStatsData.forEach(stat => {
+    const currentUserId = stat.user_id;
+    const currentTotalPlays = stat.total_plays || 0;
+    
+    if (userTotalPlays.has(currentUserId)) {
+      userTotalPlays.set(currentUserId, userTotalPlays.get(currentUserId)! + currentTotalPlays);
+    } else {
+      userTotalPlays.set(currentUserId, currentTotalPlays);
+    }
+  });
+  
+  // Convert to array and sort by total plays (descending)
+  const sortedUsers = Array.from(userTotalPlays.entries())
+    .sort((a, b) => b[1] - a[1]);
+  
+  // Find the user's rank
+  const userIndex = sortedUsers.findIndex(([id]) => id === userId);
+  const rank = userIndex !== -1 ? userIndex + 1 : sortedUsers.length;
+  
+  return { 
+    rank, 
+    totalUsers: sortedUsers.length,
+    label: 'Most Games Played'
+  };
+};
