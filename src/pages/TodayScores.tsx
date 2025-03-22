@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -68,6 +69,38 @@ const TodayScores = () => {
   
   // Determine if lower scores are better for the selected game
   const isLowerBetter = selectedGame?.id === 'wordle' || selectedGame?.id === 'mini-crossword';
+  
+  // Helper function to determine the leading player in a group
+  const getLeadingPlayerInGroup = (group: any) => {
+    if (!group || !group.members || group.members.length === 0) return null;
+    
+    // Filter to only players who have played
+    const playersWithScores = [
+      // Include current user if they've played
+      ...(group.currentUserHasPlayed ? [{
+        playerId: 'currentUser', 
+        playerName: 'You',
+        score: group.currentUserScore,
+        isCurrentUser: true
+      }] : []),
+      // Include all members who have played
+      ...group.members.filter((m: any) => m.hasPlayed && m.score !== null)
+    ];
+    
+    if (playersWithScores.length === 0) return null;
+    
+    // Sort based on game type (lower or higher is better)
+    const sorted = [...playersWithScores].sort((a, b) => {
+      if (isLowerBetter) {
+        return (a.score || 999) - (b.score || 999);
+      } else {
+        return (b.score || 0) - (a.score || 0);
+      }
+    });
+    
+    // Return the leading player
+    return sorted[0];
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -168,82 +201,89 @@ const TodayScores = () => {
               
               <TabsContent value="groups" className="space-y-6">
                 <div className="space-y-6">
-                  {groupPerformanceData.map((group) => (
-                    <Card key={group.groupId} className="p-6 overflow-hidden">
-                      <div className="flex flex-col">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-5 h-5 text-accent" />
-                            <h3 className="font-semibold text-xl">{group.groupName}</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex items-center gap-1"
-                              onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              <span className="hidden sm:inline">Messages</span>
-                            </Button>
-                            <div className="flex items-center">
-                              <span className={`inline-block w-3 h-3 rounded-full ${selectedGame.color} mr-2`}></span>
-                              <span>{selectedGame.name}</span>
+                  {groupPerformanceData.map((group) => {
+                    const leadingPlayer = getLeadingPlayerInGroup(group);
+                    
+                    return (
+                      <Card key={group.groupId} className="p-6 overflow-hidden">
+                        <div className="flex flex-col">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-5 h-5 text-accent" />
+                              <h3 className="font-semibold text-xl">{group.groupName}</h3>
                             </div>
-                          </div>
-                        </div>
-                        
-                        {/* Current user's score */}
-                        <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 font-medium">
-                              <span>Your score today</span>
-                              {group.currentUserHasPlayed && group.members.every(m => 
-                                !m.hasPlayed || (isLowerBetter 
-                                  ? (group.currentUserScore || 999) <= (m.score || 999)
-                                  : (group.currentUserScore || 0) >= (m.score || 0))
-                              ) && (
-                                <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
-                                  <Trophy className="w-3 h-3 mr-1" /> Leading
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-lg font-bold">
-                              {group.currentUserHasPlayed 
-                                ? group.currentUserScore 
-                                : <span className="text-muted-foreground text-sm">No score yet</span>}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Group members scores */}
-                        <div className="space-y-3">
-                          {group.members.length > 0 ? (
-                            group.members.map((member) => (
-                              <div 
-                                key={member.playerId} 
-                                className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors"
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex items-center gap-1"
+                                onClick={() => handleOpenMessages(group.groupId, group.groupName)}
                               >
-                                <div className="font-medium">{member.playerName}</div>
-                                <div className="flex items-center">
-                                  {member.hasPlayed ? (
-                                    <span className="font-semibold">{member.score}</span>
-                                  ) : (
-                                    <span className="text-sm text-muted-foreground">No score yet</span>
-                                  )}
-                                  <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                </div>
+                                <MessageCircle className="w-4 h-4" />
+                                <span className="hidden sm:inline">Messages</span>
+                              </Button>
+                              <div className="flex items-center">
+                                <span className={`inline-block w-3 h-3 rounded-full ${selectedGame.color} mr-2`}></span>
+                                <span>{selectedGame.name}</span>
                               </div>
-                            ))
-                          ) : (
-                            <div className="text-center py-4 text-muted-foreground">
-                              No members in this group
                             </div>
-                          )}
+                          </div>
+                          
+                          {/* Current user's score */}
+                          <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2 font-medium">
+                                <span>Your score today</span>
+                                {leadingPlayer?.isCurrentUser && (
+                                  <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
+                                    <Trophy className="w-3 h-3 mr-1" /> Leading
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-lg font-bold">
+                                {group.currentUserHasPlayed 
+                                  ? group.currentUserScore 
+                                  : <span className="text-muted-foreground text-sm">No score yet</span>}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Group members scores */}
+                          <div className="space-y-3">
+                            {group.members.length > 0 ? (
+                              group.members.map((member) => (
+                                <div 
+                                  key={member.playerId} 
+                                  className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors"
+                                >
+                                  <div className="flex items-center gap-2 font-medium">
+                                    <span>{member.playerName}</span>
+                                    {leadingPlayer?.playerId === member.playerId && (
+                                      <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
+                                        <Trophy className="w-3 h-3 mr-1" /> Leading
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center">
+                                    {member.hasPlayed ? (
+                                      <span className="font-semibold">{member.score}</span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">No score yet</span>
+                                    )}
+                                    <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-4 text-muted-foreground">
+                                No members in this group
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                 </div>
               </TabsContent>
               

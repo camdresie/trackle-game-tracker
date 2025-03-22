@@ -97,22 +97,40 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     );
   }
   
-  // Helper function to determine if the current user is leading in the group
-  const isUserLeadingInGroup = (group: typeof groupPerformanceData[0]): boolean => {
-    if (!group.currentUserHasPlayed || group.currentUserScore === null) return false;
-    
+  // Helper function to determine the leading player in a group
+  const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
     // For games like Wordle and Mini Crossword, lower scores are better
     const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
     
-    const playedMembers = group.members.filter(m => m.hasPlayed && m.score !== null);
+    // Combine current user and members into one array to find the leading player
+    const allPlayers = [
+      ...(group.currentUserHasPlayed ? [{
+        playerId: 'currentUser',
+        score: group.currentUserScore,
+        isCurrentUser: true
+      }] : []),
+      ...group.members
+        .filter(m => m.hasPlayed && m.score !== null)
+        .map(m => ({
+          playerId: m.playerId,
+          score: m.score,
+          isCurrentUser: false
+        }))
+    ];
     
-    if (playedMembers.length === 0) return true;
+    if (allPlayers.length === 0) return null;
     
-    if (isLowerBetter) {
-      return !playedMembers.some(m => (m.score || Infinity) < (group.currentUserScore || Infinity));
-    } else {
-      return !playedMembers.some(m => (m.score || 0) > (group.currentUserScore || 0));
-    }
+    // Sort players by score (according to game type)
+    const sortedPlayers = [...allPlayers].sort((a, b) => {
+      if (isLowerBetter) {
+        return (a.score || 999) - (b.score || 999);
+      } else {
+        return (b.score || 0) - (a.score || 0);
+      }
+    });
+    
+    // Return the leading player
+    return sortedPlayers[0];
   };
   
   return (
@@ -132,13 +150,14 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         <ScrollArea className="max-h-64">
           <div className="space-y-4">
             {groupPerformanceData.map((group) => {
-              const userIsLeading = isUserLeadingInGroup(group);
+              const leadingPlayer = getLeadingPlayerInGroup(group);
+              const userIsLeading = leadingPlayer?.isCurrentUser;
               
               return (
                 <div key={group.groupId} className="rounded-md border p-3">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{group.groupName}</h3>
-                    {userIsLeading && group.currentUserHasPlayed && (
+                    {userIsLeading && (
                       <Badge className="bg-amber-500">
                         <Trophy className="w-3 h-3 mr-1" /> Leading
                       </Badge>
@@ -165,7 +184,15 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                           key={member.playerId} 
                           className="flex items-center justify-between text-sm py-1 border-b last:border-0"
                         >
-                          <span>{member.playerName}</span>
+                          <div className="flex items-center gap-1">
+                            <span>{member.playerName}</span>
+                            {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
+                              <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px]">
+                                <Trophy className="w-2 h-2 mr-0.5" />
+                                Leader
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2">
                             {member.hasPlayed ? (
                               <>
