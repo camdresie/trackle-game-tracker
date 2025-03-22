@@ -61,50 +61,49 @@ const PlayerCard = ({
   
   return (
     <div className={cn(
-      "rounded-xl glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 animate-fade-in",
+      "rounded-xl glass-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 animate-fade-in relative",
       className
     )}>
-      {/* Top section for mobile - rank and player info with stats below */}
-      <div className="flex w-full sm:w-auto items-center gap-4">
-        <div className="flex items-center justify-center">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center font-semibold",
-            rankColors[rank] ? `${rankColors[rank]} border-2 border-current` : "bg-secondary"
-          )}>
-            {rank <= 3 ? (
-              <Trophy className={cn("w-5 h-5", rankColors[rank])} />
+      {/* Rank badge */}
+      <div className="flex items-center justify-center">
+        <div className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center font-semibold",
+          rankColors[rank] ? `${rankColors[rank]} border-2 border-current` : "bg-secondary"
+        )}>
+          {rank <= 3 ? (
+            <Trophy className={cn("w-5 h-5", rankColors[rank])} />
+          ) : (
+            rank
+          )}
+        </div>
+      </div>
+      
+      {/* Player info */}
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+            {player.avatar ? (
+              <img src={player.avatar} alt={player.name} className="w-full h-full object-cover" />
             ) : (
-              rank
+              <User className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
-              {player.avatar ? (
-                <img src={player.avatar} alt={player.name} className="w-full h-full object-cover" />
-              ) : (
-                <User className="w-5 h-5 text-muted-foreground" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-medium">{player.name}</h3>
-              {latestDate && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  Last played: {latestDate.toLocaleDateString()}
-                </p>
-              )}
-            </div>
+          <div>
+            <h3 className="font-medium">{player.name}</h3>
+            {latestDate && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                Last played: {latestDate.toLocaleDateString()}
+              </p>
+            )}
           </div>
         </div>
       </div>
       
-      {/* Stats section - shown in both mobile and desktop */}
-      <div className="flex mt-3 sm:mt-0 w-full sm:w-auto justify-between sm:justify-start items-center gap-3 sm:gap-6 pt-2 sm:pt-0 border-t sm:border-t-0 border-muted/30">
+      {/* Stats section - always visible, styled differently for mobile/desktop */}
+      <div className="w-full sm:w-auto flex justify-between sm:justify-end items-center gap-3 sm:gap-6 pt-3 sm:pt-0 mt-2 sm:mt-0 border-t sm:border-t-0 border-muted/30">
         {showTodayOnly ? (
-          // Even in today view, show total games played all time
+          // Show limited stats in today view
           <>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Games</p>
@@ -137,6 +136,7 @@ const PlayerCard = ({
         )}
       </div>
       
+      {/* Winner badge */}
       {rank === 1 && (
         <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center animate-pulse-subtle">
           <Award className="w-5 h-5 text-white" />

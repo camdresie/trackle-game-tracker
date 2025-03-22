@@ -1,20 +1,4 @@
-
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 import { 
   PlusCircle, 
   MoreVertical, 
@@ -24,12 +8,12 @@ import {
   Users, 
   MessageCircle
 } from 'lucide-react';
-import { FriendGroup, Player } from '@/utils/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import FriendGroupModal from './FriendGroupModal';
-import AddFriendsToGroupModal from './AddFriendsToGroupModal';
-import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
+import { Player } from '@/utils/types';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -40,58 +24,63 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import FriendGroupModal from './FriendGroupModal';
+import AddFriendsToGroupModal from './AddFriendsToGroupModal';
+import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
+import { useConnections } from '@/hooks/connections/useConnections';
 
 interface FriendGroupsManagerProps {
-  friendGroups: FriendGroup[];
-  isLoading: boolean;
-  availableFriends: Player[];
-  onCreateGroup: (data: { name: string, description: string }) => void;
-  onUpdateGroup: (data: { id: string, name: string, description?: string }) => void;
-  onDeleteGroup: (groupId: string) => void;
-  onAddFriendToGroup: (groupId: string, friendId: string) => void;
-  onRemoveFriendFromGroup: (groupId: string, friendId: string) => void;
+  currentPlayerId: string;
+  open: boolean;
 }
 
-const FriendGroupsManager = ({
-  friendGroups,
-  isLoading,
-  availableFriends,
-  onCreateGroup,
-  onUpdateGroup,
-  onDeleteGroup,
-  onAddFriendToGroup,
-  onRemoveFriendFromGroup
-}: FriendGroupsManagerProps) => {
+const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps) => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addFriendsModalOpen, setAddFriendsModalOpen] = useState(false);
   const [messagesModalOpen, setMessagesModalOpen] = useState(false);
-  const [currentGroup, setCurrentGroup] = useState<FriendGroup | null>(null);
+  const [currentGroup, setCurrentGroup] = useState<any | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
 
-  const handleEditGroup = (group: FriendGroup) => {
+  // Fetch friends to use with groups
+  const { data: friends = [], isLoading: isLoadingFriends } = useConnections(currentPlayerId, open);
+
+  // Use the friend groups hook
+  const {
+    friendGroups,
+    isLoading: isLoadingGroups,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    addFriendToGroup,
+    removeFriendFromGroup,
+    refetch: refetchGroups
+  } = useFriendGroups(friends);
+
+  const handleEditGroup = (group: any) => {
     setCurrentGroup(group);
     setEditModalOpen(true);
   };
 
-  const handleAddFriendsToGroup = (group: FriendGroup) => {
+  const handleAddFriendsToGroup = (group: any) => {
     setCurrentGroup(group);
     setAddFriendsModalOpen(true);
   };
 
-  const handleOpenMessages = (group: FriendGroup) => {
+  const handleOpenMessages = (group: any) => {
     setCurrentGroup(group);
     setMessagesModalOpen(true);
   };
 
   const handleDeleteGroup = (groupId: string) => {
     setGroupToDelete(null);
-    onDeleteGroup(groupId);
+    deleteGroup(groupId);
   };
 
   const handleUpdateGroup = (data: { name: string, description: string }) => {
     if (currentGroup) {
-      onUpdateGroup({
+      updateGroup({
         id: currentGroup.id,
         name: data.name,
         description: data.description
@@ -102,12 +91,14 @@ const FriendGroupsManager = ({
   // Get friends who are not in a group
   const getFriendsNotInGroup = (groupId: string) => {
     const group = friendGroups.find(g => g.id === groupId);
-    if (!group || !group.members) return availableFriends;
+    if (!group || !group.members) return friends;
     
-    return availableFriends.filter(friend => 
+    return friends.filter(friend => 
       !group.members?.some(member => member.id === friend.id)
     );
   };
+
+  const isLoading = isLoadingGroups || isLoadingFriends;
 
   return (
     <>
@@ -228,7 +219,7 @@ const FriendGroupsManager = ({
                               variant="destructive"
                               size="icon"
                               className="h-4 w-4 rounded-full"
-                              onClick={() => onRemoveFriendFromGroup(group.id, member.id)}
+                              onClick={() => removeFriendFromGroup({ groupId: group.id, friendId: member.id })}
                             >
                               <Trash2 className="h-2 w-2" />
                             </Button>
@@ -265,7 +256,7 @@ const FriendGroupsManager = ({
       <FriendGroupModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
-        onSubmit={onCreateGroup}
+        onSubmit={createGroup}
       />
 
       {/* Edit Group Modal */}
@@ -284,7 +275,7 @@ const FriendGroupsManager = ({
           onOpenChange={setAddFriendsModalOpen}
           group={currentGroup}
           availableFriends={getFriendsNotInGroup(currentGroup.id)}
-          onAddFriend={(friendId) => onAddFriendToGroup(currentGroup.id, friendId)}
+          onAddFriend={(friendId) => addFriendToGroup({ groupId: currentGroup.id, friendId })}
         />
       )}
 
