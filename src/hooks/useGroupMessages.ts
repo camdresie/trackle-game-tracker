@@ -110,7 +110,7 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message - enhanced version with better error logging
+  // Send a message - Fix the permission issues
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
@@ -118,32 +118,46 @@ export const useGroupMessages = (groupId: string | null) => {
       console.log(`Sending message to group ${groupId}:`, content);
       
       try {
-        // First log group membership status for debugging
-        console.log(`Checking membership status for user ${user.id} in group ${groupId}`);
+        // Verify group membership before attempting to send the message
+        // First check if the user is the owner of the group
+        const { data: isOwner } = await supabase.rpc('direct_sql_query', {
+          sql_query: `
+            SELECT EXISTS(
+              SELECT 1 FROM friend_groups
+              WHERE id = '${groupId}'
+              AND user_id = '${user.id}'
+            ) as is_owner
+          `
+        });
         
-        // Get group details to check if user is owner or member
-        const { data: groupData } = await supabase
-          .from('friend_groups')
-          .select('user_id')
-          .eq('id', groupId)
-          .maybeSingle();
+        const userIsOwner = isOwner?.[0]?.is_owner || false;
+        console.log(`User is group owner: ${userIsOwner}`);
         
-        const isOwner = groupData?.user_id === user.id;
-        console.log(`User is group owner: ${isOwner}`);
-        
-        if (!isOwner) {
-          // Check if user is an accepted member
-          const { data: memberData } = await supabase
-            .from('friend_group_members')
-            .select('status')
-            .eq('group_id', groupId)
-            .eq('friend_id', user.id)
-            .maybeSingle();
-            
-          console.log(`Member status check: ${memberData?.status || 'not a member'}`);
+        // If not owner, check if user is an accepted member
+        let userIsMember = false;
+        if (!userIsOwner) {
+          const { data: isMember } = await supabase.rpc('direct_sql_query', {
+            sql_query: `
+              SELECT EXISTS(
+                SELECT 1 FROM friend_group_members
+                WHERE group_id = '${groupId}'
+                AND friend_id = '${user.id}'
+                AND status = 'accepted'
+              ) as is_member
+            `
+          });
+          
+          userIsMember = isMember?.[0]?.is_member || false;
+          console.log(`User is accepted member: ${userIsMember}`);
         }
         
-        // Now insert the message - the RLS policy will handle authorization
+        // Only proceed if user is owner or accepted member
+        if (!userIsOwner && !userIsMember) {
+          console.error('User not authorized to send messages in this group');
+          throw new Error('You do not have permission to send messages in this group');
+        }
+        
+        // Now insert the message
         const { data, error } = await supabase
           .from('group_messages')
           .insert({
