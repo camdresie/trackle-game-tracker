@@ -1,9 +1,11 @@
+
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, ExternalLink } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
 import { getLabelByGame } from '@/utils/gameData';
+import { Button } from './ui/button';
 
 interface GameCardProps {
   game: Game;
@@ -77,6 +79,13 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     return isToday(latestScore.date);
   };
   
+  // Handle external link click (stop propagation to prevent navigating to game details)
+  const handleExternalLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(game.externalUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <Link 
       to={`/game/${game.id}`}
@@ -96,7 +105,19 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         </div>
       </div>
       
-      <h3 className="text-lg font-semibold mb-1">{game.name}</h3>
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="text-lg font-semibold">{game.name}</h3>
+        {game.externalUrl && (
+          <a 
+            href={game.externalUrl}
+            onClick={handleExternalLinkClick}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title={`Play ${game.name} on the official website`}
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+      </div>
       <p className="text-sm text-muted-foreground mb-4">{game.description}</p>
       
       <div className="mt-auto grid grid-cols-3 gap-2">

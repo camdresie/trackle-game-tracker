@@ -1,99 +1,65 @@
+import { Database } from '@/types/database.types';
 
+// Game 
 export interface Game {
-  id: string;
-  name: string;
-  description: string;
-  image?: string;
-  color: string;
-  icon?: string;
-  maxScore?: number;
-  isCustom?: boolean;
-}
-
-export interface Score {
-  id: string;
-  playerId: string;
-  gameId: string;
-  value: number;
-  date: string;
-  createdAt: string;
-  notes?: string;
-}
-
-export interface Player {
-  id: string;
-  name: string;
-  avatar?: string;
-  connectionId?: string;
-  status?: string; // Adding status field to handle pending/accepted state
-}
-
-export interface Connection {
-  id: string;
-  user_id: string;
-  friend_id: string;
-  status: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface GameStats {
-  id: string;
-  user_id: string;
-  game_id: string;
-  best_score?: number;
-  average_score?: number;
-  total_plays: number;
-  current_streak: number;
-  longest_streak: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Achievement {
   id: string;
   name: string;
   description: string;
   icon: string;
   color: string;
-  title?: string;
-  earned: boolean;
-  date?: string;
-  unlockedAt?: string;
-  category?: string;
+  maxScore?: number;
+  externalUrl?: string;
+}
+
+// Score
+export interface Score {
+  id: string;
+  gameId: string;
+  playerId: string;
+  value: number;
+  date: string;
+  createdAt: string;
+}
+
+// User profile
+export interface UserProfile {
+  id: string;
+  username: string;
+  full_name?: string;
+  avatar_url?: string;
+  updated_at?: string;
+}
+
+// Friend request
+export interface FriendRequest {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+}
+
+// Achievement
+export interface Achievement {
+  id: string;
   gameId?: string;
-  criteria?: (scores: Score[]) => boolean;
+  category: string;
+  title: string;
+  description: string;
+  icon: string;
+  target: number;
+  unlockedAt?: string;
 }
 
-export interface FriendGroup {
+// Game Stats
+export interface GameStats {
   id: string;
-  user_id: string;
-  name: string;
-  description?: string;
-  created_at: string;
+  game_id: string;
+  player_id: string;
+  total_plays: number;
+  best_score: number;
+  average_score: number;
+  current_streak: number;
+  longest_streak: number;
   updated_at: string;
-  members?: Player[];
-  pendingMembers?: Player[]; // Adding pendingMembers to the FriendGroup interface
-  pendingCount?: number;     // Adding pendingCount property
-  isJoinedGroup?: boolean;
-  status?: 'pending' | 'accepted' | 'rejected';
-}
-
-export interface FriendGroupMember {
-  id: string;
-  group_id: string;
-  friend_id: string;
-  added_at: string;
-}
-
-export interface GroupMessage {
-  id: string;
-  group_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  sender?: {
-    username: string;
-    avatar_url?: string;
-  };
 }

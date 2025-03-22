@@ -9,7 +9,8 @@ export const games = [
     description: 'Guess the 5-letter word in 6 tries or less.',
     icon: 'puzzle',
     color: 'bg-emerald-500',
-    maxScore: 6
+    maxScore: 6,
+    externalUrl: 'https://www.nytimes.com/games/wordle/'
   },
   {
     id: 'mini-crossword',
@@ -17,7 +18,8 @@ export const games = [
     description: 'Solve the crossword puzzle as quickly as possible.',
     icon: 'grid',
     color: 'bg-rose-500',
-    maxScore: 300
+    maxScore: 300,
+    externalUrl: 'https://www.nytimes.com/crosswords/game/mini'
   },
   {
     id: 'connections',
@@ -25,7 +27,8 @@ export const games = [
     description: 'Find groups of related words.',
     icon: 'layout-grid',
     color: 'bg-yellow-500',
-    maxScore: 8
+    maxScore: 8,
+    externalUrl: 'https://www.nytimes.com/games/connections'
   },
   {
     id: 'framed',
@@ -33,7 +36,8 @@ export const games = [
     description: 'Guess the movie from visual clues.',
     icon: 'film',
     color: 'bg-blue-500',
-    maxScore: 6
+    maxScore: 6,
+    externalUrl: 'https://framed.wtf/'
   },
   {
     id: 'quordle',
@@ -41,7 +45,8 @@ export const games = [
     description: 'Solve four Wordle-like puzzles simultaneously.',
     icon: 'grid',
     color: 'bg-purple-500',
-    maxScore: 40
+    maxScore: 40,
+    externalUrl: 'https://www.merriam-webster.com/games/quordle/#/'
   },
   {
     id: 'betweenle',
@@ -49,7 +54,8 @@ export const games = [
     description: 'Find the word between two other words.',
     icon: 'link',
     color: 'bg-cyan-500',
-    maxScore: 5
+    maxScore: 5,
+    externalUrl: 'https://betweenle.com/'
   },
   {
     id: 'spelling-bee',
@@ -57,7 +63,8 @@ export const games = [
     description: 'Make words using the given letters.',
     icon: 'bee',
     color: 'bg-amber-500',
-    maxScore: 137
+    maxScore: 137,
+    externalUrl: 'https://www.nytimes.com/puzzles/spelling-bee'
   },
   {
     id: 'tightrope',
@@ -65,7 +72,8 @@ export const games = [
     description: 'Balance your path across the word grid.',
     icon: 'link',
     color: 'bg-blue-400',
-    maxScore: 2340
+    maxScore: 2340,
+    externalUrl: 'https://www.britannica.com/quiz/tightrope'
   },
   {
     id: 'nerdle',
@@ -73,7 +81,8 @@ export const games = [
     description: 'Guess the equation in 6 tries.',
     icon: 'calculator',
     color: 'bg-green-600',
-    maxScore: 7
+    maxScore: 7,
+    externalUrl: 'https://nerdlegame.com/'
   },
   {
     id: 'squardle',
@@ -81,7 +90,8 @@ export const games = [
     description: 'Find words in a square grid.',
     icon: 'square',
     color: 'bg-orange-500',
-    maxScore: 10
+    maxScore: 10,
+    externalUrl: 'https://fubargames.se/squardle/'
   }
 ];
 
