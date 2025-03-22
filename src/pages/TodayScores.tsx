@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
-import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle } from 'lucide-react';
+import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
@@ -84,6 +84,14 @@ const TodayScores = () => {
           </div>
         </div>
         
+        {/* Time zone message */}
+        <div className="mb-6 bg-muted/60 rounded-lg p-3 flex items-center gap-2 text-sm">
+          <InfoIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          <p className="text-muted-foreground">
+            Today's scores reset at midnight Eastern Time (ET).
+          </p>
+        </div>
+        
         {/* Group Invitations - Show only if there are any */}
         {invitations && invitations.length > 0 && (
           <GroupInvitationsList 
@@ -120,6 +128,7 @@ const TodayScores = () => {
           </ToggleGroup>
         </div>
         
+        {/* Rest of the component */}
         {!selectedGame ? (
           <Card className="p-8 flex flex-col items-center justify-center text-center">
             <GamepadIcon className="w-12 h-12 text-muted-foreground mb-4" />

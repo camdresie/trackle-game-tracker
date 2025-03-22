@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Loader2, User } from 'lucide-react';
+import { Loader2, User, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
 import { games } from '@/utils/gameData';
@@ -61,6 +61,16 @@ const LeaderboardPlayersList = ({
   
   return (
     <div className="space-y-4">
+      {/* Time zone message - only show for today filter */}
+      {timeFilter === 'today' && (
+        <div className="bg-muted/60 rounded-lg p-3 flex items-center gap-2 text-sm">
+          <InfoIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+          <p className="text-muted-foreground">
+            Today's scores reset at midnight Eastern Time (ET).
+          </p>
+        </div>
+      )}
+      
       {isLoading ? (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin mb-4" />
