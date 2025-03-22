@@ -4,6 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { getScoreColor, getScoreLabel, getSliderMarkers } from '@/utils/scoreUtils';
 import { Game } from '@/utils/types';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 interface StandardScoreInputProps {
   game: Game;
@@ -82,10 +89,34 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     return '';
   };
   
+  // Get help text based on game
+  const getHelpText = () => {
+    if (game.id === 'squardle') {
+      return "Enter remaining guesses (10 = perfect score, 0 = failed)";
+    }
+    return null;
+  };
+  
+  const helpText = getHelpText();
+  
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <label className="text-sm font-medium">Score</label>
+        <div className="flex items-center gap-1.5">
+          <label className="text-sm font-medium">Score</label>
+          {helpText && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info size={16} className="text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  {helpText}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -103,6 +134,12 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
           </span>
         </div>
       </div>
+      
+      {game.id === 'squardle' && (
+        <div className="text-xs text-muted-foreground mt-1">
+          For Squardle, enter the number of guesses remaining (10 = perfect score, 0 = failed).
+        </div>
+      )}
       
       <Slider
         min={getMinValue()}
