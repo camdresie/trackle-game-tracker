@@ -74,14 +74,14 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+      <main className="pt-20 pb-12 px-3 sm:px-6 max-w-7xl mx-auto">
         <LeaderboardHeader 
           title={`${gameTitle} Leaderboard`}
           subtitle={subtitle}
           extraText={filterSubtitle}
         />
         
-        <div className="glass-card rounded-xl p-5 mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
+        <div className="glass-card rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
           <LeaderboardFilters
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}

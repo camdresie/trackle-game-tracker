@@ -307,8 +307,8 @@ const LeaderboardStats = ({
   };
   
   return (
-    <div className="glass-card rounded-xl p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
-      <div className="flex justify-between items-center mb-4">
+    <div className="glass-card rounded-xl p-4 sm:p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           {timeFilter === 'all' ? (
             <>
@@ -332,37 +332,39 @@ const LeaderboardStats = ({
       </div>
       
       {/* Stats cards - with dynamic third card */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+        <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
           <CardContent className="p-0">
             <div className="flex items-center justify-center mb-2">
               <Users className="w-5 h-5 text-indigo-500" />
             </div>
-            <div className="text-2xl font-semibold">
+            <div className="text-xl sm:text-2xl font-semibold">
               {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : playersCount}
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Active Players
             </div>
           </CardContent>
         </Card>
         
-        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+        <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
           <CardContent className="p-0">
             <div className="flex items-center justify-center mb-2">
               <Gamepad className="w-5 h-5 text-rose-500" />
             </div>
-            <div className="text-2xl font-semibold">
+            <div className="text-xl sm:text-2xl font-semibold">
               {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : gamesPlayedCount}
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Games Played
             </div>
           </CardContent>
         </Card>
         
-        {/* Dynamic third card based on filter selection */}
-        {renderDynamicLeaderCard()}
+        {/* Dynamic third card based on filter selection - for mobile, break to a new row on small screens */}
+        <div className="col-span-2 sm:col-span-1">
+          {renderDynamicLeaderCard()}
+        </div>
       </div>
     </div>
   );
