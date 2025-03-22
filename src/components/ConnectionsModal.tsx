@@ -10,6 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQueryClient } from '@tanstack/react-query';
 import FriendsTabContent from './connections/FriendsTabContent';
+import FriendGroupsManager from './connections/FriendGroupsManager';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 
 interface ConnectionsModalProps {
