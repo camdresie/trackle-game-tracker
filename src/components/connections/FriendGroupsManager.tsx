@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   PlusCircle, 
@@ -6,7 +7,9 @@ import {
   Trash2, 
   UserPlus, 
   Users, 
-  MessageCircle
+  MessageCircle,
+  Clock,
+  UsersRound
 } from 'lucide-react';
 import { Player } from '@/utils/types';
 import { Badge } from '@/components/ui/badge';
@@ -93,9 +96,12 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     const group = friendGroups.find(g => g.id === groupId);
     if (!group || !group.members) return friends;
     
-    return friends.filter(friend => 
-      !group.members?.some(member => member.id === friend.id)
-    );
+    const memberIds = new Set([
+      ...(group.members || []).map(m => m.id),
+      ...(group.pendingMembers || []).map(m => m.id)
+    ]);
+    
+    return friends.filter(friend => !memberIds.has(friend.id));
   };
 
   const isLoading = isLoadingGroups || isLoadingFriends;
@@ -105,7 +111,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Friend Groups
+          <span>Friend Groups</span>
         </h2>
         <Button 
           onClick={() => setCreateModalOpen(true)}
@@ -191,10 +197,22 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                 )}
               </CardHeader>
               <CardContent>
-                <div className="mb-2 flex justify-between items-center">
-                  <Badge variant="outline" className="bg-secondary/50">
-                    {group.members?.length || 0} {(group.members?.length || 0) === 1 ? 'Friend' : 'Friends'}
-                  </Badge>
+                <div className="mb-2 flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="bg-secondary/50">
+                      <UsersRound className="mr-1 h-3 w-3" />
+                      {group.members?.length || 0} {(group.members?.length || 0) === 1 ? 'Friend' : 'Friends'}
+                    </Badge>
+                    
+                    {/* Show pending invitations badge */}
+                    {!group.isJoinedGroup && group.pendingCount > 0 && (
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {group.pendingCount} Pending
+                      </Badge>
+                    )}
+                  </div>
+                  
                   <Button
                     variant="outline"
                     size="sm"
@@ -205,31 +223,69 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                     <span>Messages</span>
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {group.members && group.members.length > 0 ? (
-                    group.members.map(member => (
-                      <div key={member.id} className="relative group">
-                        <Avatar className="h-8 w-8 border-2 border-background">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
-                        </Avatar>
-                        {!group.isJoinedGroup && (
-                          <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-4 w-4 rounded-full"
-                              onClick={() => removeFriendFromGroup({ groupId: group.id, friendId: member.id })}
-                            >
-                              <Trash2 className="h-2 w-2" />
-                            </Button>
+                
+                {/* Show members */}
+                <div className="space-y-3">
+                  {/* Active Members */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-1 text-muted-foreground">Members</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {group.members && group.members.length > 0 ? (
+                        group.members.map(member => (
+                          <div key={member.id} className="relative group">
+                            <Avatar className="h-8 w-8 border-2 border-background">
+                              <AvatarImage src={member.avatar} />
+                              <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                            </Avatar>
+                            {!group.isJoinedGroup && (
+                              <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="h-4 w-4 rounded-full"
+                                  onClick={() => removeFriendFromGroup({ groupId: group.id, friendId: member.id })}
+                                >
+                                  <Trash2 className="h-2 w-2" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        ))
+                      ) : (
+                        <div className="text-sm text-muted-foreground py-2">
+                          No friends in this group yet
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Pending Invitations - only shown for groups you own */}
+                  {!group.isJoinedGroup && group.pendingMembers && group.pendingMembers.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-1 text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Pending Invitations</span>
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {group.pendingMembers.map(member => (
+                          <div key={member.id} className="relative group">
+                            <Avatar className="h-8 w-8 border-2 border-yellow-100 opacity-60">
+                              <AvatarImage src={member.avatar} />
+                              <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-4 w-4 rounded-full"
+                                onClick={() => removeFriendFromGroup({ groupId: group.id, friendId: member.id })}
+                              >
+                                <Trash2 className="h-2 w-2" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">
-                      No friends in this group yet
                     </div>
                   )}
                 </div>

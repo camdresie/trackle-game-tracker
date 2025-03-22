@@ -23,7 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface AddFriendsToGroupModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  group: FriendGroup;
+  group: FriendGroup & { pendingMembers?: Player[] & { status: string }[] };
   availableFriends: Player[];
   onAddFriend: (friendId: string) => void;
 }
@@ -74,6 +74,18 @@ const AddFriendsToGroupModal = ({
             invitedMap[item.friend_id] = item.status as 'pending' | 'rejected';
           });
           
+          // Also check the pendingMembers from the group prop if available
+          if (group.pendingMembers && group.pendingMembers.length > 0) {
+            group.pendingMembers.forEach(member => {
+              if (member.status === 'pending') {
+                pendingMap[member.id] = true;
+                invitedMap[member.id] = 'pending';
+              } else if (member.status === 'rejected') {
+                invitedMap[member.id] = 'rejected';
+              }
+            });
+          }
+          
           setPendingInvites(pendingMap);
           setInvitedFriends(invitedMap);
         } catch (err) {
@@ -83,7 +95,7 @@ const AddFriendsToGroupModal = ({
       
       checkPendingInvites();
     }
-  }, [open, user, group?.id]);
+  }, [open, user, group?.id, group?.pendingMembers]);
 
   const handleAddFriend = (friendId: string) => {
     console.log(`INVITATION FLOW - User clicked to add friend ${friendId} to group ${group.id}`);
@@ -168,6 +180,12 @@ const AddFriendsToGroupModal = ({
             <Badge variant="outline">
               {availableFriends.length} Available friends
             </Badge>
+            {(group.pendingMembers?.length || 0) > 0 && (
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                <Clock className="w-3 h-3 mr-1" />
+                {group.pendingMembers?.length || 0} Pending
+              </Badge>
+            )}
           </div>
 
           <div className="relative mb-4">
@@ -188,7 +206,7 @@ const AddFriendsToGroupModal = ({
 
           {availableFriends.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              All your friends are already in this group.
+              All your friends are already in this group or have pending invitations.
             </div>
           ) : filteredFriends.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">

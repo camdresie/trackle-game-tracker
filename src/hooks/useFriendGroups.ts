@@ -102,8 +102,83 @@ export const useFriendGroups = (friends: Player[]) => {
           status: item.status
         }));
         
-        console.log('Formatted group data:', groupsData);
-        return groupsData;
+        // Fetch members for each group including pending ones to show proper count
+        const enrichedGroups = await Promise.all(groupsData.map(async (group) => {
+          try {
+            // Get all accepted members (active members)
+            const { data: acceptedMembers, error: membersError } = await supabase
+              .from('friend_group_members')
+              .select(`
+                id,
+                friend_id,
+                status,
+                friend:profiles!friend_group_members_friend_id_fkey(id, username, full_name, avatar_url)
+              `)
+              .eq('group_id', group.id)
+              .eq('status', 'accepted');
+              
+            if (membersError) {
+              console.error(`Error fetching members for group ${group.id}:`, membersError);
+              throw membersError;
+            }
+
+            // Get pending invitations
+            const { data: pendingInvites, error: pendingError } = await supabase
+              .from('friend_group_members')
+              .select(`
+                id,
+                friend_id,
+                status,
+                friend:profiles!friend_group_members_friend_id_fkey(id, username, full_name, avatar_url)
+              `)
+              .eq('group_id', group.id)
+              .eq('status', 'pending');
+              
+            if (pendingError) {
+              console.error(`Error fetching pending invites for group ${group.id}:`, pendingError);
+            }
+            
+            // Format members into Player objects
+            const formattedMembers = (acceptedMembers || []).map(member => {
+              const profile = member.friend;
+              return {
+                id: profile.id,
+                name: profile.username || profile.full_name || 'Unknown User',
+                avatar: profile.avatar_url,
+                status: 'accepted'
+              } as Player & { status: string };
+            });
+
+            // Format pending invites for adding to metadata
+            const pendingMembers = (pendingInvites || []).map(member => {
+              const profile = member.friend;
+              return {
+                id: profile.id,
+                name: profile.username || profile.full_name || 'Unknown User',
+                avatar: profile.avatar_url,
+                status: 'pending'
+              } as Player & { status: string };
+            });
+            
+            return {
+              ...group,
+              members: formattedMembers,
+              pendingMembers: pendingMembers,
+              pendingCount: pendingMembers.length
+            };
+          } catch (err) {
+            console.error(`Error processing members for group ${group.id}:`, err);
+            return {
+              ...group,
+              members: [],
+              pendingMembers: [],
+              pendingCount: 0
+            };
+          }
+        }));
+        
+        console.log('Enriched groups with members:', enrichedGroups);
+        return enrichedGroups;
       } catch (error) {
         console.error('Error in useFriendGroups:', error);
         toast.error('Failed to load friend groups');
