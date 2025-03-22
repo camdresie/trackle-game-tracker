@@ -45,7 +45,7 @@ export const games: Game[] = [
     id: 'spelling-bee',
     name: 'Spelling Bee',
     description: 'Make words using seven letters with one required letter.',
-    icon: 'type',
+    icon: 'bee', // Changed from 'type' to 'bee'
     color: 'bg-yellow-400',
     maxScore: 137
   },

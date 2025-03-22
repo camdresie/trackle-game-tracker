@@ -1,6 +1,5 @@
-
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
@@ -29,6 +28,30 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         return <LinkIcon className="w-5 h-5" />;
       case 'merge':
         return <GitMerge className="w-5 h-5" />;
+      case 'calculator':
+        return <Calculator className="w-5 h-5" />;
+      case 'bee':
+        // Custom bee SVG icon
+        return (
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            className="w-5 h-5"
+          >
+            <path d="M12 1l4 4-4 4-4-4 4-4z" />
+            <path d="M18 5l4 4-4 4-4-4 4-4z" />
+            <path d="M6 5l4 4-4 4-4-4 4-4z" />
+            <path d="M12 9l4 4-4 4-4-4 4-4z" />
+            <path d="M12 17l4 4-4 4-4-4 4-4z" />
+          </svg>
+        );
       default:
         return <Dices className="w-5 h-5" />;
     }
@@ -62,7 +85,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     if (!latestScore) return false;
     return isToday(latestScore.date);
   };
-
+  
   return (
     <Link 
       to={`/game/${game.id}`}
