@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendsList } from './useFriendsList';
@@ -7,7 +6,7 @@ import { useFriendScores } from './useFriendScores';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { formatInTimeZone } from 'date-fns-tz';
+import { getTodayInEasternTime } from '@/utils/dateUtils';
 
 export interface GroupScoresResult {
   isLoading: boolean;
@@ -25,17 +24,6 @@ export interface GroupScoresResult {
   }[];
 }
 
-/**
- * Get the current date in Eastern Time (ET)
- * @returns Date string in YYYY-MM-DD format for Eastern Time
- */
-const getEasternTimeDate = (): string => {
-  // Get current date in Eastern Time for consistency
-  const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
-  console.log("[useGroupScores] Eastern timezone today's date:", easternTime);
-  return easternTime;
-};
-
 export const useGroupScores = (
   selectedGameId: string | null,
   todaysScores: Score[]
@@ -47,7 +35,7 @@ export const useGroupScores = (
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
 
   // Use Eastern Time for date consistency across the app
-  const today = useMemo(() => getEasternTimeDate(), []);
+  const today = useMemo(() => getTodayInEasternTime(), []);
 
   // Debug logging
   useEffect(() => {

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
+import { isToday } from '@/utils/dateUtils';
 
 interface GameCardProps {
   game: Game;
@@ -49,18 +50,10 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     return score.toFixed(2);
   };
 
-  // Check if the game was played today
+  // Check if the game was played today using our utility function
   const isPlayedToday = () => {
     if (!latestScore) return false;
-    
-    // Generate today's date in YYYY-MM-DD format without timezone conversion
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const scoreDate = latestScore.date;
-    
-    console.log(`Game ${game.id} - Score date: ${scoreDate}, Today: ${today}, Match: ${scoreDate === today}`);
-    
-    return scoreDate === today;
+    return isToday(latestScore.date);
   };
 
   return (

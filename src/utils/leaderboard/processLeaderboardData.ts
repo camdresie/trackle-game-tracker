@@ -1,15 +1,7 @@
 
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
-import { formatInTimeZone } from 'date-fns-tz';
-
-/**
- * Get the current date in Eastern Time (ET)
- * @returns Date string in YYYY-MM-DD format for Eastern Time
- */
-const getEasternTimeDate = (): string => {
-  return formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
-};
+import { getTodayInEasternTime } from '@/utils/dateUtils';
 
 /**
  * Transforms game stats and scores data into leaderboard players format
@@ -25,7 +17,7 @@ export const processLeaderboardData = (
   if (!profilesData) return [];
   
   // Get today's date in Eastern Time for filtering
-  const today = getEasternTimeDate();
+  const today = getTodayInEasternTime();
   console.log('processLeaderboardData - Today\'s date in ET (YYYY-MM-DD):', today);
   
   // Initialize user stats map

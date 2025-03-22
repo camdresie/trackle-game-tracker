@@ -2,18 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { formatInTimeZone } from 'date-fns-tz';
-
-/**
- * Get the current date in Eastern Time (ET)
- * @returns Date string in YYYY-MM-DD format for Eastern Time
- */
-const getEasternTimeDate = (): string => {
-  // Always use Eastern Time for consistent date handling across the application
-  const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
-  console.log("Eastern timezone today's date:", easternTime);
-  return easternTime;
-};
+import { getTodayInEasternTime, isToday } from '@/utils/dateUtils';
 
 /**
  * Hook for fetching ALL scores data across users
@@ -61,18 +50,15 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           });
           
           // Get today's date in Eastern Time for consistent comparison
-          const today = getEasternTimeDate();
+          const today = getTodayInEasternTime();
           console.log('Today\'s date (ET/YYYY-MM-DD) for comparison:', today);
           
           // Transform and combine the data
           const transformedData = scoresData.map(item => {
-            // Debug log each score's date
-            console.log(`Score ID ${item.id}, Date: ${item.date}, Today: ${today}`);
+            // Use the isToday function to check if the score's date matches today's date
+            const scoreIsToday = isToday(item.date);
             
-            // Use simple string comparison to check if the score's date matches today's date
-            const isToday = item.date === today;
-            
-            if (isToday) {
+            if (scoreIsToday) {
               console.log(`Found today's score: ID ${item.id}, User ${item.user_id}, Date ${item.date}, Value ${item.value}`);
             }
             
@@ -81,7 +67,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             
             return {
               ...item,
-              isToday,
+              isToday: scoreIsToday,
               formattedDate: item.date,
               profiles: profile || null
             };
