@@ -110,82 +110,31 @@ export const useGroupMessages = (groupId: string | null) => {
     };
   }, [groupId, user, queryClient]);
   
-  // Send a message - Fix the permission issues
+  // Send a message - simplified version that relies on RLS policies
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
       
       console.log(`Sending message to group ${groupId}:`, content);
       
-      try {
-        // Verify group membership before attempting to send the message
-        // First check if the user is the owner of the group
-        const { data: isOwner } = await supabase.rpc('direct_sql_query', {
-          sql_query: `
-            SELECT EXISTS(
-              SELECT 1 FROM friend_groups
-              WHERE id = '${groupId}'
-              AND user_id = '${user.id}'
-            ) as is_owner
-          `
-        });
-        
-        const userIsOwner = isOwner?.[0]?.is_owner || false;
-        console.log(`User is group owner: ${userIsOwner}`);
-        
-        // If not owner, check if user is an accepted member
-        let userIsMember = false;
-        if (!userIsOwner) {
-          const { data: isMember } = await supabase.rpc('direct_sql_query', {
-            sql_query: `
-              SELECT EXISTS(
-                SELECT 1 FROM friend_group_members
-                WHERE group_id = '${groupId}'
-                AND friend_id = '${user.id}'
-                AND status = 'accepted'
-              ) as is_member
-            `
-          });
-          
-          userIsMember = isMember?.[0]?.is_member || false;
-          console.log(`User is accepted member: ${userIsMember}`);
-        }
-        
-        // Only proceed if user is owner or accepted member
-        if (!userIsOwner && !userIsMember) {
-          console.error('User not authorized to send messages in this group');
-          throw new Error('You do not have permission to send messages in this group');
-        }
-        
-        // Now insert the message
-        const { data, error } = await supabase
-          .from('group_messages')
-          .insert({
-            group_id: groupId,
-            user_id: user.id,
-            content
-          })
-          .select()
-          .single();
-        
-        if (error) {
-          console.error('Error sending message:', error);
-          
-          // Handle specific error types
-          if (error.code === '42501') {
-            console.error('RLS policy violation - user not authorized to send messages in this group');
-            throw new Error('You do not have permission to send messages in this group');
-          }
-          
-          throw error;
-        }
-        
-        console.log('Message sent successfully:', data);
-        return data;
-      } catch (err: any) {
-        console.error('Exception in sendMessage:', err);
-        throw err;
+      // The RLS policies will now handle permissions, so we can simplify this function
+      const { data, error } = await supabase
+        .from('group_messages')
+        .insert({
+          group_id: groupId,
+          user_id: user.id,
+          content
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error sending message:', error);
+        throw error;
       }
+      
+      console.log('Message sent successfully:', data);
+      return data;
     },
     onSuccess: () => {
       // Manually trigger a refetch to get the newly sent message immediately
@@ -193,13 +142,7 @@ export const useGroupMessages = (groupId: string | null) => {
     },
     onError: (error: any) => {
       console.error('Error sending message:', error);
-      
-      // More specific error message
-      if (error.message?.includes('not authorized') || error.message?.includes('permission')) {
-        toast.error('You do not have permission to send messages in this group');
-      } else {
-        toast.error('Failed to send message');
-      }
+      toast.error('Failed to send message');
     }
   });
   
