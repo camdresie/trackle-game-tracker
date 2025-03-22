@@ -1,3 +1,4 @@
+
 export interface Game {
   id: string;
   name: string;
@@ -72,6 +73,8 @@ export interface FriendGroup {
   created_at: string;
   updated_at: string;
   members?: Player[];
+  pendingMembers?: Player[]; // Adding pendingMembers to the FriendGroup interface
+  pendingCount?: number;     // Adding pendingCount property
   isJoinedGroup?: boolean;
   status?: 'pending' | 'accepted' | 'rejected';
 }
