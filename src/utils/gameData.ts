@@ -260,7 +260,7 @@ export const addConnection = (playerId: string, friendId: string): Connection =>
   return newConnection;
 };
 
-// Update getLabelByGame in GameCard to handle time-based scores
+// Update getLabelByGame to handle Framed, Connections, and Nerdle correctly
 export const getLabelByGame = (gameId: string): string => {
   switch (gameId) {
     case 'wordle':
@@ -268,11 +268,12 @@ export const getLabelByGame = (gameId: string): string => {
     case 'connections':
     case 'betweenle':
     case 'nerdle':
+    case 'quordle':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';
-    case 'quordle':
-      return 'tries';
+    case 'spelling-bee':
+    case 'tightrope':
     case 'squardle':
       return 'points';
     default:

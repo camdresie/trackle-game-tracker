@@ -1,9 +1,9 @@
-
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
+import { getLabelByGame } from '@/utils/gameData';
 
 interface GameCardProps {
   game: Game;
@@ -60,18 +60,6 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     }
   };
 
-  const getLabelByGame = (game: Game) => {
-    if (game.id === 'wordle') {
-      return 'tries';
-    } else if (game.id === 'chess') {
-      return 'moves';
-    } else if (game.id === 'mini-crossword') {
-      return 'seconds';
-    } else {
-      return 'points';
-    }
-  };
-  
   // Format the average score to show only up to 2 decimal places when needed
   const formatAverageScore = (score?: number) => {
     if (score === undefined) return '-';
@@ -132,7 +120,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
       </div>
       
       <div className="mt-2 text-right">
-        <span className="text-xs opacity-70">{getLabelByGame(game)}</span>
+        <span className="text-xs opacity-70">{getLabelByGame(game.id)}</span>
       </div>
     </Link>
   );
