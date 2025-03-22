@@ -10,6 +10,14 @@ export const games: Game[] = [
     maxScore: 6
   },
   {
+    id: 'framed',
+    name: 'Framed',
+    description: 'Guess the movie in six or fewer tries.',
+    icon: 'film',
+    color: 'bg-amber-500',
+    maxScore: 6
+  },
+  {
     id: 'tightrope',
     name: 'Tightrope',
     description: 'Walk the trivia tightrope to make it to the other side!',
@@ -224,6 +232,7 @@ export const addConnection = (playerId: string, friendId: string): Connection =>
 export const getLabelByGame = (gameId: string): string => {
   switch (gameId) {
     case 'wordle':
+    case 'framed':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';

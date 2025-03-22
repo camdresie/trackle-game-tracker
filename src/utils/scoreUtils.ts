@@ -3,7 +3,7 @@ import { Game } from '@/utils/types';
 
 // Calculate what "good score" means for each game
 export const getScoreLabel = (value: number, game: Game, quordleValues?: number[]) => {
-  if (game.id === 'wordle') {
+  if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
@@ -27,7 +27,7 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
 
 // Get color styling based on score
 export const getScoreColor = (value: number, game: Game, quordleValues?: number[]) => {
-  if (game.id === 'wordle') {
+  if (game.id === 'wordle' || game.id === 'framed') {
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword, LOWER is better (it's time-based)
@@ -48,8 +48,8 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
 
 // Calculate slider marker positions
 export const getSliderMarkers = (game: Game) => {
-  if (game.id === 'wordle') {
-    // For Wordle with fixed positions (1-6)
+  if (game.id === 'wordle' || game.id === 'framed') {
+    // For Wordle and Framed with fixed positions (1-6)
     return [1, 2, 3, 4, 5, 6];
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword with range 0-300
@@ -82,7 +82,7 @@ export const calculateQuordleScore = (quordleValues: number[]) => {
 
 // Get default value based on game type
 export const getDefaultValue = (game: Game) => {
-  return game.id === 'wordle' ? 3 : 
+  return game.id === 'wordle' || game.id === 'framed' ? 3 : 
          game.id === 'mini-crossword' ? 120 : // Default to 2 minutes for Mini Crossword
          game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
          game.id === 'squardle' ? 150 : // Default to middle value for Squardle (300/2)
