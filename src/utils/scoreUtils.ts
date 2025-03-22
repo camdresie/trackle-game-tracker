@@ -50,6 +50,7 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
 export const getSliderMarkers = (game: Game) => {
   if (game.id === 'wordle' || game.id === 'framed') {
     // For Wordle and Framed with fixed positions (1-6)
+    // We display exactly the possible discrete values to ensure perfect alignment
     return [1, 2, 3, 4, 5, 6];
   } else if (game.id === 'mini-crossword') {
     // For Mini Crossword with range 0-300

@@ -25,7 +25,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     // Ensure value is within valid range
     let newValue = inputValue;
     
-    if (game.id === 'wordle') {
+    if (game.id === 'wordle' || game.id === 'framed') {
       newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
@@ -40,6 +40,12 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     setValue(val[0]);
     onScoreChange(val[0]);
   };
+
+  // Set step to 1 for discrete games (Wordle, Framed) and use appropriate scaling for others
+  const isDiscreteGame = game.id === 'wordle' || game.id === 'framed';
+  
+  // Get markers for the slider
+  const markers = getSliderMarkers(game);
   
   return (
     <div className="space-y-3">
@@ -51,7 +57,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
             value={value}
             onChange={handleInputChange}
             className="w-20 text-right"
-            min={game.id === 'wordle' ? 1 : 0}
+            min={game.id === 'wordle' || game.id === 'framed' ? 1 : 0}
             max={game.maxScore}
           />
           <span className="text-xs text-muted-foreground">
@@ -64,17 +70,21 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       </div>
       
       <Slider
-        min={game.id === 'wordle' ? 1 : 0}
+        min={game.id === 'wordle' || game.id === 'framed' ? 1 : 0}
         max={game.maxScore}
         step={1}
         value={[value]}
         onValueChange={handleSliderChange}
-        className="py-2"
+        className={`py-2 ${isDiscreteGame ? 'discrete-slider' : ''}`}
       />
       
       <div className="flex justify-between text-xs text-muted-foreground mt-1">
-        {getSliderMarkers(game).map((markerValue, i) => (
-          <div key={i} className="flex-shrink-0 w-6 text-center">
+        {markers.map((markerValue, i) => (
+          <div 
+            key={i} 
+            className={`flex-shrink-0 w-6 text-center ${isDiscreteGame ? 'discrete-marker' : ''}`}
+            style={isDiscreteGame ? { marginLeft: markerValue === 1 ? '-0.35rem' : '0' } : {}}
+          >
             {markerValue}
           </div>
         ))}
