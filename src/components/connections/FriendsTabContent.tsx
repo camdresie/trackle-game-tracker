@@ -53,7 +53,7 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
 
   // Filter out users that are already friends
   const filteredSearchResults = searchResults.filter(user => 
-    !displayedFriends.some(friend => friend.id === user.id)
+    !friends.some(friend => friend.id === user.id)
   );
 
   // Update displayedFriends when friends data changes
@@ -66,7 +66,7 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
     }
   }, [friends]);
 
-  // Fix the infinite loop issue by removing the problematic refetchFriends dependency
+  // Fix the infinite loop issue by not depending on refetchFriends
   useEffect(() => {
     if (open && currentPlayerId) {
       console.log('Friends tab opened, preparing to fetch fresh friends data');
@@ -145,7 +145,7 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
 
       {/* Current friends section */}
       <FriendsList
-        friends={displayedFriends}
+        friends={friends}
         isLoading={loadingFriends}
         onRemoveFriend={handleRemoveFriend}
         isRemoving={isRemovingFriend}
