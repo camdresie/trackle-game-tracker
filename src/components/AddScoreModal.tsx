@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -13,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
-import { addGameScore } from '@/services/gameStatsService';
+import { addGameScore, checkExistingScore } from '@/services/scoreService';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatInTimeZone } from 'date-fns-tz';
 import QuordleScoreInput from './scores/QuordleScoreInput';
