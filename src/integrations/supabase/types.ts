@@ -268,6 +268,13 @@ export type Database = {
         }
         Returns: Json
       }
+      can_user_access_group: {
+        Args: {
+          p_group_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       direct_sql_query: {
         Args: {
           sql_query: string
