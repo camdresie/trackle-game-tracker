@@ -35,8 +35,6 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
     } else if (game.id === 'spelling-bee') {
       newValue = Math.max(0, Math.min(game.maxScore || 137, inputValue));
-    } else if (game.id === 'squardle') {
-      newValue = Math.max(0, Math.min(game.maxScore || 10, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }
@@ -52,7 +50,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   };
 
   // Set step to 1 for discrete games (Wordle, Framed, Connections, Betweenle, Nerdle) and use appropriate scaling for others
-  const isDiscreteGame = ['wordle', 'framed', 'connections', 'betweenle', 'nerdle', 'squardle'].includes(game.id);
+  const isDiscreteGame = ['wordle', 'framed', 'connections', 'betweenle', 'nerdle'].includes(game.id);
   
   // Get markers for the slider
   const markers = getSliderMarkers(game);

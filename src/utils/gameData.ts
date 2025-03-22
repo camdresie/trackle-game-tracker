@@ -71,8 +71,7 @@ export const games = [
     name: 'Squardle',
     description: 'Find words in a square grid.',
     icon: 'square',
-    color: 'bg-orange-500',
-    maxScore: 10
+    color: 'bg-orange-500'
   }
 ];
 
