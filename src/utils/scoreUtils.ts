@@ -1,3 +1,4 @@
+
 import { Game } from '@/utils/types';
 
 // Calculate what "good score" means for each game
@@ -16,8 +17,8 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
       : 0;
     return score <= 20 ? 'Excellent' : score <= 28 ? 'Good' : 'Fair';
   } else if (game.id === 'squardle') {
-    const percentage = (value / 300) * 100;
-    return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
+    // Updated thresholds - Excellent starts at 150 points
+    return value >= 150 ? 'Excellent' : value >= 100 ? 'Good' : 'Fair';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -37,8 +38,8 @@ export const getScoreColor = (value: number, game: Game, quordleValues?: number[
       : 0;
     return score <= 20 ? 'text-emerald-500' : score <= 28 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'squardle') {
-    const percentage = (value / 300) * 100;
-    return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
+    // Updated color thresholds to match the new score thresholds
+    return value >= 150 ? 'text-emerald-500' : value >= 100 ? 'text-amber-500' : 'text-rose-500';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';

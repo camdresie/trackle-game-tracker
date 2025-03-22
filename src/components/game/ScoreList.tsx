@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Game, Score } from '@/utils/types';
+import { getScoreLabel, getScoreColor } from '@/utils/scoreUtils';
 
 interface ScoreListProps {
   scores: Score[];
@@ -31,29 +31,6 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
     return score;
   };
 
-  // Determine score rating
-  const getScoreRating = (score: number, gameId: string) => {
-    if (gameId === 'wordle' && score <= 3) {
-      return 'Excellent';
-    } else if (gameId === 'wordle' && score <= 4) {
-      return 'Good';
-    } else if (gameId === 'mini-crossword') {
-      // For Mini Crossword, LOWER is better (it's time-based)
-      if (score < 90) { // Less than 1.5 minutes
-        return 'Excellent';
-      } else if (score < 180) { // Less than 3 minutes
-        return 'Good';
-      } else {
-        return 'Fair';
-      }
-    } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.8) {
-      return 'Excellent';
-    } else if (!['wordle', 'mini-crossword'].includes(gameId) && score >= game.maxScore * 0.7) {
-      return 'Good';
-    }
-    return 'Fair';
-  };
-
   return (
     <>
       <h2 className="text-xl font-semibold mb-2">Your Score History</h2>
@@ -79,14 +56,8 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
                       )}
                     </div>
                   </div>
-                  <div className={
-                    getScoreRating(score.value, game.id) === 'Excellent' 
-                      ? 'text-emerald-500' 
-                      : getScoreRating(score.value, game.id) === 'Good'
-                      ? 'text-amber-500'
-                      : 'text-muted-foreground'
-                  }>
-                    {getScoreRating(score.value, game.id)}
+                  <div className={getScoreColor(score.value, game, undefined)}>
+                    {getScoreLabel(score.value, game, undefined)}
                   </div>
                 </div>
               ))
