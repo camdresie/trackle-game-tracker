@@ -51,18 +51,15 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     onScoreChange(val[0]);
   };
 
-  // Set step to 1 for discrete games (Wordle, Framed, Connections, Betweenle, Nerdle) and use appropriate scaling for others
-  const isDiscreteGame = ['wordle', 'framed', 'connections', 'betweenle', 'nerdle', 'squardle'].includes(game.id);
-  
-  // Get markers for the slider
-  const markers = getSliderMarkers(game);
-  
   // Get min value based on game
   const getMinValue = () => {
     if (game.id === 'connections') return 4;
     if (['wordle', 'framed', 'nerdle'].includes(game.id)) return 1;
     return 0;
   };
+  
+  // Get markers for the slider
+  const markers = getSliderMarkers(game);
   
   return (
     <div className="space-y-3">

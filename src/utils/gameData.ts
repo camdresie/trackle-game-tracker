@@ -8,63 +8,72 @@ export const games = [
     name: 'Wordle',
     description: 'Guess the 5-letter word in 6 tries or less.',
     icon: 'puzzle',
-    color: 'bg-emerald-500'
+    color: 'bg-emerald-500',
+    maxScore: 6
   },
   {
     id: 'mini-crossword',
     name: 'Mini Crossword',
     description: 'Solve the crossword puzzle as quickly as possible.',
     icon: 'grid',
-    color: 'bg-rose-500'
+    color: 'bg-rose-500',
+    maxScore: 300
   },
   {
     id: 'connections',
     name: 'Connections',
     description: 'Find groups of related words.',
     icon: 'layout-grid',
-    color: 'bg-yellow-500'
+    color: 'bg-yellow-500',
+    maxScore: 8
   },
   {
     id: 'framed',
     name: 'Framed',
     description: 'Guess the movie from visual clues.',
     icon: 'film',
-    color: 'bg-blue-500'
+    color: 'bg-blue-500',
+    maxScore: 6
   },
   {
     id: 'quordle',
     name: 'Quordle',
     description: 'Solve four Wordle-like puzzles simultaneously.',
     icon: 'grid',
-    color: 'bg-purple-500'
+    color: 'bg-purple-500',
+    maxScore: 40
   },
   {
     id: 'betweenle',
     name: 'Betweenle',
     description: 'Find the word between two other words.',
     icon: 'link',
-    color: 'bg-cyan-500'
+    color: 'bg-cyan-500',
+    maxScore: 5
   },
   {
     id: 'spelling-bee',
     name: 'Spelling Bee',
     description: 'Make words using the given letters.',
     icon: 'bee',
-    color: 'bg-amber-500'
+    color: 'bg-amber-500',
+    maxScore: 137
   },
   {
     id: 'tightrope',
     name: 'Tightrope',
     description: 'Balance your path across the word grid.',
     icon: 'link',
-    color: 'bg-blue-400'
+    color: 'bg-blue-400',
+    maxScore: 2340
   },
   {
     id: 'nerdle',
     name: 'Nerdle',
     description: 'Guess the equation in 6 tries.',
     icon: 'calculator',
-    color: 'bg-green-600'
+    color: 'bg-green-600',
+    maxScore: 7
   },
   {
     id: 'squardle',
