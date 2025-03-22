@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Game } from '@/utils/types';
-import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon } from 'lucide-react';
+import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge } from 'lucide-react';
 
 interface GameSelectionModalProps {
   open: boolean;
@@ -32,6 +32,8 @@ const GameSelectionModal = ({
         return <Film className="h-5 w-5" />;
       case 'connections':
         return <LinkIcon className="h-5 w-5" />;
+      case 'betweenle':
+        return <GitMerge className="h-5 w-5" />;
       case 'tightrope':
         return <Layout className="h-5 w-5" />;
       case 'quordle':

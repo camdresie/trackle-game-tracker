@@ -29,6 +29,8 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
     } else if (game.id === 'connections') {
       newValue = Math.max(4, Math.min(game.maxScore || 8, inputValue));
+    } else if (game.id === 'betweenle') {
+      newValue = Math.max(0, Math.min(game.maxScore || 5, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }
@@ -43,8 +45,8 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     onScoreChange(val[0]);
   };
 
-  // Set step to 1 for discrete games (Wordle, Framed, Connections) and use appropriate scaling for others
-  const isDiscreteGame = game.id === 'wordle' || game.id === 'framed' || game.id === 'connections';
+  // Set step to 1 for discrete games (Wordle, Framed, Connections, Betweenle) and use appropriate scaling for others
+  const isDiscreteGame = game.id === 'wordle' || game.id === 'framed' || game.id === 'connections' || game.id === 'betweenle';
   
   // Get markers for the slider
   const markers = getSliderMarkers(game);

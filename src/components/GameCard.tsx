@@ -1,5 +1,6 @@
+
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
@@ -26,6 +27,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         return <Film className="w-5 h-5" />;
       case 'link':
         return <LinkIcon className="w-5 h-5" />;
+      case 'merge':
+        return <GitMerge className="w-5 h-5" />;
       default:
         return <Dices className="w-5 h-5" />;
     }
