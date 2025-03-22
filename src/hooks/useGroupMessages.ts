@@ -10,7 +10,7 @@ export const useGroupMessages = (groupId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Fetch messages for a specific group with a more efficient join
+  // Fetch messages for a specific group
   const { 
     data: messages = [], 
     isLoading,
@@ -22,7 +22,7 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Fetching messages for group: ${groupId}`);
       
-      // Use a better query that joins with profiles to get sender info in one go
+      // Fetch messages and join with profiles in a separate query
       const { data: messagesData, error } = await supabase
         .from('group_messages')
         .select(`
@@ -30,11 +30,7 @@ export const useGroupMessages = (groupId: string | null) => {
           group_id,
           user_id,
           content,
-          created_at,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
+          created_at
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: true });
@@ -49,20 +45,44 @@ export const useGroupMessages = (groupId: string | null) => {
       
       console.log(`Retrieved ${messagesData?.length || 0} messages for group ${groupId}:`, messagesData);
       
-      // Transform the result to match our GroupMessage type
-      const formattedMessages = messagesData?.map(message => ({
+      // If no messages, return empty array
+      if (!messagesData || messagesData.length === 0) {
+        return [];
+      }
+      
+      // Collect unique user IDs to fetch profiles
+      const userIds = [...new Set(messagesData.map(message => message.user_id))];
+      
+      // Fetch profiles for all message senders in one query
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+        
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      // Create a map of user_id to profile data for quick lookup
+      const profilesMap = (profilesData || []).reduce((map, profile) => {
+        map[profile.id] = profile;
+        return map;
+      }, {} as Record<string, any>);
+      
+      // Add sender info to each message
+      const messagesWithSender = messagesData.map(message => ({
         id: message.id,
         group_id: message.group_id,
         user_id: message.user_id,
         content: message.content,
         created_at: message.created_at,
-        sender: message.profiles || { username: 'Unknown User' }
-      })) || [];
+        sender: profilesMap[message.user_id] || { username: 'Unknown User' }
+      }));
       
-      return formattedMessages as GroupMessage[];
+      return messagesWithSender as GroupMessage[];
     },
     enabled: !!groupId && !!user,
-    refetchInterval: 5000 // Add polling to fetch new messages every 5 seconds
+    refetchInterval: 5000 // Poll for new messages every 5 seconds
   });
   
   // Set up realtime subscription only once when groupId changes
