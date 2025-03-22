@@ -14,6 +14,8 @@ export interface FriendGroup {
   created_at: string;
   updated_at: string;
   members?: Player[];
+  pendingMembers?: Player[];
+  pendingCount?: number;
   isJoinedGroup?: boolean;
   status?: 'pending' | 'accepted' | 'rejected';
 }
@@ -102,17 +104,16 @@ export const useFriendGroups = (friends: Player[]) => {
           status: item.status
         }));
         
-        // Fetch members for each group including pending ones to show proper count
+        // Fetch members for each group
         const enrichedGroups = await Promise.all(groupsData.map(async (group) => {
           try {
             // Get all accepted members (active members)
-            const { data: acceptedMembers, error: membersError } = await supabase
+            const { data: memberRecords, error: membersError } = await supabase
               .from('friend_group_members')
               .select(`
                 id,
                 friend_id,
-                status,
-                friend:profiles!friend_group_members_friend_id_fkey(id, username, full_name, avatar_url)
+                status
               `)
               .eq('group_id', group.id)
               .eq('status', 'accepted');
@@ -121,48 +122,76 @@ export const useFriendGroups = (friends: Player[]) => {
               console.error(`Error fetching members for group ${group.id}:`, membersError);
               throw membersError;
             }
+            
+            // Get profiles for accepted members
+            const memberIds = memberRecords?.map(m => m.friend_id) || [];
+            let acceptedMembers: Player[] = [];
+            
+            if (memberIds.length > 0) {
+              const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .in('id', memberIds);
+                
+              if (profilesError) {
+                console.error(`Error fetching profiles for group ${group.id}:`, profilesError);
+                throw profilesError;
+              }
+              
+              // Format members into Player objects
+              acceptedMembers = (profilesData || []).map(profile => ({
+                id: profile.id,
+                name: profile.username || profile.full_name || 'Unknown User',
+                avatar: profile.avatar_url,
+                status: 'accepted'
+              }));
+            }
 
             // Get pending invitations
-            const { data: pendingInvites, error: pendingError } = await supabase
+            const { data: pendingRecords, error: pendingError } = await supabase
               .from('friend_group_members')
               .select(`
                 id,
                 friend_id,
-                status,
-                friend:profiles!friend_group_members_friend_id_fkey(id, username, full_name, avatar_url)
+                status
               `)
               .eq('group_id', group.id)
               .eq('status', 'pending');
               
             if (pendingError) {
               console.error(`Error fetching pending invites for group ${group.id}:`, pendingError);
+              throw pendingError;
             }
             
-            // Format members into Player objects
-            const formattedMembers = (acceptedMembers || []).map(member => {
-              const profile = member.friend;
-              return {
-                id: profile.id,
-                name: profile.username || profile.full_name || 'Unknown User',
-                avatar: profile.avatar_url,
-                status: 'accepted'
-              } as Player & { status: string };
-            });
-
-            // Format pending invites for adding to metadata
-            const pendingMembers = (pendingInvites || []).map(member => {
-              const profile = member.friend;
-              return {
+            // Get profiles for pending members
+            const pendingIds = pendingRecords?.map(m => m.friend_id) || [];
+            let pendingMembers: Player[] = [];
+            
+            if (pendingIds.length > 0) {
+              const { data: pendingProfilesData, error: pendingProfilesError } = await supabase
+                .from('profiles')
+                .select('id, username, full_name, avatar_url')
+                .in('id', pendingIds);
+                
+              if (pendingProfilesError) {
+                console.error(`Error fetching profiles for pending invites in group ${group.id}:`, pendingProfilesError);
+                throw pendingProfilesError;
+              }
+              
+              // Format pending members into Player objects
+              pendingMembers = (pendingProfilesData || []).map(profile => ({
                 id: profile.id,
                 name: profile.username || profile.full_name || 'Unknown User',
                 avatar: profile.avatar_url,
                 status: 'pending'
-              } as Player & { status: string };
-            });
+              }));
+            }
+            
+            console.log(`Group ${group.name} has ${acceptedMembers.length} accepted members and ${pendingMembers.length} pending invites`);
             
             return {
               ...group,
-              members: formattedMembers,
+              members: acceptedMembers,
               pendingMembers: pendingMembers,
               pendingCount: pendingMembers.length
             };

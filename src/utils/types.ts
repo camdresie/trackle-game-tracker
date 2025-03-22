@@ -1,4 +1,3 @@
-
 export interface Game {
   id: string;
   name: string;
@@ -25,6 +24,7 @@ export interface Player {
   name: string;
   avatar?: string;
   connectionId?: string;
+  status?: string; // Adding status field to handle pending/accepted state
 }
 
 export interface Connection {

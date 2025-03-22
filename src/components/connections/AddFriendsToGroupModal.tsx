@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Drawer,
@@ -23,7 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface AddFriendsToGroupModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  group: FriendGroup & { pendingMembers?: Player[] & { status: string }[] };
+  group: FriendGroup;
   availableFriends: Player[];
   onAddFriend: (friendId: string) => void;
 }
