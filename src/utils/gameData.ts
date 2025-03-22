@@ -1,4 +1,3 @@
-
 import { Game, Player, Score, Connection } from './types';
 
 export const games: Game[] = [
@@ -268,6 +267,7 @@ export const getLabelByGame = (gameId: string): string => {
     case 'framed':
     case 'connections':
     case 'betweenle':
+    case 'nerdle':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';
