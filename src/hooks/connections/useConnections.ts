@@ -66,7 +66,8 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
       }).filter(Boolean) as Player[];
     },
     enabled: enabled && !!currentPlayerId,
-    staleTime: 0, // Always get fresh data
-    refetchOnWindowFocus: true
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+    refetchOnWindowFocus: false, // Only refetch when explicitly told to
+    refetchOnMount: false, // Don't refetch on component mount
   });
 };

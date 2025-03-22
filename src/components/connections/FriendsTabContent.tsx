@@ -1,10 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Player } from '@/utils/types';
 import FriendRequestsList from './FriendRequestsList';
 import SearchResultsList from './SearchResultsList';
 import FriendsList from './FriendsList';
@@ -12,6 +11,7 @@ import { useConnectionSearch } from '@/hooks/connections/useConnectionSearch';
 import { useConnectionRequests } from '@/hooks/connections/useConnectionRequests';
 import { useConnections } from '@/hooks/connections/useConnections';
 import { useConnectionMutations } from '@/hooks/connections/useConnectionMutations';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface FriendsTabContentProps {
   currentPlayerId: string;
@@ -21,8 +21,9 @@ interface FriendsTabContentProps {
 
 const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTabContentProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
 
-  // Use the extracted hooks with simplified dependencies
+  // Use the optimized hooks with improved caching
   const { 
     data: friends = [], 
     isLoading: loadingFriends,
@@ -48,28 +49,16 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
     isDecliningRequest,
     removeFriend,
     isRemovingFriend
-  } = useConnectionMutations(currentPlayerId, onFriendRemoved);
+  } = useConnectionMutations(currentPlayerId, () => {
+    // Invalidate relevant queries after mutation
+    queryClient.invalidateQueries({ queryKey: ['friends'] });
+    if (onFriendRemoved) onFriendRemoved();
+  });
 
   // Filter out users that are already friends
   const filteredSearchResults = searchResults.filter(user => 
     !friends.some(friend => friend.id === user.id)
   );
-
-  // Simplified effect to refresh data when the tab opens
-  useEffect(() => {
-    if (open && currentPlayerId) {
-      console.log('Friends tab opened, fetching fresh data');
-      
-      // Simple timeout to ensure DB consistency
-      const timer = setTimeout(() => {
-        refetchFriends()
-          .then(() => console.log('Friends data refetch completed'))
-          .catch(error => console.error('Error during friends refetch:', error));
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [open, currentPlayerId, refetchFriends]);
 
   const handleRemoveFriend = (connectionId: string) => {
     console.log('Handling remove friend for connection ID:', connectionId);
