@@ -23,7 +23,8 @@ export const filterAndSortPlayers = (
   selectedGame: string,
   userId?: string,
   friendIds: string[] = [],
-  selectedGroupMemberIds: string[] = []
+  selectedGroupMemberIds: string[] = [],
+  maxPlayers: number = 25 // Default to 25 players maximum
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
@@ -137,6 +138,11 @@ export const filterAndSortPlayers = (
     }
   });
   
-  console.log('filterAndSortPlayers - Final sorted and filtered players:', filteredPlayers.length);
+  console.log('filterAndSortPlayers - Final sorted and filtered players before limit:', filteredPlayers.length);
+  
+  // Limit to maximum number of players (default 25)
+  filteredPlayers = filteredPlayers.slice(0, maxPlayers);
+  
+  console.log('filterAndSortPlayers - Final players returned after limit:', filteredPlayers.length);
   return filteredPlayers;
 };

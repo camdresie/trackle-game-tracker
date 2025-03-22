@@ -65,6 +65,11 @@ const Leaderboard = () => {
     }
   }
   
+  // Add message about player limit
+  const limitMessage = filteredAndSortedPlayers.length === 25 
+    ? "Showing top 25 players" 
+    : "";
+  
   // Debug outputs for leaderboard data
   console.log('Leaderboard.tsx - timeFilter:', timeFilter);
   console.log('Leaderboard.tsx - filtered players count:', filteredAndSortedPlayers.length);
@@ -78,7 +83,7 @@ const Leaderboard = () => {
         <LeaderboardHeader 
           title={`${gameTitle} Leaderboard`}
           subtitle={subtitle}
-          extraText={filterSubtitle}
+          extraText={filterSubtitle || limitMessage}
         />
         
         <div className="glass-card rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>

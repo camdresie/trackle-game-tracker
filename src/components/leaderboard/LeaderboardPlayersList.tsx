@@ -71,6 +71,16 @@ const LeaderboardPlayersList = ({
         </div>
       )}
       
+      {/* Players limit message */}
+      {playersToDisplay.length === 25 && (
+        <div className="bg-muted/60 rounded-lg p-3 flex items-center gap-2 text-sm mt-2">
+          <InfoIcon className="w-4 h-4 text-amber-500 flex-shrink-0" />
+          <p className="text-muted-foreground">
+            Showing top 25 players. Use filters to narrow results if needed.
+          </p>
+        </div>
+      )}
+      
       {isLoading ? (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 mx-auto text-primary animate-spin mb-4" />
