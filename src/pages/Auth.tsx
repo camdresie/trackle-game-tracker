@@ -137,7 +137,14 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <Card className="glass-card">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Game Tracker</CardTitle>
+            <div className="mx-auto mb-2">
+              <img 
+                src="/lovable-uploads/d15dd151-d315-44b0-b08b-77ec26d6aa77.png" 
+                alt="Trackle" 
+                className="h-16 w-auto mx-auto" 
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold">Trackle</CardTitle>
             <CardDescription>Sign in to track your game scores</CardDescription>
           </CardHeader>
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>

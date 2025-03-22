@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Award, BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle } from 'lucide-react';
+import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,7 +36,11 @@ const NavBar = () => {
       <div className="fixed w-full top-0 z-50">
         <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
           <Link to="/" className="flex items-center gap-2">
-            <Award className="w-6 h-6 text-accent" />
+            <img 
+              src="/lovable-uploads/d15dd151-d315-44b0-b08b-77ec26d6aa77.png" 
+              alt="Trackle" 
+              className="h-8 w-auto" 
+            />
             <span className="font-semibold text-lg">Trackle</span>
           </Link>
           
@@ -85,7 +89,11 @@ const NavBar = () => {
     <div className="fixed w-full top-0 z-50">
       <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
         <Link to="/" className="flex items-center gap-2">
-          <Award className="w-6 h-6 text-accent" />
+          <img 
+            src="/lovable-uploads/d15dd151-d315-44b0-b08b-77ec26d6aa77.png" 
+            alt="Trackle" 
+            className="h-8 w-auto" 
+          />
           <span className="font-semibold text-lg">Trackle</span>
         </Link>
         
