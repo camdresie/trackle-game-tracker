@@ -24,6 +24,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Log request for debugging
+    console.log("Processing support email request");
+    
     const { name, email, subject, message }: SupportEmailRequest = await req.json();
 
     // Input validation

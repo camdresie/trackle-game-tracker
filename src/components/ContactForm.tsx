@@ -53,7 +53,7 @@ const ContactForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Direct fetch to the edge function URL with proper CORS headers
+      // Making sure we have a valid URL with https protocol
       const response = await fetch('https://vsimhtvroyqdsaxhrhaf.supabase.co/functions/v1/send-support-email', {
         method: 'POST',
         headers: {
@@ -69,8 +69,8 @@ const ContactForm = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
       
       const responseData = await response.json();
@@ -87,8 +87,12 @@ const ContactForm = () => {
       });
     } catch (error: any) {
       console.error('Error submitting form:', error);
+      
+      // More descriptive error message
+      const errorMessage = error.message || 'Failed to send message. Please try again later.';
+      
       toast.error('Failed to send message', {
-        description: error.message || 'Please try again later.',
+        description: errorMessage,
       });
     } finally {
       setIsSubmitting(false);
