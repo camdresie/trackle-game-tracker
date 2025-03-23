@@ -20,7 +20,6 @@ const NavBar = () => {
     { name: 'Today', path: '/today', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Messages', path: '/messages', icon: <MessageCircle className="w-5 h-5" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <BarChart3 className="w-5 h-5" /> },
-    { name: 'Profile', path: '/profile', icon: <User className="w-5 h-5" /> },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -63,6 +62,20 @@ const NavBar = () => {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              
+              <Link
+                to="/profile"
+                onClick={() => setIsMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors mb-1",
+                  isActive('/profile') 
+                    ? "bg-secondary text-primary font-medium" 
+                    : "hover:bg-secondary/50"
+                )}
+              >
+                <User className="w-5 h-5" />
+                <span>Profile</span>
+              </Link>
               
               <button
                 onClick={handleSignOut}
