@@ -91,7 +91,7 @@ export interface FriendGroup {
   pendingMembers?: Player[];
   pendingCount?: number;
   isJoinedGroup?: boolean;
-  status?: 'pending' | 'accepted' | 'rejected';
+  status?: 'pending' | 'accepted' | 'rejected' | 'left';
 }
 
 // Group Message
