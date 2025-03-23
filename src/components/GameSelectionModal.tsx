@@ -7,6 +7,7 @@ import {
   DialogDescription
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Game } from '@/utils/types';
 import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
 
@@ -73,37 +74,39 @@ const GameSelectionModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md animate-scale-in">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md animate-scale-in max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Select a Game</DialogTitle>
           <DialogDescription>
             Choose which game you want to add a score for
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 grid grid-cols-1 gap-3">
-          {games.map((game) => (
-            <Button
-              key={game.id}
-              variant="outline"
-              className="flex items-center justify-start gap-3 h-auto min-h-[56px] px-4 py-3 w-full"
-              onClick={() => {
-                onSelectGame(game);
-                onOpenChange(false);
-              }}
-            >
-              <div className={`${game.color} p-1.5 rounded text-white flex-shrink-0`}>
-                {getGameIcon(game.id)}
-              </div>
-              <div className="text-left overflow-hidden">
-                <div className="font-medium">{game.name}</div>
-                <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                  {game.description}
+        <ScrollArea className="flex-grow max-h-[60vh]">
+          <div className="py-4 grid grid-cols-1 gap-3 pr-4">
+            {games.map((game) => (
+              <Button
+                key={game.id}
+                variant="outline"
+                className="flex items-center justify-start gap-3 h-auto min-h-[56px] px-4 py-3 w-full"
+                onClick={() => {
+                  onSelectGame(game);
+                  onOpenChange(false);
+                }}
+              >
+                <div className={`${game.color} p-1.5 rounded text-white flex-shrink-0`}>
+                  {getGameIcon(game.id)}
                 </div>
-              </div>
-            </Button>
-          ))}
-        </div>
+                <div className="text-left overflow-hidden">
+                  <div className="font-medium">{game.name}</div>
+                  <div className="text-xs text-muted-foreground break-words whitespace-normal">
+                    {game.description}
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
