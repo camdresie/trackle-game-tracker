@@ -33,11 +33,7 @@ const HomeHeader = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
       <div>
         <div className="mb-1">
-          <img 
-            src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-            alt="Trackle Logo" 
-            className="h-10 w-auto"
-          />
+          {/* Logo removed from HomeHeader as requested */}
         </div>
         <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
       </div>

@@ -29,7 +29,7 @@ const Auth = () => {
               <img 
                 src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
                 alt="Trackle Logo" 
-                className="h-14 w-auto"
+                className="h-20 w-auto"
               />
             </div>
             <CardDescription>Sign in to track your game scores</CardDescription>

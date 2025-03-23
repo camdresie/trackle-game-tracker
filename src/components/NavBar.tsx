@@ -38,7 +38,7 @@ const NavBar = () => {
             <img 
               src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
               alt="Trackle Logo" 
-              className="h-8 w-auto"
+              className="h-15 w-auto"
             />
           </Link>
           
@@ -118,7 +118,7 @@ const NavBar = () => {
           <img 
             src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
             alt="Trackle Logo" 
-            className="h-12 w-auto" // Increased from h-9 to h-12
+            className="h-20 w-auto" 
           />
         </Link>
         
