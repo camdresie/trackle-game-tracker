@@ -16,6 +16,7 @@ const OnboardingFlow = () => {
   const [username, setUsername] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
 
   // Initialize form with profile data when available
   useEffect(() => {
@@ -29,7 +30,21 @@ const OnboardingFlow = () => {
     }
   }, [profile]);
 
+  // Check if username is valid
+  useEffect(() => {
+    if (username.length > 0 && username.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+    } else {
+      setUsernameError(null);
+    }
+  }, [username]);
+
   const handleSubmit = async () => {
+    if (!username || username.length < 3) {
+      toast.error('Please provide a valid username (at least 3 characters)');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       console.log('Updating profile with:', { username, full_name: fullName });
@@ -89,7 +104,14 @@ const OnboardingFlow = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Choose a username"
+                    className={usernameError ? "border-red-500" : ""}
                   />
+                  {usernameError && (
+                    <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Username must be at least 3 characters
+                  </p>
                 </div>
               </div>
             </div>
@@ -99,7 +121,7 @@ const OnboardingFlow = () => {
           <Button 
             onClick={handleSubmit} 
             className="w-full"
-            disabled={!username || !fullName || isSubmitting}
+            disabled={!username || username.length < 3 || isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Complete Setup'}
           </Button>

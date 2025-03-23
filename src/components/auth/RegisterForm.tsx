@@ -28,6 +28,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 }) => {
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -40,6 +41,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
   const onSubmit = async (values: RegisterValues) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       await signUp(values.email, values.password, values.username);
       if (onRegisterSuccess) {
@@ -47,6 +50,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       } else {
         onSwitchToLogin();
       }
+    } catch (error: any) {
+      setError(error.message || 'Failed to register. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +108,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             </FormItem>
           )}
         />
+        
+        {error && (
+          <div className="text-sm text-red-500 mt-2">
+            {error}
+          </div>
+        )}
+        
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? (
             <>

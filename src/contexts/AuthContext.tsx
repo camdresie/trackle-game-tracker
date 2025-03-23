@@ -106,7 +106,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      // First, check if username is already taken
+      const { data: existingUser, error: usernameCheckError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+        
+      if (usernameCheckError) {
+        throw usernameCheckError;
+      }
+      
+      if (existingUser) {
+        throw new Error('Username is already taken');
+      }
+      
+      // Proceed with signup
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -115,7 +131,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         },
       });
+      
       if (error) throw error;
+      
+      // Create profile manually if needed - this ensures the profile exists
+      if (data.user) {
+        // Check if profile exists
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle();
+          
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error('Error checking profile:', profileCheckError);
+        }
+        
+        // If profile doesn't exist already, create it manually
+        if (!existingProfile) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              username,
+              full_name: null,
+              avatar_url: null,
+              selected_games: null
+            });
+            
+          if (insertError) {
+            console.error('Error creating profile after signup:', insertError);
+          }
+        }
+      }
       
       uiToast({
         title: 'Account created',
@@ -150,6 +198,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Updating profile with:', updates);
       
+      // First check if profile exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+        
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking profile existence:', checkError);
+        toast.error('Failed to update profile');
+        throw checkError;
+      }
+      
+      // If profile doesn't exist, create it first
+      if (!existingProfile) {
+        console.log('Profile not found, creating new profile');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            ...updates,
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          toast.error('Failed to create profile');
+          throw insertError;
+        }
+        
+        console.log('New profile created:', newProfile);
+        setProfile(newProfile);
+        toast.success('Profile created successfully');
+        return;
+      }
+      
+      // Update existing profile
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
