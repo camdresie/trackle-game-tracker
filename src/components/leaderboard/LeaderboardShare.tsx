@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Share2, Check } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInTimeZone } from 'date-fns-tz';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { games } from '@/utils/gameData';
-import { toast } from '@/hooks/use-toast';
+import ShareModal from '@/components/ShareModal';
 
 interface LeaderboardShareProps {
   players: LeaderboardPlayer[];
@@ -15,7 +15,7 @@ interface LeaderboardShareProps {
 }
 
 const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: LeaderboardShareProps) => {
-  const [isCopied, setIsCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Find the current game
   const currentGame = games.find(game => game.id === selectedGame);
@@ -126,51 +126,25 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
     return shareText;
   };
   
-  // Handle copying to clipboard
-  const handleCopyToClipboard = async () => {
-    const shareText = generateShareText();
-    
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setIsCopied(true);
-      toast({
-        title: 'Copied to clipboard!',
-        description: 'Share with your friends!',
-      });
-      
-      // Reset copied state after 2 seconds
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      toast({
-        title: 'Failed to copy',
-        description: 'Please try again',
-        variant: 'destructive',
-      });
-    }
-  };
-  
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className={className}
-      onClick={handleCopyToClipboard}
-    >
-      {isCopied ? (
-        <>
-          <Check className="w-4 h-4" />
-          <span>Copied!</span>
-        </>
-      ) : (
-        <>
-          <Share2 className="w-4 h-4" />
-          <span>Share</span>
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className={className}
+        onClick={() => setShowShareModal(true)}
+      >
+        <Share2 className="w-4 h-4" />
+        <span>Share</span>
+      </Button>
+      
+      <ShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        shareText={generateShareText()}
+        title={`Share ${gameTitle} Leaderboard`}
+      />
+    </>
   );
 };
 

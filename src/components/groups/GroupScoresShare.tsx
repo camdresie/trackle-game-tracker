@@ -1,8 +1,8 @@
 import React, { useState, ReactNode } from 'react';
-import { Share2, Check } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInTimeZone } from 'date-fns-tz';
-import { toast } from 'sonner';
+import ShareModal from '@/components/ShareModal';
 
 interface GroupMemberScore {
   playerName: string;
@@ -35,7 +35,7 @@ const GroupScoresShare = ({
   useActualUsername = false, // Default to showing "You" unless explicitly set
   children // Accept children prop
 }: GroupScoresShareProps) => {
-  const [isCopied, setIsCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Format today's date for the share text
   const getTodayFormatted = () => {
@@ -81,58 +81,49 @@ const GroupScoresShare = ({
     return shareText;
   };
   
-  // Handle copying to clipboard
-  const handleCopyToClipboard = async () => {
-    const shareText = generateShareText();
-    
-    try {
-      await navigator.clipboard.writeText(shareText);
-      setIsCopied(true);
-      toast.success('Copied to clipboard!', {
-        description: 'Share with your friends!'
-      });
-      
-      // Reset copied state after 2 seconds
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      toast.error('Failed to copy', {
-        description: 'Please try again'
-      });
-    }
+  // Handle opening the share modal
+  const handleOpenShareModal = () => {
+    setShowShareModal(true);
   };
-  
+
   // If children are provided, use them with the onClick handler
   if (children) {
     return (
-      <div onClick={handleCopyToClipboard} className={className}>
-        {children}
-      </div>
+      <>
+        <div onClick={handleOpenShareModal} className={className}>
+          {children}
+        </div>
+        
+        <ShareModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          shareText={generateShareText()}
+          title={`Share ${groupName} Scores`}
+        />
+      </>
     );
   }
   
   // Otherwise, use the default button
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className={className}
-      onClick={handleCopyToClipboard}
-    >
-      {isCopied ? (
-        <>
-          <Check className="w-4 h-4 mr-1" />
-          <span>Copied!</span>
-        </>
-      ) : (
-        <>
-          <Share2 className="w-4 h-4 mr-1" />
-          <span>Share Scores</span>
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className={className}
+        onClick={handleOpenShareModal}
+      >
+        <Share2 className="w-4 h-4 mr-1" />
+        <span>Share Scores</span>
+      </Button>
+      
+      <ShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        shareText={generateShareText()}
+        title={`Share ${groupName} Scores`}
+      />
+    </>
   );
 };
 
