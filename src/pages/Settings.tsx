@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -28,15 +27,19 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, ensureAvatarBucketExists } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { ThemeSwitch } from '@/components/theme/ThemeSwitch';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { user, profile, updateProfile, signOut } = useAuth();
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('profile');
   
   // Profile form state
   const [username, setUsername] = useState('');
@@ -258,6 +261,39 @@ const Settings = () => {
     }
   };
   
+  // New tab handling for mobile
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  // Render mobile dropdown or desktop tabs based on screen size
+  const renderTabSelection = () => {
+    if (isMobile) {
+      return (
+        <div className="w-full mb-6">
+          <Select value={activeTab} onValueChange={handleTabChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select section" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="profile">Profile</SelectItem>
+              <SelectItem value="account">Account & Password</SelectItem>
+              <SelectItem value="appearance">Appearance</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+    
+    return (
+      <TabsList className="w-full mb-6 flex">
+        <TabsTrigger value="profile" className="flex-1">Profile</TabsTrigger>
+        <TabsTrigger value="account" className="flex-1">Account & Password</TabsTrigger>
+        <TabsTrigger value="appearance" className="flex-1">Appearance</TabsTrigger>
+      </TabsList>
+    );
+  };
+  
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-3xl py-8">
@@ -273,297 +309,592 @@ const Settings = () => {
           <h1 className="text-2xl font-bold">Account Settings</h1>
         </div>
         
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="w-full mb-6 grid grid-cols-3 gap-4">
-            <TabsTrigger value="profile" className="px-4">Profile</TabsTrigger>
-            <TabsTrigger value="account" className="px-4">Account & Password</TabsTrigger>
-            <TabsTrigger value="appearance" className="px-4">Appearance</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile" className="pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  Update your profile information visible to other users
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
-                  <div className="relative">
-                    <Avatar className="h-24 w-24">
-                      {avatarUrl ? (
-                        <AvatarImage src={avatarUrl} alt="Profile" />
-                      ) : (
-                        <AvatarFallback>
-                          <User className="h-12 w-12" />
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    
-                    <div className="absolute -bottom-2 -right-2">
-                      <label 
-                        htmlFor="avatar-upload" 
-                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        <Camera className="h-4 w-4" />
-                        <span className="sr-only">Upload avatar</span>
-                      </label>
-                      <input 
-                        id="avatar-upload" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={handleAvatarUpload}
-                        disabled={uploading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1 text-center sm:text-left flex-1">
-                    <h3 className="text-lg font-medium">Profile Picture</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Click the camera icon to upload a new profile picture
-                    </p>
-                    {uploading && (
-                      <p className="text-sm text-muted-foreground">Uploading...</p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
-                    <div className="relative">
-                      <Input 
-                        id="username" 
-                        value={username} 
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Choose a unique username"
-                      />
-                      {username && username !== profile?.username && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                          {usernameChecking ? (
-                            <span className="text-xs text-muted-foreground">Checking...</span>
-                          ) : (
-                            <span className={`text-xs ${usernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
-                              {usernameAvailable ? 'Available' : 'Already taken'}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Your username must be unique and at least 3 characters
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input 
-                      id="fullName" 
-                      value={fullName} 
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Your full name (optional)"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/profile')}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleProfileUpdate} 
-                  disabled={
-                    savingProfile || 
-                    !usernameAvailable || 
-                    usernameChecking || 
-                    username.length < 3
-                  }
-                >
-                  {savingProfile ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="account" className="pt-4 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Email & Password</CardTitle>
-                <CardDescription>
-                  Update your account credentials
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Email address cannot be changed directly
-                  </p>
-                </div>
-                
-                <div className="space-y-2 pt-4">
-                  <h3 className="text-lg font-medium">Change Password</h3>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input 
-                      id="currentPassword" 
-                      type="password" 
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your current password"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input 
-                      id="newPassword" 
-                      type="password" 
-                      value={newPassword} 
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input 
-                      id="confirmPassword" 
-                      type="password" 
-                      value={confirmPassword} 
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="ml-auto" 
-                  onClick={handlePasswordUpdate}
-                  disabled={
-                    savingPassword || 
-                    !password || 
-                    !newPassword || 
-                    newPassword !== confirmPassword || 
-                    newPassword.length < 6
-                  }
-                >
-                  {savingPassword ? 'Updating...' : 'Update Password'}
-                </Button>
-              </CardFooter>
-            </Card>
+        {isMobile ? (
+          <div className="w-full">
+            {renderTabSelection()}
             
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-500">Danger Zone</CardTitle>
-                <CardDescription>
-                  Permanently delete your account and all associated data
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Warning</AlertTitle>
-                  <AlertDescription>
-                    This action cannot be undone. All of your data will be permanently deleted.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-              <CardFooter>
-                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" className="ml-auto">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Account
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Delete Account</DialogTitle>
-                      <DialogDescription>
-                        This action cannot be undone. Are you sure you want to permanently delete your account?
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                      <p className="mb-4 text-sm">
-                        To confirm, please type <span className="font-bold">delete my account</span> below:
-                      </p>
-                      <Input
-                        value={confirmDeleteText}
-                        onChange={(e) => setConfirmDeleteText(e.target.value)}
-                        placeholder="delete my account"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setDeleteDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        onClick={handleDeleteAccount}
-                        disabled={confirmDeleteText !== 'delete my account' || deletingAccount}
-                      >
-                        {deletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="appearance" className="pt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>
-                  Customize how Trackle looks on your device
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-medium">Theme</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Choose between light and dark mode
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center justify-between border p-4 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Moon className="h-5 w-5" />
-                      <div>
-                        <p className="font-medium">Dark Mode</p>
+            {activeTab === 'profile' && (
+              <div className="pt-4">
+                {/* Profile Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>
+                      Update your profile information visible to other users
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
+                      <div className="relative">
+                        <Avatar className="h-24 w-24">
+                          {avatarUrl ? (
+                            <AvatarImage src={avatarUrl} alt="Profile" />
+                          ) : (
+                            <AvatarFallback>
+                              <User className="h-12 w-12" />
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        
+                        <div className="absolute -bottom-2 -right-2">
+                          <label 
+                            htmlFor="avatar-upload" 
+                            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <Camera className="h-4 w-4" />
+                            <span className="sr-only">Upload avatar</span>
+                          </label>
+                          <input 
+                            id="avatar-upload" 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={handleAvatarUpload}
+                            disabled={uploading}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1 text-center sm:text-left flex-1">
+                        <h3 className="text-lg font-medium">Profile Picture</h3>
                         <p className="text-sm text-muted-foreground">
-                          Switch between light and dark theme
+                          Click the camera icon to upload a new profile picture
                         </p>
+                        {uploading && (
+                          <p className="text-sm text-muted-foreground">Uploading...</p>
+                        )}
                       </div>
                     </div>
-                    <ThemeSwitch id="theme-toggle" />
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <div className="relative">
+                          <Input 
+                            id="username" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Choose a unique username"
+                          />
+                          {username && username !== profile?.username && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                              {usernameChecking ? (
+                                <span className="text-xs text-muted-foreground">Checking...</span>
+                              ) : (
+                                <span className={`text-xs ${usernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                                  {usernameAvailable ? 'Available' : 'Already taken'}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Your username must be unique and at least 3 characters
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input 
+                          id="fullName" 
+                          value={fullName} 
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Your full name (optional)"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/profile')}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleProfileUpdate} 
+                      disabled={
+                        savingProfile || 
+                        !usernameAvailable || 
+                        usernameChecking || 
+                        username.length < 3
+                      }
+                    >
+                      {savingProfile ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            )}
+            
+            {activeTab === 'account' && (
+              <div className="pt-4 space-y-6">
+                {/* Account Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Email & Password</CardTitle>
+                    <CardDescription>
+                      Update your account credentials
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Email address cannot be changed directly
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2 pt-4">
+                      <h3 className="text-lg font-medium">Change Password</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <Input 
+                          id="currentPassword" 
+                          type="password" 
+                          value={password} 
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input 
+                          id="newPassword" 
+                          type="password" 
+                          value={newPassword} 
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Enter new password"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input 
+                          id="confirmPassword" 
+                          type="password" 
+                          value={confirmPassword} 
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="ml-auto" 
+                      onClick={handlePasswordUpdate}
+                      disabled={
+                        savingPassword || 
+                        !password || 
+                        !newPassword || 
+                        newPassword !== confirmPassword || 
+                        newPassword.length < 6
+                      }
+                    >
+                      {savingPassword ? 'Updating...' : 'Update Password'}
+                    </Button>
+                  </CardFooter>
+                </Card>
+                
+                {/* Danger Zone Card */}
+                <Card className="border-red-200">
+                  <CardHeader>
+                    <CardTitle className="text-red-500">Danger Zone</CardTitle>
+                    <CardDescription>
+                      Permanently delete your account and all associated data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Warning</AlertTitle>
+                      <AlertDescription>
+                        This action cannot be undone. All of your data will be permanently deleted.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                  <CardFooter>
+                    <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" className="ml-auto">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Account
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Delete Account</DialogTitle>
+                          <DialogDescription>
+                            This action cannot be undone. Are you sure you want to permanently delete your account?
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <p className="mb-4 text-sm">
+                            To confirm, please type <span className="font-bold">delete my account</span> below:
+                          </p>
+                          <Input
+                            value={confirmDeleteText}
+                            onChange={(e) => setConfirmDeleteText(e.target.value)}
+                            placeholder="delete my account"
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setDeleteDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleDeleteAccount}
+                            disabled={confirmDeleteText !== 'delete my account' || deletingAccount}
+                          >
+                            {deletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </CardFooter>
+                </Card>
+              </div>
+            )}
+            
+            {activeTab === 'appearance' && (
+              <div className="pt-4">
+                {/* Appearance Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Appearance</CardTitle>
+                    <CardDescription>
+                      Customize how Trackle looks on your device
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium">Theme</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Choose between light and dark mode
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between border p-4 rounded-lg">
+                        <div className="flex items-center space-x-2">
+                          <Moon className="h-5 w-5" />
+                          <div>
+                            <p className="font-medium">Dark Mode</p>
+                            <p className="text-sm text-muted-foreground">
+                              Switch between light and dark theme
+                            </p>
+                          </div>
+                        </div>
+                        <ThemeSwitch id="theme-toggle" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Tabs defaultValue="profile" className="w-full" onValueChange={handleTabChange}>
+            {renderTabSelection()}
+            
+            <TabsContent value="profile" className="pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                  <CardDescription>
+                    Update your profile information visible to other users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
+                    <div className="relative">
+                      <Avatar className="h-24 w-24">
+                        {avatarUrl ? (
+                          <AvatarImage src={avatarUrl} alt="Profile" />
+                        ) : (
+                          <AvatarFallback>
+                            <User className="h-12 w-12" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      
+                      <div className="absolute -bottom-2 -right-2">
+                        <label 
+                          htmlFor="avatar-upload" 
+                          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          <Camera className="h-4 w-4" />
+                          <span className="sr-only">Upload avatar</span>
+                        </label>
+                        <input 
+                          id="avatar-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={handleAvatarUpload}
+                          disabled={uploading}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1 text-center sm:text-left flex-1">
+                      <h3 className="text-lg font-medium">Profile Picture</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Click the camera icon to upload a new profile picture
+                      </p>
+                      {uploading && (
+                        <p className="text-sm text-muted-foreground">Uploading...</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="username">Username</Label>
+                      <div className="relative">
+                        <Input 
+                          id="username" 
+                          value={username} 
+                          onChange={(e) => setUsername(e.target.value)}
+                          placeholder="Choose a unique username"
+                        />
+                        {username && username !== profile?.username && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                            {usernameChecking ? (
+                              <span className="text-xs text-muted-foreground">Checking...</span>
+                            ) : (
+                              <span className={`text-xs ${usernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                                {usernameAvailable ? 'Available' : 'Already taken'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Your username must be unique and at least 3 characters
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input 
+                        id="fullName" 
+                        value={fullName} 
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Your full name (optional)"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/profile')}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleProfileUpdate} 
+                    disabled={
+                      savingProfile || 
+                      !usernameAvailable || 
+                      usernameChecking || 
+                      username.length < 3
+                    }
+                  >
+                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="account" className="pt-4 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Email & Password</CardTitle>
+                  <CardDescription>
+                    Update your account credentials
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Email address cannot be changed directly
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2 pt-4">
+                    <h3 className="text-lg font-medium">Change Password</h3>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Input 
+                        id="currentPassword" 
+                        type="password" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your current password"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input 
+                        id="newPassword" 
+                        type="password" 
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                      <Input 
+                        id="confirmPassword" 
+                        type="password" 
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="ml-auto" 
+                    onClick={handlePasswordUpdate}
+                    disabled={
+                      savingPassword || 
+                      !password || 
+                      !newPassword || 
+                      newPassword !== confirmPassword || 
+                      newPassword.length < 6
+                    }
+                  >
+                    {savingPassword ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="border-red-200">
+                <CardHeader>
+                  <CardTitle className="text-red-500">Danger Zone</CardTitle>
+                  <CardDescription>
+                    Permanently delete your account and all associated data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Warning</AlertTitle>
+                    <AlertDescription>
+                      This action cannot be undone. All of your data will be permanently deleted.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+                <CardFooter>
+                  <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className="ml-auto">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Account
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete Account</DialogTitle>
+                        <DialogDescription>
+                          This action cannot be undone. Are you sure you want to permanently delete your account?
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <p className="mb-4 text-sm">
+                          To confirm, please type <span className="font-bold">delete my account</span> below:
+                        </p>
+                        <Input
+                          value={confirmDeleteText}
+                          onChange={(e) => setConfirmDeleteText(e.target.value)}
+                          placeholder="delete my account"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setDeleteDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          onClick={handleDeleteAccount}
+                          disabled={confirmDeleteText !== 'delete my account' || deletingAccount}
+                        >
+                          {deletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </DialogFooter>
+                </Card>
+              </TabsContent>
+            
+            <TabsContent value="appearance" className="pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>
+                    Customize how Trackle looks on your device
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium">Theme</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Choose between light and dark mode
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border p-4 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <Moon className="h-5 w-5" />
+                        <div>
+                          <p className="font-medium">Dark Mode</p>
+                          <p className="text-sm text-muted-foreground">
+                            Switch between light and dark theme
+                          </p>
+                        </div>
+                      </div>
+                      <ThemeSwitch id="theme-toggle" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );
