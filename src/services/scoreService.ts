@@ -117,7 +117,10 @@ export const addGameScore = async (
       );
       
       if (existingScore) {
-        throw new Error('You already have a score for this game today. Please edit the existing score instead.');
+        console.log('[addGameScore] Found existing score for this date, switching to update mode', existingScore);
+        // Switch to update mode and use the existing score ID
+        isUpdate = true;
+        scoreData.id = existingScore.id;
       }
     }
     
@@ -125,6 +128,7 @@ export const addGameScore = async (
     
     if (isUpdate && scoreData.id) {
       // Update existing score
+      console.log('[addGameScore] Updating existing score with ID:', scoreData.id);
       const { data, error } = await supabase
         .from('scores')
         .update({
@@ -145,6 +149,7 @@ export const addGameScore = async (
       console.log('[addGameScore] Score updated successfully:', data);
     } else {
       // Insert new score
+      console.log('[addGameScore] Creating new score record');
       const { data, error } = await supabase
         .from('scores')
         .insert({

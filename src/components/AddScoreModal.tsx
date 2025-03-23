@@ -103,10 +103,11 @@ const AddScoreModal = ({
         value: scoreValue,
         date,
         notes: notes || undefined,
-        createdAt: new Date().toISOString(), // Add createdAt field
+        createdAt: new Date().toISOString(), 
         id: existingScoreId || undefined // Include ID if editing
       };
       
+      // Make sure to pass isUpdate flag properly
       const { stats, score } = await addGameScore(newScore, isEditMode);
       
       // Update local UI with the new score

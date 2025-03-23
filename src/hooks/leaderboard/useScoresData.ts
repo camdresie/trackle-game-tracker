@@ -73,6 +73,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           // Convert map back to array of unique scores
           const uniqueScores = Array.from(uniqueScoreMap.values());
+          console.log('Unique scores after deduplication:', uniqueScores.length);
           
           // Transform and combine the data
           const transformedData = uniqueScores.map(item => {
