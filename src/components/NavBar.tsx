@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle, HelpCircle } from 'lucide-react';
@@ -113,12 +112,12 @@ const NavBar = () => {
   // For desktop, show a standard horizontal navbar
   return (
     <div className="fixed w-full top-0 z-50">
-      <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
+      <div className="h-24 flex justify-between items-center px-6 glass shadow-sm border-b">
         <Link to="/" className="flex items-center gap-2">
           <img 
             src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
             alt="Trackle Logo" 
-            className="h-16 w-auto" 
+            className="h-20 w-auto" 
           />
         </Link>
         
