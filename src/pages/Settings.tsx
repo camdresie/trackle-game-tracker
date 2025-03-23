@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -273,10 +274,10 @@ const Settings = () => {
         </div>
         
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="account">Account & Password</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsList className="w-full mb-6 grid grid-cols-3 gap-4">
+            <TabsTrigger value="profile" className="px-4">Profile</TabsTrigger>
+            <TabsTrigger value="account" className="px-4">Account & Password</TabsTrigger>
+            <TabsTrigger value="appearance" className="px-4">Appearance</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="pt-4">
