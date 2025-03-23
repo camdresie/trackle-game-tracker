@@ -34,7 +34,11 @@ const Auth = () => {
                 />
               </div>
             </div>
-            <CardDescription>Sign in to track your game scores</CardDescription>
+            <CardTitle className="mt-4 mb-2">Track Your Game Scores, Together</CardTitle>
+            <CardDescription className="text-base">
+              Trackle helps you track your daily word game scores, compete with friends, and see where you rank on leaderboards. 
+              Join thousands of players sharing their Wordle, Connections, and other game results.
+            </CardDescription>
           </CardHeader>
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
@@ -54,6 +58,13 @@ const Auth = () => {
             </CardContent>
           </Tabs>
         </Card>
+      </div>
+      
+      <div className="text-center max-w-md mb-6">
+        <p className="text-sm text-muted-foreground">
+          Connect with friends, form groups, and track your progress over time. 
+          See who's the best at solving puzzles in your circle!
+        </p>
       </div>
       
       {/* AdSense Ad */}
