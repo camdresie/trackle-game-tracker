@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import { Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -21,6 +20,7 @@ interface GroupScoresShareProps {
   currentUserHasPlayed?: boolean;
   className?: string;
   useActualUsername?: boolean; // New prop to determine if we should use actual username
+  children?: ReactNode; // Add children prop
 }
 
 const GroupScoresShare = ({ 
@@ -32,7 +32,8 @@ const GroupScoresShare = ({
   currentUserScore,
   currentUserHasPlayed = false,
   className,
-  useActualUsername = false // Default to showing "You" unless explicitly set
+  useActualUsername = false, // Default to showing "You" unless explicitly set
+  children // Accept children prop
 }: GroupScoresShareProps) => {
   const [isCopied, setIsCopied] = useState(false);
   
@@ -103,6 +104,16 @@ const GroupScoresShare = ({
     }
   };
   
+  // If children are provided, use them with the onClick handler
+  if (children) {
+    return (
+      <div onClick={handleCopyToClipboard} className={className}>
+        {children}
+      </div>
+    );
+  }
+  
+  // Otherwise, use the default button
   return (
     <Button
       variant="outline"
