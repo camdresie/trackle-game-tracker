@@ -74,7 +74,7 @@ const GameSelectionModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md animate-scale-in max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-md animate-scale-in max-h-[80vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Select a Game</DialogTitle>
           <DialogDescription>
@@ -82,31 +82,33 @@ const GameSelectionModal = ({
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-grow max-h-[60vh]">
-          <div className="py-4 grid grid-cols-1 gap-3 pr-4">
-            {games.map((game) => (
-              <Button
-                key={game.id}
-                variant="outline"
-                className="flex items-center justify-start gap-3 h-auto min-h-[56px] px-4 py-3 w-full"
-                onClick={() => {
-                  onSelectGame(game);
-                  onOpenChange(false);
-                }}
-              >
-                <div className={`${game.color} p-1.5 rounded text-white flex-shrink-0`}>
-                  {getGameIcon(game.id)}
-                </div>
-                <div className="text-left overflow-hidden">
-                  <div className="font-medium">{game.name}</div>
-                  <div className="text-xs text-muted-foreground break-words whitespace-normal">
-                    {game.description}
+        <div className="flex-grow overflow-hidden py-4">
+          <ScrollArea className="h-[50vh]">
+            <div className="grid grid-cols-1 gap-3 pr-4">
+              {games.map((game) => (
+                <Button
+                  key={game.id}
+                  variant="outline"
+                  className="flex items-center justify-start gap-3 h-auto min-h-[56px] px-4 py-3 w-full"
+                  onClick={() => {
+                    onSelectGame(game);
+                    onOpenChange(false);
+                  }}
+                >
+                  <div className={`${game.color} p-1.5 rounded text-white flex-shrink-0`}>
+                    {getGameIcon(game.id)}
                   </div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </ScrollArea>
+                  <div className="text-left overflow-hidden">
+                    <div className="font-medium">{game.name}</div>
+                    <div className="text-xs text-muted-foreground break-words whitespace-normal">
+                      {game.description}
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
