@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 interface GroupMemberScore {
   playerName: string;
-  score: number | null;
+  score: number | null;  // Changed from required to allow null
   hasPlayed: boolean;
 }
 

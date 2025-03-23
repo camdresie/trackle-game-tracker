@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -100,6 +99,15 @@ const TodayScores = () => {
     
     // Return the leading player
     return sorted[0];
+  };
+  
+  // Convert member data to GroupMemberScore format
+  const convertToGroupMemberScores = (members: any[]) => {
+    return members.map(member => ({
+      playerName: member.playerName,
+      score: member.score,
+      hasPlayed: member.hasPlayed
+    }));
   };
   
   return (
@@ -216,6 +224,8 @@ const TodayScores = () => {
                 <div className="space-y-6">
                   {groupPerformanceData.map((group) => {
                     const leadingPlayer = getLeadingPlayerInGroup(group);
+                    // Convert members array to the format expected by GroupScoresShare
+                    const groupMemberScores = convertToGroupMemberScores(group.members);
                     
                     return (
                       <Card key={group.groupId} className="p-6 overflow-hidden">
@@ -231,7 +241,7 @@ const TodayScores = () => {
                                 groupName={group.groupName}
                                 gameName={selectedGame?.name || ""}
                                 gameColor={selectedGame?.color || ""}
-                                members={group.members}
+                                members={groupMemberScores}
                                 currentUserName="You"
                                 currentUserScore={group.currentUserScore}
                                 currentUserHasPlayed={group.currentUserHasPlayed}
@@ -325,10 +335,12 @@ const TodayScores = () => {
                         groupName="All Friends"
                         gameName={selectedGame?.name || ""}
                         gameColor={selectedGame?.color || ""}
-                        members={groupPerformanceData.flatMap(group => group.members)
-                          .filter((member, index, self) => 
-                            index === self.findIndex(m => m.playerId === member.playerId)
-                          )}
+                        members={convertToGroupMemberScores(
+                          groupPerformanceData.flatMap(group => group.members)
+                            .filter((member, index, self) => 
+                              index === self.findIndex(m => m.playerId === member.playerId)
+                            )
+                        )}
                         currentUserName="You"
                         currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
                         currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
@@ -336,6 +348,7 @@ const TodayScores = () => {
                     )}
                   </div>
                   
+                  {/* Friends scores list */}
                   <div className="space-y-3">
                     {/* Combine all friends from all groups */}
                     {groupPerformanceData.flatMap(group => group.members)
