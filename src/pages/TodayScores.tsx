@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -244,39 +243,90 @@ const TodayScores = () => {
                     return (
                       <Card key={group.groupId} className="p-6 overflow-hidden">
                         <div className="flex flex-col">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
-                              <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                              <h3 className="font-semibold text-xl truncate">{group.groupName}</h3>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {/* Add Group Share Button with useActualUsername set to true */}
-                              <GroupScoresShare
-                                groupName={group.groupName}
-                                gameName={selectedGame?.name || ""}
-                                gameColor={selectedGame?.color || ""}
-                                members={groupMemberScores}
-                                currentUserName={profile?.username || ""}
-                                currentUserScore={group.currentUserScore}
-                                currentUserHasPlayed={group.currentUserHasPlayed}
-                                className="mr-2"
-                                useActualUsername={true}
-                              />
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex items-center gap-1"
-                                onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                                <span className="hidden sm:inline">Messages</span>
-                              </Button>
-                              <div className="flex items-center flex-shrink-0 hidden sm:flex">
-                                <span className={`inline-block w-3 h-3 rounded-full ${selectedGame?.color} mr-2`}></span>
-                                <span className="truncate max-w-[80px]">{selectedGame?.name}</span>
+                          {/* Mobile Layout: Full width group name at top */}
+                          {isMobile ? (
+                            <>
+                              <div className="mb-3">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-semibold text-xl flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                                    <span className="truncate">{group.groupName}</span>
+                                  </h3>
+                                  {leadingPlayer?.isCurrentUser && (
+                                    <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
+                                      <Trophy className="w-3 h-3 mr-1" /> Leading
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Mobile buttons below group name */}
+                                <div className="flex items-center gap-2 mt-3">
+                                  <GroupScoresShare
+                                    groupName={group.groupName}
+                                    gameName={selectedGame?.name || ""}
+                                    gameColor={selectedGame?.color || ""}
+                                    members={groupMemberScores}
+                                    currentUserName={profile?.username || ""}
+                                    currentUserScore={group.currentUserScore}
+                                    currentUserHasPlayed={group.currentUserHasPlayed}
+                                    useActualUsername={true}
+                                    className="flex-1"
+                                  >
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="w-full flex items-center justify-center gap-1"
+                                    >
+                                      <span className="truncate">Share Scores</span>
+                                    </Button>
+                                  </GroupScoresShare>
+                                  
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="flex-1 flex items-center justify-center gap-1"
+                                    onClick={() => handleOpenMessages(group.groupId, group.groupName)}
+                                  >
+                                    <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate">Messages</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
+                                <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                                <h3 className="font-semibold text-xl truncate">{group.groupName}</h3>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <GroupScoresShare
+                                  groupName={group.groupName}
+                                  gameName={selectedGame?.name || ""}
+                                  gameColor={selectedGame?.color || ""}
+                                  members={groupMemberScores}
+                                  currentUserName={profile?.username || ""}
+                                  currentUserScore={group.currentUserScore}
+                                  currentUserHasPlayed={group.currentUserHasPlayed}
+                                  className="mr-2"
+                                  useActualUsername={true}
+                                />
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex items-center gap-1"
+                                  onClick={() => handleOpenMessages(group.groupId, group.groupName)}
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                  <span className="hidden sm:inline">Messages</span>
+                                </Button>
+                                <div className="flex items-center flex-shrink-0 hidden sm:flex">
+                                  <span className={`inline-block w-3 h-3 rounded-full ${selectedGame?.color} mr-2`}></span>
+                                  <span className="truncate max-w-[80px]">{selectedGame?.name}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                           
                           {/* Current user's score */}
                           <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
