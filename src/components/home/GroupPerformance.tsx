@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -174,7 +175,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                 <div key={group.groupId} className="rounded-md border p-3">
                   {isMobile ? (
                     <div className="space-y-2">
-                      {/* Group name on the top line for mobile */}
+                      {/* Group name on the top line for mobile - with full width */}
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium text-base">{group.groupName}</h3>
                         {userIsLeading && (
@@ -195,7 +196,6 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                           currentUserScore={group.currentUserScore}
                           currentUserHasPlayed={group.currentUserHasPlayed}
                           className="flex-1"
-                          useActualUsername={true}
                         >
                           <Button 
                             variant="outline" 
