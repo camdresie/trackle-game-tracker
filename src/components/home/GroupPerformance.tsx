@@ -1,13 +1,15 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Users, Gamepad2, Trophy } from 'lucide-react';
+import { Check, X, Users, Gamepad2, Trophy, Share2, MessageCircle } from 'lucide-react';
 import { Game } from '@/utils/types';
 import { useGroupScores } from '@/hooks/useGroupScores';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import GroupScoresShare from '@/components/groups/GroupScoresShare';
 
 interface GroupPerformanceProps {
   selectedGame: Game | null;
@@ -21,6 +23,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     selectedGame?.id || null,
     todaysGames
   );
+  const isMobile = useIsMobile();
   
   console.log('[GroupPerformance] Render with data:', {
     selectedGame: selectedGame?.name,
@@ -29,6 +32,42 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     todaysGamesCount: todaysGames.length,
     groupData: groupPerformanceData
   });
+  
+  // Helper function to determine the leading player in a group
+  const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
+    // For games like Wordle and Mini Crossword, lower scores are better
+    const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
+    
+    // Combine current user and members into one array to find the leading player
+    const allPlayers = [
+      ...(group.currentUserHasPlayed ? [{
+        playerId: 'currentUser',
+        score: group.currentUserScore,
+        isCurrentUser: true
+      }] : []),
+      ...group.members
+        .filter(m => m.hasPlayed && m.score !== null)
+        .map(m => ({
+          playerId: m.playerId,
+          score: m.score,
+          isCurrentUser: false
+        }))
+    ];
+    
+    if (allPlayers.length === 0) return null;
+    
+    // Sort players by score (according to game type)
+    const sortedPlayers = [...allPlayers].sort((a, b) => {
+      if (isLowerBetter) {
+        return (a.score || 999) - (b.score || 999);
+      } else {
+        return (b.score || 0) - (a.score || 0);
+      }
+    });
+    
+    // Return the leading player
+    return sortedPlayers[0];
+  };
   
   if (isLoading) {
     return (
@@ -97,40 +136,13 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     );
   }
   
-  // Helper function to determine the leading player in a group
-  const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
-    // For games like Wordle and Mini Crossword, lower scores are better
-    const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
-    
-    // Combine current user and members into one array to find the leading player
-    const allPlayers = [
-      ...(group.currentUserHasPlayed ? [{
-        playerId: 'currentUser',
-        score: group.currentUserScore,
-        isCurrentUser: true
-      }] : []),
-      ...group.members
-        .filter(m => m.hasPlayed && m.score !== null)
-        .map(m => ({
-          playerId: m.playerId,
-          score: m.score,
-          isCurrentUser: false
-        }))
-    ];
-    
-    if (allPlayers.length === 0) return null;
-    
-    // Sort players by score (according to game type)
-    const sortedPlayers = [...allPlayers].sort((a, b) => {
-      if (isLowerBetter) {
-        return (a.score || 999) - (b.score || 999);
-      } else {
-        return (b.score || 0) - (a.score || 0);
-      }
-    });
-    
-    // Return the leading player
-    return sortedPlayers[0];
+  // Convert member data to GroupMemberScore format for share component
+  const convertToGroupMemberScores = (members: any[]) => {
+    return members.map(member => ({
+      playerName: member.playerName,
+      score: member.score,
+      hasPlayed: member.hasPlayed
+    }));
   };
   
   return (
@@ -156,20 +168,67 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
             {groupPerformanceData.map((group) => {
               const leadingPlayer = getLeadingPlayerInGroup(group);
               const userIsLeading = leadingPlayer?.isCurrentUser;
+              const groupMemberScores = convertToGroupMemberScores(group.members);
               
               return (
                 <div key={group.groupId} className="rounded-md border p-3">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium truncate max-w-[70%]">{group.groupName}</h3>
-                    {userIsLeading && (
-                      <Badge className="bg-amber-500 flex-shrink-0 text-xs">
-                        <Trophy className="w-3 h-3 mr-1" /> Leading
-                      </Badge>
-                    )}
-                  </div>
+                  {isMobile ? (
+                    <div className="space-y-2">
+                      {/* Group name on the top line for mobile */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-base">{group.groupName}</h3>
+                        {userIsLeading && (
+                          <Badge className="bg-amber-500 flex-shrink-0 text-xs">
+                            <Trophy className="w-3 h-3 mr-1" /> Leading
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Action buttons underneath on mobile */}
+                      <div className="flex items-center space-x-2">
+                        <GroupScoresShare
+                          groupName={group.groupName}
+                          gameName={selectedGame?.name || ""}
+                          gameColor={selectedGame?.color || ""}
+                          members={groupMemberScores}
+                          currentUserName="You"
+                          currentUserScore={group.currentUserScore}
+                          currentUserHasPlayed={group.currentUserHasPlayed}
+                          className="flex-1"
+                          useActualUsername={true}
+                        >
+                          <Button 
+                            variant="outline" 
+                            className="w-full text-xs py-1 px-2 h-8 flex items-center justify-center"
+                            size="sm"
+                          >
+                            <Share2 className="w-3.5 h-3.5 mr-1" />
+                            Share Scores
+                          </Button>
+                        </GroupScoresShare>
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 text-xs py-1 px-2 h-8 flex items-center justify-center"
+                          size="sm"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                          Messages
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium truncate max-w-[70%]">{group.groupName}</h3>
+                      {userIsLeading && (
+                        <Badge className="bg-amber-500 flex-shrink-0 text-xs">
+                          <Trophy className="w-3 h-3 mr-1" /> Leading
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Current user's score */}
-                  <div className="mb-3 bg-secondary/30 p-2 rounded-md">
+                  <div className="mb-3 bg-secondary/30 p-2 rounded-md mt-2">
                     <div className="flex items-center justify-between font-medium">
                       <span>Your score:</span>
                       {group.currentUserHasPlayed ? (
