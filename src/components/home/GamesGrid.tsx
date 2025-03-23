@@ -16,7 +16,7 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-500" />
-          Your Games
+          Games
         </h2>
       </div>
       
