@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle } from 'lucide-react';
+import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,6 +78,20 @@ const NavBar = () => {
                 <span>Profile</span>
               </Link>
               
+              <Link
+                to="/contact"
+                onClick={() => setIsMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors mb-1",
+                  isActive('/contact') 
+                    ? "bg-secondary text-primary font-medium" 
+                    : "hover:bg-secondary/50"
+                )}
+              >
+                <HelpCircle className="w-5 h-5" />
+                <span>Contact Support</span>
+              </Link>
+              
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 py-3 px-4 rounded-lg transition-colors w-full text-left text-rose-500 hover:bg-secondary/50"
@@ -140,6 +155,12 @@ const NavBar = () => {
                 <Link to="/profile" className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/contact" className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Contact Support</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-rose-500 focus:text-rose-500">
