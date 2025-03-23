@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -13,6 +14,7 @@ import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 import { getFormattedTodayInEasternTime } from '@/utils/dateUtils';
+import GroupScoresShare from '@/components/groups/GroupScoresShare';
 
 const TodayScores = () => {
   const { user } = useAuth();
@@ -224,6 +226,17 @@ const TodayScores = () => {
                               <h3 className="font-semibold text-xl">{group.groupName}</h3>
                             </div>
                             <div className="flex items-center gap-2">
+                              {/* Add Group Share Button */}
+                              <GroupScoresShare
+                                groupName={group.groupName}
+                                gameName={selectedGame?.name || ""}
+                                gameColor={selectedGame?.color || ""}
+                                members={group.members}
+                                currentUserName="You"
+                                currentUserScore={group.currentUserScore}
+                                currentUserHasPlayed={group.currentUserHasPlayed}
+                                className="mr-2"
+                              />
                               <Button 
                                 variant="outline" 
                                 size="sm" 
@@ -234,8 +247,8 @@ const TodayScores = () => {
                                 <span className="hidden sm:inline">Messages</span>
                               </Button>
                               <div className="flex items-center">
-                                <span className={`inline-block w-3 h-3 rounded-full ${selectedGame.color} mr-2`}></span>
-                                <span>{selectedGame.name}</span>
+                                <span className={`inline-block w-3 h-3 rounded-full ${selectedGame?.color} mr-2`}></span>
+                                <span>{selectedGame?.name}</span>
                               </div>
                             </div>
                           </div>
@@ -300,10 +313,28 @@ const TodayScores = () => {
               
               <TabsContent value="friends" className="space-y-6">
                 <Card className="p-6">
-                  <h3 className="font-semibold text-xl mb-4 flex items-center gap-2">
-                    <CalendarDays className="w-5 h-5 text-accent" />
-                    All Friends' Today Scores
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-xl flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-accent" />
+                      All Friends' Today Scores
+                    </h3>
+                    
+                    {/* Add All Friends Share Button */}
+                    {groupPerformanceData.length > 0 && (
+                      <GroupScoresShare
+                        groupName="All Friends"
+                        gameName={selectedGame?.name || ""}
+                        gameColor={selectedGame?.color || ""}
+                        members={groupPerformanceData.flatMap(group => group.members)
+                          .filter((member, index, self) => 
+                            index === self.findIndex(m => m.playerId === member.playerId)
+                          )}
+                        currentUserName="You"
+                        currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
+                        currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
+                      />
+                    )}
+                  </div>
                   
                   <div className="space-y-3">
                     {/* Combine all friends from all groups */}
