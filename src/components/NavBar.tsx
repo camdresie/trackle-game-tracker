@@ -7,7 +7,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -44,7 +43,6 @@ const NavBar = () => {
           </Link>
           
           <div className="flex items-center gap-2">
-            <ThemeToggle />
             <button 
               onClick={toggleMenu}
               className="p-2 rounded-full hover:bg-secondary transition-colors"
@@ -144,8 +142,6 @@ const NavBar = () => {
               </Link>
             ))}
           </div>
-          
-          <ThemeToggle />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
