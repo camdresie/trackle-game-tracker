@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
@@ -78,9 +77,15 @@ export const processLeaderboardData = (
     });
   }
   
+  // Keep track of processed dates to avoid counting the same game multiple times
+  const processedGameDates = new Map<string, Set<string>>();
+  
   // Process all scores for the selected game to calculate totals
   for (const score of gameScores) {
     const userId = score.user_id;
+    
+    // Create a unique key for this user's game on this date
+    const gameDateKey = `${userId}-${score.game_id}-${score.date}`;
     
     // If user doesn't exist in map yet, add them
     if (!userStatsMap.has(userId)) {
@@ -110,9 +115,21 @@ export const processLeaderboardData = (
     const userStats = userStatsMap.get(userId);
     if (!userStats) continue; // Skip if user somehow not in map
     
-    // If we don't already have a total_games count from game_stats, count it from scores
+    // If we don't already have a total_games count from game_stats, count unique game dates
     if (!userGameCounts[userId]) {
-      userStats.total_games += 1;
+      // Initialize the set for this user if it doesn't exist
+      if (!processedGameDates.has(userId)) {
+        processedGameDates.set(userId, new Set<string>());
+      }
+      
+      // Get the set for this user
+      const processedDates = processedGameDates.get(userId)!;
+      
+      // Only count as a new game if we haven't seen this game-date combination before
+      if (!processedDates.has(gameDateKey)) {
+        processedDates.add(gameDateKey);
+        userStats.total_games += 1;
+      }
     }
     
     // Add to total score
