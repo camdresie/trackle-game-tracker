@@ -7,6 +7,7 @@ import { games } from '@/utils/gameData';
 import { getGameScores } from '@/services/gameStatsService';
 import { getTodaysGames } from '@/services/todayService';
 import { useQueryClient } from '@tanstack/react-query';
+import { getTodayInEasternTime } from '@/utils/dateUtils'; // Add this import
 
 export interface HomeDataResult {
   isLoading: boolean;
