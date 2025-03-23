@@ -1,10 +1,10 @@
-
 import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { GroupInvitation } from '@/hooks/useGroupInvitations';
 import { Check, X, AlertCircle, Users, InboxIcon, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GroupInvitationsListProps {
   invitations: GroupInvitation[];
@@ -21,6 +21,8 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   onDecline,
   alwaysShow = false
 }) => {
+  const isMobile = useIsMobile();
+  
   // If loading, show a clean skeleton with fixed height to prevent layout shifts
   if (isLoading) {
     return (
@@ -72,35 +74,72 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
       
       <div className="space-y-3">
         {invitations.map((invitation) => (
-          <div key={invitation.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <div>
-                <p className="font-medium">{invitation.groupName || "Unknown Group"}</p>
-                <p className="text-sm text-muted-foreground">From {invitation.groupOwner || "Unknown User"}</p>
+          <div key={invitation.id} className="p-3 bg-muted/20 rounded-lg">
+            {/* For mobile: Stack content vertically with buttons at the bottom */}
+            {isMobile ? (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{invitation.groupName || "Unknown Group"}</p>
+                    <p className="text-sm text-muted-foreground">From {invitation.groupOwner || "Unknown User"}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2 w-full">
+                  <Button 
+                    size="sm" 
+                    className="w-full flex items-center justify-center gap-1 bg-accent hover:bg-accent/80"
+                    onClick={() => onAccept(invitation.id)}
+                    disabled={isLoading}
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Accept</span>
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="w-full flex items-center justify-center gap-1 border-red-300 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => onDecline(invitation.id)}
+                    disabled={isLoading}
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Decline</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="flex items-center gap-1 border-red-300 hover:bg-red-50 hover:text-red-600"
-                onClick={() => onDecline(invitation.id)}
-                disabled={isLoading}
-              >
-                <X className="w-4 h-4" />
-                <span>Decline</span>
-              </Button>
-              <Button 
-                size="sm" 
-                className="flex items-center gap-1 bg-accent hover:bg-accent/80"
-                onClick={() => onAccept(invitation.id)}
-                disabled={isLoading}
-              >
-                <Check className="w-4 h-4" />
-                <span>Accept</span>
-              </Button>
-            </div>
+            ) : (
+              // For desktop: Keep the horizontal layout
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{invitation.groupName || "Unknown Group"}</p>
+                    <p className="text-sm text-muted-foreground">From {invitation.groupOwner || "Unknown User"}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex items-center gap-1 border-red-300 hover:bg-red-50 hover:text-red-600"
+                    onClick={() => onDecline(invitation.id)}
+                    disabled={isLoading}
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Decline</span>
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="flex items-center gap-1 bg-accent hover:bg-accent/80"
+                    onClick={() => onAccept(invitation.id)}
+                    disabled={isLoading}
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Accept</span>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
