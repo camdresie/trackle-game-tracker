@@ -86,18 +86,18 @@ const GameSelectionModal = ({
             <Button
               key={game.id}
               variant="outline"
-              className="flex items-center justify-start gap-3 h-14 px-4"
+              className="flex items-center justify-start gap-3 h-auto min-h-[56px] px-4 py-3 w-full"
               onClick={() => {
                 onSelectGame(game);
                 onOpenChange(false);
               }}
             >
-              <div className={`${game.color} p-1.5 rounded text-white`}>
+              <div className={`${game.color} p-1.5 rounded text-white flex-shrink-0`}>
                 {getGameIcon(game.id)}
               </div>
-              <div className="text-left">
+              <div className="text-left overflow-hidden">
                 <div className="font-medium">{game.name}</div>
-                <div className="text-xs text-muted-foreground line-clamp-1">
+                <div className="text-xs text-muted-foreground break-words whitespace-normal">
                   {game.description}
                 </div>
               </div>
