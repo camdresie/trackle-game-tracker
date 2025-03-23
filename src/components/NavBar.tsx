@@ -38,11 +38,8 @@ const NavBar = () => {
             <img 
               src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
               alt="Trackle Logo" 
-              className="h-10 md:h-16 w-auto transition-all" 
+              className="h-12 w-auto" 
             />
-            <span className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Trackle
-            </span>
           </Link>
           
           <button 
@@ -123,9 +120,6 @@ const NavBar = () => {
             alt="Trackle Logo" 
             className="h-16 w-auto" 
           />
-          <span className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Trackle
-          </span>
         </Link>
         
         <div className="flex items-center gap-3">
