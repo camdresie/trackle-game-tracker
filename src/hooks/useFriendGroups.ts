@@ -1,24 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { Player } from '@/utils/types';
+import { Player, FriendGroup } from '@/utils/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-
-export interface FriendGroup {
-  id: string;
-  name: string;
-  user_id: string; // owner ID
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  members?: Player[];
-  pendingMembers?: Player[];
-  pendingCount?: number;
-  isJoinedGroup?: boolean;
-  status?: 'pending' | 'accepted' | 'rejected' | 'left';
-}
 
 export const useFriendGroups = (friends: Player[]) => {
   const { user } = useAuth();
@@ -456,26 +441,31 @@ export const useFriendGroups = (friends: Player[]) => {
         const memberRecord = membershipData[0];
         console.log('Found membership record:', memberRecord);
         
-        // Now check if the group exists
-        const { data: groupData, error: groupError } = await supabase
-          .from('friend_groups')
-          .select('id, user_id')
-          .eq('id', groupId)
-          .maybeSingle();
+        // Check if the group exists using a direct SQL query instead of the standard API
+        const groupQuery = `
+          SELECT id, user_id
+          FROM friend_groups
+          WHERE id = '${groupId}'
+          LIMIT 1
+        `;
         
-        if (groupError) {
-          console.error('Error verifying group exists:', groupError);
-          throw new Error(`Failed to verify group: ${groupError.message}`);
+        const { data: groupData, error: groupQueryError } = await supabase.rpc('direct_sql_query', {
+          sql_query: groupQuery
+        });
+        
+        if (groupQueryError) {
+          console.error('Error verifying group exists:', groupQueryError);
+          throw new Error(`Failed to verify group: ${groupQueryError.message}`);
         }
         
         // If no group data was found, inform the user
-        if (!groupData) {
+        if (!groupData || groupData.length === 0) {
           console.log(`Group with ID ${groupId} not found in database`);
           throw new Error('Group not found. It may have been deleted.');
         }
         
         // Check if user is the owner of the group
-        if (groupData.user_id === user.id) {
+        if (groupData[0].user_id === user.id) {
           throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
         }
         
