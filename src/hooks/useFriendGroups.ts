@@ -430,41 +430,52 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First check if the member record exists directly
-        console.log(`Checking for member record for group ${groupId} and user ${user.id}`);
-        const { data: memberRecords, error: memberError } = await supabase
+        // First check if the group exists
+        const { data: groupData, error: groupError } = await supabase
+          .from('friend_groups')
+          .select('id, user_id')
+          .eq('id', groupId)
+          .single();
+        
+        if (groupError) {
+          console.error('Error verifying group exists:', groupError);
+          throw new Error('Group not found');
+        }
+        
+        if (!groupData) {
+          throw new Error('Group not found');
+        }
+        
+        console.log(`Group exists: ${groupData.id}`);
+        
+        // Check if user is the owner of the group
+        if (groupData.user_id === user.id) {
+          throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
+        }
+        
+        // Check if user is a member (using a direct query)
+        const { data: memberData, error: memberError } = await supabase
           .from('friend_group_members')
-          .select('*')
+          .select('id, status')
           .eq('group_id', groupId)
           .eq('friend_id', user.id);
         
         if (memberError) {
-          console.error('Error finding member records:', memberError);
+          console.error('Error finding membership:', memberError);
           throw new Error(`Failed to check membership: ${memberError.message}`);
         }
         
-        console.log(`Found ${memberRecords?.length || 0} member records:`, memberRecords);
-        
-        if (!memberRecords || memberRecords.length === 0) {
+        if (!memberData || memberData.length === 0) {
+          console.log('No membership records found for this user in this group');
           // Force a refresh of the UI since there's a mismatch
           queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-          throw new Error('You are not a member of this group or have already left');
+          throw new Error('You are not currently a member of this group or have already left');
         }
         
-        // Check if user is the owner of the group
-        const { data: groupData, error: groupError } = await supabase
-          .from('friend_groups')
-          .select('user_id')
-          .eq('id', groupId)
-          .single();
-          
-        if (!groupError && groupData && groupData.user_id === user.id) {
-          throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
-        }
+        console.log(`Found ${memberData.length} membership records:`, memberData);
         
-        // Delete all matching member records
-        console.log(`Deleting ${memberRecords.length} membership records`);
-        const recordIds = memberRecords.map(record => record.id);
+        // If we have membership records, delete them
+        const recordIds = memberData.map(record => record.id);
         
         const { error: deleteError } = await supabase
           .from('friend_group_members')
@@ -472,7 +483,7 @@ export const useFriendGroups = (friends: Player[]) => {
           .in('id', recordIds);
         
         if (deleteError) {
-          console.error('Error deleting member records:', deleteError);
+          console.error('Error deleting membership records:', deleteError);
           throw new Error(`Failed to leave group: ${deleteError.message}`);
         }
         
