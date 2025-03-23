@@ -131,14 +131,18 @@ const TodayScores = () => {
           />
         )}
         
-        {/* Game Selector Pills - Changed to grid layout */}
+        {/* Game Selector Pills - Fixed to use ToggleGroup properly */}
         <div className="mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <ToggleGroup 
+            type="single" 
+            value={selectedGame?.id || ""} 
+            onValueChange={(value) => value && handleGameSelect(value)}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2"
+          >
             {games.map(game => (
               <ToggleGroupItem 
                 key={game.id} 
                 value={game.id}
-                onClick={() => handleGameSelect(game.id)}
                 className={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg",
                   selectedGame?.id === game.id 
@@ -150,7 +154,7 @@ const TodayScores = () => {
                 <span>{game.name}</span>
               </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </div>
         
         {/* Rest of the component */}
