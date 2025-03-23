@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -132,20 +131,16 @@ const TodayScores = () => {
           />
         )}
         
-        {/* Game Selector Pills - Styled like the leaderboard */}
-        <div className="w-full overflow-x-auto py-2 mb-6">
-          <ToggleGroup 
-            type="single" 
-            value={selectedGame?.id || ""} 
-            onValueChange={(value) => value && handleGameSelect(value)}
-            className="flex items-center gap-2 min-w-max"
-          >
+        {/* Game Selector Pills - Changed to grid layout */}
+        <div className="mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {games.map(game => (
               <ToggleGroupItem 
                 key={game.id} 
                 value={game.id}
+                onClick={() => handleGameSelect(game.id)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg",
                   selectedGame?.id === game.id 
                     ? `${game.color} text-white hover:bg-opacity-90`
                     : 'border border-muted hover:bg-muted/10'
@@ -155,7 +150,7 @@ const TodayScores = () => {
                 <span>{game.name}</span>
               </ToggleGroupItem>
             ))}
-          </ToggleGroup>
+          </div>
         </div>
         
         {/* Rest of the component */}
