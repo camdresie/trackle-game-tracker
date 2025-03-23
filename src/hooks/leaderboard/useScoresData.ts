@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -53,8 +52,30 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           const today = getTodayInEasternTime();
           console.log('Today\'s date (ET/YYYY-MM-DD) for comparison:', today);
           
+          // Process each score, removing duplicates by user/game/date
+          // This ensures modified scores don't appear as duplicates
+          const uniqueScoreMap = new Map();
+          
+          scoresData.forEach(item => {
+            const scoreKey = `${item.user_id}-${item.game_id}-${item.date}`;
+            
+            // If we already have this score, only keep the newer one (based on created_at)
+            if (uniqueScoreMap.has(scoreKey)) {
+              const existingScore = uniqueScoreMap.get(scoreKey);
+              // Compare created_at timestamps to keep the most recently created/updated score
+              if (new Date(item.created_at) > new Date(existingScore.created_at)) {
+                uniqueScoreMap.set(scoreKey, item);
+              }
+            } else {
+              uniqueScoreMap.set(scoreKey, item);
+            }
+          });
+          
+          // Convert map back to array of unique scores
+          const uniqueScores = Array.from(uniqueScoreMap.values());
+          
           // Transform and combine the data
-          const transformedData = scoresData.map(item => {
+          const transformedData = uniqueScores.map(item => {
             // Use the isToday function to check if the score's date matches today's date
             const scoreIsToday = isToday(item.date);
             

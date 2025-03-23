@@ -6,6 +6,7 @@ import { Game, Score } from '@/utils/types';
 import { games } from '@/utils/gameData';
 import { getGameScores } from '@/services/gameStatsService';
 import { getTodaysGames } from '@/services/todayService';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface HomeDataResult {
   isLoading: boolean;
@@ -26,6 +27,7 @@ export interface HomeDataResult {
 export const useHomeData = (): HomeDataResult => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showAddScore, setShowAddScore] = useState(false);
   const [showGameSelection, setShowGameSelection] = useState(false);
@@ -87,28 +89,45 @@ export const useHomeData = (): HomeDataResult => {
   }, [user, gamesList, toast]);
   
   const handleAddScore = (newScore: Score) => {
-    setScores((prevScores) => [...prevScores, newScore]);
+    // First, check if this is an update to an existing score
+    const isUpdating = scores.some(score => 
+      score.gameId === newScore.gameId && score.date === newScore.date
+    );
     
-    // Also update today's games if the score is from today
-    setTodaysGames((prevGames) => {
-      // Check if this is a duplicate
-      const existingScoreIndex = prevGames.findIndex(
-        game => game.gameId === newScore.gameId && game.date === newScore.date
-      );
+    if (isUpdating) {
+      // If updating, replace the old score
+      setScores(prevScores => prevScores.map(score => 
+        score.gameId === newScore.gameId && score.date === newScore.date
+          ? newScore
+          : score
+      ));
       
-      if (existingScoreIndex >= 0) {
-        // Replace the existing score
-        const updatedGames = [...prevGames];
-        updatedGames[existingScoreIndex] = newScore;
-        return updatedGames;
-      } else {
-        // Add as a new score
-        return [...prevGames, newScore];
+      // Also update today's games if the score is from today
+      setTodaysGames(prevGames => prevGames.map(game => 
+        game.gameId === newScore.gameId && game.date === newScore.date
+          ? newScore
+          : game
+      ));
+    } else {
+      // Add as a new score
+      setScores(prevScores => [...prevScores, newScore]);
+      
+      // Also update today's games if the score is from today
+      const today = getTodayInEasternTime();
+      if (newScore.date === today) {
+        setTodaysGames(prevGames => [...prevGames, newScore]);
       }
-    });
+    }
     
-    console.log('[useHomeData] Added new score:', newScore);
-    console.log('[useHomeData] Updated today\'s games:', [...todaysGames, newScore]);
+    // Invalidate relevant query cache to ensure data consistency
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['today-games'] });
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    
+    console.log('[useHomeData] Score operation completed:', newScore);
+    console.log('[useHomeData] Updated today\'s games:', 
+      isUpdating ? 'Updated existing score' : 'Added new score'
+    );
   };
 
   return {

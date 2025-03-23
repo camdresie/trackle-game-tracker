@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -19,6 +20,7 @@ import QuordleScoreInput from './scores/QuordleScoreInput';
 import StandardScoreInput from './scores/StandardScoreInput';
 import { getDefaultValue, calculateQuordleScore } from '@/utils/scoreUtils';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AddScoreModalProps {
   open: boolean;
@@ -36,6 +38,7 @@ const AddScoreModal = ({
   existingScores = [] 
 }: AddScoreModalProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [value, setValue] = useState(getDefaultValue(game));
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -111,6 +114,11 @@ const AddScoreModal = ({
         id: score.id,
         ...newScore
       });
+      
+      // Invalidate relevant queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['today-games'] });
+      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
       
       toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
       onOpenChange(false);
