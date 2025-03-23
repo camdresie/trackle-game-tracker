@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -12,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
+import AdSense from '@/components/ads/AdSense';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email' }),
@@ -74,8 +74,8 @@ const Auth = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md">
+    <div className="flex flex-col min-h-screen items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md mb-6">
         <Card className="glass-card">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Trackle</CardTitle>
@@ -209,6 +209,16 @@ const Auth = () => {
             )}
           </CardFooter>
         </Card>
+      </div>
+      
+      {/* AdSense Ad */}
+      <div className="w-full max-w-md mt-4">
+        <AdSense 
+          adSlot="1234567890" 
+          className="w-full" 
+          adFormat="rectangle"
+          style={{ minHeight: '250px' }}
+        />
       </div>
     </div>
   );
