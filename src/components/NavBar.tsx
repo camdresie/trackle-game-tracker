@@ -35,15 +35,13 @@ const NavBar = () => {
     return (
       <div className="fixed w-full top-0 z-50">
         <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <img 
-                src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-                alt="Trackle Logo" 
-                className="h-14 w-auto" 
-              />
-            </Link>
-          </div>
+          <Link to="/" className="flex items-center gap-2">
+            <img 
+              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+              alt="Trackle Logo" 
+              className="h-12 w-auto" 
+            />
+          </Link>
           
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -116,19 +114,19 @@ const NavBar = () => {
     );
   }
 
-  // For desktop view, reposition the logo to make it more prominent
+  // For desktop, show a standard horizontal navbar
   return (
     <div className="fixed w-full top-0 z-50">
       <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-              alt="Trackle Logo" 
-              className="h-14 w-auto" 
-            />
-          </Link>
-          
+        <Link to="/" className="flex items-center gap-2">
+          <img 
+            src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+            alt="Trackle Logo" 
+            className="h-12 w-auto" 
+          />
+        </Link>
+        
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             {navItems.map((item) => (
               <Link
@@ -146,9 +144,7 @@ const NavBar = () => {
               </Link>
             ))}
           </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
+          
           <ThemeToggle />
           
           <DropdownMenu>
@@ -189,19 +185,6 @@ const NavBar = () => {
           </DropdownMenu>
         </div>
       </div>
-      
-      {/* Large logo display in home page only */}
-      {location.pathname === '/' && (
-        <div className="flex justify-center mt-16 pt-8 pb-2">
-          <Link to="/">
-            <img 
-              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-              alt="Trackle Logo" 
-              className="h-28 w-auto animate-scale-in" 
-            />
-          </Link>
-        </div>
-      )}
     </div>
   );
 };
