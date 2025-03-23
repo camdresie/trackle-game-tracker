@@ -78,7 +78,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
                 <div className="flex gap-2">
                   <GroupDropdownSelector 
                     selectedGroupId={selectedGroupId} 
-                    onGroupSelected={handleGroupSelected}
+                    onSelectGroup={handleGroupSelected}
                     className="flex-1"
                   />
                   <Button 
