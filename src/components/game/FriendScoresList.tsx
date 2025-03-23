@@ -15,6 +15,7 @@ interface FriendScoresListProps {
   isLoading: boolean;
   onManageFriends: () => void;
   onRefreshFriends: () => Promise<void>;
+  hideRefreshButton?: boolean;
 }
 
 const FriendScoresList = ({
@@ -23,7 +24,8 @@ const FriendScoresList = ({
   friendScores,
   isLoading,
   onManageFriends,
-  onRefreshFriends
+  onRefreshFriends,
+  hideRefreshButton = false
 }: FriendScoresListProps) => {
   const { user, profile } = useAuth();
   const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
@@ -131,22 +133,24 @@ const FriendScoresList = ({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Friend Scores</h2>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="gap-1"
-          >
-            {refreshing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            <span>Refresh</span>
-          </Button>
-        </div>
+        {!hideRefreshButton && (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="gap-1"
+            >
+              {refreshing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span>Refresh</span>
+            </Button>
+          </div>
+        )}
       </div>
       
       {isLoading ? (

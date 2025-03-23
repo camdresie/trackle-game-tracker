@@ -132,8 +132,8 @@ const GameDetail = () => {
               onValueChange={setActiveTab}
               className="glass-card rounded-xl p-4"
             >
-              <div className="flex items-center justify-between mb-4">
-                <TabsList>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <TabsList className="w-full sm:w-auto">
                   <TabsTrigger value="scores">Your Scores</TabsTrigger>
                   <TabsTrigger value="friends">Friend Scores</TabsTrigger>
                 </TabsList>
@@ -142,7 +142,7 @@ const GameDetail = () => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="gap-1"
+                    className="gap-1 w-full sm:w-auto"
                     onClick={() => setShowConnectionsModal(true)}
                   >
                     <Users className="w-4 h-4" />
@@ -168,6 +168,7 @@ const GameDetail = () => {
                   isLoading={friendScoresLoading}
                   onManageFriends={() => setShowConnectionsModal(true)}
                   onRefreshFriends={refreshFriends}
+                  hideRefreshButton={true}
                 />
               </TabsContent>
             </Tabs>
