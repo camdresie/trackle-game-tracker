@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -429,38 +428,40 @@ export const useFriendGroups = (friends: Player[]) => {
       
       console.log(`Leaving group: ${groupId}`);
       
-      // Find the member record for the current user in this group
-      const { data: memberRecord, error: findError } = await supabase
+      // FIXED: Instead of using .single() which fails when no record is found
+      // Use .select() to get all matching records and handle them manually
+      const { data: memberRecords, error: findError } = await supabase
         .from('friend_group_members')
         .select('id')
         .eq('group_id', groupId)
-        .eq('friend_id', user.id)
-        .single();
+        .eq('friend_id', user.id);
       
       if (findError) {
-        console.error('Error finding member record:', findError);
+        console.error('Error finding member records:', findError);
         throw findError;
       }
       
-      if (!memberRecord) {
-        console.error('Member record not found');
-        throw new Error('Member record not found');
+      if (!memberRecords || memberRecords.length === 0) {
+        console.error('No member records found');
+        throw new Error('No membership record found for this group');
       }
       
-      console.log('Found member record to delete:', memberRecord.id);
+      console.log(`Found ${memberRecords.length} member records to delete`);
       
-      // Delete the member record
+      // Delete all matching member records (should typically be just one)
+      const recordIds = memberRecords.map(record => record.id);
+      
       const { error: deleteError } = await supabase
         .from('friend_group_members')
         .delete()
-        .eq('id', memberRecord.id);
+        .in('id', recordIds);
       
       if (deleteError) {
-        console.error('Error deleting member record:', deleteError);
+        console.error('Error deleting member records:', deleteError);
         throw deleteError;
       }
       
-      console.log('Successfully left group:', groupId);
+      console.log(`Successfully left group: ${groupId}`);
       return { groupId };
     },
     onSuccess: () => {
