@@ -30,7 +30,7 @@ const Auth = () => {
                 <img 
                   src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
                   alt="Trackle Logo" 
-                  className="h-32 w-auto" // Increased from h-28 to h-32
+                  className="h-48 w-auto" // Significantly increased from h-32 to h-48
                 />
               </div>
             </div>
