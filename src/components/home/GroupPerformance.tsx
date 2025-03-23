@@ -79,7 +79,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
             <Users className="w-5 h-5" />
             <span>Friend Groups</span>
             {selectedGame && (
-              <Badge variant="outline" className={`ml-auto ${selectedGame.color} bg-opacity-15`}>
+              <Badge variant="outline" className="ml-auto truncate max-w-[120px] text-xs">
                 {selectedGame.name}
               </Badge>
             )}
@@ -138,9 +138,13 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <Users className="w-5 h-5" />
-          <span>Friend Groups</span>
+          <span className="truncate">Friend Groups</span>
           {selectedGame && (
-            <Badge variant="outline" className={`ml-auto ${selectedGame.color} bg-opacity-15 truncate max-w-[150px]`}>
+            <Badge 
+              variant="outline" 
+              className="ml-auto truncate max-w-[120px] text-xs flex-shrink-0"
+              style={{ backgroundColor: `rgba(var(--${selectedGame.color.replace('bg-', '')}-rgb), 0.15)` }}
+            >
               {selectedGame.name}
             </Badge>
           )}
@@ -156,9 +160,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               return (
                 <div key={group.groupId} className="rounded-md border p-3">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{group.groupName}</h3>
+                    <h3 className="font-medium truncate max-w-[70%]">{group.groupName}</h3>
                     {userIsLeading && (
-                      <Badge className="bg-amber-500">
+                      <Badge className="bg-amber-500 flex-shrink-0 text-xs">
                         <Trophy className="w-3 h-3 mr-1" /> Leading
                       </Badge>
                     )}
@@ -184,7 +188,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                           key={member.playerId} 
                           className="flex items-center justify-between text-sm py-1 border-b last:border-0"
                         >
-                          <div className="flex items-center gap-1 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
                             <span className="truncate">{member.playerName}</span>
                             {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
                               <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px] shrink-0">

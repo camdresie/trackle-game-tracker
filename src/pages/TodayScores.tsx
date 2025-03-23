@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -244,11 +245,11 @@ const TodayScores = () => {
                       <Card key={group.groupId} className="p-6 overflow-hidden">
                         <div className="flex flex-col">
                           <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                              <Users className="w-5 h-5 text-accent" />
-                              <h3 className="font-semibold text-xl">{group.groupName}</h3>
+                            <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
+                              <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                              <h3 className="font-semibold text-xl truncate">{group.groupName}</h3>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               {/* Add Group Share Button with useActualUsername set to true */}
                               <GroupScoresShare
                                 groupName={group.groupName}
@@ -270,9 +271,9 @@ const TodayScores = () => {
                                 <MessageCircle className="w-4 h-4" />
                                 <span className="hidden sm:inline">Messages</span>
                               </Button>
-                              <div className="flex items-center">
+                              <div className="flex items-center flex-shrink-0 hidden sm:flex">
                                 <span className={`inline-block w-3 h-3 rounded-full ${selectedGame?.color} mr-2`}></span>
-                                <span>{selectedGame?.name}</span>
+                                <span className="truncate max-w-[80px]">{selectedGame?.name}</span>
                               </div>
                             </div>
                           </div>
@@ -304,15 +305,15 @@ const TodayScores = () => {
                                   key={member.playerId} 
                                   className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors"
                                 >
-                                  <div className="flex items-center gap-2 font-medium">
-                                    <span>{member.playerName}</span>
+                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                    <span className="truncate">{member.playerName}</span>
                                     {leadingPlayer?.playerId === member.playerId && (
-                                      <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
+                                      <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
                                         <Trophy className="w-3 h-3 mr-1" /> Leading
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center">
+                                  <div className="flex items-center flex-shrink-0">
                                     {member.hasPlayed ? (
                                       <span className="font-semibold">{member.score}</span>
                                     ) : (
@@ -338,9 +339,9 @@ const TodayScores = () => {
               <TabsContent value="friends" className="space-y-6">
                 <Card className="p-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-xl flex items-center gap-2">
-                      <CalendarDays className="w-5 h-5 text-accent" />
-                      All Friends' Today Scores
+                    <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
+                      <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
+                      <span className="truncate">All Friends' Today Scores</span>
                     </h3>
                     
                     {/* Add All Friends Share Button with useActualUsername set to true */}
@@ -391,18 +392,18 @@ const TodayScores = () => {
                             index === 0 ? "bg-accent/10 border border-accent/20" : "hover:bg-muted/50"
                           )}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
                             {index === 0 && friend.hasPlayed && (
-                              <Trophy className="w-4 h-4 text-amber-500" />
+                              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                             )}
-                            <div className="font-medium">{friend.playerName}</div>
+                            <div className="font-medium truncate">{friend.playerName}</div>
                             {index === 0 && friend.hasPlayed && (
-                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full">
+                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
                                 Top score
                               </span>
                             )}
                           </div>
-                          <div>
+                          <div className="flex-shrink-0">
                             {friend.hasPlayed ? (
                               <span className="font-semibold">{friend.score}</span>
                             ) : (
