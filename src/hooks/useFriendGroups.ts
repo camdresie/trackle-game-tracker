@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -448,6 +449,17 @@ export const useFriendGroups = (friends: Player[]) => {
           // Force a refresh of the UI since there's a mismatch
           queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
           throw new Error('You are not a member of this group or have already left');
+        }
+        
+        // Check if user is the owner of the group
+        const { data: groupData, error: groupError } = await supabase
+          .from('friend_groups')
+          .select('user_id')
+          .eq('id', groupId)
+          .single();
+          
+        if (!groupError && groupData && groupData.user_id === user.id) {
+          throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
         }
         
         // Delete all matching member records
