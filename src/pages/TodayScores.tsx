@@ -16,7 +16,7 @@ import { getFormattedTodayInEasternTime } from '@/utils/dateUtils';
 import GroupScoresShare from '@/components/groups/GroupScoresShare';
 
 const TodayScores = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const {
     isLoading: isHomeDataLoading,
     gamesList,
@@ -236,16 +236,17 @@ const TodayScores = () => {
                               <h3 className="font-semibold text-xl">{group.groupName}</h3>
                             </div>
                             <div className="flex items-center gap-2">
-                              {/* Add Group Share Button */}
+                              {/* Add Group Share Button with useActualUsername set to true */}
                               <GroupScoresShare
                                 groupName={group.groupName}
                                 gameName={selectedGame?.name || ""}
                                 gameColor={selectedGame?.color || ""}
                                 members={groupMemberScores}
-                                currentUserName="You"
+                                currentUserName={profile?.username || ""}
                                 currentUserScore={group.currentUserScore}
                                 currentUserHasPlayed={group.currentUserHasPlayed}
                                 className="mr-2"
+                                useActualUsername={true}
                               />
                               <Button 
                                 variant="outline" 
@@ -329,7 +330,7 @@ const TodayScores = () => {
                       All Friends' Today Scores
                     </h3>
                     
-                    {/* Add All Friends Share Button */}
+                    {/* Add All Friends Share Button with useActualUsername set to true */}
                     {groupPerformanceData.length > 0 && (
                       <GroupScoresShare
                         groupName="All Friends"
@@ -341,9 +342,10 @@ const TodayScores = () => {
                               index === self.findIndex(m => m.playerId === member.playerId)
                             )
                         )}
-                        currentUserName="You"
+                        currentUserName={profile?.username || ""}
                         currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
                         currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
+                        useActualUsername={true}
                       />
                     )}
                   </div>

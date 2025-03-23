@@ -20,6 +20,7 @@ interface GroupScoresShareProps {
   currentUserScore?: number | null;
   currentUserHasPlayed?: boolean;
   className?: string;
+  useActualUsername?: boolean; // New prop to determine if we should use actual username
 }
 
 const GroupScoresShare = ({ 
@@ -30,7 +31,8 @@ const GroupScoresShare = ({
   currentUserName = 'You',
   currentUserScore,
   currentUserHasPlayed = false,
-  className 
+  className,
+  useActualUsername = false // Default to showing "You" unless explicitly set
 }: GroupScoresShareProps) => {
   const [isCopied, setIsCopied] = useState(false);
   
@@ -45,7 +47,9 @@ const GroupScoresShare = ({
     
     // Add current user's score if they've played
     if (currentUserHasPlayed && currentUserScore !== null) {
-      shareText += `${currentUserName}: ${currentUserScore}\n`;
+      // Use actual username if specified, otherwise use "You"
+      const displayName = useActualUsername ? currentUserName : 'You';
+      shareText += `${displayName}: ${currentUserScore}\n`;
     }
     
     // Add scores for all group members who have played
@@ -66,7 +70,9 @@ const GroupScoresShare = ({
     
     // If current user hasn't played
     if (!currentUserHasPlayed) {
-      shareText += `${currentUserName}\n`;
+      // Use actual username if specified, otherwise use "You"
+      const displayName = useActualUsername ? currentUserName : 'You';
+      shareText += `${displayName}\n`;
     }
     
     shareText += `\nI'm tracking our scores on Trackle! Join us at https://www.ontrackle.com`;
