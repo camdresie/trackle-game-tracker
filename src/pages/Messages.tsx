@@ -142,20 +142,33 @@ const Messages = () => {
     }
   };
 
+  // Handle manual refresh - more aggressive version
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     toast.info('Refreshing invitations and groups...');
     
     // Clear caches more aggressively
     queryClient.removeQueries();
-    queryClient.invalidateQueries();
     
-    // Then fetch fresh data
     try {
+      // Force a refresh of the friends list first
+      await refreshFriends();
+      
+      // Then fetch invitations and groups
       await Promise.all([
         refetchInvitations(),
         refetchGroups()
       ]);
+      
+      // Reset any selected group if there's an issue
+      if (friendGroups && friendGroups.length > 0) {
+        const stillExists = friendGroups.some(group => group.id === selectedGroupId);
+        if (!stillExists) {
+          setSelectedGroupId(friendGroups[0].id);
+        }
+      } else {
+        setSelectedGroupId(null);
+      }
       
       toast.success('Refreshed successfully');
     } catch (error) {

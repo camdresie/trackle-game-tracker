@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   PlusCircle, 
@@ -33,6 +34,7 @@ import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useConnections } from '@/hooks/connections/useConnections';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface FriendGroupsManagerProps {
   currentPlayerId: string;
@@ -48,6 +50,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [groupToLeave, setGroupToLeave] = useState<string | null>(null);
   const [isProcessingLeave, setIsProcessingLeave] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch friends to use with groups
   const { data: friends = [], isLoading: isLoadingFriends } = useConnections(currentPlayerId, open);
@@ -90,6 +93,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
       setIsProcessingLeave(true);
       console.log('Initiating leave group process for group:', groupId);
       
+      // Aggressively clear caches before attempting leave
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      
       // Call the leaveGroup mutation
       await leaveGroup(groupId);
       
@@ -99,6 +105,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
       // Manually refetch groups after a short delay to ensure database has updated
       setTimeout(() => {
         console.log('Refetching groups after leaving');
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
         refetchGroups();
         setIsProcessingLeave(false);
         toast.success('You have left the group successfully');
@@ -106,6 +113,16 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     } catch (error) {
       console.error('Error in handleLeaveGroup:', error);
       setIsProcessingLeave(false);
+      
+      // If it's a "not a member" error, we can consider this a success from the user's perspective
+      if (error instanceof Error && 
+          (error.message.includes('not a member') || error.message.includes('already left'))) {
+        setGroupToLeave(null);
+        toast.info('You are not currently a member of this group');
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        refetchGroups();
+        return;
+      }
       
       // Show a more specific error message based on the error
       if (error instanceof Error) {

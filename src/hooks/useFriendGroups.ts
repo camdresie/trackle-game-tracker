@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -430,61 +429,27 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First, check if the group exists
-        const { data: groupData, error: groupError } = await supabase
-          .from('friend_groups')
-          .select('id, name, user_id')
-          .eq('id', groupId)
-          .single();
-        
-        if (groupError) {
-          console.error('Error finding group:', groupError);
-          throw new Error(`Group not found: ${groupError.message}`);
-        }
-        
-        // Check if we're trying to leave our own group
-        if (groupData.user_id === user.id) {
-          console.error('Cannot leave a group you own - you should delete it instead');
-          throw new Error('You cannot leave a group you own. Please delete the group instead.');
-        }
-        
-        console.log(`Group found: ${groupData.name}`);
-        
-        // Check if we're a member of this group
-        const { data: memberRecords, error: findError } = await supabase
+        // Check if we have a member record directly first
+        console.log(`Checking for member record for group ${groupId} and user ${user.id}`);
+        const { data: memberRecords, error: memberError } = await supabase
           .from('friend_group_members')
-          .select('*')  // Select all columns for debugging
+          .select('*')
           .eq('group_id', groupId)
           .eq('friend_id', user.id);
         
-        console.log('Member records query result:', memberRecords);
-        
-        if (findError) {
-          console.error('Error finding member records:', findError);
-          throw findError;
+        if (memberError) {
+          console.error('Error finding member records:', memberError);
+          throw new Error(`Failed to check membership: ${memberError.message}`);
         }
+        
+        console.log(`Found ${memberRecords?.length || 0} member records:`, memberRecords);
         
         if (!memberRecords || memberRecords.length === 0) {
-          // Try a different approach - maybe the status needs to be checked?
-          const { data: altRecords, error: altError } = await supabase
-            .from('friend_group_members')
-            .select('*')
-            .eq('group_id', groupId);
-          
-          console.log('All group members:', altRecords);
-          console.log('Current user ID:', user.id);
-          
-          if (altError) {
-            console.error('Error in alternative query:', altError);
-          }
-          
-          // If we're here, user is seeing a group they're not actually a member of
-          throw new Error('You are not a member of this group');
+          throw new Error('You are not a member of this group or have already left');
         }
         
-        console.log(`Found ${memberRecords.length} member records to delete:`, memberRecords);
-        
-        // Delete all matching member records (should typically be just one)
+        // Delete all matching member records
+        console.log(`Deleting ${memberRecords.length} membership records`);
         const recordIds = memberRecords.map(record => record.id);
         
         const { error: deleteError } = await supabase
@@ -494,7 +459,7 @@ export const useFriendGroups = (friends: Player[]) => {
         
         if (deleteError) {
           console.error('Error deleting member records:', deleteError);
-          throw deleteError;
+          throw new Error(`Failed to leave group: ${deleteError.message}`);
         }
         
         console.log(`Successfully left group: ${groupId}`);
@@ -507,6 +472,7 @@ export const useFriendGroups = (friends: Player[]) => {
     onSuccess: () => {
       toast.success('You have left the friend group');
       // Force invalidate and refetch to update the UI
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
       setTimeout(() => {
         refetch();
@@ -514,7 +480,27 @@ export const useFriendGroups = (friends: Player[]) => {
     },
     onError: (error) => {
       console.error('Error leaving friend group:', error);
-      toast.error('Failed to leave friend group');
+      
+      // Provide a more user-friendly error message
+      let errorMessage = 'Failed to leave friend group';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // If they're not a member, we can consider this "successful" from the user's perspective
+        if (errorMessage.includes('not a member') || errorMessage.includes('already left')) {
+          toast.info('You are not currently a member of this group');
+          
+          // Trigger a refresh to update the UI
+          queryClient.removeQueries({ queryKey: ['friend-groups'] });
+          queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+          setTimeout(() => {
+            refetch();
+          }, 500);
+          return;
+        }
+      }
+      
+      toast.error(errorMessage);
     }
   });
   
