@@ -41,7 +41,6 @@ const AdSense: React.FC<AdSenseProps> = ({
         data-ad-slot={adSlot}
         data-ad-format={adFormat}
         data-full-width-responsive={fullWidthResponsive ? 'true' : 'false'}
-        ref={adRef}
       />
     </div>
   );
