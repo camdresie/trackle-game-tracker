@@ -429,19 +429,47 @@ export const useFriendGroups = (friends: Player[]) => {
       
       console.log(`Leaving group: ${groupId}`);
       
-      const { data, error } = await supabase
+      // Find the member record for the current user in this group
+      const { data: memberRecord, error: findError } = await supabase
+        .from('friend_group_members')
+        .select('id')
+        .eq('group_id', groupId)
+        .eq('friend_id', user.id)
+        .single();
+      
+      if (findError) {
+        console.error('Error finding member record:', findError);
+        throw findError;
+      }
+      
+      if (!memberRecord) {
+        console.error('Member record not found');
+        throw new Error('Member record not found');
+      }
+      
+      console.log('Found member record to delete:', memberRecord.id);
+      
+      // Delete the member record
+      const { error: deleteError } = await supabase
         .from('friend_group_members')
         .delete()
-        .eq('group_id', groupId)
-        .eq('friend_id', user.id);
+        .eq('id', memberRecord.id);
       
-      if (error) throw error;
+      if (deleteError) {
+        console.error('Error deleting member record:', deleteError);
+        throw deleteError;
+      }
+      
+      console.log('Successfully left group:', groupId);
       return { groupId };
     },
     onSuccess: () => {
       toast.success('You have left the friend group');
+      // Force invalidate and refetch to update the UI
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+      setTimeout(() => {
+        refetch();
+      }, 500);
     },
     onError: (error) => {
       console.error('Error leaving friend group:', error);

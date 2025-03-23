@@ -47,6 +47,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const [currentGroup, setCurrentGroup] = useState<any | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [groupToLeave, setGroupToLeave] = useState<string | null>(null);
+  const [isProcessingLeave, setIsProcessingLeave] = useState(false);
 
   // Fetch friends to use with groups
   const { data: friends = [], isLoading: isLoadingFriends } = useConnections(currentPlayerId, open);
@@ -84,9 +85,27 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     deleteGroup(groupId);
   };
 
-  const handleLeaveGroup = (groupId: string) => {
-    setGroupToLeave(null);
-    leaveGroup(groupId);
+  const handleLeaveGroup = async (groupId: string) => {
+    try {
+      setIsProcessingLeave(true);
+      console.log('Initiating leave group process for group:', groupId);
+      
+      // Call the leaveGroup mutation
+      await leaveGroup(groupId);
+      
+      // Close the dialog
+      setGroupToLeave(null);
+      
+      // Manually refetch groups after a short delay to ensure database has updated
+      setTimeout(() => {
+        console.log('Refetching groups after leaving');
+        refetchGroups();
+        setIsProcessingLeave(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error in handleLeaveGroup:', error);
+      setIsProcessingLeave(false);
+    }
   };
 
   const handleUpdateGroup = (data: { name: string, description: string }) => {
@@ -112,7 +131,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     return friends.filter(friend => !memberIds.has(friend.id));
   };
 
-  const isLoading = isLoadingGroups || isLoadingFriends;
+  const isLoading = isLoadingGroups || isLoadingFriends || isProcessingLeave;
 
   return (
     <>
@@ -389,9 +408,13 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => groupToLeave && handleLeaveGroup(groupToLeave)} className="bg-destructive">
-              Leave Group
+            <AlertDialogCancel disabled={isProcessingLeave}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => groupToLeave && handleLeaveGroup(groupToLeave)} 
+              className="bg-destructive"
+              disabled={isProcessingLeave}
+            >
+              {isProcessingLeave ? 'Leaving...' : 'Leave Group'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

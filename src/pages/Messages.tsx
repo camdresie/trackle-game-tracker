@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
@@ -40,6 +41,7 @@ const Messages = () => {
   const [acceptedInvitation, setAcceptedInvitation] = useState(false);
   const [processingInvitation, setProcessingInvitation] = useState(false);
   const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Handle friends loading state
   useEffect(() => {
@@ -76,7 +78,17 @@ const Messages = () => {
         console.log('Auto-selecting the first group:', friendGroups[0].id);
         setSelectedGroupId(friendGroups[0].id);
         setAcceptedInvitation(false); // Reset the flag
+      } else if (selectedGroupId) {
+        // Check if the selected group still exists in the updated friendGroups
+        const stillExists = friendGroups.some(group => group.id === selectedGroupId);
+        if (!stillExists && friendGroups.length > 0) {
+          console.log('Selected group no longer exists, selecting first available group');
+          setSelectedGroupId(friendGroups[0].id);
+        }
       }
+    } else if (friendGroups && friendGroups.length === 0) {
+      // Reset selected group if there are no longer any groups
+      setSelectedGroupId(null);
     }
   }, [friendGroups, selectedGroupId, acceptedInvitation]);
 
@@ -127,6 +139,7 @@ const Messages = () => {
   };
 
   const handleManualRefresh = async () => {
+    setIsRefreshing(true);
     toast.info('Refreshing invitations and groups...');
     
     // Clear caches first
@@ -137,12 +150,19 @@ const Messages = () => {
     queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
     
     // Then fetch fresh data
-    await Promise.all([
-      refetchInvitations(),
-      refetchGroups()
-    ]);
-    
-    toast.success('Refreshed successfully');
+    try {
+      await Promise.all([
+        refetchInvitations(),
+        refetchGroups()
+      ]);
+      
+      toast.success('Refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('Failed to refresh data');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -166,9 +186,10 @@ const Messages = () => {
             variant="outline" 
             onClick={handleManualRefresh}
             className="flex items-center gap-1"
+            disabled={isRefreshing}
           >
-            <RotateCw className="h-4 w-4" />
-            <span>Refresh</span>
+            <RotateCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
           </Button>
         </div>
 
@@ -183,7 +204,7 @@ const Messages = () => {
         )}
 
         {/* Friend groups for messaging */}
-        {(isGroupsLoading || isLoadingFriends) ? (
+        {(isGroupsLoading || isLoadingFriends || isRefreshing) ? (
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Loading your groups...</p>
           </div>
