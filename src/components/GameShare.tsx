@@ -58,7 +58,6 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className }: Ga
   
   // Generate the share text
   const generateShareText = () => {
-    const isLowerBetter = ['wordle', 'mini-crossword'].includes(game.id);
     const unitLabel = getUnitLabel();
     
     let shareText = `🎮 My ${game.name} Stats - ${getTodayFormatted()}\n\n`;
@@ -78,12 +77,7 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className }: Ga
       shareText += `⭐ Average: ${formatScore(averageScore)} ${unitLabel}\n`;
     }
     
-    // Add game-specific context
-    if (isLowerBetter) {
-      shareText += `\n(Lower is better for this game)\n`;
-    }
-    
-    shareText += `\nTracked with Game Mastery - https://gamemastery.app`;
+    shareText += `\nI'm keeping my stats on Trackle! Join me at https://www.ontrackle.com`;
     
     return shareText;
   };

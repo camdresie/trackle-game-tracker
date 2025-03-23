@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Share2, Clipboard, Check } from 'lucide-react';
+import { Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInTimeZone } from 'date-fns-tz';
 import { LeaderboardPlayer } from '@/types/leaderboard';
@@ -121,7 +121,7 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
       });
     }
     
-    shareText += `\nTracked with Game Mastery - https://gamemastery.app`;
+    shareText += `\nI'm keeping my stats on Trackle! Join me at https://www.ontrackle.com`;
     
     return shareText;
   };
