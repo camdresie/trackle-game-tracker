@@ -403,10 +403,38 @@ export const useFriendGroups = (friends: Player[]) => {
     onSuccess: () => {
       toast.success('Friend removed from group');
       queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
     },
     onError: (error) => {
       console.error('Error removing friend from group:', error);
       toast.error('Failed to remove friend from group');
+    }
+  });
+  
+  // Leave a group (for members who have joined a group)
+  const leaveGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      if (!user) throw new Error('User not authenticated');
+      
+      console.log(`Leaving group: ${groupId}`);
+      
+      const { data, error } = await supabase
+        .from('friend_group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('friend_id', user.id);
+      
+      if (error) throw error;
+      return { groupId };
+    },
+    onSuccess: () => {
+      toast.success('You have left the friend group');
+      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+    },
+    onError: (error) => {
+      console.error('Error leaving friend group:', error);
+      toast.error('Failed to leave friend group');
     }
   });
   
@@ -449,6 +477,7 @@ export const useFriendGroups = (friends: Player[]) => {
     updateGroup: updateGroupMutation.mutate,
     addFriendToGroup: addFriendToGroupMutation.mutate,
     removeFriendFromGroup: removeFriendFromGroupMutation.mutate,
+    leaveGroup: leaveGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
     refetch,
     refetchGroups: refetch // Alias for backward compatibility

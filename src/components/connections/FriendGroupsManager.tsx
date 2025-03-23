@@ -9,7 +9,8 @@ import {
   Users, 
   MessageCircle,
   Clock,
-  UsersRound
+  UsersRound,
+  LogOut
 } from 'lucide-react';
 import { Player } from '@/utils/types';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const [messagesModalOpen, setMessagesModalOpen] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<any | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [groupToLeave, setGroupToLeave] = useState<string | null>(null);
 
   // Fetch friends to use with groups
   const { data: friends = [], isLoading: isLoadingFriends } = useConnections(currentPlayerId, open);
@@ -58,6 +60,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     deleteGroup,
     addFriendToGroup,
     removeFriendFromGroup,
+    leaveGroup,
     refetch: refetchGroups
   } = useFriendGroups(friends);
 
@@ -79,6 +82,11 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const handleDeleteGroup = (groupId: string) => {
     setGroupToDelete(null);
     deleteGroup(groupId);
+  };
+
+  const handleLeaveGroup = (groupId: string) => {
+    setGroupToLeave(null);
+    leaveGroup(groupId);
   };
 
   const handleUpdateGroup = (data: { name: string, description: string }) => {
@@ -170,7 +178,15 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                         <MessageCircle className="mr-2 h-4 w-4" />
                         <span>Messages</span>
                       </DropdownMenuItem>
-                      {!group.isJoinedGroup && (
+                      {group.isJoinedGroup ? (
+                        <DropdownMenuItem 
+                          onClick={() => setGroupToLeave(group.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Leave Group</span>
+                        </DropdownMenuItem>
+                      ) : (
                         <>
                           <DropdownMenuItem onClick={() => handleEditGroup(group)}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -358,6 +374,24 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => groupToDelete && handleDeleteGroup(groupToDelete)} className="bg-destructive">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Leave Group Confirmation Dialog */}
+      <AlertDialog open={!!groupToLeave} onOpenChange={(open) => !open && setGroupToLeave(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Friend Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to leave this friend group? You'll need a new invitation to join again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => groupToLeave && handleLeaveGroup(groupToLeave)} className="bg-destructive">
+              Leave Group
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
