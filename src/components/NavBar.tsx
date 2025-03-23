@@ -34,12 +34,12 @@ const NavBar = () => {
   if (isMobile) {
     return (
       <div className="fixed w-full top-0 z-50">
-        <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
+        <div className="h-20 flex justify-between items-center px-4 glass shadow-sm border-b">
           <Link to="/" className="flex items-center gap-2">
             <img 
               src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
               alt="Trackle Logo" 
-              className="h-16 w-auto" 
+              className="h-24 w-auto" 
             />
           </Link>
           
@@ -54,7 +54,7 @@ const NavBar = () => {
           </div>
           
           {isMenuOpen && (
-            <div className="absolute top-16 left-0 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md animate-fade-in p-2 border-b shadow-md">
+            <div className="absolute top-20 left-0 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md animate-fade-in p-2 border-b shadow-md">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -117,12 +117,12 @@ const NavBar = () => {
   // For desktop, show a standard horizontal navbar
   return (
     <div className="fixed w-full top-0 z-50">
-      <div className="h-18 flex justify-between items-center px-6 glass shadow-sm border-b">
+      <div className="h-24 flex justify-between items-center px-6 glass shadow-sm border-b">
         <Link to="/" className="flex items-center gap-2">
           <img 
             src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
             alt="Trackle Logo" 
-            className="h-16 w-auto" 
+            className="h-24 w-auto" 
           />
         </Link>
         
