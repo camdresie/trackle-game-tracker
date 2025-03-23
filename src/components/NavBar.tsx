@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle, HelpCircle } from 'lucide-react';
@@ -6,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,20 +35,25 @@ const NavBar = () => {
     return (
       <div className="fixed w-full top-0 z-50">
         <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
-          <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-              alt="Trackle Logo" 
-              className="h-12 w-auto" 
-            />
-          </Link>
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+                alt="Trackle Logo" 
+                className="h-14 w-auto" 
+              />
+            </Link>
+          </div>
           
-          <button 
-            onClick={toggleMenu}
-            className="p-2 rounded-full hover:bg-secondary transition-colors"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button 
+              onClick={toggleMenu}
+              className="p-2 rounded-full hover:bg-secondary transition-colors"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
           
           {isMenuOpen && (
             <div className="absolute top-16 left-0 w-full bg-background/95 dark:bg-background/95 backdrop-blur-md animate-fade-in p-2 border-b shadow-md">
@@ -109,19 +116,19 @@ const NavBar = () => {
     );
   }
 
-  // For desktop, show a standard horizontal navbar
+  // For desktop view, reposition the logo to make it more prominent
   return (
     <div className="fixed w-full top-0 z-50">
-      <div className="h-24 flex justify-between items-center px-6 glass shadow-sm border-b">
-        <Link to="/" className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-            alt="Trackle Logo" 
-            className="h-20 w-auto" 
-          />
-        </Link>
-        
-        <div className="flex items-center gap-3">
+      <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+              alt="Trackle Logo" 
+              className="h-14 w-auto" 
+            />
+          </Link>
+          
           <div className="flex items-center gap-1">
             {navItems.map((item) => (
               <Link
@@ -139,6 +146,10 @@ const NavBar = () => {
               </Link>
             ))}
           </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -178,6 +189,19 @@ const NavBar = () => {
           </DropdownMenu>
         </div>
       </div>
+      
+      {/* Large logo display in home page only */}
+      {location.pathname === '/' && (
+        <div className="flex justify-center mt-16 pt-8 pb-2">
+          <Link to="/">
+            <img 
+              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+              alt="Trackle Logo" 
+              className="h-28 w-auto animate-scale-in" 
+            />
+          </Link>
+        </div>
+      )}
     </div>
   );
 };

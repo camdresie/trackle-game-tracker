@@ -34,7 +34,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+      <main className="pt-32 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <section className="mb-8 animate-slide-up">
           <HomeHeader 
             onShowAddScore={() => setShowGameSelection(true)}
