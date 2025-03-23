@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -429,24 +430,30 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First get the member record directly instead of checking the group
-        const { data: memberRecord, error: memberError } = await supabase
-          .from('friend_group_members')
-          .select('id, status, group_id')
-          .eq('group_id', groupId)
-          .eq('friend_id', user.id)
-          .maybeSingle();
+        // First get the member record directly with a SQL query to avoid any filtering issues
+        const getMembershipQuery = `
+          SELECT id, status, group_id 
+          FROM friend_group_members 
+          WHERE group_id = '${groupId}' 
+          AND friend_id = '${user.id}'
+          LIMIT 1
+        `;
         
-        if (memberError) {
-          console.error('Error checking membership record:', memberError);
-          throw new Error(`Failed to check membership: ${memberError.message}`);
+        const { data: membershipData, error: membershipError } = await supabase.rpc('direct_sql_query', {
+          sql_query: getMembershipQuery
+        });
+        
+        if (membershipError) {
+          console.error('Error checking membership record:', membershipError);
+          throw new Error(`Failed to check membership: ${membershipError.message}`);
         }
         
-        if (!memberRecord) {
+        if (!membershipData || membershipData.length === 0) {
           console.log('No membership records found for this user in this group');
           throw new Error('You are not currently a member of this group or have already left');
         }
         
+        const memberRecord = membershipData[0];
         console.log('Found membership record:', memberRecord);
         
         // Now check if the group exists
@@ -473,17 +480,27 @@ export const useFriendGroups = (friends: Player[]) => {
         }
         
         // Update the record status to 'left' instead of deleting it
-        const { error: updateError } = await supabase
-          .from('friend_group_members')
-          .update({ status: 'left' })
-          .eq('id', memberRecord.id);
+        const updateQuery = `
+          UPDATE friend_group_members 
+          SET status = 'left' 
+          WHERE id = '${memberRecord.id}'
+          RETURNING id, status
+        `;
+        
+        const { data: updateResult, error: updateError } = await supabase.rpc('direct_sql_query', {
+          sql_query: updateQuery
+        });
         
         if (updateError) {
           console.error('Error updating membership status:', updateError);
           throw new Error(`Failed to leave group: ${updateError.message}`);
         }
         
-        console.log(`Successfully left group: ${groupId}`);
+        if (!updateResult || updateResult.length === 0) {
+          throw new Error('Failed to update membership status');
+        }
+        
+        console.log(`Successfully left group: ${groupId}, update result:`, updateResult);
         return { groupId, success: true };
       } catch (error) {
         console.error('Error in leaveGroup:', error);
