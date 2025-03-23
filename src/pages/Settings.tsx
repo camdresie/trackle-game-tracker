@@ -7,7 +7,8 @@ import {
   ArrowLeft, 
   Trash2, 
   AlertCircle,
-  Camera
+  Camera,
+  Moon
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, ensureAvatarBucketExists } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { ThemeSwitch } from '@/components/theme/ThemeSwitch';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -271,9 +273,10 @@ const Settings = () => {
         </div>
         
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="account">Account & Password</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="pt-4">
@@ -523,6 +526,40 @@ const Settings = () => {
                   </DialogContent>
                 </Dialog>
               </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="appearance" className="pt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>
+                  Customize how Trackle looks on your device
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-medium">Theme</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choose between light and dark mode
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between border p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Moon className="h-5 w-5" />
+                      <div>
+                        <p className="font-medium">Dark Mode</p>
+                        <p className="text-sm text-muted-foreground">
+                          Switch between light and dark theme
+                        </p>
+                      </div>
+                    </div>
+                    <ThemeSwitch id="theme-toggle" />
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
