@@ -23,6 +23,17 @@ const getStoredTheme = (): Theme => {
   return storedTheme || 'system';
 };
 
+// Get the resolved theme (actual light/dark) based on system preference if needed
+const getResolvedTheme = (theme: Theme): 'light' | 'dark' => {
+  if (theme !== 'system') return theme as 'light' | 'dark';
+  
+  if (typeof window === 'undefined') return 'dark'; // Default to dark if SSR
+  
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
@@ -38,15 +49,8 @@ export function ThemeProvider({
     // Store in localStorage for persistence
     localStorage.setItem('theme', newTheme);
 
-    if (newTheme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(newTheme);
+    const resolvedTheme = getResolvedTheme(newTheme);
+    root.classList.add(resolvedTheme);
   };
 
   // Apply theme when it changes
