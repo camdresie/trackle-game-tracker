@@ -6,7 +6,6 @@ import { useGroupScores } from '@/hooks/useGroupScores';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle, InfoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -131,30 +130,43 @@ const TodayScores = () => {
           />
         )}
         
-        {/* Game Selector Pills - Fixed to use ToggleGroup properly */}
+        {/* Game Selector Pills - Updated to match Leaderboard style */}
         <div className="mb-6">
-          <ToggleGroup 
-            type="single" 
-            value={selectedGame?.id || ""} 
-            onValueChange={(value) => value && handleGameSelect(value)}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2"
-          >
-            {games.map(game => (
-              <ToggleGroupItem 
-                key={game.id} 
-                value={game.id}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg",
+          {/* First Row */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {games.slice(0, Math.ceil(games.length / 2)).map(game => (
+              <button
+                key={game.id}
+                onClick={() => handleGameSelect(game.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
                   selectedGame?.id === game.id 
                     ? `${game.color} text-white hover:bg-opacity-90`
                     : 'border border-muted hover:bg-muted/10'
-                )}
+                }`}
               >
                 <GamepadIcon className="w-3.5 h-3.5" />
                 <span>{game.name}</span>
-              </ToggleGroupItem>
+              </button>
             ))}
-          </ToggleGroup>
+          </div>
+          
+          {/* Second Row */}
+          <div className="flex flex-wrap gap-2">
+            {games.slice(Math.ceil(games.length / 2)).map(game => (
+              <button
+                key={game.id}
+                onClick={() => handleGameSelect(game.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                  selectedGame?.id === game.id 
+                    ? `${game.color} text-white hover:bg-opacity-90`
+                    : 'border border-muted hover:bg-muted/10'
+                }`}
+              >
+                <GamepadIcon className="w-3.5 h-3.5" />
+                <span>{game.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
         
         {/* Rest of the component */}
