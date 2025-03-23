@@ -77,15 +77,32 @@ export const processLeaderboardData = (
     });
   }
   
-  // Keep track of processed dates to avoid counting the same game multiple times
-  const processedGameDates = new Map<string, Set<string>>();
+  // Deduplicate scores by user, game, and date to get accurate game counts
+  // This is crucial for preventing edited scores from counting as multiple games
+  const uniqueGameDates = new Map<string, any>();
   
-  // Process all scores for the selected game to calculate totals
-  for (const score of gameScores) {
-    const userId = score.user_id;
+  // First, deduplicate scores to only have one score per user-game-date combination
+  gameScores.forEach(score => {
+    const key = `${score.user_id}-${score.game_id}-${score.date}`;
     
-    // Create a unique key for this user's game on this date
-    const gameDateKey = `${userId}-${score.game_id}-${score.date}`;
+    // If we already have a score for this combination, keep only the newer one
+    if (uniqueGameDates.has(key)) {
+      const existingScore = uniqueGameDates.get(key);
+      if (new Date(score.created_at) > new Date(existingScore.created_at)) {
+        uniqueGameDates.set(key, score);
+      }
+    } else {
+      uniqueGameDates.set(key, score);
+    }
+  });
+  
+  // Convert back to array for processing
+  const uniqueScores = Array.from(uniqueGameDates.values());
+  console.log(`processLeaderboardData - Unique game dates after deduplication: ${uniqueScores.length}`);
+  
+  // Process all UNIQUE scores for the selected game to calculate totals
+  for (const score of uniqueScores) {
+    const userId = score.user_id;
     
     // If user doesn't exist in map yet, add them
     if (!userStatsMap.has(userId)) {
@@ -115,21 +132,9 @@ export const processLeaderboardData = (
     const userStats = userStatsMap.get(userId);
     if (!userStats) continue; // Skip if user somehow not in map
     
-    // If we don't already have a total_games count from game_stats, count unique game dates
+    // If we don't already have a total_games count from game_stats, count it from our unique scores
     if (!userGameCounts[userId]) {
-      // Initialize the set for this user if it doesn't exist
-      if (!processedGameDates.has(userId)) {
-        processedGameDates.set(userId, new Set<string>());
-      }
-      
-      // Get the set for this user
-      const processedDates = processedGameDates.get(userId)!;
-      
-      // Only count as a new game if we haven't seen this game-date combination before
-      if (!processedDates.has(gameDateKey)) {
-        processedDates.add(gameDateKey);
-        userStats.total_games += 1;
-      }
+      userStats.total_games += 1;
     }
     
     // Add to total score
