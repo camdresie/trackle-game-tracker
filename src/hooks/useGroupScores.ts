@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendsList } from './useFriendsList';
@@ -81,6 +82,12 @@ export const useGroupScores = (
         
         // Then get all profiles for these members in a separate query
         const memberIds = members.map(m => m.friend_id);
+        
+        // Add the current user to make sure they're included in profile lookup
+        if (user && !memberIds.includes(user.id)) {
+          memberIds.push(user.id);
+        }
+        
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, full_name')
@@ -97,6 +104,8 @@ export const useGroupScores = (
           setGroupMembers([]);
           return;
         }
+        
+        console.log('[useGroupScores] Found profiles:', profiles);
         
         // Combine member data with profiles
         const membersWithProfiles = members.map(member => {
@@ -122,7 +131,7 @@ export const useGroupScores = (
     } else {
       setGroupMembers([]);
     }
-  }, [friendGroups]);
+  }, [friendGroups, user]);
 
   // Use useFriendScores to get scores for all friends
   const { friendScores, isLoading: isLoadingFriendScores } = useFriendScores({

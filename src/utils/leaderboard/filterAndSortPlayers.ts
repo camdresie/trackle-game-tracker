@@ -56,9 +56,14 @@ export const filterAndSortPlayers = (
   if (showFriendsOnly) {
     if (selectedGroupMemberIds.length > 0) {
       // Show specific group members and current user
+      console.log('Filtering by selected group members:', selectedGroupMemberIds);
+      console.log('Current user ID:', userId);
+      
       filteredPlayers = filteredPlayers.filter(player => 
         player.player_id === userId || selectedGroupMemberIds.includes(player.player_id)
       );
+      
+      console.log('Players after group filtering:', filteredPlayers.length);
     } else if (selectedFriendIds.length > 0) {
       // Show specific friends and current user
       filteredPlayers = filteredPlayers.filter(player => 
