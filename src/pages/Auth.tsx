@@ -60,13 +60,6 @@ const Auth = () => {
         </Card>
       </div>
       
-      <div className="text-center max-w-md mb-6">
-        <p className="text-sm text-muted-foreground">
-          Connect with friends, form groups, and track your progress over time. 
-          See who's the best at solving puzzles in your circle!
-        </p>
-      </div>
-      
       {/* AdSense Ad */}
       <div className="w-full max-w-md mt-4">
         <AdSense 
