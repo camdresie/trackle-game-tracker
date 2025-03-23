@@ -54,6 +54,7 @@ export const useFriendScores = ({
       }
       
       console.log(`[useFriendScores] Fetching scores for ${friendsToFetch.length} friends/users for game:`, gameId);
+      console.log('[useFriendScores] User IDs to fetch:', friendsToFetch);
       
       try {
         // Initialize empty scores for all friends
@@ -106,7 +107,16 @@ export const useFriendScores = ({
           newFriendScores[user.id] = currentUserScores;
         }
         
-        console.log('[useFriendScores] Final scores data:', newFriendScores);
+        // Log one score per user for debugging
+        for (const userId in newFriendScores) {
+          if (newFriendScores[userId].length > 0) {
+            console.log(`[useFriendScores] User ${userId} has ${newFriendScores[userId].length} scores. Sample:`, 
+              newFriendScores[userId][0]);
+          } else {
+            console.log(`[useFriendScores] User ${userId} has no scores for game ${gameId}`);
+          }
+        }
+        
         return newFriendScores;
       } catch (error) {
         console.error('[useFriendScores] Global error in fetchFriendScores:', error);

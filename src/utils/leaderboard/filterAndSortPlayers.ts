@@ -59,11 +59,33 @@ export const filterAndSortPlayers = (
       console.log('Filtering by selected group members:', selectedGroupMemberIds);
       console.log('Current user ID:', userId);
       
-      filteredPlayers = filteredPlayers.filter(player => 
-        player.player_id === userId || selectedGroupMemberIds.includes(player.player_id)
-      );
+      // More aggressive debugging for group filtering
+      const beforeFilterCount = filteredPlayers.length;
       
-      console.log('Players after group filtering:', filteredPlayers.length);
+      // Ensure all group member IDs are strings for consistent comparison
+      const normalizedGroupMemberIds = selectedGroupMemberIds.map(id => id.toString());
+      
+      // Add user ID to the list if not already included
+      if (userId && !normalizedGroupMemberIds.includes(userId.toString())) {
+        normalizedGroupMemberIds.push(userId.toString());
+      }
+      
+      console.log('Normalized group member IDs:', normalizedGroupMemberIds);
+      
+      // Filter players
+      filteredPlayers = filteredPlayers.filter(player => {
+        const isIncluded = normalizedGroupMemberIds.includes(player.player_id.toString());
+        if (isIncluded) {
+          console.log(`Including player: ${player.username} (${player.player_id})`);
+        }
+        return isIncluded;
+      });
+      
+      console.log(`Players after group filtering: ${filteredPlayers.length} (filtered from ${beforeFilterCount})`);
+      
+      // Log the filtered players for debugging
+      console.log('Filtered players after group membership filtering:', 
+        filteredPlayers.map(p => ({ id: p.player_id, username: p.username })));
     } else if (selectedFriendIds.length > 0) {
       // Show specific friends and current user
       filteredPlayers = filteredPlayers.filter(player => 

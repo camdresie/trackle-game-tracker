@@ -34,6 +34,7 @@ export const useGroupScores = (
   const { friendGroups, isLoading: isLoadingGroups } = useFriendGroups(friends);
   const [isLoading, setIsLoading] = useState(true);
   const [groupMembers, setGroupMembers] = useState<any[]>([]);
+  const [groupCreators, setGroupCreators] = useState<{[key: string]: string}>({});
 
   // Use Eastern Time for date consistency across the app
   const today = useMemo(() => getTodayInEasternTime(), []);
@@ -59,6 +60,14 @@ export const useGroupScores = (
         const groupIds = friendGroups.map(group => group.id);
         console.log('[useGroupScores] Fetching members for groups:', groupIds);
         
+        // Store group creators for later use
+        const creatorMap: {[key: string]: string} = {};
+        friendGroups.forEach(group => {
+          creatorMap[group.id] = group.user_id;
+        });
+        setGroupCreators(creatorMap);
+        console.log('[useGroupScores] Group creators map:', creatorMap);
+        
         // Updated query: Include status filter to only get accepted members
         const { data: members, error } = await supabase
           .from('friend_group_members')
@@ -74,7 +83,60 @@ export const useGroupScores = (
         
         if (!members || members.length === 0) {
           console.log('[useGroupScores] No members found');
-          setGroupMembers([]);
+          
+          // Even if no members were found, we should include group creators
+          const memberIds: string[] = [];
+          
+          // Add all group creators to the member IDs
+          Object.values(creatorMap).forEach(creatorId => {
+            if (!memberIds.includes(creatorId)) {
+              memberIds.push(creatorId);
+            }
+          });
+          
+          // Add the current user to make sure they're included in profile lookup
+          if (user && !memberIds.includes(user.id)) {
+            memberIds.push(user.id);
+          }
+          
+          if (memberIds.length === 0) {
+            setGroupMembers([]);
+            return;
+          }
+          
+          // Fetch profiles for group creators and current user
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, username, full_name')
+            .in('id', memberIds);
+            
+          if (profilesError) {
+            console.error('[useGroupScores] Error fetching profiles:', profilesError);
+            toast.error('Failed to load member profiles');
+            throw profilesError;
+          }
+          
+          console.log('[useGroupScores] Found profiles for creators:', profiles);
+          
+          // Create virtual members for group creators
+          const creatorsAsMembers = [];
+          for (const groupId in creatorMap) {
+            const creatorId = creatorMap[groupId];
+            const profile = profiles?.find(p => p.id === creatorId);
+            
+            if (profile) {
+              creatorsAsMembers.push({
+                id: `creator-${groupId}`,
+                group_id: groupId,
+                friend_id: creatorId,
+                status: 'accepted',
+                profiles: profile
+              });
+            }
+          }
+          
+          console.log('[useGroupScores] Created virtual members for creators:', creatorsAsMembers);
+          setGroupMembers(creatorsAsMembers);
           return;
         }
         
@@ -82,6 +144,13 @@ export const useGroupScores = (
         
         // Then get all profiles for these members in a separate query
         const memberIds = members.map(m => m.friend_id);
+        
+        // Add all group creators to the member IDs
+        Object.values(creatorMap).forEach(creatorId => {
+          if (!memberIds.includes(creatorId)) {
+            memberIds.push(creatorId);
+          }
+        });
         
         // Add the current user to make sure they're included in profile lookup
         if (user && !memberIds.includes(user.id)) {
@@ -116,7 +185,28 @@ export const useGroupScores = (
           };
         });
         
-        console.log('[useGroupScores] Members with profiles:', membersWithProfiles);
+        // Add group creators as virtual members if they're not already included
+        for (const groupId in creatorMap) {
+          const creatorId = creatorMap[groupId];
+          const isCreatorAlreadyMember = membersWithProfiles.some(
+            m => m.group_id === groupId && m.friend_id === creatorId
+          );
+          
+          if (!isCreatorAlreadyMember) {
+            const profile = profiles.find(p => p.id === creatorId);
+            if (profile) {
+              membersWithProfiles.push({
+                id: `creator-${groupId}`,
+                group_id: groupId,
+                friend_id: creatorId,
+                status: 'accepted',
+                profiles: profile
+              });
+            }
+          }
+        }
+        
+        console.log('[useGroupScores] Members with profiles (including creators):', membersWithProfiles);
         setGroupMembers(membersWithProfiles);
         
       } catch (error) {
@@ -133,10 +223,16 @@ export const useGroupScores = (
     }
   }, [friendGroups, user]);
 
-  // Use useFriendScores to get scores for all friends
+  // Use useFriendScores to get scores for all friends, and also include group creators
   const { friendScores, isLoading: isLoadingFriendScores } = useFriendScores({
     gameId: selectedGameId || undefined,
-    friends,
+    friends: [
+      ...friends,
+      // Include group creators as "friends" for score fetching
+      ...Object.values(groupCreators)
+        .filter(creatorId => !friends.some(f => f.id === creatorId) && creatorId !== user?.id)
+        .map(creatorId => ({ id: creatorId, name: 'Group Creator' }))
+    ],
     includeCurrentUser: true,
     currentUserScores: todaysScores
   });
@@ -175,6 +271,9 @@ export const useGroupScores = (
           };
         });
 
+      // Check if the current user is the group creator
+      const isCurrentUserCreator = user?.id === group.user_id;
+      
       // Find current user's score for today and this game
       const userTodayScore = user && todaysScores.find(
         score => score.gameId === selectedGameId && 
@@ -182,6 +281,7 @@ export const useGroupScores = (
       );
       
       console.log(`[useGroupScores] Current user's today score for ${selectedGameId}:`, userTodayScore);
+      console.log('[useGroupScores] Is current user the creator?', isCurrentUserCreator);
       
       const currentUserScore = userTodayScore?.value || null;
       const currentUserHasPlayed = !!userTodayScore;
@@ -194,7 +294,7 @@ export const useGroupScores = (
         members
       };
     });
-  }, [friendGroups, groupMembers, selectedGameId, friendScores, user, todaysScores, today]);
+  }, [friendGroups, groupMembers, selectedGameId, friendScores, user, todaysScores, today, groupCreators]);
 
   // Update loading state
   useEffect(() => {
