@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle, HelpCircle } from 'lucide-react';
@@ -38,7 +37,7 @@ const NavBar = () => {
             <img 
               src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
               alt="Trackle Logo" 
-              className="h-15 w-auto"
+              className="h-12 w-auto" // Adjusted from h-15 to h-12 for mobile
             />
           </Link>
           
@@ -118,7 +117,7 @@ const NavBar = () => {
           <img 
             src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
             alt="Trackle Logo" 
-            className="h-20 w-auto" 
+            className="h-24 w-auto" // Increased from h-20 to h-24 for desktop
           />
         </Link>
         
