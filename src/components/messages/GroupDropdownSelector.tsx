@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, UsersRound } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -11,27 +11,54 @@ import { Button } from '@/components/ui/button';
 import { FriendGroup } from '@/utils/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
 
 interface GroupDropdownSelectorProps {
-  selectedGroupId: string | null;
-  groups: FriendGroup[];
-  onSelectGroup: (groupId: string) => void;
+  selectedGroupId: string;
+  onSelectGroup: (groupId: string, groupName: string) => void;
   className?: string;
 }
 
 const GroupDropdownSelector = ({ 
   selectedGroupId, 
-  groups, 
   onSelectGroup,
   className = '' 
 }: GroupDropdownSelectorProps) => {
   const isMobile = useIsMobile();
+  const { friendGroups: groups } = useFriendGroups();
+  const [selectedGroup, setSelectedGroup] = useState<FriendGroup | null>(null);
   
   // Find the current group object
-  const currentGroup = groups.find(group => group.id === selectedGroupId) || groups[0];
+  useEffect(() => {
+    if (groups && selectedGroupId) {
+      const group = groups.find(g => g.id === selectedGroupId);
+      setSelectedGroup(group || null);
+    } else {
+      setSelectedGroup(null);
+    }
+  }, [selectedGroupId, groups]);
   
-  // If not mobile, don't render anything
-  if (!isMobile) return null;
+  const handleSelectGroup = (groupId: string) => {
+    const group = groups?.find(g => g.id === groupId);
+    if (group) {
+      onSelectGroup(group.id, group.name);
+    }
+  };
+  
+  if (!groups || groups.length === 0) {
+    return (
+      <Button 
+        variant="outline" 
+        className={`w-full justify-between border border-input ${className}`}
+        disabled
+      >
+        <div className="flex items-center">
+          <UsersRound className="w-4 h-4 mr-2" />
+          <span>No groups available</span>
+        </div>
+      </Button>
+    );
+  }
   
   return (
     <div className={`w-full ${className}`}>
@@ -43,8 +70,8 @@ const GroupDropdownSelector = ({
           >
             <div className="flex items-center">
               <UsersRound className="w-4 h-4 mr-2" />
-              <span>{currentGroup?.name || "Select Group"}</span>
-              {currentGroup?.isJoinedGroup && (
+              <span>{selectedGroup?.name || "Select Group"}</span>
+              {selectedGroup?.isJoinedGroup && (
                 <Badge variant="outline" className="ml-2 bg-secondary/30">
                   Joined
                 </Badge>
@@ -58,7 +85,7 @@ const GroupDropdownSelector = ({
             <DropdownMenuItem
               key={group.id}
               className="flex items-center gap-2 cursor-pointer"
-              onClick={() => onSelectGroup(group.id)}
+              onClick={() => handleSelectGroup(group.id)}
             >
               <UsersRound className="w-4 h-4" />
               <span>{group.name}</span>
