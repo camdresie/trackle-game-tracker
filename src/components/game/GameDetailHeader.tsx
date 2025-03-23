@@ -5,6 +5,7 @@ import { ChevronLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Game, Score } from '@/utils/types';
 import GameShare from '@/components/GameShare';
+import { isToday } from '@/utils/dateUtils';
 
 interface GameDetailHeaderProps {
   game: Game;
@@ -21,6 +22,9 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
       window.open(game.externalUrl, '_blank', 'noopener,noreferrer');
     }
   };
+  
+  // Check if the user has logged a score for today
+  const hasScoreForToday = latestScore && isToday(latestScore.date);
   
   return (
     <>
@@ -64,7 +68,7 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
             onClick={onAddScore}
             disabled={!user}
           >
-            Add Today's Score
+            {hasScoreForToday ? 'Edit Today\'s Score' : 'Add Today\'s Score'}
           </Button>
         </div>
       </div>
