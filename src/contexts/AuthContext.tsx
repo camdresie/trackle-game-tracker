@@ -159,13 +159,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error updating profile from Supabase:', error);
+        toast.error('Failed to update profile');
         throw error;
       }
 
       console.log('Profile updated successfully:', data);
       
-      // Update the local profile state with the returned data
-      setProfile(prev => prev ? { ...prev, ...data } : null);
+      // Fix: Update the profile state with the complete data returned from the server
+      setProfile(data);
 
       toast.success('Profile updated successfully');
     } catch (error: any) {
