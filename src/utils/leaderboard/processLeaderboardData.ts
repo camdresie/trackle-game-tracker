@@ -1,3 +1,4 @@
+
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
@@ -77,31 +78,50 @@ export const processLeaderboardData = (
     });
   }
   
-  // Deduplicate scores by user, game, and date to get accurate game counts
-  // This is crucial for preventing edited scores from counting as multiple games
-  const uniqueGameDates = new Map<string, any>();
+  // Deduplicate scores by user, game, and date
+  // This ensures we only count one game per day per user
+  const uniqueDatesPerUser = new Map<string, Set<string>>();
+  const uniqueScores = new Map<string, any>();
   
-  // First, deduplicate scores to only have one score per user-game-date combination
+  // First pass: create a map of unique dates per user
   gameScores.forEach(score => {
-    const key = `${score.user_id}-${score.game_id}-${score.date}`;
+    const userId = score.user_id;
     
-    // If we already have a score for this combination, keep only the newer one
-    if (uniqueGameDates.has(key)) {
-      const existingScore = uniqueGameDates.get(key);
-      if (new Date(score.created_at) > new Date(existingScore.created_at)) {
-        uniqueGameDates.set(key, score);
-      }
-    } else {
-      uniqueGameDates.set(key, score);
+    // Initialize set for this user if not exists
+    if (!uniqueDatesPerUser.has(userId)) {
+      uniqueDatesPerUser.set(userId, new Set<string>());
+    }
+    
+    // Get the date set for this user
+    const dateSet = uniqueDatesPerUser.get(userId)!;
+    
+    // Add this date to the user's set of dates
+    dateSet.add(score.date);
+    
+    // Update the unique score map with the most recent score for this date
+    const key = `${userId}-${score.date}`;
+    
+    if (!uniqueScores.has(key) || 
+        new Date(score.created_at) > new Date(uniqueScores.get(key).created_at)) {
+      uniqueScores.set(key, score);
     }
   });
   
-  // Convert back to array for processing
-  const uniqueScores = Array.from(uniqueGameDates.values());
-  console.log(`processLeaderboardData - Unique game dates after deduplication: ${uniqueScores.length}`);
+  // Convert unique dates into game counts
+  uniqueDatesPerUser.forEach((dateSet, userId) => {
+    if (!userGameCounts[userId]) {
+      userGameCounts[userId] = dateSet.size;
+    }
+  });
   
-  // Process all UNIQUE scores for the selected game to calculate totals
-  for (const score of uniqueScores) {
+  console.log('Game counts after deduplication:', userGameCounts);
+  
+  // Use the unique scores for calculating other stats
+  const processedScores = Array.from(uniqueScores.values());
+  console.log(`Unique scores after deduplication by user and date: ${processedScores.length}`);
+  
+  // Process all unique scores for the selected game to calculate totals
+  for (const score of processedScores) {
     const userId = score.user_id;
     
     // If user doesn't exist in map yet, add them
@@ -132,10 +152,8 @@ export const processLeaderboardData = (
     const userStats = userStatsMap.get(userId);
     if (!userStats) continue; // Skip if user somehow not in map
     
-    // If we don't already have a total_games count from game_stats, count it from our unique scores
-    if (!userGameCounts[userId]) {
-      userStats.total_games += 1;
-    }
+    // Make sure total_games is set from our deduplicated counts
+    userStats.total_games = userGameCounts[userId] || 0;
     
     // Add to total score
     userStats.total_score += score.value;
