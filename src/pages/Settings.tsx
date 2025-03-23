@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -856,9 +857,10 @@ const Settings = () => {
                         </Button>
                       </DialogFooter>
                     </DialogContent>
-                  </DialogFooter>
-                </Card>
-              </TabsContent>
+                  </Dialog>
+                </CardFooter>
+              </Card>
+            </TabsContent>
             
             <TabsContent value="appearance" className="pt-4">
               <Card>
