@@ -35,11 +35,13 @@ const NavBar = () => {
       <div className="fixed w-full top-0 z-50">
         <div className="h-16 flex justify-between items-center px-4 glass shadow-sm border-b">
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-              alt="Trackle Logo" 
-              className="h-14 w-auto" // Increased from h-12 to h-14 for mobile
-            />
+            <div className="p-1.5 rounded-lg bg-white/10 backdrop-blur-sm shadow-sm">
+              <img 
+                src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+                alt="Trackle Logo" 
+                className="h-14 w-auto" // Increased from h-12 to h-14 for mobile
+              />
+            </div>
           </Link>
           
           <button 
@@ -115,11 +117,13 @@ const NavBar = () => {
     <div className="fixed w-full top-0 z-50">
       <div className="h-16 flex justify-between items-center px-6 glass shadow-sm border-b">
         <Link to="/" className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-            alt="Trackle Logo" 
-            className="h-28 w-auto" // Increased from h-24 to h-28 for desktop
-          />
+          <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shadow-sm">
+            <img 
+              src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+              alt="Trackle Logo" 
+              className="h-28 w-auto" // Increased from h-24 to h-28 for desktop
+            />
+          </div>
         </Link>
         
         <div className="flex items-center gap-3">

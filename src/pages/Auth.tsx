@@ -26,11 +26,13 @@ const Auth = () => {
         <Card className="glass-card">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-2">
-              <img 
-                src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
-                alt="Trackle Logo" 
-                className="h-28 w-auto" // Increased from h-20 to h-28
-              />
+              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shadow-sm">
+                <img 
+                  src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
+                  alt="Trackle Logo" 
+                  className="h-28 w-auto" // Increased from h-20 to h-28
+                />
+              </div>
             </div>
             <CardDescription>Sign in to track your game scores</CardDescription>
           </CardHeader>
