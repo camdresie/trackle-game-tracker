@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -430,20 +429,22 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First check if the group exists
+        // First check if the group exists - using maybeSingle() instead of single() to avoid errors
         const { data: groupData, error: groupError } = await supabase
           .from('friend_groups')
           .select('id, user_id')
           .eq('id', groupId)
-          .single();
+          .maybeSingle();
         
         if (groupError) {
           console.error('Error verifying group exists:', groupError);
-          throw new Error('Group not found');
+          throw new Error(`Failed to verify group: ${groupError.message}`);
         }
         
+        // If no group data was found, we should tell the user
         if (!groupData) {
-          throw new Error('Group not found');
+          console.log(`Group with ID ${groupId} not found in database`);
+          throw new Error('Group not found. It may have been deleted.');
         }
         
         console.log(`Group exists: ${groupData.id}`);
