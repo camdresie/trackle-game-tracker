@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   PlusCircle, 
@@ -93,14 +92,14 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
       setIsProcessingLeave(true);
       console.log('Initiating leave group process for group:', groupId);
       
+      // Close the dialog immediately
+      setGroupToLeave(null);
+      
       // Aggressively clear caches before attempting leave
       queryClient.removeQueries({ queryKey: ['friend-groups'] });
       
       // Call the leaveGroup mutation
       await leaveGroup(groupId);
-      
-      // Close the dialog
-      setGroupToLeave(null);
       
       // Manually refetch groups after a short delay to ensure database has updated
       setTimeout(() => {
@@ -108,28 +107,15 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         queryClient.removeQueries({ queryKey: ['friend-groups'] });
         refetchGroups();
         setIsProcessingLeave(false);
-        toast.success('You have left the group successfully');
       }, 1000);
     } catch (error) {
       console.error('Error in handleLeaveGroup:', error);
       setIsProcessingLeave(false);
       
-      // If it's a "not a member" error, we can consider this a success from the user's perspective
-      if (error instanceof Error && 
-          (error.message.includes('not a member') || error.message.includes('already left'))) {
-        setGroupToLeave(null);
-        toast.info('You are not currently a member of this group');
-        queryClient.removeQueries({ queryKey: ['friend-groups'] });
-        refetchGroups();
-        return;
-      }
-      
-      // Show a more specific error message based on the error
-      if (error instanceof Error) {
-        toast.error(`Failed to leave group: ${error.message}`);
-      } else {
-        toast.error('Failed to leave group');
-      }
+      // Error handling is now done in the mutation itself
+      // Just make sure to refresh the UI state
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      refetchGroups();
     }
   };
 

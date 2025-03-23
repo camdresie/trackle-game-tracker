@@ -429,7 +429,30 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // Check if we have a member record directly first
+        // First verify the group exists
+        const { data: groupData, error: groupError } = await supabase
+          .from('friend_groups')
+          .select('*')
+          .eq('id', groupId)
+          .maybeSingle();
+        
+        if (groupError) {
+          console.error('Error verifying group exists:', groupError);
+          throw new Error(`Failed to verify group: ${groupError.message}`);
+        }
+        
+        if (!groupData) {
+          throw new Error('Group not found');
+        }
+        
+        console.log('Group verified:', groupData);
+        
+        // Check if the user is the owner of the group
+        if (groupData.user_id === user.id) {
+          throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
+        }
+        
+        // Check if we have a member record
         console.log(`Checking for member record for group ${groupId} and user ${user.id}`);
         const { data: memberRecords, error: memberError } = await supabase
           .from('friend_group_members')
@@ -445,6 +468,8 @@ export const useFriendGroups = (friends: Player[]) => {
         console.log(`Found ${memberRecords?.length || 0} member records:`, memberRecords);
         
         if (!memberRecords || memberRecords.length === 0) {
+          // Force a refresh of the UI since there's a mismatch
+          queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
           throw new Error('You are not a member of this group or have already left');
         }
         
@@ -463,20 +488,19 @@ export const useFriendGroups = (friends: Player[]) => {
         }
         
         console.log(`Successfully left group: ${groupId}`);
-        return { groupId };
+        return { groupId, success: true };
       } catch (error) {
         console.error('Error in leaveGroup:', error);
         throw error;
       }
     },
-    onSuccess: () => {
-      toast.success('You have left the friend group');
-      // Force invalidate and refetch to update the UI
-      queryClient.removeQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      setTimeout(() => {
-        refetch();
-      }, 500);
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success('You have left the friend group');
+        // Force invalidate and refetch to update the UI
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      }
     },
     onError: (error) => {
       console.error('Error leaving friend group:', error);
@@ -493,9 +517,9 @@ export const useFriendGroups = (friends: Player[]) => {
           // Trigger a refresh to update the UI
           queryClient.removeQueries({ queryKey: ['friend-groups'] });
           queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-          setTimeout(() => {
-            refetch();
-          }, 500);
+          return;
+        } else if (errorMessage.includes('Group owners cannot leave')) {
+          toast.info(errorMessage);
           return;
         }
       }
