@@ -15,17 +15,30 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Get the theme from localStorage or return the defaultTheme
+const getStoredTheme = (): Theme => {
+  if (typeof window === 'undefined') return 'system';
+  
+  const storedTheme = localStorage.getItem('theme') as Theme | null;
+  return storedTheme || 'system';
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  // Initialize with stored theme from localStorage or fallback to default
+  const [theme, setTheme] = useState<Theme>(getStoredTheme() || defaultTheme);
 
-  useEffect(() => {
+  // Save theme to localStorage and apply theme class to document
+  const applyTheme = (newTheme: Theme) => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
 
-    if (theme === 'system') {
+    // Store in localStorage for persistence
+    localStorage.setItem('theme', newTheme);
+
+    if (newTheme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
@@ -33,10 +46,36 @@ export function ThemeProvider({
       return;
     }
 
-    root.classList.add(theme);
+    root.classList.add(newTheme);
+  };
+
+  // Apply theme when it changes
+  useEffect(() => {
+    applyTheme(theme);
   }, [theme]);
 
-  const value = { theme, setTheme };
+  // Listen for system theme changes when in 'system' mode
+  useEffect(() => {
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      
+      const handleChange = () => {
+        const root = window.document.documentElement;
+        root.classList.remove('light', 'dark');
+        root.classList.add(mediaQuery.matches ? 'dark' : 'light');
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [theme]);
+
+  const value = { 
+    theme, 
+    setTheme: (newTheme: Theme) => {
+      setTheme(newTheme);
+    } 
+  };
   
   return (
     <ThemeContext.Provider value={value}>
