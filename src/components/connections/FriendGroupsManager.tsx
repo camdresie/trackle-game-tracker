@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   PlusCircle, 
@@ -33,6 +32,7 @@ import AddFriendsToGroupModal from './AddFriendsToGroupModal';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useConnections } from '@/hooks/connections/useConnections';
+import { toast } from 'sonner';
 
 interface FriendGroupsManagerProps {
   currentPlayerId: string;
@@ -101,10 +101,18 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         console.log('Refetching groups after leaving');
         refetchGroups();
         setIsProcessingLeave(false);
+        toast.success('You have left the group successfully');
       }, 1000);
     } catch (error) {
       console.error('Error in handleLeaveGroup:', error);
       setIsProcessingLeave(false);
+      
+      // Show a more specific error message based on the error
+      if (error instanceof Error) {
+        toast.error(`Failed to leave group: ${error.message}`);
+      } else {
+        toast.error('Failed to leave group');
+      }
     }
   };
 

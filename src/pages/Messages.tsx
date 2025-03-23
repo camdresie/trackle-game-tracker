@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
@@ -58,8 +57,13 @@ const Messages = () => {
       queryClient.removeQueries({ queryKey: ['group-invitations'] });
       queryClient.removeQueries({ queryKey: ['friend-groups'] });
       
-      refetchGroups();
-      refetchInvitations();
+      // Force a hard refresh of the data
+      Promise.all([
+        refetchGroups(),
+        refetchInvitations()
+      ]).catch(error => {
+        console.error('Error fetching initial data:', error);
+      });
       
       // Mark invitations as initialized after the first load
       setTimeout(() => {
@@ -71,7 +75,7 @@ const Messages = () => {
   // Auto-select the first group when groups are loaded or when groups change
   useEffect(() => {
     if (friendGroups && friendGroups.length > 0) {
-      console.log('Friend groups loaded or changed:', friendGroups.length);
+      console.log('Friend groups loaded or changed:', friendGroups);
       
       // Only auto-select if no group is selected or after accepting an invitation
       if (!selectedGroupId || acceptedInvitation) {
@@ -142,12 +146,9 @@ const Messages = () => {
     setIsRefreshing(true);
     toast.info('Refreshing invitations and groups...');
     
-    // Clear caches first
-    queryClient.removeQueries({ queryKey: ['group-invitations'] });
-    queryClient.removeQueries({ queryKey: ['friend-groups'] });
-    queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-    queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-    queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+    // Clear caches more aggressively
+    queryClient.removeQueries();
+    queryClient.invalidateQueries();
     
     // Then fetch fresh data
     try {

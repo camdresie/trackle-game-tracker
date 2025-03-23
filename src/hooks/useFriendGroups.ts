@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -426,43 +427,82 @@ export const useFriendGroups = (friends: Player[]) => {
     mutationFn: async (groupId: string) => {
       if (!user) throw new Error('User not authenticated');
       
-      console.log(`Leaving group: ${groupId}`);
+      console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
-      // FIXED: Instead of using .single() which fails when no record is found
-      // Use .select() to get all matching records and handle them manually
-      const { data: memberRecords, error: findError } = await supabase
-        .from('friend_group_members')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('friend_id', user.id);
-      
-      if (findError) {
-        console.error('Error finding member records:', findError);
-        throw findError;
+      try {
+        // First, check if the group exists
+        const { data: groupData, error: groupError } = await supabase
+          .from('friend_groups')
+          .select('id, name, user_id')
+          .eq('id', groupId)
+          .single();
+        
+        if (groupError) {
+          console.error('Error finding group:', groupError);
+          throw new Error(`Group not found: ${groupError.message}`);
+        }
+        
+        // Check if we're trying to leave our own group
+        if (groupData.user_id === user.id) {
+          console.error('Cannot leave a group you own - you should delete it instead');
+          throw new Error('You cannot leave a group you own. Please delete the group instead.');
+        }
+        
+        console.log(`Group found: ${groupData.name}`);
+        
+        // Check if we're a member of this group
+        const { data: memberRecords, error: findError } = await supabase
+          .from('friend_group_members')
+          .select('*')  // Select all columns for debugging
+          .eq('group_id', groupId)
+          .eq('friend_id', user.id);
+        
+        console.log('Member records query result:', memberRecords);
+        
+        if (findError) {
+          console.error('Error finding member records:', findError);
+          throw findError;
+        }
+        
+        if (!memberRecords || memberRecords.length === 0) {
+          // Try a different approach - maybe the status needs to be checked?
+          const { data: altRecords, error: altError } = await supabase
+            .from('friend_group_members')
+            .select('*')
+            .eq('group_id', groupId);
+          
+          console.log('All group members:', altRecords);
+          console.log('Current user ID:', user.id);
+          
+          if (altError) {
+            console.error('Error in alternative query:', altError);
+          }
+          
+          // If we're here, user is seeing a group they're not actually a member of
+          throw new Error('You are not a member of this group');
+        }
+        
+        console.log(`Found ${memberRecords.length} member records to delete:`, memberRecords);
+        
+        // Delete all matching member records (should typically be just one)
+        const recordIds = memberRecords.map(record => record.id);
+        
+        const { error: deleteError } = await supabase
+          .from('friend_group_members')
+          .delete()
+          .in('id', recordIds);
+        
+        if (deleteError) {
+          console.error('Error deleting member records:', deleteError);
+          throw deleteError;
+        }
+        
+        console.log(`Successfully left group: ${groupId}`);
+        return { groupId };
+      } catch (error) {
+        console.error('Error in leaveGroup:', error);
+        throw error;
       }
-      
-      if (!memberRecords || memberRecords.length === 0) {
-        console.error('No member records found');
-        throw new Error('No membership record found for this group');
-      }
-      
-      console.log(`Found ${memberRecords.length} member records to delete`);
-      
-      // Delete all matching member records (should typically be just one)
-      const recordIds = memberRecords.map(record => record.id);
-      
-      const { error: deleteError } = await supabase
-        .from('friend_group_members')
-        .delete()
-        .in('id', recordIds);
-      
-      if (deleteError) {
-        console.error('Error deleting member records:', deleteError);
-        throw deleteError;
-      }
-      
-      console.log(`Successfully left group: ${groupId}`);
-      return { groupId };
     },
     onSuccess: () => {
       toast.success('You have left the friend group');
