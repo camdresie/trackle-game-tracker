@@ -19,6 +19,8 @@ import {
 import { games } from '@/utils/gameData';
 import { Player, FriendGroup } from '@/utils/types';
 import { SortByOption, TimeFilter } from '@/types/leaderboard';
+import GameDropdownSelector from '@/components/game/GameDropdownSelector';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LeaderboardFiltersProps {
   searchTerm: string;
@@ -58,6 +60,7 @@ const LeaderboardFilters = ({
   setSelectedGroupId = () => {}
 }: LeaderboardFiltersProps) => {
   const [friendsDropdownOpen, setFriendsDropdownOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   // Split games into two rows
   const firstRowGames = games.slice(0, Math.ceil(games.length / 2));
@@ -118,44 +121,54 @@ const LeaderboardFilters = ({
 
   return (
     <div className="flex flex-col gap-4 mb-6">
-      {/* Game Selector Pills - Two Rows */}
-      <div className="w-full">
-        {/* First Row */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          {firstRowGames.map(game => (
-            <button
-              key={game.id}
-              onClick={() => setSelectedGame(game.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                selectedGame === game.id 
-                  ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
-                  : 'border border-muted hover:bg-muted/10'
-              }`}
-            >
-              <GamepadIcon className="w-3.5 h-3.5" />
-              <span>{game.name}</span>
-            </button>
-          ))}
+      {/* Game Dropdown for Mobile */}
+      <GameDropdownSelector
+        selectedGame={selectedGame}
+        games={games}
+        onSelectGame={setSelectedGame}
+        className="mb-2"
+      />
+      
+      {/* Game Selector Pills - Only show on desktop */}
+      {!isMobile && (
+        <div className="w-full">
+          {/* First Row */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {firstRowGames.map(game => (
+              <button
+                key={game.id}
+                onClick={() => setSelectedGame(game.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                  selectedGame === game.id 
+                    ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
+                    : 'border border-muted hover:bg-muted/10'
+                }`}
+              >
+                <GamepadIcon className="w-3.5 h-3.5" />
+                <span>{game.name}</span>
+              </button>
+            ))}
+          </div>
+          
+          {/* Second Row */}
+          <div className="flex flex-wrap gap-2">
+            {secondRowGames.map(game => (
+              <button
+                key={game.id}
+                onClick={() => setSelectedGame(game.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                  selectedGame === game.id 
+                    ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
+                    : 'border border-muted hover:bg-muted/10'
+                }`}
+              >
+                <GamepadIcon className="w-3.5 h-3.5" />
+                <span>{game.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        
-        {/* Second Row */}
-        <div className="flex flex-wrap gap-2">
-          {secondRowGames.map(game => (
-            <button
-              key={game.id}
-              onClick={() => setSelectedGame(game.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                selectedGame === game.id 
-                  ? `${game.color.replace('bg-', 'bg-')} text-white hover:bg-opacity-90`
-                  : 'border border-muted hover:bg-muted/10'
-              }`}
-            >
-              <GamepadIcon className="w-3.5 h-3.5" />
-              <span>{game.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
       
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-4 w-full sm:w-auto">
