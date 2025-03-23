@@ -252,6 +252,7 @@ const TodayScores = () => {
                                     <Users className="w-5 h-5 text-accent flex-shrink-0" />
                                     <span className="truncate">{group.groupName}</span>
                                   </h3>
+                                  {/* Only show Leading badge here on mobile, not in the score section below */}
                                   {leadingPlayer?.isCurrentUser && (
                                     <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
                                       <Trophy className="w-3 h-3 mr-1" /> Leading
@@ -333,7 +334,8 @@ const TodayScores = () => {
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2 font-medium">
                                 <span>Your score today</span>
-                                {leadingPlayer?.isCurrentUser && (
+                                {/* Remove the Leading badge from here on mobile to avoid duplication */}
+                                {!isMobile && leadingPlayer?.isCurrentUser && (
                                   <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
                                     <Trophy className="w-3 h-3 mr-1" /> Leading
                                   </span>
