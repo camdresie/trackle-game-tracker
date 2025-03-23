@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase, signInWithGoogle, signInWithApple } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 
@@ -22,8 +22,6 @@ type AuthContextType = {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithApple: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,34 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error fetching profile:', error);
       setIsLoading(false);
-    }
-  };
-
-  const signInWithGoogleAuth = async () => {
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-    } catch (error: any) {
-      uiToast({
-        title: 'Google sign in failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const signInWithAppleAuth = async () => {
-    try {
-      const { error } = await signInWithApple();
-      if (error) throw error;
-    } catch (error: any) {
-      uiToast({
-        title: 'Apple sign in failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-      throw error;
     }
   };
 
@@ -214,8 +184,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     updateProfile,
-    signInWithGoogle: signInWithGoogleAuth,
-    signInWithApple: signInWithAppleAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

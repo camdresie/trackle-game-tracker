@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserRound, KeyRound, Mail, Loader2, Apple } from 'lucide-react';
+import { UserRound, KeyRound, Mail, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +28,8 @@ type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 
 const Auth = () => {
-  const { user, signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('login');
 
   const loginForm = useForm<LoginValues>({
@@ -68,68 +68,10 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setSocialLoading('google');
-    try {
-      await signInWithGoogle();
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    setSocialLoading('apple');
-    try {
-      await signInWithApple();
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
   // Redirect if user is already logged in
   if (user) {
     return <Navigate to="/" replace />;
   }
-
-  const SocialButtons = () => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 my-3">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">OR</span>
-        <Separator className="flex-1" />
-      </div>
-      <Button 
-        type="button" 
-        variant="outline" 
-        className="w-full" 
-        onClick={handleGoogleSignIn}
-        disabled={socialLoading !== null}
-      >
-        {socialLoading === 'google' ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-            <path d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z" />
-          </svg>
-        )}
-        Continue with Google
-      </Button>
-      <Button 
-        type="button" 
-        variant="outline" 
-        className="w-full" 
-        onClick={handleAppleSignIn}
-        disabled={socialLoading !== null}
-      >
-        {socialLoading === 'apple' ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Apple className="mr-2 h-4 w-4" />
-        )}
-        Continue with Apple
-      </Button>
-    </div>
-  );
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
@@ -180,7 +122,7 @@ const Auth = () => {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading || socialLoading !== null}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -192,7 +134,6 @@ const Auth = () => {
                     </Button>
                   </form>
                 </Form>
-                <SocialButtons />
               </TabsContent>
               <TabsContent value="register">
                 <Form {...registerForm}>
@@ -245,7 +186,7 @@ const Auth = () => {
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading || socialLoading !== null}>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -257,7 +198,6 @@ const Auth = () => {
                     </Button>
                   </form>
                 </Form>
-                <SocialButtons />
               </TabsContent>
             </CardContent>
           </Tabs>
