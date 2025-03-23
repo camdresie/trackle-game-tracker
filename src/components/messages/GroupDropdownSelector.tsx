@@ -17,16 +17,21 @@ interface GroupDropdownSelectorProps {
   selectedGroupId: string;
   onSelectGroup: (groupId: string, groupName: string) => void;
   className?: string;
+  groups?: FriendGroup[]; // Make groups optional to support both usage patterns
 }
 
 const GroupDropdownSelector = ({ 
   selectedGroupId, 
   onSelectGroup,
-  className = '' 
+  className = '',
+  groups: externalGroups // Rename to avoid conflicts
 }: GroupDropdownSelectorProps) => {
   const isMobile = useIsMobile();
-  const { friendGroups: groups } = useFriendGroups();
+  const { friendGroups: internalGroups } = useFriendGroups();
   const [selectedGroup, setSelectedGroup] = useState<FriendGroup | null>(null);
+  
+  // Use externally provided groups if available, otherwise use internal groups from hook
+  const groups = externalGroups || internalGroups;
   
   // Find the current group object
   useEffect(() => {
