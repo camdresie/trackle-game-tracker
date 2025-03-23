@@ -30,14 +30,14 @@ const Auth = () => {
                 <img 
                   src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
                   alt="Trackle Logo" 
-                  className="h-64 w-auto" // Dramatically increased from h-48 to h-64
+                  className="h-64 w-auto" 
                 />
               </div>
             </div>
             <CardTitle className="mt-4 mb-2">Track Your Game Scores, Together</CardTitle>
             <CardDescription className="text-base">
-              Trackle helps you track your daily word game scores, compete with friends, and see where you rank on leaderboards. 
-              Join thousands of players sharing their Wordle, Connections, and other game results.
+              Trackle helps you track your daily game scores, compete with friends, and see where you rank on leaderboards. 
+              Join other players sharing their Wordle, Connections, Spelling Bee and other game results!
             </CardDescription>
           </CardHeader>
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
