@@ -429,30 +429,7 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First verify the group exists
-        const { data: groupData, error: groupError } = await supabase
-          .from('friend_groups')
-          .select('*')
-          .eq('id', groupId)
-          .maybeSingle();
-        
-        if (groupError) {
-          console.error('Error verifying group exists:', groupError);
-          throw new Error(`Failed to verify group: ${groupError.message}`);
-        }
-        
-        if (!groupData) {
-          throw new Error('Group not found');
-        }
-        
-        console.log('Group verified:', groupData);
-        
-        // Check if the user is the owner of the group
-        if (groupData.user_id === user.id) {
-          throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
-        }
-        
-        // Check if we have a member record
+        // First check if the member record exists directly
         console.log(`Checking for member record for group ${groupId} and user ${user.id}`);
         const { data: memberRecords, error: memberError } = await supabase
           .from('friend_group_members')
