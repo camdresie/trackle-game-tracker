@@ -16,7 +16,7 @@ export interface FriendGroup {
   pendingMembers?: Player[];
   pendingCount?: number;
   isJoinedGroup?: boolean;
-  status?: 'pending' | 'accepted' | 'rejected';
+  status?: 'pending' | 'accepted' | 'rejected' | 'left';
 }
 
 export const useFriendGroups = (friends: Player[]) => {
@@ -429,7 +429,27 @@ export const useFriendGroups = (friends: Player[]) => {
       console.log(`Leaving group: ${groupId}, user: ${user.id}`);
       
       try {
-        // First check if the group exists - using maybeSingle() instead of single() to avoid errors
+        // First get the member record directly instead of checking the group
+        const { data: memberRecord, error: memberError } = await supabase
+          .from('friend_group_members')
+          .select('id, status, group_id')
+          .eq('group_id', groupId)
+          .eq('friend_id', user.id)
+          .maybeSingle();
+        
+        if (memberError) {
+          console.error('Error checking membership record:', memberError);
+          throw new Error(`Failed to check membership: ${memberError.message}`);
+        }
+        
+        if (!memberRecord) {
+          console.log('No membership records found for this user in this group');
+          throw new Error('You are not currently a member of this group or have already left');
+        }
+        
+        console.log('Found membership record:', memberRecord);
+        
+        // Now check if the group exists
         const { data: groupData, error: groupError } = await supabase
           .from('friend_groups')
           .select('id, user_id')
@@ -441,51 +461,26 @@ export const useFriendGroups = (friends: Player[]) => {
           throw new Error(`Failed to verify group: ${groupError.message}`);
         }
         
-        // If no group data was found, we should tell the user
+        // If no group data was found, inform the user
         if (!groupData) {
           console.log(`Group with ID ${groupId} not found in database`);
           throw new Error('Group not found. It may have been deleted.');
         }
-        
-        console.log(`Group exists: ${groupData.id}`);
         
         // Check if user is the owner of the group
         if (groupData.user_id === user.id) {
           throw new Error('Group owners cannot leave their own groups. Please delete the group instead.');
         }
         
-        // Check if user is a member (using a direct query)
-        const { data: memberData, error: memberError } = await supabase
+        // Update the record status to 'left' instead of deleting it
+        const { error: updateError } = await supabase
           .from('friend_group_members')
-          .select('id, status')
-          .eq('group_id', groupId)
-          .eq('friend_id', user.id);
+          .update({ status: 'left' })
+          .eq('id', memberRecord.id);
         
-        if (memberError) {
-          console.error('Error finding membership:', memberError);
-          throw new Error(`Failed to check membership: ${memberError.message}`);
-        }
-        
-        if (!memberData || memberData.length === 0) {
-          console.log('No membership records found for this user in this group');
-          // Force a refresh of the UI since there's a mismatch
-          queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-          throw new Error('You are not currently a member of this group or have already left');
-        }
-        
-        console.log(`Found ${memberData.length} membership records:`, memberData);
-        
-        // If we have membership records, delete them
-        const recordIds = memberData.map(record => record.id);
-        
-        const { error: deleteError } = await supabase
-          .from('friend_group_members')
-          .delete()
-          .in('id', recordIds);
-        
-        if (deleteError) {
-          console.error('Error deleting membership records:', deleteError);
-          throw new Error(`Failed to leave group: ${deleteError.message}`);
+        if (updateError) {
+          console.error('Error updating membership status:', updateError);
+          throw new Error(`Failed to leave group: ${updateError.message}`);
         }
         
         console.log(`Successfully left group: ${groupId}`);
