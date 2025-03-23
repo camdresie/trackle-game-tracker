@@ -27,7 +27,10 @@ const GroupDropdownSelector = ({
   groups: externalGroups // Rename to avoid conflicts
 }: GroupDropdownSelectorProps) => {
   const isMobile = useIsMobile();
-  const { friendGroups: internalGroups } = useFriendGroups();
+  
+  // Pass an empty array to useFriendGroups as required by the hook
+  const { friendGroups: internalGroups } = useFriendGroups([]);
+  
   const [selectedGroup, setSelectedGroup] = useState<FriendGroup | null>(null);
   
   // Use externally provided groups if available, otherwise use internal groups from hook
