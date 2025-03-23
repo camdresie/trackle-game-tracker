@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
 
@@ -22,10 +21,30 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
     }
     
     console.log(`[getGameScores] Found ${data?.length || 0} scores for game ${gameId} and user ${userId}`);
-    console.log('[getGameScores] Raw scores data:', data);
+    
+    // Process scores to deduplicate by date (keeping the most recent version)
+    const uniqueScoresByDate = new Map();
+    
+    // Sort by created_at descending so newer scores come first
+    const sortedData = [...data].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    
+    // Add only the first (newest) score for each date
+    sortedData.forEach(score => {
+      const dateKey = score.date;
+      if (!uniqueScoresByDate.has(dateKey)) {
+        uniqueScoresByDate.set(dateKey, score);
+      }
+    });
+    
+    // Convert map back to array
+    const uniqueScores = Array.from(uniqueScoresByDate.values());
+    
+    console.log(`[getGameScores] After deduplication: ${uniqueScores.length} unique scores`);
     
     // Transform the data to match our Score type
-    const scores = data.map(score => ({
+    const scores = uniqueScores.map(score => ({
       id: score.id,
       gameId: score.game_id,
       playerId: score.user_id,
@@ -55,33 +74,38 @@ export const checkExistingScore = async (
   try {
     console.log(`[checkExistingScore] Checking for existing score: game=${gameId}, user=${userId}, date=${date}`);
     
+    // Query all scores for this game, user, and date ordered by creation time (newest first)
     const { data, error } = await supabase
       .from('scores')
       .select('*')
       .eq('game_id', gameId)
       .eq('user_id', userId)
       .eq('date', date)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1);
       
     if (error) {
-      if (error.code === 'PGRST116') { // No rows returned
-        console.log(`[checkExistingScore] No existing score found`);
-        return null;
-      }
       console.error('[checkExistingScore] Error checking for existing score:', error);
       throw error;
     }
     
-    console.log(`[checkExistingScore] Found existing score:`, data);
+    if (!data || data.length === 0) {
+      console.log(`[checkExistingScore] No existing score found`);
+      return null;
+    }
+    
+    // Take the most recently created score
+    const latestScore = data[0];
+    console.log(`[checkExistingScore] Found existing score:`, latestScore);
     
     return {
-      id: data.id,
-      gameId: data.game_id,
-      playerId: data.user_id,
-      value: data.value,
-      date: data.date,
-      notes: data.notes || '',
-      createdAt: data.created_at
+      id: latestScore.id,
+      gameId: latestScore.game_id,
+      playerId: latestScore.user_id,
+      value: latestScore.value,
+      date: latestScore.date,
+      notes: latestScore.notes || '',
+      createdAt: latestScore.created_at
     };
   } catch (error) {
     console.error('[checkExistingScore] Exception in checkExistingScore:', error);

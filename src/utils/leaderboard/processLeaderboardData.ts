@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
@@ -54,6 +53,7 @@ export const processLeaderboardData = (
   const todayScores = gameScores.filter(score => score.isToday);
   console.log(`processLeaderboardData - Found ${todayScores.length} scores marked as today's scores`);
   
+  // Log today's scores for debugging
   if (todayScores.length > 0) {
     console.log('Today\'s scores in processLeaderboardData:', todayScores.map(score => {
       return {
@@ -67,67 +67,45 @@ export const processLeaderboardData = (
     }));
   }
   
-  // Create a list of user IDs with their total game counts from game stats
-  const userGameCounts: Record<string, number> = {};
+  // Process all unique scores for each user by deduplicating dates
+  const userUniqueScores = new Map<string, Map<string, any>>();
   
-  // If we have game stats data, use it to initialize user game counts
-  if (gameStatsData && gameStatsData.length > 0) {
-    gameStatsData.forEach(stat => {
-      const userId = stat.user_id;
-      userGameCounts[userId] = stat.total_plays || 0;
-    });
+  // First, sort scores by created_at date (newest first)
+  const sortedScores = [...gameScores].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  
+  // Group scores by user and date, keeping only the newest for each day
+  sortedScores.forEach(score => {
+    const userId = score.user_id;
+    const date = score.date;
+    const dateKey = `${date}`;
+    
+    // Initialize user's scores map if needed
+    if (!userUniqueScores.has(userId)) {
+      userUniqueScores.set(userId, new Map<string, any>());
+    }
+    
+    const userScoresMap = userUniqueScores.get(userId)!;
+    
+    // Only add if we haven't seen this date for this user yet (ensures we keep newest version per day)
+    if (!userScoresMap.has(dateKey)) {
+      userScoresMap.set(dateKey, score);
+    }
+  });
+  
+  // Log total unique dates for each user
+  for (const [userId, datesMap] of userUniqueScores.entries()) {
+    console.log(`User ${userId} has ${datesMap.size} unique game dates`);
   }
   
-  // Deduplicate scores by user, game, and date
-  // This ensures we only count one game per day per user
-  const uniqueDatesPerUser = new Map<string, Set<string>>();
-  const uniqueScores = new Map<string, any>();
-  
-  // First pass: create a map of unique dates per user
-  gameScores.forEach(score => {
-    const userId = score.user_id;
-    
-    // Initialize set for this user if not exists
-    if (!uniqueDatesPerUser.has(userId)) {
-      uniqueDatesPerUser.set(userId, new Set<string>());
-    }
-    
-    // Get the date set for this user
-    const dateSet = uniqueDatesPerUser.get(userId)!;
-    
-    // Add this date to the user's set of dates
-    dateSet.add(score.date);
-    
-    // Update the unique score map with the most recent score for this date
-    const key = `${userId}-${score.date}`;
-    
-    if (!uniqueScores.has(key) || 
-        new Date(score.created_at) > new Date(uniqueScores.get(key).created_at)) {
-      uniqueScores.set(key, score);
-    }
-  });
-  
-  // Convert unique dates into game counts
-  uniqueDatesPerUser.forEach((dateSet, userId) => {
-    if (!userGameCounts[userId]) {
-      userGameCounts[userId] = dateSet.size;
-    }
-  });
-  
-  console.log('Game counts after deduplication:', userGameCounts);
-  
-  // Use the unique scores for calculating other stats
-  const processedScores = Array.from(uniqueScores.values());
-  console.log(`Unique scores after deduplication by user and date: ${processedScores.length}`);
-  
-  // Process all unique scores for the selected game to calculate totals
-  for (const score of processedScores) {
-    const userId = score.user_id;
-    
-    // If user doesn't exist in map yet, add them
+  // Process each user's unique scores
+  userUniqueScores.forEach((datesMap, userId) => {
+    // Get user stats or initialize if not exists
     if (!userStatsMap.has(userId)) {
-      // Try to get profile info from user_profile attached to score
-      const profile = score.profiles || {
+      // Try to get profile from scores
+      const someScore = datesMap.values().next().value;
+      const profile = someScore?.profiles || {
         id: userId,
         username: "Unknown Player",
         full_name: null,
@@ -136,61 +114,76 @@ export const processLeaderboardData = (
       
       userStatsMap.set(userId, {
         player_id: userId,
-        username: profile.username || "Unknown", 
+        username: profile.username || "Unknown",
         full_name: profile.full_name,
         avatar_url: profile.avatar_url,
         total_score: 0,
         best_score: 0,
         average_score: 0,
-        total_games: userGameCounts[userId] || 0,
+        total_games: 0,
         today_score: null,
         latest_play: null
       });
     }
     
-    // Get the user stats and update them
-    const userStats = userStatsMap.get(userId);
-    if (!userStats) continue; // Skip if user somehow not in map
+    const userStats = userStatsMap.get(userId)!;
     
-    // Make sure total_games is set from our deduplicated counts
-    userStats.total_games = userGameCounts[userId] || 0;
+    // Set total games to the number of unique dates
+    userStats.total_games = datesMap.size;
     
-    // Add to total score
-    userStats.total_score += score.value;
+    // Now process each unique score to calculate other stats
+    let totalScore = 0;
+    let todayScore = null;
+    let latestPlay = null;
+    let bestScore = 0;
     
-    // Calculate average score
-    userStats.average_score = userStats.total_games > 0 ? 
-      (userStats.total_score / userStats.total_games) : 0;
-    
-    // Update best score (for games where lower is better like Wordle and Mini Crossword, take the minimum)
-    if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-      userStats.best_score = userStats.best_score === 0 
-        ? score.value 
-        : Math.min(userStats.best_score, score.value);
-    } else {
-      userStats.best_score = Math.max(userStats.best_score, score.value);
+    for (const score of datesMap.values()) {
+      totalScore += score.value;
+      
+      // Set today's score if applicable
+      if (score.isToday) {
+        todayScore = score.value;
+        console.log(`Setting today's score for user ${userStats.username}: ${score.value}`);
+      }
+      
+      // Update best score
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+        // For games where lower is better
+        bestScore = bestScore === 0 ? score.value : Math.min(bestScore, score.value);
+      } else {
+        // For games where higher is better
+        bestScore = Math.max(bestScore, score.value);
+      }
+      
+      // Update latest play date
+      const scoreDateTime = new Date(score.created_at || score.date).getTime();
+      if (!latestPlay || scoreDateTime > new Date(latestPlay).getTime()) {
+        latestPlay = score.date;
+      }
     }
     
-    // Set today's score if the score is from today (using the isToday flag)
-    if (score.isToday) {
-      console.log(`Setting today's score for user ${userStats.username}: ${score.value}, ID: ${score.id}`);
-      userStats.today_score = score.value;
-    }
-    
-    // Update latest play date
-    const scoreDateTime = new Date(score.created_at || score.date).getTime();
-    if (!userStats.latest_play || scoreDateTime > new Date(userStats.latest_play).getTime()) {
-      userStats.latest_play = score.date;
-    }
-  }
+    // Update the user's stats
+    userStats.total_score = totalScore;
+    userStats.average_score = datesMap.size > 0 ? totalScore / datesMap.size : 0;
+    userStats.best_score = bestScore;
+    userStats.today_score = todayScore;
+    userStats.latest_play = latestPlay;
+  });
   
-  // Add any missing game stats entries to ensure all players are represented
+  // Make sure game stats entries are also represented
   if (gameStatsData && gameStatsData.length > 0) {
     gameStatsData.forEach(stat => {
       const userId = stat.user_id;
-      const profile = stat.profiles;
       
+      // Skip if user already has processed scores
+      if (userUniqueScores.has(userId)) {
+        return;
+      }
+      
+      // Otherwise create or update entry from game stats
       if (!userStatsMap.has(userId)) {
+        const profile = stat.profiles;
+        
         userStatsMap.set(userId, {
           player_id: userId,
           username: profile.username || "Unknown", 
@@ -204,9 +197,9 @@ export const processLeaderboardData = (
           latest_play: null
         });
       } else {
-        // If the user exists but doesn't have game stats, update them
-        const userStats = userStatsMap.get(userId);
-        if (userStats && userStats.total_games === 0) {
+        // If user exists but doesn't have game data from scores, use game stats
+        const userStats = userStatsMap.get(userId)!;
+        if (userStats.total_games === 0) {
           userStats.total_games = stat.total_plays;
           userStats.best_score = stat.best_score || 0;
           userStats.average_score = stat.average_score || 0;
@@ -224,14 +217,6 @@ export const processLeaderboardData = (
   // Log how many players have today's scores
   const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
   console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
-  
-  if (playersWithTodayScores.length > 0) {
-    console.log('Players with today scores:', playersWithTodayScores.map(p => ({
-      username: p.username,
-      player_id: p.player_id,
-      today_score: p.today_score
-    })));
-  }
   
   return leaderboardPlayers;
 };

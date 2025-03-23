@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -97,6 +96,7 @@ const AddScoreModal = ({
       // For Quordle, use the aggregate score from all 4 words
       const scoreValue = game.id === 'quordle' ? calculateQuordleScore(quordleValues) : value;
       
+      // Make sure we're passing the existing ID if we're in edit mode
       const newScore = {
         gameId: game.id,
         playerId: user.id,
@@ -122,13 +122,12 @@ const AddScoreModal = ({
       queryClient.invalidateQueries({ queryKey: ['game-scores'] });
       
       toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
-      onOpenChange(false);
       
-      // Reset form
+      // Reset form and close modal
       setValue(getDefaultValue(game));
       setQuordleValues([7, 7, 7, 7]);
-      setDate('');  // Clear the date field when modal is closed
       setNotes('');
+      onOpenChange(false);
     } catch (error) {
       console.error('Error adding score:', error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'save'} score. Please try again.`);
