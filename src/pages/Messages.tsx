@@ -14,6 +14,7 @@ import { MessageCircle, Users, UserPlus, RotateCw, UsersRound } from 'lucide-rea
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import GroupDropdownSelector from '@/components/messages/GroupDropdownSelector';
 
 const Messages = () => {
   const queryClient = useQueryClient();
@@ -217,6 +218,16 @@ const Messages = () => {
           />
         )}
 
+        {/* Mobile Group Dropdown Selector */}
+        {friendGroups && friendGroups.length > 0 && (
+          <GroupDropdownSelector
+            selectedGroupId={selectedGroupId}
+            groups={friendGroups}
+            onSelectGroup={setSelectedGroupId}
+            className="mb-4"
+          />
+        )}
+
         {/* Friend groups for messaging */}
         {(isGroupsLoading || isLoadingFriends || isRefreshing) ? (
           <div className="flex items-center justify-center h-64">
@@ -228,19 +239,22 @@ const Messages = () => {
             onValueChange={setSelectedGroupId} 
             className="w-full"
           >
-            <TabsList className="mb-6 flex-wrap">
-              {friendGroups.map(group => (
-                <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
-                  {group.isJoinedGroup ? <UserPlus className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                  {group.name}
-                  {group.isJoinedGroup && (
-                    <Badge variant="outline" className="ml-1 bg-secondary/30">
-                      Joined
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {/* Only show TabsList on desktop */}
+            <div className="hidden sm:block">
+              <TabsList className="mb-6 flex-wrap">
+                {friendGroups.map(group => (
+                  <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
+                    {group.isJoinedGroup ? <UserPlus className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    {group.name}
+                    {group.isJoinedGroup && (
+                      <Badge variant="outline" className="ml-1 bg-secondary/30">
+                        Joined
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
             
             {friendGroups.map(group => (
               <TabsContent key={group.id} value={group.id} className="mt-0">
