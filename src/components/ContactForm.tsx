@@ -6,7 +6,6 @@ import * as z from 'zod';
 import { Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,19 +49,27 @@ const ContactForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Send email using Supabase Edge Function
-      const { data: responseData, error } = await supabase.functions.invoke('send-support-email', {
-        body: {
+      // Direct fetch to the edge function URL with proper CORS headers
+      const response = await fetch('https://vsimhtvroyqdsaxhrhaf.supabase.co/functions/v1/send-support-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzaW1odHZyb3lxZHNheGhyaGFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2MTY2MDUsImV4cCI6MjA1NzE5MjYwNX0.3Uz_n2OocyusdOJjyPQ-4wXloniRU2vxyXusydLDQtY'}`
+        },
+        body: JSON.stringify({
           name: data.name,
           email: data.email,
           subject: data.subject,
           message: data.message
-        }
+        })
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send message');
       }
+      
+      const responseData = await response.json();
       
       toast.success('Message sent!', {
         description: 'We\'ll get back to you as soon as possible.',
