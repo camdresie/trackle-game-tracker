@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -25,14 +25,20 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
   const queryClient = useQueryClient();
   
   // When the modal opens, invalidate relevant queries to ensure fresh data
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  useEffect(() => {
+    if (open) {
+      console.log('Connections modal opened, invalidating queries');
+      
       // Clear cache to ensure fresh data
       queryClient.removeQueries({ queryKey: ['friends'] });
       queryClient.removeQueries({ queryKey: ['game-friends'] });
       queryClient.removeQueries({ queryKey: ['pending-requests'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
     }
-    
+  }, [open, queryClient]);
+
+  const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
   };
 

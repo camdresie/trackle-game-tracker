@@ -21,17 +21,6 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   onDecline,
   alwaysShow = false
 }) => {
-  // Debug: Log the invitations data with more detail
-  useEffect(() => {
-    console.log('GroupInvitationsList - Invitations received:', invitations);
-    console.log('GroupInvitationsList - Count:', invitations?.length || 0);
-    console.log('GroupInvitationsList - Loading:', isLoading);
-    
-    if (invitations && invitations.length > 0) {
-      console.log('GroupInvitationsList - First invitation details:', JSON.stringify(invitations[0], null, 2));
-    }
-  }, [invitations, isLoading]);
-
   // If loading, show a clean skeleton with fixed height to prevent layout shifts
   if (isLoading) {
     return (

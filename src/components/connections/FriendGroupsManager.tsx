@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { 
   PlusCircle, 
   MoreVertical, 
@@ -32,8 +33,10 @@ import AddFriendsToGroupModal from './AddFriendsToGroupModal';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useConnections } from '@/hooks/connections/useConnections';
+import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 
 interface FriendGroupsManagerProps {
   currentPlayerId: string;
@@ -49,6 +52,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [groupToLeave, setGroupToLeave] = useState<string | null>(null);
   const [isProcessingLeave, setIsProcessingLeave] = useState(false);
+  const [processingInvitation, setProcessingInvitation] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch friends to use with groups
@@ -66,6 +70,30 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     leaveGroup,
     refetch: refetchGroups
   } = useFriendGroups(friends);
+  
+  // Get group invitations
+  const { 
+    invitations, 
+    isLoading: isLoadingInvitations,
+    acceptInvitation,
+    declineInvitation,
+    refetch: refetchInvitations,
+  } = useGroupInvitations();
+
+  // Ensure we fetch the latest groups and invitations when the modal opens
+  useEffect(() => {
+    if (open) {
+      console.log('Groups manager opened, fetching invitations and groups');
+      
+      // Clear cache before fetching
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      
+      // Force a hard refresh of the data
+      refetchInvitations().catch(error => {
+        console.error('Error fetching initial invitations:', error);
+      });
+    }
+  }, [open, refetchInvitations, queryClient]);
 
   const handleEditGroup = (group: any) => {
     setCurrentGroup(group);
@@ -129,6 +157,49 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     }
   };
 
+  // Handle accepting a group invitation
+  const handleAcceptInvitation = async (invitationId: string) => {
+    if (processingInvitation) {
+      console.log('Already processing an invitation, aborting');
+      return;
+    }
+    
+    setProcessingInvitation(true);
+    toast.info('Processing invitation...');
+    
+    try {
+      console.log('Accepting invitation from groups manager:', invitationId);
+      
+      // Accept the invitation
+      acceptInvitation(invitationId);
+      
+      // Immediately refetch data to update UI
+      setTimeout(async () => {
+        console.log('Refreshing data after accepting invitation');
+        
+        // Clear all related caches first
+        queryClient.removeQueries({ queryKey: ['group-invitations'] });
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+        queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
+        queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+        
+        // Then refetch everything with fresh data
+        await Promise.all([
+          refetchGroups(),
+          refetchInvitations(),
+          queryClient.invalidateQueries() // Invalidate all queries to be safe
+        ]);
+        
+        setProcessingInvitation(false);
+      }, 5000); // Allow time for database operations to complete
+    } catch (error) {
+      console.error('Error handling invitation accept:', error);
+      toast.error('Failed to process invitation');
+      setProcessingInvitation(false);
+    }
+  };
+
   // Get friends who are not in a group
   const getFriendsNotInGroup = (groupId: string) => {
     const group = friendGroups.find(g => g.id === groupId);
@@ -142,7 +213,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     return friends.filter(friend => !memberIds.has(friend.id));
   };
 
-  const isLoading = isLoadingGroups || isLoadingFriends || isProcessingLeave;
+  const isLoading = isLoadingGroups || isLoadingFriends || isProcessingLeave || processingInvitation;
 
   return (
     <>
@@ -160,8 +231,17 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
           <span>New Group</span>
         </Button>
       </div>
+      
+      {/* Group Invitations - Always show, even if empty */}
+      <GroupInvitationsList 
+        invitations={invitations}
+        isLoading={isLoadingInvitations || processingInvitation}
+        onAccept={handleAcceptInvitation}
+        onDecline={declineInvitation}
+        alwaysShow={true}
+      />
 
-      {isLoading ? (
+      {isLoading && !invitations.length ? (
         <div className="text-center py-8 text-muted-foreground">
           Loading friend groups...
         </div>
