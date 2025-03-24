@@ -123,53 +123,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Username is already taken');
       }
       
-      // Proceed with signup and ensure we pass the username in the user metadata
+      // Sign up the user with username in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username: username, // Make sure username is explicitly set in metadata
+            username: username, // Explicitly set in user metadata
           },
         },
       });
       
       if (error) throw error;
       
-      // Create profile manually to ensure the custom username is set
+      console.log("Sign up successful, user data:", data);
+      
+      // Wait a short time for the trigger to run
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Verify and update profile if needed
       if (data.user) {
-        console.log(`User created with ID: ${data.user.id}, setting custom username: ${username}`);
+        console.log(`Verifying profile for user ID: ${data.user.id}`);
         
-        // Check if profile exists
-        const { data: existingProfile, error: profileCheckError } = await supabase
+        // Check if profile exists and username is correct
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id')
+          .select('id, username')
           .eq('id', data.user.id)
           .maybeSingle();
           
-        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-          console.error('Error checking profile:', profileCheckError);
+        console.log("Profile check result:", profileData, profileError);
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error checking profile:', profileError);
         }
         
-        // If profile doesn't exist already, create it manually with the username from the form
-        if (!existingProfile) {
-          console.log(`Creating new profile with username: ${username}`);
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              username: username, // Use the exact username passed from the registration form
-              full_name: null,
-              avatar_url: null,
-              selected_games: null
-            });
-            
-          if (insertError) {
-            console.error('Error creating profile after signup:', insertError);
-          }
-        } else {
-          // If profile already exists (created by trigger), update it with the correct username
-          console.log(`Profile already exists, updating username to: ${username}`);
+        // If profile exists but username doesn't match, update it
+        if (profileData && profileData.username !== username) {
+          console.log(`Updating profile username from '${profileData.username}' to '${username}'`);
+          
           const { error: updateError } = await supabase
             .from('profiles')
             .update({ username: username })
@@ -177,6 +169,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
           if (updateError) {
             console.error('Error updating profile username:', updateError);
+          }
+        }
+        
+        // If profile doesn't exist, create it manually
+        if (!profileData) {
+          console.log(`Creating new profile with username: ${username}`);
+          
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              username: username,
+              full_name: null,
+              avatar_url: null,
+              selected_games: null
+            });
+            
+          if (insertError) {
+            console.error('Error creating profile after signup:', insertError);
           }
         }
       }
