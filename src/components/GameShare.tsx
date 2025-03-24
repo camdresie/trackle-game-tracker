@@ -12,9 +12,10 @@ interface GameShareProps {
   averageScore?: number;
   bestScore?: number;
   className?: string;
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
-const GameShare = ({ game, latestScore, averageScore, bestScore, className }: GameShareProps) => {
+const GameShare = ({ game, latestScore, averageScore, bestScore, className, size = "default" }: GameShareProps) => {
   const [showShareModal, setShowShareModal] = useState(false);
   
   // Format today's date for the share text
@@ -86,12 +87,12 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className }: Ga
     <>
       <Button
         variant="outline"
-        size="sm"
+        size={size}
         className={className}
         onClick={() => setShowShareModal(true)}
       >
-        <Share2 className="w-4 h-4" />
-        <span>Share Stats</span>
+        <Share2 className="w-4 h-4 mr-2" />
+        <span className="md:inline">Share</span>
       </Button>
       
       <ShareModal

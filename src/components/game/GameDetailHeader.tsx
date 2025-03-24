@@ -28,33 +28,34 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
   
   return (
     <>
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground">
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back to Games
         </Link>
       </div>
       
-      <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-6 mb-6 md:mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2.5 rounded-lg ${game.color}`}>
               {/* Icon would be here */}
             </div>
-            <h1 className="text-3xl font-bold">{game.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{game.name}</h1>
           </div>
-          <p className="text-muted-foreground max-w-lg mb-4">{game.description}</p>
+          <p className="text-sm md:text-base text-muted-foreground max-w-lg mb-3 md:mb-4">{game.description}</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           {game.externalUrl && (
             <Button 
               variant="outline" 
               onClick={handleExternalLinkClick}
-              className="w-full sm:w-auto mb-2 sm:mb-0 mr-2"
+              size="sm"
+              className="flex-1 md:flex-none"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Play Game
+              Play
             </Button>
           )}
           <GameShare 
@@ -62,13 +63,16 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
             latestScore={latestScore}
             averageScore={averageScore}
             bestScore={bestScore}
-            className="w-full sm:w-auto mb-2 sm:mb-0"
+            className="flex-1 md:flex-none"
+            size="sm"
           />
           <Button 
             onClick={onAddScore}
             disabled={!user}
+            size="sm"
+            className="flex-1 md:flex-none"
           >
-            {hasScoreForToday ? 'Edit Today\'s Score' : 'Add Today\'s Score'}
+            {hasScoreForToday ? 'Edit Score' : 'Add Score'}
           </Button>
         </div>
       </div>

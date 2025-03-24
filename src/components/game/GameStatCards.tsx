@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Trophy, CalendarDays, Star } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
@@ -24,33 +25,33 @@ const GameStatCards = ({ game, scores, bestScore }: GameStatCardsProps) => {
   };
   
   return (
-    <div className="grid md:grid-cols-3 gap-6 mb-8">
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-          <Trophy className="w-4 h-4" />
-          <span>Best Score</span>
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 mb-6 md:mb-8">
+      <div className="glass-card rounded-xl p-3 md:p-5">
+        <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2 text-muted-foreground text-xs md:text-sm">
+          <Trophy className="w-3 h-3 md:w-4 md:h-4" />
+          <span>Best</span>
         </div>
-        <div className="text-3xl font-bold">
+        <div className="text-lg sm:text-xl md:text-3xl font-bold">
           {bestScore !== null ? bestScore : '-'}
         </div>
       </div>
       
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-          <CalendarDays className="w-4 h-4" />
+      <div className="glass-card rounded-xl p-3 md:p-5">
+        <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2 text-muted-foreground text-xs md:text-sm">
+          <CalendarDays className="w-3 h-3 md:w-4 md:h-4" />
           <span>Played</span>
         </div>
-        <div className="text-3xl font-bold">
+        <div className="text-lg sm:text-xl md:text-3xl font-bold">
           {scores.length}
         </div>
       </div>
       
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-2 text-muted-foreground">
-          <Star className="w-4 h-4" />
-          <span>Average Score</span>
+      <div className="glass-card rounded-xl p-3 md:p-5">
+        <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2 text-muted-foreground text-xs md:text-sm">
+          <Star className="w-3 h-3 md:w-4 md:h-4" />
+          <span>Average</span>
         </div>
-        <div className="text-3xl font-bold">
+        <div className="text-lg sm:text-xl md:text-3xl font-bold">
           {formatAverageScore(scores)}
         </div>
       </div>
