@@ -32,6 +32,13 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   // Use the group messages hook for sending messages
   const { sendMessage } = useGroupMessages(selectedGroupId);
 
+  // Remove the link for group messages
+  const getMessageContentForGroup = () => {
+    // Split the text by the link line and take only the content part
+    const parts = shareText.split('\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com');
+    return parts[0]; // Return just the content without the link
+  };
+
   const handleCopyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareText);
@@ -61,7 +68,8 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
     
     try {
       setIsSending(true);
-      await sendMessage(shareText);
+      // Send the message without the link for group messages
+      await sendMessage(getMessageContentForGroup());
       toast.success(`Message sent to ${selectedGroupName}`);
       setShowGroupMessagesModal(true);
     } catch (error) {
