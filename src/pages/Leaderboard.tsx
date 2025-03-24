@@ -83,7 +83,7 @@ const Leaderboard = () => {
         />
         
         {/* Game Dropdown - For all devices */}
-        <div className="mb-4">
+        <div className="mb-4 flex justify-start">
           <GameDropdownSelector
             selectedGame={selectedGame}
             games={games}

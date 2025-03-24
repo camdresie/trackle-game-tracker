@@ -15,7 +15,7 @@ interface GameDropdownSelectorProps {
   games: Game[];
   onSelectGame: (gameId: string) => void;
   className?: string;
-  showOnDesktop?: boolean; // New prop to control desktop visibility
+  showOnDesktop?: boolean;
 }
 
 const GameDropdownSelector = ({ 
@@ -23,7 +23,7 @@ const GameDropdownSelector = ({
   games, 
   onSelectGame,
   className = '',
-  showOnDesktop = false // Default to mobile-only behavior for backward compatibility
+  showOnDesktop = false
 }: GameDropdownSelectorProps) => {
   // Find the current game object
   const currentGame = games.find(game => game.id === selectedGame) || games[0];
@@ -35,12 +35,12 @@ const GameDropdownSelector = ({
   }
   
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full sm:w-auto ${className}`}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="w-full justify-between border border-input"
+            className="w-full sm:w-[220px] justify-between border border-input"
           >
             <div className="flex items-center">
               <div className={`w-3 h-3 rounded-full ${currentGame?.color} mr-2`}></div>
@@ -50,7 +50,7 @@ const GameDropdownSelector = ({
             <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full min-w-[200px]">
+        <DropdownMenuContent className="w-[220px]" align="start">
           {games.map(game => (
             <DropdownMenuItem
               key={game.id}
