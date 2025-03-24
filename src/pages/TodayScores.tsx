@@ -117,7 +117,7 @@ const TodayScores = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+      <main className="pt-28 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Today's Scores</h1>
@@ -143,12 +143,13 @@ const TodayScores = () => {
           />
         )}
         
-        {/* Game Dropdown for Mobile */}
+        {/* Game Dropdown for both mobile and desktop */}
         <GameDropdownSelector
           selectedGame={selectedGame?.id || ''}
           games={games}
           onSelectGame={handleGameSelect}
           className="mb-4"
+          showOnDesktop={true}
         />
         
         {/* Game Selector Pills - Only show on non-mobile */}

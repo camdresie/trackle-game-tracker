@@ -75,7 +75,7 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-3 sm:px-6 max-w-7xl mx-auto">
+      <main className="pt-28 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
         <LeaderboardHeader 
           title={`${gameTitle} Leaderboard`}
           subtitle={subtitle}
