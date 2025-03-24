@@ -152,48 +152,6 @@ const TodayScores = () => {
           showOnDesktop={true}
         />
         
-        {/* Game Selector Pills - Only show on non-mobile */}
-        {!isMobile && (
-          <div className="mb-6">
-            {/* First Row */}
-            <div className="flex flex-wrap gap-2 mb-2">
-              {games.slice(0, Math.ceil(games.length / 2)).map(game => (
-                <button
-                  key={game.id}
-                  onClick={() => handleGameSelect(game.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                    selectedGame?.id === game.id 
-                      ? `${game.color} text-white hover:bg-opacity-90`
-                      : 'border border-muted hover:bg-muted/10'
-                  }`}
-                >
-                  <GamepadIcon className="w-3.5 h-3.5" />
-                  <span>{game.name}</span>
-                </button>
-              ))}
-            </div>
-            
-            {/* Second Row */}
-            <div className="flex flex-wrap gap-2">
-              {games.slice(Math.ceil(games.length / 2)).map(game => (
-                <button
-                  key={game.id}
-                  onClick={() => handleGameSelect(game.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                    selectedGame?.id === game.id 
-                      ? `${game.color} text-white hover:bg-opacity-90`
-                      : 'border border-muted hover:bg-muted/10'
-                  }`}
-                >
-                  <GamepadIcon className="w-3.5 h-3.5" />
-                  <span>{game.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Rest of the component */}
         {!selectedGame ? (
           <Card className="p-8 flex flex-col items-center justify-center text-center">
             <GamepadIcon className="w-12 h-12 text-muted-foreground mb-4" />

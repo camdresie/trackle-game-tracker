@@ -82,7 +82,7 @@ const Leaderboard = () => {
           extraText={filterSubtitle || limitMessage}
         />
         
-        {/* Game Dropdown - New addition for all devices */}
+        {/* Game Dropdown - For all devices */}
         <div className="mb-4">
           <GameDropdownSelector
             selectedGame={selectedGame}
