@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, 
@@ -12,9 +11,11 @@ import {
   ReferenceLine,
   Area,
   AreaChart,
-  ComposedChart
+  ComposedChart,
+  Label
 } from 'recharts';
 import { Score, Game } from '@/utils/types';
+import { getLabelByGame } from '@/utils/gameData';
 
 interface ScoreChartProps {
   scores: Score[];
@@ -42,6 +43,9 @@ const ScoreChart = ({
   
   // Determine the game ID from either the direct gameId prop or from the game object
   const effectiveGameId = gameId || (game?.id);
+  
+  // Get the appropriate y-axis label based on the game type
+  const yAxisLabel = effectiveGameId ? getLabelByGame(effectiveGameId) : "Points";
   
   // Determine the color from either the direct color prop or from the game object
   const baseColor = color || (game?.color ? game.color.replace('bg-', '') : "blue-500");
@@ -130,7 +134,11 @@ const ScoreChart = ({
               axisLine={{ stroke: '#f0f0f0' }}
               height={20}
               hide={chartData.length > 10}
-            />
+            >
+              {!simplified && (
+                <Label value="Date Played" position="insideBottom" offset={-5} style={{ fontSize: '10px', fill: '#6b7280' }} />
+              )}
+            </XAxis>
             <YAxis 
               domain={[minValue, maxValue]}
               tick={{ fontSize: 10 }}
@@ -172,7 +180,7 @@ const ScoreChart = ({
         ) : (
           <ComposedChart
             data={chartData}
-            margin={{ top: 10, right: 20, left: 5, bottom: 5 }}
+            margin={{ top: 10, right: 20, left: 25, bottom: 20 }}
           >
             <defs>
               <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
@@ -186,13 +194,25 @@ const ScoreChart = ({
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: '#f0f0f0' }}
               axisLine={{ stroke: '#f0f0f0' }}
-            />
+              height={30}
+            >
+              <Label value="Date Played" position="insideBottom" offset={-10} style={{ fontSize: '12px', fill: '#6b7280' }} />
+            </XAxis>
             <YAxis 
               domain={[minValue, maxValue]}
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: '#f0f0f0' }}
               axisLine={{ stroke: '#f0f0f0' }}
-            />
+              width={40}
+            >
+              <Label 
+                value={yAxisLabel.charAt(0).toUpperCase() + yAxisLabel.slice(1)} 
+                angle={-90} 
+                position="insideLeft" 
+                style={{ textAnchor: 'middle', fontSize: '12px', fill: '#6b7280' }} 
+                offset={-5} 
+              />
+            </YAxis>
             <Tooltip 
               contentStyle={{ 
                 backgroundColor: 'rgba(255, 255, 255, 0.9)', 
@@ -211,7 +231,6 @@ const ScoreChart = ({
                 return label;
               }}
             />
-            {/* Removed duplicate legend - only show one in GameDetail.tsx */}
             <ReferenceLine 
               y={averageValue} 
               label={{ 
@@ -223,7 +242,6 @@ const ScoreChart = ({
               stroke="#6b7280" 
               strokeDasharray="3 3" 
             />
-            {/* Removed the "Best Attempt" reference line as requested */}
             <Area 
               type="monotone" 
               dataKey="value" 
