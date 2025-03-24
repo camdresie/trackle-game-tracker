@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { getScoreColor, getScoreLabel, getSliderMarkers } from '@/utils/scoreUtils';
@@ -13,6 +13,11 @@ interface StandardScoreInputProps {
 
 const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScoreInputProps) => {
   const [value, setValue] = useState(initialValue);
+  
+  // Ensure the local state stays in sync with the prop
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
   
   // Handle direct input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,12 +49,14 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     }
     
     setValue(newValue);
+    console.log(`StandardScoreInput: value changed to ${newValue} via input`);
     onScoreChange(newValue);
   };
   
   // Handle slider change
   const handleSliderChange = (val: number[]) => {
     setValue(val[0]);
+    console.log(`StandardScoreInput: value changed to ${val[0]} via slider`);
     onScoreChange(val[0]);
   };
 

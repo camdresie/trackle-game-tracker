@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
 
@@ -153,10 +154,12 @@ export const addGameScore = async (
     if (isUpdate && scoreData.id) {
       // Update existing score
       console.log('[addGameScore] Updating existing score with ID:', scoreData.id);
+      console.log('[addGameScore] Using user-provided value:', scoreData.value);
+      
       const { data, error } = await supabase
         .from('scores')
         .update({
-          value: scoreData.value,
+          value: scoreData.value, // Make sure we're using the user-provided value
           notes: scoreData.notes || null
           // Don't update date - users can only edit their score for the current day
         })
@@ -174,12 +177,14 @@ export const addGameScore = async (
     } else {
       // Insert new score
       console.log('[addGameScore] Creating new score record');
+      console.log('[addGameScore] Using user-provided value:', scoreData.value);
+      
       const { data, error } = await supabase
         .from('scores')
         .insert({
           game_id: scoreData.gameId,
           user_id: scoreData.playerId,
-          value: scoreData.value,
+          value: scoreData.value, // Make sure we're using the user-provided value
           date: scoreData.date,
           notes: scoreData.notes || null
         })
@@ -200,7 +205,7 @@ export const addGameScore = async (
       .rpc('update_game_stats', {
         p_user_id: scoreData.playerId,
         p_game_id: scoreData.gameId,
-        p_score: scoreData.value,
+        p_score: scoreData.value, // Make sure we're passing the user-provided value
         p_date: scoreData.date
       });
       

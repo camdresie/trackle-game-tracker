@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -96,6 +97,8 @@ const AddScoreModal = ({
       // For Quordle, use the aggregate score from all 4 words
       const scoreValue = game.id === 'quordle' ? calculateQuordleScore(quordleValues) : value;
       
+      console.log(`Submitting score: ${scoreValue} for game ${game.id}`);
+      
       // Make sure we're passing the existing ID if we're in edit mode
       const newScore = {
         gameId: game.id,
@@ -110,10 +113,17 @@ const AddScoreModal = ({
       // Make sure to pass isUpdate flag properly
       const { stats, score } = await addGameScore(newScore, isEditMode);
       
+      console.log('Received response from addGameScore:', score);
+      
       // Update local UI with the new score
       onAddScore({
         id: score.id,
-        ...newScore
+        gameId: score.gameId,
+        playerId: score.playerId,
+        value: score.value,
+        date: score.date,
+        notes: score.notes || '',
+        createdAt: score.createdAt
       });
       
       // Invalidate relevant queries to refresh the data
@@ -138,10 +148,12 @@ const AddScoreModal = ({
 
   // Handle score changes from child components
   const handleStandardScoreChange = (newValue: number) => {
+    console.log(`Standard score changed to: ${newValue}`);
     setValue(newValue);
   };
   
   const handleQuordleScoreChange = (newValues: number[]) => {
+    console.log(`Quordle score changed to: ${newValues.join(', ')}`);
     setQuordleValues(newValues);
   };
 
