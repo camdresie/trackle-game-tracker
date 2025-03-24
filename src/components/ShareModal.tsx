@@ -32,6 +32,13 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   // Use the group messages hook for sending messages
   const { sendMessage } = useGroupMessages(selectedGroupId);
 
+  // Remove the link for preview display and group messages
+  const getDisplayContent = () => {
+    // Split the text by the link line and take only the content part
+    const parts = shareText.split('\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com');
+    return parts[0]; // Return just the content without the link
+  };
+
   // Remove the link for group messages
   const getMessageContentForGroup = () => {
     // Split the text by the link line and take only the content part
@@ -93,7 +100,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
           
           <div className="mt-2">
             <div className="bg-secondary/30 rounded-md p-4 my-4 whitespace-pre-wrap font-mono text-sm overflow-auto max-h-[300px]">
-              {shareText}
+              {getDisplayContent()}
             </div>
             
             <div className="space-y-4 my-4">
