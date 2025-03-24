@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +9,7 @@ import LeaderboardPlayersList from '@/components/leaderboard/LeaderboardPlayersL
 import LeaderboardStats from '@/components/leaderboard/LeaderboardStats';
 import { games } from '@/utils/gameData';
 import { SortByOption } from '@/types/leaderboard';
+import GameDropdownSelector from '@/components/game/GameDropdownSelector';
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -69,11 +71,6 @@ const Leaderboard = () => {
     ? "Showing top 25 players" 
     : "";
   
-  // Debug outputs for leaderboard data
-  console.log('Leaderboard.tsx - timeFilter:', timeFilter);
-  console.log('Leaderboard.tsx - filtered players count:', filteredAndSortedPlayers.length);
-  console.log('Leaderboard.tsx - scores data count:', scoresData?.length || 0);
-  
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -84,6 +81,16 @@ const Leaderboard = () => {
           subtitle={subtitle}
           extraText={filterSubtitle || limitMessage}
         />
+        
+        {/* Game Dropdown - New addition for all devices */}
+        <div className="mb-4">
+          <GameDropdownSelector
+            selectedGame={selectedGame}
+            games={games}
+            onSelectGame={setSelectedGame}
+            showOnDesktop={true}
+          />
+        </div>
         
         <div className="glass-card rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 animate-slide-up" style={{animationDelay: '100ms'}}>
           <LeaderboardFilters
@@ -106,7 +113,7 @@ const Leaderboard = () => {
           />
         </div>
         
-        {/* Stats section moved above the players list */}
+        {/* Stats section */}
         <LeaderboardStats
           timeFilter={timeFilter}
           isLoading={isLoading}
@@ -118,8 +125,8 @@ const Leaderboard = () => {
           className="mb-4 sm:mb-6"
         />
         
-        {/* Players list now comes after the stats */}
-        <div className="glass-card rounded-xl p-4 sm:p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
+        {/* Players list */}
+        <div className="glass-card rounded-xl p-4 sm:p-5 animate-slide-up overflow-visible" style={{animationDelay: '200ms'}}>
           <LeaderboardPlayersList
             players={filteredAndSortedPlayers}
             isLoading={isLoading}

@@ -9,28 +9,30 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Game } from '@/utils/types';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GameDropdownSelectorProps {
   selectedGame: string;
   games: Game[];
   onSelectGame: (gameId: string) => void;
   className?: string;
+  showOnDesktop?: boolean; // New prop to control desktop visibility
 }
 
 const GameDropdownSelector = ({ 
   selectedGame, 
   games, 
   onSelectGame,
-  className = '' 
+  className = '',
+  showOnDesktop = false // Default to mobile-only behavior for backward compatibility
 }: GameDropdownSelectorProps) => {
-  const isMobile = useIsMobile();
-  
   // Find the current game object
   const currentGame = games.find(game => game.id === selectedGame) || games[0];
   
-  // If not mobile, don't render anything
-  if (!isMobile) return null;
+  // If not showing on desktop, check if it's mobile
+  if (!showOnDesktop) {
+    const isMobile = window.innerWidth < 640; // sm breakpoint in Tailwind
+    if (!isMobile) return null;
+  }
   
   return (
     <div className={`w-full ${className}`}>
