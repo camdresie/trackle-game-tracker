@@ -9,10 +9,11 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, Share, CheckCircle2 } from 'lucide-react';
+import { Copy, Send, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import GroupDropdownSelector from './messages/GroupDropdownSelector';
 import GroupMessagesModal from './messages/GroupMessagesModal';
+import { useGroupMessages } from '@/hooks/useGroupMessages';
 
 interface ShareModalProps {
   open: boolean;
@@ -26,6 +27,10 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   const [selectedGroupName, setSelectedGroupName] = useState<string>('');
   const [showGroupMessagesModal, setShowGroupMessagesModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  
+  // Use the group messages hook for sending messages
+  const { sendMessage } = useGroupMessages(selectedGroupId);
 
   const handleCopyToClipboard = async () => {
     try {
@@ -48,11 +53,22 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
     setSelectedGroupName(groupName);
   };
 
-  const handleShareInGroup = () => {
-    if (selectedGroupId) {
-      setShowGroupMessagesModal(true);
-    } else {
+  const handleSendToGroup = async () => {
+    if (!selectedGroupId) {
       toast.error('Please select a group first');
+      return;
+    }
+    
+    try {
+      setIsSending(true);
+      await sendMessage(shareText);
+      toast.success(`Message sent to ${selectedGroupName}`);
+      setShowGroupMessagesModal(true);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -84,11 +100,11 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={handleShareInGroup}
-                    disabled={!selectedGroupId}
+                    onClick={handleSendToGroup}
+                    disabled={!selectedGroupId || isSending}
                   >
-                    <Share className="h-4 w-4 mr-2" />
-                    Share
+                    <Send className="h-4 w-4 mr-2" />
+                    {isSending ? 'Sending...' : 'Send'}
                   </Button>
                 </div>
               </div>
