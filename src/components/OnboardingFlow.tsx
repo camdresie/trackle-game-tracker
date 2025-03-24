@@ -30,6 +30,14 @@ const OnboardingFlow = () => {
     }
   }, [profile]);
 
+  // If we have a user email but no username, set the default to email prefix
+  useEffect(() => {
+    if (user?.email && (!username || username.length === 0)) {
+      const emailPrefix = user.email.split('@')[0];
+      setUsername(emailPrefix);
+    }
+  }, [user, username]);
+
   // Check if username is valid
   useEffect(() => {
     if (username.length > 0 && username.length < 3) {
@@ -79,7 +87,7 @@ const OnboardingFlow = () => {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>Tell us a bit about yourself to get started</CardDescription>
+          <CardDescription>Personalize your account with a custom username and your full name</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -110,7 +118,7 @@ const OnboardingFlow = () => {
                     <p className="text-xs text-red-500 mt-1">{usernameError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    Username must be at least 3 characters
+                    We've suggested a username based on your email. Feel free to change it to something you prefer.
                   </p>
                 </div>
               </div>
