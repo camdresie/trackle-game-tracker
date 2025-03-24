@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ const GameDetail = () => {
   const { user } = useAuth();
   const [showAddScore, setShowAddScore] = useState(false);
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('scores');
+  const [activeTab, setActiveTab] = useState('friends');
   
   const {
     game,
@@ -134,8 +133,8 @@ const GameDetail = () => {
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <TabsList className="w-full sm:w-auto">
-                  <TabsTrigger value="scores">Your Scores</TabsTrigger>
                   <TabsTrigger value="friends">Friend Scores</TabsTrigger>
+                  <TabsTrigger value="scores">Your Scores</TabsTrigger>
                 </TabsList>
                 
                 {activeTab === 'friends' && (
@@ -151,15 +150,6 @@ const GameDetail = () => {
                 )}
               </div>
               
-              <TabsContent value="scores" className="space-y-4">
-                <ScoreList 
-                  scores={displayScores}
-                  game={game}
-                  onAddScore={() => setShowAddScore(true)}
-                  user={user}
-                />
-              </TabsContent>
-              
               <TabsContent value="friends">
                 <FriendScoresList 
                   game={game}
@@ -169,6 +159,15 @@ const GameDetail = () => {
                   onManageFriends={() => setShowConnectionsModal(true)}
                   onRefreshFriends={refreshFriends}
                   hideRefreshButton={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="scores" className="space-y-4">
+                <ScoreList 
+                  scores={displayScores}
+                  game={game}
+                  onAddScore={() => setShowAddScore(true)}
+                  user={user}
                 />
               </TabsContent>
             </Tabs>
