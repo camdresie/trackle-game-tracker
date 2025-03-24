@@ -106,6 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      console.log(`Attempting signup with username: ${username}`);
+      
       // First, check if username is already taken
       const { data: existingUser, error: usernameCheckError } = await supabase
         .from('profiles')
@@ -127,15 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: {
           data: {
-            username, // This explicitly sets the username in user metadata
+            username: username, // Make sure username is explicitly set in metadata
           },
         },
       });
       
       if (error) throw error;
       
-      // Create profile manually if needed - this ensures the profile exists with the correct username
+      // Create profile manually to ensure the custom username is set
       if (data.user) {
+        console.log(`User created with ID: ${data.user.id}, setting custom username: ${username}`);
+        
         // Check if profile exists
         const { data: existingProfile, error: profileCheckError } = await supabase
           .from('profiles')
@@ -149,11 +153,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // If profile doesn't exist already, create it manually with the username from the form
         if (!existingProfile) {
+          console.log(`Creating new profile with username: ${username}`);
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
-              username, // Use the exact username passed from the registration form
+              username: username, // Use the exact username passed from the registration form
               full_name: null,
               avatar_url: null,
               selected_games: null
@@ -161,6 +166,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
           if (insertError) {
             console.error('Error creating profile after signup:', insertError);
+          }
+        } else {
+          // If profile already exists (created by trigger), update it with the correct username
+          console.log(`Profile already exists, updating username to: ${username}`);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ username: username })
+            .eq('id', data.user.id);
+            
+          if (updateError) {
+            console.error('Error updating profile username:', updateError);
           }
         }
       }

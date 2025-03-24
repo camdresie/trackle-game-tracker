@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -44,6 +43,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setError(null);
     
     try {
+      console.log(`Submitting registration with username: ${values.username}`);
       // Pass the exact username entered by the user to signUp
       await signUp(values.email, values.password, values.username);
       if (onRegisterSuccess) {
