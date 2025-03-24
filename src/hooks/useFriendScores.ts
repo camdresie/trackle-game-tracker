@@ -35,7 +35,6 @@ export const useFriendScores = ({
     queryKey: ['friend-scores', gameId, friendIds, includeCurrentUser],
     queryFn: async () => {
       if (!gameId) {
-        console.log('[useFriendScores] Missing gameId, cannot fetch scores');
         return {};
       }
       
@@ -44,17 +43,12 @@ export const useFriendScores = ({
       
       // Add current user to friends list if includeCurrentUser is true
       if (includeCurrentUser && user && !friendsToFetch.includes(user.id)) {
-        console.log('[useFriendScores] Adding current user to fetch list');
         friendsToFetch.push(user.id);
       }
       
       if (friendsToFetch.length === 0) {
-        console.log('[useFriendScores] No friends or current user to fetch scores for');
         return {};
       }
-      
-      console.log(`[useFriendScores] Fetching scores for ${friendsToFetch.length} friends/users for game:`, gameId);
-      console.log('[useFriendScores] User IDs to fetch:', friendsToFetch);
       
       try {
         // Initialize empty scores for all friends
@@ -73,12 +67,10 @@ export const useFriendScores = ({
           .in('user_id', friendsToFetch);
           
         if (error) {
-          console.error(`[useFriendScores] Error fetching scores:`, error);
+          console.error(`Error fetching scores:`, error);
           toast.error("Failed to load friend scores");
           return newFriendScores;
         }
-        
-        console.log(`[useFriendScores] Retrieved ${scoresData?.length || 0} total scores`);
         
         // Process all scores
         if (scoresData) {
@@ -103,23 +95,12 @@ export const useFriendScores = ({
         
         // Include current user scores if provided
         if (includeCurrentUser && user && currentUserScores.length > 0) {
-          console.log('[useFriendScores] Adding current user scores to results:', currentUserScores);
           newFriendScores[user.id] = currentUserScores;
-        }
-        
-        // Log one score per user for debugging
-        for (const userId in newFriendScores) {
-          if (newFriendScores[userId].length > 0) {
-            console.log(`[useFriendScores] User ${userId} has ${newFriendScores[userId].length} scores. Sample:`, 
-              newFriendScores[userId][0]);
-          } else {
-            console.log(`[useFriendScores] User ${userId} has no scores for game ${gameId}`);
-          }
         }
         
         return newFriendScores;
       } catch (error) {
-        console.error('[useFriendScores] Global error in fetchFriendScores:', error);
+        console.error('Global error in fetchFriendScores:', error);
         toast.error("Failed to load friend scores");
         return {};
       }
@@ -132,7 +113,6 @@ export const useFriendScores = ({
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
     if (gameId) {
-      console.log(`[useFriendScores] Manually refreshing scores for game: ${gameId}`);
       await refetch();
     }
   }, [gameId, refetch]);

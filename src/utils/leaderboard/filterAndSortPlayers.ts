@@ -1,4 +1,3 @@
-
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -28,21 +27,8 @@ export const filterAndSortPlayers = (
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
-  console.log('filterAndSortPlayers - Filtering and sorting players, time filter:', timeFilter);
-  console.log('filterAndSortPlayers - Players before filtering:', leaderboardPlayers.length);
-  
   // Make a copy to avoid modifying the original data
   let filteredPlayers = [...leaderboardPlayers];
-  
-  // For debugging/development, log players with today scores
-  const playersWithTodayScores = filteredPlayers.filter(player => player.today_score !== null);
-  console.log('Number of players with today scores before filtering:', playersWithTodayScores.length);
-  if (playersWithTodayScores.length > 0) {
-    console.log('Players with today scores:', playersWithTodayScores.map(p => ({
-      username: p.username,
-      today_score: p.today_score
-    })));
-  }
   
   // Search filter
   if (searchTerm) {
@@ -56,12 +42,6 @@ export const filterAndSortPlayers = (
   if (showFriendsOnly) {
     if (selectedGroupMemberIds.length > 0) {
       // Show specific group members and current user
-      console.log('Filtering by selected group members:', selectedGroupMemberIds);
-      console.log('Current user ID:', userId);
-      
-      // More aggressive debugging for group filtering
-      const beforeFilterCount = filteredPlayers.length;
-      
       // Ensure all group member IDs are strings for consistent comparison
       const normalizedGroupMemberIds = selectedGroupMemberIds.map(id => id.toString());
       
@@ -70,22 +50,11 @@ export const filterAndSortPlayers = (
         normalizedGroupMemberIds.push(userId.toString());
       }
       
-      console.log('Normalized group member IDs:', normalizedGroupMemberIds);
-      
       // Filter players
-      filteredPlayers = filteredPlayers.filter(player => {
-        const isIncluded = normalizedGroupMemberIds.includes(player.player_id.toString());
-        if (isIncluded) {
-          console.log(`Including player: ${player.username} (${player.player_id})`);
-        }
-        return isIncluded;
-      });
+      filteredPlayers = filteredPlayers.filter(player => 
+        normalizedGroupMemberIds.includes(player.player_id.toString())
+      );
       
-      console.log(`Players after group filtering: ${filteredPlayers.length} (filtered from ${beforeFilterCount})`);
-      
-      // Log the filtered players for debugging
-      console.log('Filtered players after group membership filtering:', 
-        filteredPlayers.map(p => ({ id: p.player_id, username: p.username })));
     } else if (selectedFriendIds.length > 0) {
       // Show specific friends and current user
       filteredPlayers = filteredPlayers.filter(player => 
@@ -99,23 +68,10 @@ export const filterAndSortPlayers = (
     }
   }
   
-  // IMPORTANT: For today view, we should keep the filtering for today's scores here
-  // but we need to make sure the data is properly populated before it gets here
+  // For today view, we should keep the filtering for today's scores
   if (timeFilter === 'today') {
     // Only keep players with a non-null today_score
-    const beforeFilter = filteredPlayers.length;
     filteredPlayers = filteredPlayers.filter(player => player.today_score !== null);
-    console.log(`Players with today scores: ${filteredPlayers.length} out of ${beforeFilter}`);
-    
-    // Log players with today scores after filtering
-    if (filteredPlayers.length > 0) {
-      console.log('Final players in today view:', filteredPlayers.map(p => ({
-        username: p.username,
-        today_score: p.today_score
-      })));
-    } else {
-      console.log('No players with today scores after filtering');
-    }
   }
   
   // Sort players
@@ -165,11 +121,8 @@ export const filterAndSortPlayers = (
     }
   });
   
-  console.log('filterAndSortPlayers - Final sorted and filtered players before limit:', filteredPlayers.length);
-  
   // Limit to maximum number of players (default 25)
   filteredPlayers = filteredPlayers.slice(0, maxPlayers);
   
-  console.log('filterAndSortPlayers - Final players returned after limit:', filteredPlayers.length);
   return filteredPlayers;
 };

@@ -11,8 +11,6 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
   return useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
-      console.log('Fetching friends for user:', currentPlayerId);
-      
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`

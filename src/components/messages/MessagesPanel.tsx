@@ -25,12 +25,9 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  console.log(`Rendering MessagesPanel for group ${groupId} with ${messages?.length || 0} messages`);
-  
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current && messages && messages.length > 0) {
-      console.log('Auto-scrolling to bottom of messages');
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
@@ -39,7 +36,6 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
     e.preventDefault();
     if (!newMessage.trim()) return;
     
-    console.log('Sending message:', newMessage);
     try {
       await sendMessage(newMessage.trim());
       setNewMessage('');
@@ -47,11 +43,6 @@ const MessagesPanel = ({ groupId, groupName, isJoinedGroup = false, className = 
       console.error('Error sending message:', error);
     }
   };
-  
-  // Debug log to see messages structure
-  useEffect(() => {
-    console.log('Messages array in MessagesPanel:', messages);
-  }, [messages]);
   
   const renderMessage = (message: GroupMessage) => {
     const isCurrentUser = user?.id === message.user_id;

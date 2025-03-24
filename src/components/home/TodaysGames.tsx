@@ -28,16 +28,6 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
     }
   }, [todaysGames, isMobile]);
 
-  // Debug logging
-  console.log('TodaysGames component rendering with:', { 
-    isLoading, 
-    todaysGamesCount: todaysGames?.length, 
-    todaysGames,
-    gamesList,
-    displayMode,
-    isMobile
-  });
-
   if (isLoading) {
     return (
       <div className="glass-card rounded-xl p-4 flex items-center gap-4">
@@ -69,12 +59,6 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
     );
   }
 
-  // More detailed logging to debug specific games
-  todaysGames.forEach(score => {
-    const game = gamesList.find(g => g.id === score.gameId);
-    console.log(`Today's game: ${game?.name || 'Unknown'} (ID: ${score.gameId}), Score: ${score.value}`);
-  });
-
   return (
     <div className="glass-card rounded-xl p-4 flex flex-col gap-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -96,7 +80,6 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
             {todaysGames.map(score => {
               const game = gamesList.find(g => g.id === score.gameId);
               if (!game) {
-                console.log(`Could not find game for score:`, score);
                 return null;
               }
               
@@ -119,7 +102,6 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
           {todaysGames.map(score => {
             const game = gamesList.find(g => g.id === score.gameId);
             if (!game) {
-              console.log(`Could not find game for score:`, score);
               return null;
             }
             
@@ -142,7 +124,6 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
           {todaysGames.map(score => {
             const game = gamesList.find(g => g.id === score.gameId);
             if (!game) {
-              console.log(`Could not find game for score:`, score);
               return null;
             }
             
@@ -152,7 +133,7 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
                 className="flex items-center justify-between px-3 py-2 bg-secondary rounded-lg cursor-pointer hover:bg-secondary/80"
                 onClick={() => navigate(`/game/${game.id}`)}
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
                   <div className={`w-2 h-2 rounded-full ${game.color} flex-shrink-0`}></div>
                   <span className="text-sm font-medium truncate">{game.name}</span>
                 </div>

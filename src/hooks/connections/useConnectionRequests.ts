@@ -10,9 +10,6 @@ export const useConnectionRequests = (playerId: string, enabled: boolean = true)
   return useQuery({
     queryKey: ['pending-requests', playerId],
     queryFn: async () => {
-      // Log the current player ID for debugging
-      console.log('Fetching pending requests for player:', playerId);
-      
       const { data, error } = await supabase
         .from('connections')
         .select(`
@@ -33,24 +30,15 @@ export const useConnectionRequests = (playerId: string, enabled: boolean = true)
         });
         return [];
       }
-      
-      // Log the raw data for debugging
-      console.log('Raw pending requests data:', JSON.stringify(data, null, 2));
 
       return data.map(request => {
-        // First, check what type of data we're getting
-        console.log('Request user data type:', typeof request.user);
-        console.log('Request user data:', request.user);
-        
         // Properly extract the user data from the nested structure
         let userData = null;
         
         if (Array.isArray(request.user) && request.user.length > 0) {
           userData = request.user[0];
-          console.log('Extracted user data from array:', userData);
         } else if (request.user && typeof request.user === 'object') {
           userData = request.user;
-          console.log('Using user data directly:', userData);
         }
         
         return {

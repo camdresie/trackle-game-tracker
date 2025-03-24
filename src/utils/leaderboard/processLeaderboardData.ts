@@ -17,7 +17,6 @@ export const processLeaderboardData = (
   
   // Get today's date in Eastern Time for filtering
   const today = getTodayInEasternTime();
-  console.log('processLeaderboardData - Today\'s date in ET (YYYY-MM-DD):', today);
   
   // Initialize user stats map
   const userStatsMap = new Map<string, LeaderboardPlayer>();
@@ -47,25 +46,8 @@ export const processLeaderboardData = (
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData || [];
   
-  console.log(`processLeaderboardData - Game ${selectedGame} - Total filtered scores:`, gameScores.length);
-  
   // Count and log today's scores using the isToday flag
   const todayScores = gameScores.filter(score => score.isToday);
-  console.log(`processLeaderboardData - Found ${todayScores.length} scores marked as today's scores`);
-  
-  // Log today's scores for debugging
-  if (todayScores.length > 0) {
-    console.log('Today\'s scores in processLeaderboardData:', todayScores.map(score => {
-      return {
-        id: score.id,
-        user_id: score.user_id,
-        username: score.profiles?.username,
-        date: score.date,
-        value: score.value,
-        isToday: score.isToday
-      };
-    }));
-  }
   
   // Process all unique scores for each user by deduplicating dates
   const userUniqueScores = new Map<string, Map<string, any>>();
@@ -93,11 +75,6 @@ export const processLeaderboardData = (
       userScoresMap.set(dateKey, score);
     }
   });
-  
-  // Log total unique dates for each user
-  for (const [userId, datesMap] of userUniqueScores.entries()) {
-    console.log(`User ${userId} has ${datesMap.size} unique game dates`);
-  }
   
   // Process each user's unique scores
   userUniqueScores.forEach((datesMap, userId) => {
@@ -143,7 +120,6 @@ export const processLeaderboardData = (
       // Set today's score if applicable
       if (score.isToday) {
         todayScore = score.value;
-        console.log(`Setting today's score for user ${userStats.username}: ${score.value}`);
       }
       
       // Update best score
@@ -211,12 +187,6 @@ export const processLeaderboardData = (
   
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
-  
-  console.log('processLeaderboardData - Processed leaderboard players:', leaderboardPlayers.length);
-  
-  // Log how many players have today's scores
-  const playersWithTodayScores = leaderboardPlayers.filter(p => p.today_score !== null);
-  console.log('processLeaderboardData - Players with today\'s scores:', playersWithTodayScores.length);
   
   return leaderboardPlayers;
 };

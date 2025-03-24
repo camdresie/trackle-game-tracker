@@ -44,19 +44,15 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     supabase.auth.getSession().then(({ data }) => {
       const sessionStatus = data.session ? 'Authenticated' : 'Not authenticated';
       const userId = data.session?.user?.id || 'No user ID';
-      console.log(`[useGameData] Auth status: ${sessionStatus}, User ID: ${userId}`);
+      console.log(`Auth status: ${sessionStatus}, User ID: ${userId}`);
     });
   }, []);
   
   // Enhanced refresh function that efficiently updates all data
   const refreshFriends = useCallback(async () => {
-    console.log("[useGameData] Starting friend refresh process...");
-    
     try {
       // First check authentication status
       const { data: sessionData } = await supabase.auth.getSession();
-      console.log('[useGameData] Refresh with auth status:', 
-        sessionData.session ? 'Authenticated as ' + sessionData.session.user.id : 'Not authenticated');
       
       // Invalidate relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['friends'] });
@@ -66,16 +62,11 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       
       // Then fetch friend scores directly if we have a gameId
       if (gameId) {
-        console.log("[useGameData] Refreshing friend scores for game:", gameId);
         await fetchFriendScores();
         toast.success("Friend data refreshed successfully");
-      } else {
-        console.log("[useGameData] Cannot refresh scores - game ID not available");
       }
-      
-      console.log("[useGameData] Friend refresh completed successfully");
     } catch (error) {
-      console.error("[useGameData] Error during friend refresh:", error);
+      console.error("Error during friend refresh:", error);
       toast.error("Error refreshing friend data");
     }
   }, [baseFriendsRefresh, fetchFriendScores, gameId, queryClient]);

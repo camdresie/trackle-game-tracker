@@ -26,14 +26,6 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
   );
   const isMobile = useIsMobile();
   
-  console.log('[GroupPerformance] Render with data:', {
-    selectedGame: selectedGame?.name,
-    isLoading,
-    groupsCount: groupPerformanceData.length,
-    todaysGamesCount: todaysGames.length,
-    groupData: groupPerformanceData
-  });
-  
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
     // For games like Wordle and Mini Crossword, lower scores are better

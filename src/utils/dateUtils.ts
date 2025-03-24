@@ -9,7 +9,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 export const getTodayInEasternTime = (): string => {
   // Always use Eastern Time for consistent date handling across the application
   const easternTime = formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
-  console.log("[dateUtils] Eastern timezone today's date:", easternTime);
   return easternTime;
 };
 
@@ -19,12 +18,7 @@ export const getTodayInEasternTime = (): string => {
  */
 export const isToday = (dateString: string): boolean => {
   const today = getTodayInEasternTime();
-  const result = dateString === today;
-  
-  // Debug log for checking date comparisons
-  console.log(`[dateUtils] Comparing dates - Date: ${dateString}, Today: ${today}, Match: ${result}`);
-  
-  return result;
+  return dateString === today;
 };
 
 /**

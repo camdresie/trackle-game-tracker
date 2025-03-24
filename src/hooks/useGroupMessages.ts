@@ -20,8 +20,6 @@ export const useGroupMessages = (groupId: string | null) => {
     queryFn: async () => {
       if (!groupId || !user) return [];
       
-      console.log(`Fetching messages for group: ${groupId}`);
-      
       // First check if user has access to this group (as owner or member)
       const { data: accessCheck, error: accessError } = await supabase.rpc('can_user_access_group', {
         p_group_id: groupId,
@@ -35,7 +33,6 @@ export const useGroupMessages = (groupId: string | null) => {
       }
       
       if (!accessCheck) {
-        console.log('User does not have access to this group');
         toast.error('You do not have access to this group');
         return [];
       }
@@ -54,8 +51,6 @@ export const useGroupMessages = (groupId: string | null) => {
         }
         return [];
       }
-      
-      console.log(`Retrieved ${messagesData?.length || 0} messages for group ${groupId}:`, messagesData);
       
       // If no messages, return empty array
       if (!messagesData || messagesData.length === 0) {
@@ -105,7 +100,6 @@ export const useGroupMessages = (groupId: string | null) => {
     
     // Create a unique channel name based on groupId
     const channelName = `group-messages-${groupId}`;
-    console.log(`Setting up channel: ${channelName}`);
     
     const channel = supabase
       .channel(channelName)
@@ -118,18 +112,14 @@ export const useGroupMessages = (groupId: string | null) => {
           filter: `group_id=eq.${groupId}`
         },
         (payload) => {
-          console.log('New message received:', payload);
           // Invalidate the query to refetch messages
           queryClient.invalidateQueries({ queryKey: ['group-messages', groupId] });
         }
       )
-      .subscribe((status) => {
-        console.log(`Subscription status for ${channelName}:`, status);
-      });
+      .subscribe();
     
     // Clean up function
     return () => {
-      console.log(`Cleaning up channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [groupId, user, queryClient]);
@@ -138,8 +128,6 @@ export const useGroupMessages = (groupId: string | null) => {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!groupId || !user) throw new Error('Missing group ID or user');
-      
-      console.log(`Sending message to group ${groupId}:`, content);
       
       // First explicitly check if user can access this group
       const { data: canAccess, error: accessError } = await supabase.rpc('can_user_access_group', {
@@ -168,7 +156,6 @@ export const useGroupMessages = (groupId: string | null) => {
         throw error;
       }
       
-      console.log('Message sent successfully:', data);
       return data;
     },
     onSuccess: () => {

@@ -39,26 +39,16 @@ export const useGroupScores = (
   // Use Eastern Time for date consistency across the app
   const today = useMemo(() => getTodayInEasternTime(), []);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[useGroupScores] Today\'s date:', today);
-    console.log('[useGroupScores] Today\'s scores:', todaysScores);
-    console.log('[useGroupScores] Selected game ID:', selectedGameId);
-    console.log('[useGroupScores] Friend groups:', friendGroups);
-  }, [today, todaysScores, selectedGameId, friendGroups]);
-
   // Fetch group members with their profiles - improved query to properly join profile data
   useEffect(() => {
     const fetchGroupMembers = async () => {
       if (!friendGroups || friendGroups.length === 0) {
-        console.log('[useGroupScores] No friend groups available');
         setGroupMembers([]);
         return;
       }
 
       try {
         const groupIds = friendGroups.map(group => group.id);
-        console.log('[useGroupScores] Fetching members for groups:', groupIds);
         
         // Store group creators for later use
         const creatorMap: {[key: string]: string} = {};
@@ -66,7 +56,6 @@ export const useGroupScores = (
           creatorMap[group.id] = group.user_id;
         });
         setGroupCreators(creatorMap);
-        console.log('[useGroupScores] Group creators map:', creatorMap);
         
         // Updated query: Include status filter to only get accepted members
         const { data: members, error } = await supabase
@@ -76,14 +65,12 @@ export const useGroupScores = (
           .eq('status', 'accepted');
           
         if (error) {
-          console.error('[useGroupScores] Error fetching group members:', error);
+          console.error('Error fetching group members:', error);
           toast.error('Failed to load group members');
           throw error;
         }
         
         if (!members || members.length === 0) {
-          console.log('[useGroupScores] No members found');
-          
           // Even if no members were found, we should include group creators
           const memberIds: string[] = [];
           
@@ -111,12 +98,10 @@ export const useGroupScores = (
             .in('id', memberIds);
             
           if (profilesError) {
-            console.error('[useGroupScores] Error fetching profiles:', profilesError);
+            console.error('Error fetching profiles:', profilesError);
             toast.error('Failed to load member profiles');
             throw profilesError;
           }
-          
-          console.log('[useGroupScores] Found profiles for creators:', profiles);
           
           // Create virtual members for group creators
           const creatorsAsMembers = [];
@@ -135,12 +120,9 @@ export const useGroupScores = (
             }
           }
           
-          console.log('[useGroupScores] Created virtual members for creators:', creatorsAsMembers);
           setGroupMembers(creatorsAsMembers);
           return;
         }
-        
-        console.log('[useGroupScores] Found members:', members);
         
         // Then get all profiles for these members in a separate query
         const memberIds = members.map(m => m.friend_id);
@@ -163,18 +145,15 @@ export const useGroupScores = (
           .in('id', memberIds);
           
         if (profilesError) {
-          console.error('[useGroupScores] Error fetching profiles:', profilesError);
+          console.error('Error fetching profiles:', profilesError);
           toast.error('Failed to load member profiles');
           throw profilesError;
         }
         
         if (!profiles) {
-          console.log('[useGroupScores] No profiles found for members');
           setGroupMembers([]);
           return;
         }
-        
-        console.log('[useGroupScores] Found profiles:', profiles);
         
         // Combine member data with profiles
         const membersWithProfiles = members.map(member => {
@@ -206,11 +185,10 @@ export const useGroupScores = (
           }
         }
         
-        console.log('[useGroupScores] Members with profiles (including creators):', membersWithProfiles);
         setGroupMembers(membersWithProfiles);
         
       } catch (error) {
-        console.error('[useGroupScores] Error fetching group members:', error);
+        console.error('Error fetching group members:', error);
         toast.error('Failed to load group members');
         setGroupMembers([]);
       }
@@ -240,15 +218,9 @@ export const useGroupScores = (
   // Process group performance data
   const groupPerformanceData = useMemo(() => {
     if (!friendGroups || friendGroups.length === 0) {
-      console.log('[useGroupScores] No friend groups to process');
       return [];
     }
 
-    console.log('[useGroupScores] Processing groups:', friendGroups);
-    console.log('[useGroupScores] Group members:', groupMembers);
-    console.log('[useGroupScores] Friend scores:', friendScores);
-    console.log('[useGroupScores] Today\'s scores for current user:', todaysScores);
-    
     return friendGroups.map(group => {
       // Get all members for this group
       const members = groupMembers
@@ -258,10 +230,6 @@ export const useGroupScores = (
           const todayScore = memberScores.find(score => 
             score.gameId === selectedGameId && score.date === today
           );
-          
-          console.log(`[useGroupScores] Member ${member.profiles?.username} scores for game ${selectedGameId}:`, 
-            memberScores.filter(score => score.gameId === selectedGameId));
-          console.log(`[useGroupScores] Today's score for ${member.profiles?.username}:`, todayScore);
           
           return {
             playerId: member.friend_id,
@@ -279,9 +247,6 @@ export const useGroupScores = (
         score => score.gameId === selectedGameId && 
                  score.playerId === user.id
       );
-      
-      console.log(`[useGroupScores] Current user's today score for ${selectedGameId}:`, userTodayScore);
-      console.log('[useGroupScores] Is current user the creator?', isCurrentUserCreator);
       
       const currentUserScore = userTodayScore?.value || null;
       const currentUserHasPlayed = !!userTodayScore;

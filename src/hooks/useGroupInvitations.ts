@@ -30,8 +30,6 @@ export const useGroupInvitations = () => {
       if (!user) return [];
       
       try {
-        console.log('Fetching invitations for user:', user.id);
-        
         // Use the direct_sql_query function to get pending invitations
         const directQuery = `
           SELECT 
@@ -62,8 +60,6 @@ export const useGroupInvitations = () => {
           throw directQueryError;
         }
         
-        console.log('Invitations query results:', directResults);
-        
         if (!directResults || directResults.length === 0) {
           return [];
         }
@@ -86,7 +82,7 @@ export const useGroupInvitations = () => {
     },
     enabled: !!user,
     // Reduced refetch intervals to prevent too many database calls
-    refetchInterval: 30000, // Now every 30 seconds instead of 1 second
+    refetchInterval: 30000, // Every 30 seconds
     staleTime: 15000, // Add a stale time of 15 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -103,8 +99,6 @@ export const useGroupInvitations = () => {
   // Accept a group invitation
   const acceptInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      console.log('Accepting invitation with ID:', invitationId);
-      
       try {
         // Find the invitation in our local state first
         const invitation = invitations.find(inv => inv.id === invitationId);
@@ -115,7 +109,6 @@ export const useGroupInvitations = () => {
         }
         
         const groupId = invitation.groupId;
-        console.log('Found group ID for invitation:', groupId);
         
         // Use RPC to ensure the update works reliably - Fix the SQL query syntax
         const updateQuery = `
@@ -134,15 +127,10 @@ export const useGroupInvitations = () => {
           throw updateError;
         }
         
-        console.log('Update result:', updateResult);
-        
         if (!updateResult || updateResult.length === 0) {
           console.error('No rows updated - invitation may not exist');
           throw new Error('Failed to update invitation - record may have been deleted');
         }
-        
-        // Log success and return information
-        console.log('Successfully accepted invitation, data returned:', updateResult[0]);
         
         return { invitationId, groupId };
       } catch (error) {
@@ -151,8 +139,6 @@ export const useGroupInvitations = () => {
       }
     },
     onSuccess: (data) => {
-      console.log('Invitation accepted successfully, invalidating queries');
-      
       // Aggressive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
@@ -175,8 +161,6 @@ export const useGroupInvitations = () => {
   // Decline a group invitation
   const declineInvitationMutation = useMutation({
     mutationFn: async (invitationId: string) => {
-      console.log('Declining invitation with ID:', invitationId);
-      
       // Actually delete the invitation instead of just updating status
       const { error } = await supabase
         .from('friend_group_members')
@@ -188,11 +172,9 @@ export const useGroupInvitations = () => {
         throw error;
       }
       
-      console.log('Successfully declined invitation');
       return invitationId;
     },
     onSuccess: () => {
-      console.log('Invitation declined successfully, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
       toast.success('Group invitation declined');
     },
@@ -204,7 +186,6 @@ export const useGroupInvitations = () => {
   
   // Add a manual trigger for refetching invitations
   const forceRefresh = async () => {
-    console.log('Force refreshing invitations');
     return await refetch();
   };
   
