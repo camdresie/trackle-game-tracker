@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -106,8 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log(`Attempting signup with username: ${username}`);
-      
       // First, check if username is already taken
       const { data: existingUser, error: usernameCheckError } = await supabase
         .from('profiles')
@@ -123,13 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Username is already taken');
       }
       
+      console.log(`Starting signup process with username: ${username}`);
+      
       // Sign up the user with username in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username: username, // Explicitly set in user metadata
+            username: username,
           },
         },
       });
@@ -138,56 +137,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log("Sign up successful, user data:", data);
       
-      // Wait a short time for the trigger to run
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!data.user) {
+        throw new Error('User data not returned from signup');
+      }
       
-      // Verify and update profile if needed
-      if (data.user) {
-        console.log(`Verifying profile for user ID: ${data.user.id}`);
+      // Directly create the profile here - don't rely on the trigger
+      console.log(`Creating new profile for user ${data.user.id} with username: ${username}`);
+      
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          username: username,
+          full_name: null,
+          avatar_url: null,
+          selected_games: null
+        });
         
-        // Check if profile exists and username is correct
-        const { data: profileData, error: profileError } = await supabase
+      if (insertError) {
+        console.error('Error creating profile after signup:', insertError);
+        
+        // If there was an error with insert, it might be because a profile already exists
+        // (e.g., trigger created it). Try updating instead.
+        console.log('Trying to update existing profile instead');
+        
+        const { error: updateError } = await supabase
           .from('profiles')
-          .select('id, username')
-          .eq('id', data.user.id)
-          .maybeSingle();
+          .update({ username: username })
+          .eq('id', data.user.id);
           
-        console.log("Profile check result:", profileData, profileError);
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error checking profile:', profileError);
+        if (updateError) {
+          console.error('Error updating profile after signup:', updateError);
         }
+      }
+      
+      // Verify profile was created with correct username
+      const { data: profileCheck, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', data.user.id)
+        .single();
         
-        // If profile exists but username doesn't match, update it
-        if (profileData && profileData.username !== username) {
-          console.log(`Updating profile username from '${profileData.username}' to '${username}'`);
+      if (profileCheckError) {
+        console.error('Error verifying profile creation:', profileCheckError);
+      } else {
+        console.log('Profile creation verified, username set to:', profileCheck.username);
+        if (profileCheck.username !== username) {
+          console.warn(`Username mismatch! Expected ${username} but got ${profileCheck.username}`);
           
-          const { error: updateError } = await supabase
+          // Force an update to correct the username
+          const { error: fixError } = await supabase
             .from('profiles')
             .update({ username: username })
             .eq('id', data.user.id);
             
-          if (updateError) {
-            console.error('Error updating profile username:', updateError);
-          }
-        }
-        
-        // If profile doesn't exist, create it manually
-        if (!profileData) {
-          console.log(`Creating new profile with username: ${username}`);
-          
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user.id,
-              username: username,
-              full_name: null,
-              avatar_url: null,
-              selected_games: null
-            });
-            
-          if (insertError) {
-            console.error('Error creating profile after signup:', insertError);
+          if (fixError) {
+            console.error('Error fixing username mismatch:', fixError);
+          } else {
+            console.log('Username mismatch fixed');
           }
         }
       }
