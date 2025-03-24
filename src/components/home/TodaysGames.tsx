@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar, InfoIcon } from 'lucide-react';
 import { Score, Game } from '@/utils/types';
 import { useEffect, useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TodaysGamesProps {
   isLoading: boolean;
@@ -13,16 +14,19 @@ interface TodaysGamesProps {
 
 const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) => {
   const navigate = useNavigate();
-  const [displayMode, setDisplayMode] = useState<'single-row' | 'multi-row'>('single-row');
+  const isMobile = useIsMobile();
+  const [displayMode, setDisplayMode] = useState<'single-row' | 'multi-row' | 'grid'>('single-row');
 
-  // Determine if we should use multi-row layout based on games count
+  // Determine layout based on games count and screen size
   useEffect(() => {
-    if (todaysGames?.length > 6) {
+    if (isMobile) {
+      setDisplayMode('grid');
+    } else if (todaysGames?.length > 6) {
       setDisplayMode('multi-row');
     } else {
       setDisplayMode('single-row');
     }
-  }, [todaysGames]);
+  }, [todaysGames, isMobile]);
 
   // Debug logging
   console.log('TodaysGames component rendering with:', { 
@@ -30,7 +34,8 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
     todaysGamesCount: todaysGames?.length, 
     todaysGames,
     gamesList,
-    displayMode 
+    displayMode,
+    isMobile
   });
 
   if (isLoading) {
@@ -109,7 +114,7 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
             })}
           </div>
         </ScrollArea>
-      ) : (
+      ) : displayMode === 'multi-row' ? (
         <div className="flex flex-wrap gap-2">
           {todaysGames.map(score => {
             const game = gamesList.find(g => g.id === score.gameId);
@@ -127,6 +132,31 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList }: TodaysGamesProps) =>
                 <div className={`w-2 h-2 rounded-full ${game.color}`}></div>
                 <span className="text-sm font-medium">{game.name}</span>
                 <span className="text-sm">{score.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        // Grid layout for mobile
+        <div className="grid grid-cols-2 gap-2">
+          {todaysGames.map(score => {
+            const game = gamesList.find(g => g.id === score.gameId);
+            if (!game) {
+              console.log(`Could not find game for score:`, score);
+              return null;
+            }
+            
+            return (
+              <div 
+                key={score.id}
+                className="flex items-center justify-between px-3 py-2 bg-secondary rounded-lg cursor-pointer hover:bg-secondary/80"
+                onClick={() => navigate(`/game/${game.id}`)}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-2 h-2 rounded-full ${game.color} flex-shrink-0`}></div>
+                  <span className="text-sm font-medium truncate">{game.name}</span>
+                </div>
+                <span className="text-sm font-semibold ml-1 flex-shrink-0">{score.value}</span>
               </div>
             );
           })}

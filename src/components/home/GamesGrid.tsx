@@ -20,7 +20,7 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
         </h2>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
           Array(4).fill(0).map((_, index) => (
             <div key={index} className="animate-pulse h-40 bg-muted rounded-xl"></div>
