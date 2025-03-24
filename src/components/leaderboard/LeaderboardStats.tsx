@@ -1,10 +1,10 @@
-
 import React, { useEffect } from 'react';
 import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks, Share2 } from 'lucide-react';
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent } from '@/components/ui/card';
 import LeaderboardShare from './LeaderboardShare';
+import { cn } from '@/lib/utils';
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
@@ -14,6 +14,7 @@ interface LeaderboardStatsProps {
   totalScoresCount: number; 
   rawScoresData: any[]; // Raw scores data for analysis
   sortBy: string; // Add sortBy prop
+  className?: string; // Add optional className prop
 }
 
 const LeaderboardStats = ({ 
@@ -23,7 +24,8 @@ const LeaderboardStats = ({
   selectedGame,
   totalScoresCount, 
   rawScoresData,
-  sortBy // Use this to highlight relevant stat
+  sortBy, // Use this to highlight relevant stat
+  className
 }: LeaderboardStatsProps) => {
   // Get today's date in YYYY-MM-DD format for consistent comparison
   const getEasternTimeDate = (): string => {
@@ -307,7 +309,7 @@ const LeaderboardStats = ({
   };
   
   return (
-    <div className="glass-card rounded-xl p-4 sm:p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
+    <div className={cn("glass-card rounded-xl p-4 sm:p-5 animate-slide-up", className)} style={{animationDelay: '200ms'}}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           {timeFilter === 'all' ? (

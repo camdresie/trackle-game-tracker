@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,7 +104,22 @@ const Leaderboard = () => {
             selectedGroupId={selectedGroupId}
             setSelectedGroupId={setSelectedGroupId}
           />
-          
+        </div>
+        
+        {/* Stats section moved above the players list */}
+        <LeaderboardStats
+          timeFilter={timeFilter}
+          isLoading={isLoading}
+          players={filteredAndSortedPlayers}
+          selectedGame={selectedGame}
+          totalScoresCount={scoresData?.length || 0}
+          rawScoresData={scoresData || []}
+          sortBy={sortByCategory}
+          className="mb-4 sm:mb-6"
+        />
+        
+        {/* Players list now comes after the stats */}
+        <div className="glass-card rounded-xl p-4 sm:p-5 animate-slide-up" style={{animationDelay: '200ms'}}>
           <LeaderboardPlayersList
             players={filteredAndSortedPlayers}
             isLoading={isLoading}
@@ -116,16 +130,6 @@ const Leaderboard = () => {
             setTimeFilter={setTimeFilter}
           />
         </div>
-        
-        <LeaderboardStats
-          timeFilter={timeFilter}
-          isLoading={isLoading}
-          players={filteredAndSortedPlayers}
-          selectedGame={selectedGame}
-          totalScoresCount={scoresData?.length || 0}
-          rawScoresData={scoresData || []}
-          sortBy={sortByCategory}
-        />
       </main>
     </div>
   );
