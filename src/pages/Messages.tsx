@@ -184,7 +184,7 @@ const Messages = () => {
     <div className="min-h-screen pb-6">
       <NavBar />
       
-      <div className="container max-w-6xl mx-auto pt-20 px-4">
+      <div className="container max-w-6xl mx-auto pt-28 px-4">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
