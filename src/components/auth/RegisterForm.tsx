@@ -44,6 +44,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setError(null);
     
     try {
+      // Pass the exact username entered by the user to signUp
       await signUp(values.email, values.password, values.username);
       if (onRegisterSuccess) {
         onRegisterSuccess();

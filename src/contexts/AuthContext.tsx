@@ -121,20 +121,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Username is already taken');
       }
       
-      // Proceed with signup
+      // Proceed with signup and ensure we pass the username in the user metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            username,
+            username, // This explicitly sets the username in user metadata
           },
         },
       });
       
       if (error) throw error;
       
-      // Create profile manually if needed - this ensures the profile exists
+      // Create profile manually if needed - this ensures the profile exists with the correct username
       if (data.user) {
         // Check if profile exists
         const { data: existingProfile, error: profileCheckError } = await supabase
@@ -147,13 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Error checking profile:', profileCheckError);
         }
         
-        // If profile doesn't exist already, create it manually
+        // If profile doesn't exist already, create it manually with the username from the form
         if (!existingProfile) {
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
-              username,
+              username, // Use the exact username passed from the registration form
               full_name: null,
               avatar_url: null,
               selected_games: null
