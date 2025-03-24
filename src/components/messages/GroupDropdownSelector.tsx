@@ -53,6 +53,11 @@ const GroupDropdownSelector = ({
     }
   };
   
+  // Function to truncate text with ellipsis
+  const truncateText = (text: string, maxLength: number = 20) => {
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+  
   if (!groups || groups.length === 0) {
     return (
       <Button 
@@ -76,29 +81,29 @@ const GroupDropdownSelector = ({
             variant="outline" 
             className="w-full justify-between border border-input"
           >
-            <div className="flex items-center">
-              <UsersRound className="w-4 h-4 mr-2" />
-              <span>{selectedGroup?.name || "Select Group"}</span>
+            <div className="flex items-center truncate">
+              <UsersRound className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{selectedGroup ? truncateText(selectedGroup.name) : "Select Group"}</span>
               {selectedGroup?.isJoinedGroup && (
-                <Badge variant="outline" className="ml-2 bg-secondary/30">
+                <Badge variant="outline" className="ml-2 bg-secondary/30 flex-shrink-0">
                   Joined
                 </Badge>
               )}
             </div>
-            <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+            <ChevronDown className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full min-w-[200px]">
+        <DropdownMenuContent className="w-full min-w-[200px]" align="start">
           {groups.map(group => (
             <DropdownMenuItem
               key={group.id}
               className="flex items-center gap-2 cursor-pointer"
               onClick={() => handleSelectGroup(group.id)}
             >
-              <UsersRound className="w-4 h-4" />
-              <span>{group.name}</span>
+              <UsersRound className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{group.name}</span>
               {group.isJoinedGroup && (
-                <Badge variant="outline" className="ml-1 bg-secondary/30 text-xs">
+                <Badge variant="outline" className="ml-1 bg-secondary/30 text-xs flex-shrink-0">
                   Joined
                 </Badge>
               )}

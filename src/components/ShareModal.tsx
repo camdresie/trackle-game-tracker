@@ -99,20 +99,21 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
             <div className="space-y-4 my-4">
               <div>
                 <p className="text-sm mb-2 font-medium">Share in a group:</p>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
                   <GroupDropdownSelector 
                     selectedGroupId={selectedGroupId} 
                     onSelectGroup={handleGroupSelected}
-                    className="flex-1"
+                    className="w-full"
                   />
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={handleSendToGroup}
                     disabled={!selectedGroupId || isSending}
+                    className="w-full"
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    {isSending ? 'Sending...' : 'Send'}
+                    {isSending ? 'Sending...' : 'Send to Group'}
                   </Button>
                 </div>
               </div>
