@@ -28,7 +28,7 @@ const GameDetailHeader = ({ game, user, onAddScore, latestScore, averageScore, b
   
   return (
     <>
-      <div className="mb-4 md:mb-6">
+      <div className="mb-6 pt-2">
         <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground">
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back to Games

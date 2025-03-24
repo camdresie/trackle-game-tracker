@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -91,7 +92,7 @@ const GameDetail = () => {
     <div className="min-h-screen bg-background">
       <NavBar />
       
-      <main className="pt-20 pb-12 px-4 max-w-7xl mx-auto">
+      <main className="pt-24 pb-12 px-4 max-w-7xl mx-auto">
         <GameDetailHeader 
           game={game}
           user={user}
