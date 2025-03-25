@@ -47,7 +47,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         isCurrentUser: true
       }] : []),
       ...group.members
-        .filter(m => m.hasPlayed && m.score !== null)
+        .filter(m => m.hasPlayed && m.score !== null && m.playerId !== user?.id) // Filter out the current user from members to avoid duplicates
         .map(m => ({
           playerId: m.playerId,
           score: m.score,
@@ -178,7 +178,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               );
               
               // Create a list that includes the current user (if played and not already in members)
-              // followed by all other group members
+              // followed by all other group members (excluding duplicate entries of current user)
               const allMembers: GroupMember[] = [
                 ...(!isCurrentUserInMembers && group.currentUserHasPlayed ? [{
                   playerId: user?.id || '',
@@ -187,10 +187,12 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                   score: group.currentUserScore,
                   isCurrentUser: true
                 }] : []),
-                ...group.members.map(m => ({
-                  ...m,
-                  isCurrentUser: user && m.playerId === user.id
-                }))
+                ...group.members
+                  .filter(m => m.playerId !== user?.id || (m.playerId === user?.id && !group.currentUserHasPlayed))
+                  .map(m => ({
+                    ...m,
+                    isCurrentUser: user && m.playerId === user.id
+                  }))
               ];
               
               // Sort all members by score
