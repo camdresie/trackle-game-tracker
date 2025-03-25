@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -203,6 +204,29 @@ const TodayScores = () => {
                     // Convert members array to the format expected by GroupScoresShare
                     const groupMemberScores = convertToGroupMemberScores(group.members);
                     
+                    // Create a combined list of all members plus the current user
+                    const allMembers = [
+                      ...(group.currentUserHasPlayed ? [{
+                        playerId: user?.id || '',
+                        playerName: 'You',
+                        hasPlayed: true,
+                        score: group.currentUserScore,
+                        isCurrentUser: true
+                      }] : []),
+                      ...group.members
+                    ];
+                    
+                    // Sort all members by score
+                    const sortedMembers = [...allMembers]
+                      .filter(m => m.hasPlayed)
+                      .sort((a, b) => {
+                        if (isLowerBetter) {
+                          return (a.score || 999) - (b.score || 999);
+                        } else {
+                          return (b.score || 0) - (a.score || 0);
+                        }
+                      });
+                    
                     return (
                       <Card key={group.groupId} className="p-6 overflow-hidden">
                         <div className="flex flex-col">
@@ -292,55 +316,73 @@ const TodayScores = () => {
                             </div>
                           )}
                           
-                          {/* Current user's score */}
-                          <div className="mb-4 p-4 bg-secondary/50 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2 font-medium">
-                                <span>Your score today</span>
-                                {/* Remove the Leading badge from here on mobile to avoid duplication */}
-                                {!isMobile && leadingPlayer?.isCurrentUser && (
-                                  <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center">
-                                    <Trophy className="w-3 h-3 mr-1" /> Leading
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-lg font-bold">
-                                {group.currentUserHasPlayed 
-                                  ? group.currentUserScore 
-                                  : <span className="text-muted-foreground text-sm">No score yet</span>}
-                              </div>
-                            </div>
-                          </div>
-                          
                           {/* Group members scores */}
                           <div className="space-y-3">
-                            {group.members.length > 0 ? (
-                              group.members.map((member) => (
+                            {sortedMembers.length > 0 ? (
+                              sortedMembers.map((member, index) => (
                                 <div 
-                                  key={member.playerId} 
-                                  className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors"
+                                  key={`${member.playerId}-${index}`} 
+                                  className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg transition-colors",
+                                    member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
+                                    index === 0 ? "border border-accent/20" : ""
+                                  )}
                                 >
                                   <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                    <span className="truncate">{member.playerName}</span>
-                                    {leadingPlayer?.playerId === member.playerId && (
+                                    <span className="truncate">
+                                      {member.isCurrentUser 
+                                        ? 'You' 
+                                        : member.playerName}
+                                    </span>
+                                    {index === 0 && (
                                       <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
                                         <Trophy className="w-3 h-3 mr-1" /> Leading
                                       </span>
                                     )}
                                   </div>
                                   <div className="flex items-center flex-shrink-0">
-                                    {member.hasPlayed ? (
-                                      <span className="font-semibold">{member.score}</span>
-                                    ) : (
-                                      <span className="text-sm text-muted-foreground">No score yet</span>
-                                    )}
+                                    <span className="font-semibold">{member.score}</span>
                                     <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
                                   </div>
                                 </div>
                               ))
                             ) : (
                               <div className="text-center py-4 text-muted-foreground">
-                                No members in this group
+                                No scores recorded for this group today
+                              </div>
+                            )}
+                            
+                            {/* Show users who haven't played yet */}
+                            {group.members
+                              .filter(m => !m.hasPlayed)
+                              .map((member, index) => (
+                                <div 
+                                  key={`${member.playerId}-notplayed-${index}`} 
+                                  className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground"
+                                >
+                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                    <span className="truncate">{member.playerName}</span>
+                                  </div>
+                                  <div className="flex items-center flex-shrink-0">
+                                    <span className="text-sm text-muted-foreground">No score yet</span>
+                                    <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
+                                  </div>
+                                </div>
+                              ))
+                            }
+                            
+                            {/* Show current user if they haven't played */}
+                            {!group.currentUserHasPlayed && (
+                              <div 
+                                className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg transition-colors text-muted-foreground"
+                              >
+                                <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                  <span className="truncate">You</span>
+                                </div>
+                                <div className="flex items-center flex-shrink-0">
+                                  <span className="text-sm text-muted-foreground">No score yet</span>
+                                  <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
+                                </div>
                               </div>
                             )}
                           </div>
@@ -386,9 +428,19 @@ const TodayScores = () => {
                   
                   {/* Friends scores list */}
                   <div className="space-y-3">
-                    {friends
-                      // Sort by score (lower is better for some games)
-                      .map(friend => {
+                    {/* Include current user in the friends list for ranking */}
+                    {[
+                      // Add current user to the list
+                      ...(groupPerformanceData.some(g => g.currentUserHasPlayed) ? [{
+                        playerId: user?.id || '',
+                        playerName: 'You',
+                        hasPlayed: true,
+                        score: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore || null,
+                        isCurrentUser: true
+                      }] : []),
+                      
+                      // Add friends to the list
+                      ...friends.map(friend => {
                         // Find this friend's data in any group
                         const friendData = groupPerformanceData.flatMap(group => group.members)
                           .find(member => member.playerId === friend.id);
@@ -397,9 +449,11 @@ const TodayScores = () => {
                           playerId: friend.id,
                           playerName: friend.name,
                           hasPlayed: friendData?.hasPlayed || false,
-                          score: friendData?.score || null
+                          score: friendData?.score || null,
+                          isCurrentUser: false
                         };
                       })
+                    ]
                       // Sort by score (lower is better for some games)
                       .sort((a, b) => {
                         // Handle players with no scores
@@ -412,28 +466,32 @@ const TodayScores = () => {
                           ? (a.score || 999) - (b.score || 999)
                           : (b.score || 0) - (a.score || 0);
                       })
-                      .map((friend, index) => (
+                      .map((person, index) => (
                         <div 
-                          key={friend.playerId}
+                          key={person.playerId}
                           className={cn(
                             "flex items-center justify-between p-3 rounded-lg",
-                            index === 0 && friend.hasPlayed ? "bg-accent/10 border border-accent/20" : "hover:bg-muted/50"
+                            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
+                            index === 0 && person.hasPlayed ? "border border-accent/20" : ""
                           )}
                         >
                           <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                            {index === 0 && friend.hasPlayed && (
+                            {index === 0 && person.hasPlayed && (
                               <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                             )}
-                            <div className="font-medium truncate">{friend.playerName}</div>
-                            {index === 0 && friend.hasPlayed && (
+                            <div className="font-medium truncate">
+                              {person.playerName}
+                              {person.isCurrentUser && " (you)"}
+                            </div>
+                            {index === 0 && person.hasPlayed && (
                               <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
                                 Top score
                               </span>
                             )}
                           </div>
                           <div className="flex-shrink-0">
-                            {friend.hasPlayed ? (
-                              <span className="font-semibold">{friend.score}</span>
+                            {person.hasPlayed ? (
+                              <span className="font-semibold">{person.score}</span>
                             ) : (
                               <span className="text-sm text-muted-foreground">No score yet</span>
                             )}
@@ -442,20 +500,14 @@ const TodayScores = () => {
                       ))
                     }
                     
-                    {/* Show current user's position */}
-                    {user && (
-                      <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">Your score today</div>
-                          <div>
-                            {groupPerformanceData.some(g => g.currentUserHasPlayed) ? (
-                              <span className="font-semibold">
-                                {groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No score yet</span>
-                            )}
-                          </div>
+                    {/* Add the current user if they haven't played yet */}
+                    {!groupPerformanceData.some(g => g.currentUserHasPlayed) && (
+                      <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+                          <div className="font-medium truncate">You</div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <span className="text-sm text-muted-foreground">No score yet</span>
                         </div>
                       </div>
                     )}
