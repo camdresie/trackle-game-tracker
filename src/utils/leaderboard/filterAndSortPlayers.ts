@@ -1,3 +1,4 @@
+
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -23,7 +24,8 @@ export const filterAndSortPlayers = (
   userId?: string,
   friendIds: string[] = [],
   selectedGroupMemberIds: string[] = [],
-  maxPlayers: number = 25 // Default to 25 players maximum
+  maxPlayers: number = 25, // Default to 25 players maximum
+  includeAllFriends: boolean = false // New parameter to include all friends regardless of group
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
@@ -40,7 +42,12 @@ export const filterAndSortPlayers = (
   
   // Friends filter
   if (showFriendsOnly) {
-    if (selectedGroupMemberIds.length > 0) {
+    if (includeAllFriends) {
+      // For the "All Friends" view, include all friends and current user
+      filteredPlayers = filteredPlayers.filter(player => 
+        player.player_id === userId || friendIds.includes(player.player_id)
+      );
+    } else if (selectedGroupMemberIds.length > 0) {
       // Show specific group members and current user
       // Ensure all group member IDs are strings for consistent comparison
       const normalizedGroupMemberIds = selectedGroupMemberIds.map(id => id.toString());

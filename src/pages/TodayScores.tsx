@@ -112,6 +112,8 @@ const TodayScores = () => {
       hasPlayed: member.hasPlayed
     }));
   };
+
+  const { friends } = useHomeData();
   
   return (
     <div className="min-h-screen bg-background">
@@ -356,17 +358,22 @@ const TodayScores = () => {
                     </h3>
                     
                     {/* Add All Friends Share Button with useActualUsername set to true */}
-                    {groupPerformanceData.length > 0 && (
+                    {friends.length > 0 && (
                       <GroupScoresShare
                         groupName="All Friends"
                         gameName={selectedGame?.name || ""}
                         gameColor={selectedGame?.color || ""}
-                        members={convertToGroupMemberScores(
-                          groupPerformanceData.flatMap(group => group.members)
-                            .filter((member, index, self) => 
-                              index === self.findIndex(m => m.playerId === member.playerId)
-                            )
-                        )}
+                        members={friends.map(friend => {
+                          // Find this friend's data in any group
+                          const friendData = groupPerformanceData.flatMap(group => group.members)
+                            .find(member => member.playerId === friend.id);
+                            
+                          return {
+                            playerName: friend.name,
+                            score: friendData?.score || null,
+                            hasPlayed: friendData?.hasPlayed || false
+                          };
+                        })}
                         currentUserName={profile?.username || ""}
                         currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
                         currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
@@ -377,12 +384,20 @@ const TodayScores = () => {
                   
                   {/* Friends scores list */}
                   <div className="space-y-3">
-                    {/* Combine all friends from all groups */}
-                    {groupPerformanceData.flatMap(group => group.members)
-                      // Remove duplicates based on playerId
-                      .filter((member, index, self) => 
-                        index === self.findIndex(m => m.playerId === member.playerId)
-                      )
+                    {friends
+                      // Sort by score (lower is better for some games)
+                      .map(friend => {
+                        // Find this friend's data in any group
+                        const friendData = groupPerformanceData.flatMap(group => group.members)
+                          .find(member => member.playerId === friend.id);
+                          
+                        return {
+                          playerId: friend.id,
+                          playerName: friend.name,
+                          hasPlayed: friendData?.hasPlayed || false,
+                          score: friendData?.score || null
+                        };
+                      })
                       // Sort by score (lower is better for some games)
                       .sort((a, b) => {
                         // Handle players with no scores
@@ -400,7 +415,7 @@ const TodayScores = () => {
                           key={friend.playerId}
                           className={cn(
                             "flex items-center justify-between p-3 rounded-lg",
-                            index === 0 ? "bg-accent/10 border border-accent/20" : "hover:bg-muted/50"
+                            index === 0 && friend.hasPlayed ? "bg-accent/10 border border-accent/20" : "hover:bg-muted/50"
                           )}
                         >
                           <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
