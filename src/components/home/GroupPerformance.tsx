@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,10 +34,28 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
   );
   const isMobile = useIsMobile();
   
+  // Add logging to understand what data we're getting
+  useEffect(() => {
+    if (groupPerformanceData && groupPerformanceData.length > 0) {
+      console.log("GroupPerformance: Raw group data received:", JSON.stringify(groupPerformanceData, null, 2));
+      
+      // Log specific group details for each group
+      groupPerformanceData.forEach((group, index) => {
+        console.log(`Group ${index + 1} - ${group.groupName}:`);
+        console.log(`- Current user has played: ${group.currentUserHasPlayed}`);
+        console.log(`- Current user score: ${group.currentUserScore}`);
+        console.log(`- Member count: ${group.members.length}`);
+        console.log(`- Members:`, group.members);
+      });
+    }
+  }, [groupPerformanceData]);
+  
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
     // For games like Wordle and Mini Crossword, lower scores are better
     const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
+    
+    console.log(`Group ${group.groupName}: Processing leading player determination`);
     
     // Combine current user and members into one array to find the leading player
     const allPlayers = [
@@ -55,6 +73,8 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         }))
     ];
     
+    console.log(`Group ${group.groupName}: All players for leading determination:`, allPlayers);
+    
     if (allPlayers.length === 0) return null;
     
     // Sort players by score (according to game type)
@@ -65,6 +85,8 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         return (b.score || 0) - (a.score || 0);
       }
     });
+    
+    console.log(`Group ${group.groupName}: Sorted players:`, sortedPlayers);
     
     // Return the leading player
     return sortedPlayers[0];
@@ -167,33 +189,59 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         <ScrollArea className="max-h-64">
           <div className="space-y-4">
             {groupPerformanceData.map((group) => {
+              console.log(`Rendering group: ${group.groupName}`);
               const leadingPlayer = getLeadingPlayerInGroup(group);
               const userIsLeading = leadingPlayer?.isCurrentUser;
               const groupMemberScores = convertToGroupMemberScores(group.members);
               
-              // Create a combined list of all members, filtering out duplicates
-              // First identify the current user in the members list to avoid duplicates
+              // Check if current user is already in the members list to avoid duplicates
               const isCurrentUserInMembers = group.members.some(m => 
                 user && m.playerId === user.id
               );
               
-              // Create a list that includes the current user (if played and not already in members)
-              // followed by all other group members (excluding duplicate entries of current user)
-              const allMembers: GroupMember[] = [
-                ...(!isCurrentUserInMembers && group.currentUserHasPlayed ? [{
+              console.log(`Group ${group.groupName}: Current user in members? ${isCurrentUserInMembers}`);
+              
+              // Create a combined list of all members for display
+              // This is where we'll make sure we don't have duplicates
+              const allMembers: GroupMember[] = [];
+              
+              // First add the current user if they've played and are not already in the members list
+              if (!isCurrentUserInMembers && group.currentUserHasPlayed) {
+                allMembers.push({
                   playerId: user?.id || '',
                   playerName: 'You',
                   hasPlayed: true,
                   score: group.currentUserScore,
                   isCurrentUser: true
-                }] : []),
-                ...group.members
-                  .filter(m => m.playerId !== user?.id || (m.playerId === user?.id && !group.currentUserHasPlayed))
-                  .map(m => ({
-                    ...m,
-                    isCurrentUser: user && m.playerId === user.id
-                  }))
-              ];
+                });
+                console.log(`Group ${group.groupName}: Added current user as "You" to allMembers`);
+              }
+              
+              // Then add all other members (excluding the current user if they're already added)
+              group.members.forEach(member => {
+                // Skip if this is the current user and we've already added them
+                if (user && member.playerId === user.id) {
+                  // If member is current user, only add if we need to (as an unplayed entry)
+                  if (!group.currentUserHasPlayed) {
+                    allMembers.push({
+                      ...member,
+                      isCurrentUser: true,
+                      playerName: 'You' // Display as "You" for consistency
+                    });
+                    console.log(`Group ${group.groupName}: Added current user from members as "You" (unplayed)`);
+                  } else {
+                    console.log(`Group ${group.groupName}: Skipped adding current user from members (already added as played)`);
+                  }
+                } else {
+                  // This is not the current user, add normally
+                  allMembers.push({
+                    ...member,
+                    isCurrentUser: false
+                  });
+                }
+              });
+              
+              console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
               
               // Sort all members by score
               const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
@@ -206,6 +254,8 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                     return (b.score || 0) - (a.score || 0);
                   }
                 });
+              
+              console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
               
               return (
                 <div key={group.groupId} className="rounded-md border p-3">
@@ -274,9 +324,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                         >
                           <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
                             <span className="truncate">
-                              {member.isCurrentUser 
-                                ? 'You' 
-                                : member.playerName}
+                              {member.playerName}
                             </span>
                             {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
                               <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px] shrink-0">
@@ -303,7 +351,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                       >
                         <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
                           <span className="truncate">
-                            {member.isCurrentUser ? 'You' : member.playerName}
+                            {member.playerName}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">

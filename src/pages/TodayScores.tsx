@@ -223,19 +223,40 @@ const TodayScores = () => {
                     const groupMemberScores = convertToGroupMemberScores(group.members);
                     
                     // Create a combined list of all members plus the current user
-                    const allMembers: GroupMember[] = [
-                      ...(group.currentUserHasPlayed ? [{
+                    const allMembers: GroupMember[] = [];
+                
+                    // First add the current user if they've played and aren't already in the members list
+                    if (!group.members.some(m => user && m.playerId === user.id) && group.currentUserHasPlayed) {
+                      allMembers.push({
                         playerId: user?.id || '',
                         playerName: 'You',
                         hasPlayed: true,
                         score: group.currentUserScore,
                         isCurrentUser: true
-                      }] : []),
-                      ...group.members.map(m => ({
-                        ...m,
-                        isCurrentUser: false
-                      }))
-                    ];
+                      });
+                    }
+                    
+                    // Then add all group members (excluding duplicates of current user)
+                    group.members.forEach(m => {
+                      // If this is the current user, only add if we haven't already added them as "You"
+                      if (user && m.playerId === user.id) {
+                        // Only add the current user from members list if they haven't played
+                        // (otherwise we already added them above)
+                        if (!group.currentUserHasPlayed) {
+                          allMembers.push({
+                            ...m,
+                            playerName: 'You',
+                            isCurrentUser: true
+                          });
+                        }
+                      } else {
+                        // Not the current user, add normally
+                        allMembers.push({
+                          ...m,
+                          isCurrentUser: false
+                        });
+                      }
+                    });
                     
                     // Sort all members by score
                     const sortedMembers = [...allMembers]
@@ -407,8 +428,9 @@ const TodayScores = () => {
                   <div className="space-y-3">
                     {/* Include current user in the friends list for ranking */}
                     {[
-                      // Add current user to the list if they've played
-                      ...(groupPerformanceData.some(g => g.currentUserHasPlayed) ? [{
+                      // Add current user to the list if they've played and not already in friend list
+                      ...(groupPerformanceData.some(g => g.currentUserHasPlayed) && 
+                         !friends.some(f => user && f.id === user.id) ? [{
                         playerId: user?.id || '',
                         playerName: 'You',
                         hasPlayed: true,
@@ -417,22 +439,28 @@ const TodayScores = () => {
                       }] : []),
                       
                       // Add friends to the list with explicitly set isCurrentUser property
-                      // Exclude the current user from this list to avoid duplicates
-                      ...friends
-                        .filter(friend => friend.id !== user?.id) // Exclude current user 
-                        .map(friend => {
-                          // Find this friend's data in any group
-                          const friendData = groupPerformanceData.flatMap(group => group.members)
-                            .find(member => member.playerId === friend.id);
+                      // Special handling for current user if they appear in friends list
+                      ...friends.map(friend => {
+                        // Is this friend entry the current user?
+                        const isCurrentUser = user && friend.id === user.id;
+                        
+                        // Find this friend's data in any group
+                        const friendData = groupPerformanceData.flatMap(group => group.members)
+                          .find(member => member.playerId === friend.id);
+                        
+                        // If this is the current user and they've already played, don't add again
+                        if (isCurrentUser && groupPerformanceData.some(g => g.currentUserHasPlayed)) {
+                          return null; // Skip this entry
+                        }
                           
-                          return {
-                            playerId: friend.id,
-                            playerName: friend.name,
-                            hasPlayed: friendData?.hasPlayed || false,
-                            score: friendData?.score || null,
-                            isCurrentUser: false
-                          };
-                        })
+                        return {
+                          playerId: friend.id,
+                          playerName: isCurrentUser ? 'You' : friend.name,
+                          hasPlayed: friendData?.hasPlayed || false,
+                          score: friendData?.score || null,
+                          isCurrentUser
+                        };
+                      }).filter(Boolean) // Filter out null entries
                     ]
                       // Sort by score (lower is better for some games)
                       .sort((a, b) => {
