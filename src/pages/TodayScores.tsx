@@ -87,6 +87,13 @@ const TodayScores = () => {
   // Determine if lower scores are better for the selected game
   const isLowerBetter = selectedGame?.id === 'wordle' || selectedGame?.id === 'mini-crossword';
   
+  // Add debugging
+  useEffect(() => {
+    if (groupPerformanceData) {
+      console.log("TodayScores: Raw group performance data:", JSON.stringify(groupPerformanceData, null, 2));
+    }
+  }, [groupPerformanceData]);
+  
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: any) => {
     if (!group || !group.members || group.members.length === 0) return null;
@@ -127,8 +134,6 @@ const TodayScores = () => {
       hasPlayed: member.hasPlayed
     }));
   };
-
-  
 
   return (
     <div className="min-h-screen bg-background">
@@ -221,12 +226,13 @@ const TodayScores = () => {
                     const leadingPlayer = getLeadingPlayerInGroup(group);
                     // Convert members array to the format expected by GroupScoresShare
                     const groupMemberScores = convertToGroupMemberScores(group.members);
-                    
-                    // Create a combined list of all members plus the current user
+                  
+                    // FIXED: Create a combined list of all members properly handling current user
                     const allMembers: GroupMember[] = [];
-                
-                    // First add the current user if they've played and aren't already in the members list
-                    if (!group.members.some(m => user && m.playerId === user.id) && group.currentUserHasPlayed) {
+                  
+                    // If the current user has played, add them to the list first
+                    if (group.currentUserHasPlayed) {
+                      console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
                       allMembers.push({
                         playerId: user?.id || '',
                         playerName: 'You',
@@ -234,31 +240,36 @@ const TodayScores = () => {
                         score: group.currentUserScore,
                         isCurrentUser: true
                       });
+                    } else if (user) {
+                      // If current user hasn't played, add them as not played
+                      console.log(`Group ${group.groupName}: Adding current user as not played`);
+                      allMembers.push({
+                        playerId: user.id,
+                        playerName: 'You',
+                        hasPlayed: false,
+                        isCurrentUser: true
+                      });
                     }
-                    
-                    // Then add all group members (excluding duplicates of current user)
+                  
+                    // Add all other group members (excluding the current user)
                     group.members.forEach(m => {
-                      // If this is the current user, only add if we haven't already added them as "You"
+                      // Skip if this is the current user - we've already handled them above
                       if (user && m.playerId === user.id) {
-                        // Only add the current user from members list if they haven't played
-                        // (otherwise we already added them above)
-                        if (!group.currentUserHasPlayed) {
-                          allMembers.push({
-                            ...m,
-                            playerName: 'You',
-                            isCurrentUser: true
-                          });
-                        }
-                      } else {
-                        // Not the current user, add normally
-                        allMembers.push({
-                          ...m,
-                          isCurrentUser: false
-                        });
+                        console.log(`Group ${group.groupName}: Skipping current user ${m.playerName} from members list`);
+                        return;
                       }
-                    });
                     
-                    // Sort all members by score
+                      // Add non-current-user member
+                      console.log(`Group ${group.groupName}: Adding member ${m.playerName}`);
+                      allMembers.push({
+                        ...m,
+                        isCurrentUser: false
+                      });
+                    });
+                  
+                    console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
+                  
+                    // Sort all members by score, with played members at the top
                     const sortedMembers = [...allMembers]
                       .filter(m => m.hasPlayed)
                       .sort((a, b) => {
@@ -268,7 +279,13 @@ const TodayScores = () => {
                           return (b.score || 0) - (a.score || 0);
                         }
                       });
-                    
+                  
+                    // Get members who haven't played
+                    const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
+                  
+                    console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
+                    console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
+                  
                     return (
                       
                       <Card key={group.groupId} className="p-6 overflow-hidden">
@@ -341,9 +358,7 @@ const TodayScores = () => {
                                 >
                                   <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
                                     <span className="truncate">
-                                      {member.isCurrentUser 
-                                        ? 'You' 
-                                        : member.playerName}
+                                      {member.playerName}
                                     </span>
                                     {index === 0 && (
                                       <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
@@ -362,27 +377,24 @@ const TodayScores = () => {
                                 No scores recorded for this group today
                               </div>
                             )}
-                            
-                            
-                            {group.members
-                              .filter(m => !m.hasPlayed)
-                              .map((member, index) => (
-                                <div 
-                                  key={`${member.playerId}-notplayed-${index}`} 
-                                  className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground"
-                                >
-                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                    <span className="truncate">{member.playerName}</span>
-                                  </div>
-                                  <div className="flex items-center flex-shrink-0">
-                                    <span className="text-sm text-muted-foreground">No score yet</span>
-                                    <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                  </div>
+                          
+                            {notPlayedMembers.map((member, index) => (
+                              <div 
+                                key={`${member.playerId}-notplayed-${index}`} 
+                                className={cn(
+                                  "flex items-center justify-between p-3 rounded-lg transition-colors text-muted-foreground",
+                                  member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                                )}
+                              >
+                                <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                  <span className="truncate">{member.playerName}</span>
                                 </div>
-                              ))
-                            }
-                            
-                            
+                                <div className="flex items-center flex-shrink-0">
+                                  <span className="text-sm text-muted-foreground">No score yet</span>
+                                  <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </Card>

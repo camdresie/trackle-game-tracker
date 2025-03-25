@@ -194,19 +194,12 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               const userIsLeading = leadingPlayer?.isCurrentUser;
               const groupMemberScores = convertToGroupMemberScores(group.members);
               
-              // Check if current user is already in the members list to avoid duplicates
-              const isCurrentUserInMembers = group.members.some(m => 
-                user && m.playerId === user.id
-              );
-              
-              console.log(`Group ${group.groupName}: Current user in members? ${isCurrentUserInMembers}`);
-              
-              // Create a combined list of all members for display
-              // This is where we'll make sure we don't have duplicates
+              // FIXED: Create a combined list of all members with current user handling
               const allMembers: GroupMember[] = [];
               
-              // First add the current user if they've played and are not already in the members list
-              if (!isCurrentUserInMembers && group.currentUserHasPlayed) {
+              // First add the current user if they've played
+              if (group.currentUserHasPlayed) {
+                console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
                 allMembers.push({
                   playerId: user?.id || '',
                   playerName: 'You',
@@ -214,40 +207,40 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                   score: group.currentUserScore,
                   isCurrentUser: true
                 });
-                console.log(`Group ${group.groupName}: Added current user as "You" to allMembers`);
+              } else if (user) {
+                // If current user hasn't played, add them as not played
+                console.log(`Group ${group.groupName}: Adding current user as not played`);
+                allMembers.push({
+                  playerId: user.id,
+                  playerName: 'You',
+                  hasPlayed: false,
+                  isCurrentUser: true
+                });
               }
               
-              // Then add all other members (excluding the current user if they're already added)
+              // Then add all other members (excluding the current user)
               group.members.forEach(member => {
-                // Skip if this is the current user and we've already added them
+                // Skip if this is the current user - we've already handled them above
                 if (user && member.playerId === user.id) {
-                  // If member is current user, only add if we need to (as an unplayed entry)
-                  if (!group.currentUserHasPlayed) {
-                    allMembers.push({
-                      ...member,
-                      isCurrentUser: true,
-                      playerName: 'You' // Display as "You" for consistency
-                    });
-                    console.log(`Group ${group.groupName}: Added current user from members as "You" (unplayed)`);
-                  } else {
-                    console.log(`Group ${group.groupName}: Skipped adding current user from members (already added as played)`);
-                  }
-                } else {
-                  // This is not the current user, add normally
-                  allMembers.push({
-                    ...member,
-                    isCurrentUser: false
-                  });
+                  console.log(`Group ${group.groupName}: Skipping current user ${member.playerName} from members list`);
+                  return;
                 }
+                
+                // Add non-current-user member
+                console.log(`Group ${group.groupName}: Adding member ${member.playerName}`);
+                allMembers.push({
+                  ...member,
+                  isCurrentUser: false
+                });
               });
               
               console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
               
-              // Sort all members by score
-              const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
+              // Sort members who have played by score
               const sortedMembers = [...allMembers]
                 .filter(m => m.hasPlayed)
                 .sort((a, b) => {
+                  const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
                   if (isLowerBetter) {
                     return (a.score || 999) - (b.score || 999);
                   } else {
@@ -255,7 +248,11 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                   }
                 });
               
+              // Get members who haven't played
+              const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
+              
               console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
+              console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
               
               return (
                 <div key={group.groupId} className="rounded-md border p-3">
@@ -344,7 +341,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                     )}
                     
                     {/* Show unplayed members at the bottom */}
-                    {allMembers.filter(m => !m.hasPlayed).map((member, index) => (
+                    {notPlayedMembers.map((member, index) => (
                       <div 
                         key={`${member.playerId}-unplayed-${index}`} 
                         className={`flex items-center justify-between text-sm py-1 border-b last:border-0 text-muted-foreground ${member.isCurrentUser ? 'bg-secondary/50 rounded-md px-2' : ''}`}
