@@ -407,7 +407,7 @@ const TodayScores = () => {
                   <div className="space-y-3">
                     {/* Include current user in the friends list for ranking */}
                     {[
-                      // Add current user to the list
+                      // Add current user to the list if they've played
                       ...(groupPerformanceData.some(g => g.currentUserHasPlayed) ? [{
                         playerId: user?.id || '',
                         playerName: 'You',
@@ -417,19 +417,22 @@ const TodayScores = () => {
                       }] : []),
                       
                       // Add friends to the list with explicitly set isCurrentUser property
-                      ...friends.map(friend => {
-                        // Find this friend's data in any group
-                        const friendData = groupPerformanceData.flatMap(group => group.members)
-                          .find(member => member.playerId === friend.id);
+                      // Exclude the current user from this list to avoid duplicates
+                      ...friends
+                        .filter(friend => friend.id !== user?.id) // Exclude current user 
+                        .map(friend => {
+                          // Find this friend's data in any group
+                          const friendData = groupPerformanceData.flatMap(group => group.members)
+                            .find(member => member.playerId === friend.id);
                           
-                        return {
-                          playerId: friend.id,
-                          playerName: friend.name,
-                          hasPlayed: friendData?.hasPlayed || false,
-                          score: friendData?.score || null,
-                          isCurrentUser: false
-                        };
-                      })
+                          return {
+                            playerId: friend.id,
+                            playerName: friend.name,
+                            hasPlayed: friendData?.hasPlayed || false,
+                            score: friendData?.score || null,
+                            isCurrentUser: false
+                          };
+                        })
                     ]
                       // Sort by score (lower is better for some games)
                       .sort((a, b) => {
@@ -446,11 +449,9 @@ const TodayScores = () => {
                       .map((person, index) => (
                         <div 
                           key={person.playerId}
-                          className={cn(
-                            "flex items-center justify-between p-3 rounded-lg",
-                            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
-                            index === 0 && person.hasPlayed ? "border border-accent/20" : ""
-                          )}
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                          } ${index === 0 && person.hasPlayed ? "border border-accent/20" : ""}`}
                         >
                           <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
                             {index === 0 && person.hasPlayed && (
@@ -458,7 +459,6 @@ const TodayScores = () => {
                             )}
                             <div className="font-medium truncate">
                               {person.playerName}
-                              {person.isCurrentUser && " (you)"}
                             </div>
                             {index === 0 && person.hasPlayed && (
                               <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
@@ -476,7 +476,6 @@ const TodayScores = () => {
                         </div>
                       ))
                     }
-                    
                     
                   </div>
                 </Card>

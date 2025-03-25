@@ -171,9 +171,16 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               const userIsLeading = leadingPlayer?.isCurrentUser;
               const groupMemberScores = convertToGroupMemberScores(group.members);
               
-              // Create a combined list of all members plus the current user
+              // Create a combined list of all members, filtering out duplicates
+              // First identify the current user in the members list to avoid duplicates
+              const isCurrentUserInMembers = group.members.some(m => 
+                user && m.playerId === user.id
+              );
+              
+              // Create a list that includes the current user (if played and not already in members)
+              // followed by all other group members
               const allMembers: GroupMember[] = [
-                ...(group.currentUserHasPlayed ? [{
+                ...(!isCurrentUserInMembers && group.currentUserHasPlayed ? [{
                   playerId: user?.id || '',
                   playerName: 'You',
                   hasPlayed: true,
@@ -182,7 +189,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                 }] : []),
                 ...group.members.map(m => ({
                   ...m,
-                  isCurrentUser: false
+                  isCurrentUser: user && m.playerId === user.id
                 }))
               ];
               
@@ -254,6 +261,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                     </div>
                   )}
                   
+                  {/* Group members scores */}
                   <h4 className="text-sm font-medium mb-1 mt-2 text-muted-foreground">Group Members</h4>
                   <div className="space-y-1">
                     {sortedMembers.length > 0 ? (
@@ -264,7 +272,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                         >
                           <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
                             <span className="truncate">
-                              {member.playerName}
+                              {member.isCurrentUser 
+                                ? 'You' 
+                                : member.playerName}
                             </span>
                             {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
                               <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px] shrink-0">
@@ -280,34 +290,25 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                         </div>
                       ))
                     ) : (
-                      <div className="text-sm text-muted-foreground">No members in this group</div>
+                      <div className="text-sm text-muted-foreground">No scores recorded for this group today</div>
                     )}
+                    
                     {/* Show unplayed members at the bottom */}
-                    {group.members.filter(m => !m.hasPlayed).map((member, index) => (
+                    {allMembers.filter(m => !m.hasPlayed).map((member, index) => (
                       <div 
                         key={`${member.playerId}-unplayed-${index}`} 
-                        className="flex items-center justify-between text-sm py-1 border-b last:border-0 text-muted-foreground"
+                        className={`flex items-center justify-between text-sm py-1 border-b last:border-0 text-muted-foreground ${member.isCurrentUser ? 'bg-secondary/50 rounded-md px-2' : ''}`}
                       >
                         <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
-                          <span className="truncate">{member.playerName}</span>
+                          <span className="truncate">
+                            {member.isCurrentUser ? 'You' : member.playerName}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">
                           <X className="w-4 h-4 text-muted-foreground" />
                         </div>
                       </div>
                     ))}
-                    {!group.currentUserHasPlayed && (
-                      <div 
-                        className="flex items-center justify-between text-sm py-1 border-b last:border-0 bg-secondary/50 rounded-md px-2 text-muted-foreground"
-                      >
-                        <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
-                          <span className="truncate">You</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 ml-2">
-                          <X className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    )}
                   </div>
                   <div className="mt-2 text-xs text-muted-foreground">
                     {allMembers.filter(m => m.hasPlayed).length} of {allMembers.length} members played today
