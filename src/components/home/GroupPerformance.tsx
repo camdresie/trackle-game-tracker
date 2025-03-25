@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +15,15 @@ interface GroupPerformanceProps {
   selectedGame: Game | null;
   todaysGames: any[];
   className?: string;
+}
+
+// Define a consistent interface for group members
+interface GroupMember {
+  playerId: string;
+  playerName: string;
+  hasPlayed: boolean;
+  score?: number | null;
+  isCurrentUser?: boolean;
 }
 
 const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPerformanceProps) => {
@@ -164,7 +172,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               const groupMemberScores = convertToGroupMemberScores(group.members);
               
               // Create a combined list of all members plus the current user
-              const allMembers = [
+              const allMembers: GroupMember[] = [
                 ...(group.currentUserHasPlayed ? [{
                   playerId: user?.id || '',
                   playerName: 'You',
@@ -172,7 +180,10 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                   score: group.currentUserScore,
                   isCurrentUser: true
                 }] : []),
-                ...group.members
+                ...group.members.map(m => ({
+                  ...m,
+                  isCurrentUser: false
+                }))
               ];
               
               // Sort all members by score
@@ -253,9 +264,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                         >
                           <div className="flex items-center gap-1 min-w-0 max-w-[70%]">
                             <span className="truncate">
-                              {member.isCurrentUser 
-                                ? 'You' 
-                                : `${member.playerName}`}
+                              {member.playerName}
                             </span>
                             {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
                               <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px] shrink-0">

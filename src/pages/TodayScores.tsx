@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -19,6 +18,15 @@ import GroupScoresShare from '@/components/groups/GroupScoresShare';
 import GameDropdownSelector from '@/components/game/GameDropdownSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+// Define a consistent interface for group members
+interface GroupMember {
+  playerId: string;
+  playerName: string;
+  hasPlayed: boolean;
+  score?: number | null;
+  isCurrentUser?: boolean;
+}
+
 const TodayScores = () => {
   const { user, profile } = useAuth();
   const {
@@ -36,6 +44,7 @@ const TodayScores = () => {
   const [showMessages, setShowMessages] = useState(false);
   const [selectedGroupForMessages, setSelectedGroupForMessages] = useState<{id: string, name: string} | null>(null);
   const isMobile = useIsMobile();
+  
   
   // Get group invitations
   const { 
@@ -70,6 +79,7 @@ const TodayScores = () => {
     setSelectedGroupForMessages({ id: groupId, name: groupName });
     setShowMessages(true);
   };
+  
   
   // Get today's date in Eastern Time for consistency
   const today = getFormattedTodayInEasternTime();
@@ -118,17 +128,22 @@ const TodayScores = () => {
     }));
   };
 
+  
+
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
       
       <main className="pt-28 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+        
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Today's Scores</h1>
             <p className="text-muted-foreground">{today}</p>
           </div>
         </div>
+        
+        
         
         {/* Time zone message */}
         <div className="mb-6 bg-muted/60 rounded-lg p-3 flex items-center gap-2 text-sm">
@@ -156,6 +171,8 @@ const TodayScores = () => {
           className="mb-4"
           showOnDesktop={true}
         />
+        
+        
         
         {!selectedGame ? (
           <Card className="p-8 flex flex-col items-center justify-center text-center">
@@ -199,13 +216,14 @@ const TodayScores = () => {
               
               <TabsContent value="groups" className="space-y-6">
                 <div className="space-y-6">
+                  
                   {groupPerformanceData.map((group) => {
                     const leadingPlayer = getLeadingPlayerInGroup(group);
                     // Convert members array to the format expected by GroupScoresShare
                     const groupMemberScores = convertToGroupMemberScores(group.members);
                     
                     // Create a combined list of all members plus the current user
-                    const allMembers = [
+                    const allMembers: GroupMember[] = [
                       ...(group.currentUserHasPlayed ? [{
                         playerId: user?.id || '',
                         playerName: 'You',
@@ -213,7 +231,10 @@ const TodayScores = () => {
                         score: group.currentUserScore,
                         isCurrentUser: true
                       }] : []),
-                      ...group.members
+                      ...group.members.map(m => ({
+                        ...m,
+                        isCurrentUser: false
+                      }))
                     ];
                     
                     // Sort all members by score
@@ -228,11 +249,13 @@ const TodayScores = () => {
                       });
                     
                     return (
+                      
                       <Card key={group.groupId} className="p-6 overflow-hidden">
+                        
                         <div className="flex flex-col">
                           {/* Mobile Layout: Full width group name at top */}
-                          {isMobile ? (
-                            <>
+                          
+                          <>
                               <div className="mb-3">
                                 <div className="flex items-center justify-between">
                                   <h3 className="font-semibold text-xl flex items-center gap-2">
@@ -281,40 +304,7 @@ const TodayScores = () => {
                                 </div>
                               </div>
                             </>
-                          ) : (
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-2 min-w-0 max-w-[50%]">
-                                <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                                <h3 className="font-semibold text-xl truncate">{group.groupName}</h3>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <GroupScoresShare
-                                  groupName={group.groupName}
-                                  gameName={selectedGame?.name || ""}
-                                  gameColor={selectedGame?.color || ""}
-                                  members={groupMemberScores}
-                                  currentUserName={profile?.username || ""}
-                                  currentUserScore={group.currentUserScore}
-                                  currentUserHasPlayed={group.currentUserHasPlayed}
-                                  className="mr-2"
-                                  useActualUsername={true}
-                                />
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="flex items-center gap-1"
-                                  onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                >
-                                  <MessageCircle className="w-4 h-4" />
-                                  <span className="hidden sm:inline">Messages</span>
-                                </Button>
-                                <div className="flex items-center flex-shrink-0 hidden sm:flex">
-                                  <span className={`inline-block w-3 h-3 rounded-full ${selectedGame?.color} mr-2`}></span>
-                                  <span className="truncate max-w-[80px]">{selectedGame?.name}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                          
                           
                           {/* Group members scores */}
                           <div className="space-y-3">
@@ -352,7 +342,7 @@ const TodayScores = () => {
                               </div>
                             )}
                             
-                            {/* Show users who haven't played yet */}
+                            
                             {group.members
                               .filter(m => !m.hasPlayed)
                               .map((member, index) => (
@@ -371,20 +361,7 @@ const TodayScores = () => {
                               ))
                             }
                             
-                            {/* Show current user if they haven't played */}
-                            {!group.currentUserHasPlayed && (
-                              <div 
-                                className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg transition-colors text-muted-foreground"
-                              >
-                                <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                  <span className="truncate">You</span>
-                                </div>
-                                <div className="flex items-center flex-shrink-0">
-                                  <span className="text-sm text-muted-foreground">No score yet</span>
-                                  <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                </div>
-                              </div>
-                            )}
+                            
                           </div>
                         </div>
                       </Card>
@@ -401,7 +378,7 @@ const TodayScores = () => {
                       <span className="truncate">All Friends' Today Scores</span>
                     </h3>
                     
-                    {/* Add All Friends Share Button with useActualUsername set to true */}
+                    
                     {friends.length > 0 && (
                       <GroupScoresShare
                         groupName="All Friends"
@@ -439,7 +416,7 @@ const TodayScores = () => {
                         isCurrentUser: true
                       }] : []),
                       
-                      // Add friends to the list
+                      // Add friends to the list with explicitly set isCurrentUser property
                       ...friends.map(friend => {
                         // Find this friend's data in any group
                         const friendData = groupPerformanceData.flatMap(group => group.members)
@@ -500,17 +477,7 @@ const TodayScores = () => {
                       ))
                     }
                     
-                    {/* Add the current user if they haven't played yet */}
-                    {!groupPerformanceData.some(g => g.currentUserHasPlayed) && (
-                      <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                        <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                          <div className="font-medium truncate">You</div>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <span className="text-sm text-muted-foreground">No score yet</span>
-                        </div>
-                      </div>
-                    )}
+                    
                   </div>
                 </Card>
               </TabsContent>
