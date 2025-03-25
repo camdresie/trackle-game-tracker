@@ -4,6 +4,7 @@ import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useGroupScores } from '@/hooks/useGroupScores';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
+import { useFriendsList } from '@/hooks/useFriendsList'; // Import the useFriendsList hook
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,9 @@ const TodayScores = () => {
     selectedGame,
     setSelectedGame,
   } = useHomeData();
+  
+  // Get friends list using the appropriate hook
+  const { friends } = useFriendsList();
   
   const [activeTab, setActiveTab] = useState<'groups' | 'friends'>('groups');
   const [showMessages, setShowMessages] = useState(false);
@@ -113,8 +117,6 @@ const TodayScores = () => {
     }));
   };
 
-  const { friends } = useHomeData();
-  
   return (
     <div className="min-h-screen bg-background">
       <NavBar />

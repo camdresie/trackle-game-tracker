@@ -25,7 +25,7 @@ export const filterAndSortPlayers = (
   friendIds: string[] = [],
   selectedGroupMemberIds: string[] = [],
   maxPlayers: number = 25, // Default to 25 players maximum
-  includeAllFriends: boolean = false // New parameter to include all friends regardless of group
+  includeAllFriends: boolean = false // Parameter to include all friends regardless of group
 ): LeaderboardPlayer[] => {
   if (!leaderboardPlayers.length) return [];
   
