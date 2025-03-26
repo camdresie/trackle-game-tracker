@@ -53,12 +53,14 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     onScoreChange(newValue);
   };
   
-  // Handle slider change
+  // Handle slider change - completely rewritten to ensure it works correctly
   const handleSliderChange = (newValues: number[]) => {
-    const newValue = newValues[0];
-    setValue(newValue);
-    console.log(`StandardScoreInput: value changed to ${newValue} via slider`);
-    onScoreChange(newValue);
+    if (newValues && newValues.length > 0) {
+      const newValue = newValues[0];
+      setValue(newValue);
+      console.log(`StandardScoreInput: value changed to ${newValue} via slider`);
+      onScoreChange(newValue);
+    }
   };
 
   // Get min value based on game
