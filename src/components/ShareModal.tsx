@@ -32,18 +32,30 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   // Use the group messages hook for sending messages
   const { sendMessage } = useGroupMessages(selectedGroupId);
 
-  // Remove the link for preview display and group messages
+  // Remove the link for preview display
   const getDisplayContent = () => {
     // Split the text by the link line and take only the content part
-    const parts = shareText.split('\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com');
+    const parts = shareText.split('\n\nI\'m tracking our scores on Trackle! Join us at https://www.ontrackle.com');
     return parts[0]; // Return just the content without the link
   };
 
   // Remove the link for group messages
   const getMessageContentForGroup = () => {
-    // Split the text by the link line and take only the content part
-    const parts = shareText.split('\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com');
-    return parts[0]; // Return just the content without the link
+    // Split the text by any variation of the link text to ensure we capture all possible forms
+    const linkPatterns = [
+      '\n\nI\'m tracking our scores on Trackle! Join us at https://www.ontrackle.com',
+      '\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com'
+    ];
+    
+    let content = shareText;
+    for (const pattern of linkPatterns) {
+      if (content.includes(pattern)) {
+        content = content.split(pattern)[0];
+        break;
+      }
+    }
+    
+    return content; // Return content without any link
   };
 
   const handleCopyToClipboard = async () => {

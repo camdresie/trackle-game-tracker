@@ -43,8 +43,8 @@ const GroupScoresShare = ({
     return formatInTimeZone(new Date(), 'America/New_York', 'MMMM d, yyyy');
   };
   
-  // Generate the share text with group members scores
-  const generateShareText = () => {
+  // Generate the core share text content without the promotional link
+  const generateShareContent = () => {
     let shareText = `🎮 ${groupName} - ${gameName} Scores for ${getTodayFormatted()}\n\n`;
     
     // Create a Set to track which player names have already been added
@@ -89,9 +89,13 @@ const GroupScoresShare = ({
       shareText += `${displayName}\n`;
     }
     
-    shareText += `\nI'm tracking our scores on Trackle! Join us at https://www.ontrackle.com`;
-    
     return shareText;
+  };
+  
+  // Generate the share text with promotional link for external sharing only
+  const generateShareText = () => {
+    const shareContent = generateShareContent();
+    return `${shareContent}\n\nI'm tracking our scores on Trackle! Join us at https://www.ontrackle.com`;
   };
   
   // Handle opening the share modal
