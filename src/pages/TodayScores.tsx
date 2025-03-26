@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -137,6 +138,7 @@ const TodayScores = () => {
   };
 
   // Create a combined list for all friends including those without scores
+  // UPDATED: Always include the current user in the list even if they haven't played
   const getAllFriendsList = () => {
     // Start with all the user's friends
     const allFriends = [...friends.map(friend => {
@@ -156,14 +158,19 @@ const TodayScores = () => {
       };
     })];
     
-    // Add current user if they're not already in the list and have played
-    if (user && !friends.some(f => f.id === user.id) && 
-        groupPerformanceData.some(g => g.currentUserHasPlayed)) {
+    // Add current user if they're not already in the list
+    if (user && !allFriends.some(f => f.isCurrentUser)) {
+      // Find if the user has played this game today
+      const hasPlayed = groupPerformanceData.some(g => g.currentUserHasPlayed);
+      const userScore = hasPlayed ? 
+        groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore : null;
+        
+      // Add current user to the list
       allFriends.push({
         playerId: user.id,
         playerName: 'You',
-        hasPlayed: true,
-        score: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore || null,
+        hasPlayed: hasPlayed,
+        score: userScore,
         isCurrentUser: true
       });
     }
