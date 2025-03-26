@@ -227,7 +227,7 @@ const TodayScores = () => {
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
                       <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
-                      <span className="truncate">All Friends' Scores Today</span>
+                      <span className="truncate">All Friends' {selectedGame?.name || ''} Scores Today</span>
                     </h3>
                     
                     
@@ -428,7 +428,7 @@ const TodayScores = () => {
                                 <div className="flex items-center justify-between">
                                   <h3 className="font-semibold text-xl flex items-center gap-2">
                                     <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                                    <span className="truncate">{group.groupName}</span>
+                                    <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
                                   </h3>
                                   {/* Only show Leading badge here on mobile, not in the score section below */}
                                   {leadingPlayer?.isCurrentUser && (
