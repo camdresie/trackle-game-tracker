@@ -90,8 +90,6 @@ export const useHomeData = (): HomeDataResult => {
   }, [user, gamesList, toast]);
   
   const handleAddScore = (newScore: Score) => {
-    console.log('[useHomeData] handleAddScore called with:', newScore);
-    
     // First, check if this is an update to an existing score
     const isUpdating = scores.some(score => 
       score.gameId === newScore.gameId && score.date === newScore.date
@@ -126,11 +124,6 @@ export const useHomeData = (): HomeDataResult => {
     queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     queryClient.invalidateQueries({ queryKey: ['today-games'] });
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
-    
-    console.log('[useHomeData] Score operation completed:', newScore);
-    console.log('[useHomeData] Updated today\'s games:', 
-      isUpdating ? 'Updated existing score' : 'Added new score'
-    );
   };
 
   return {

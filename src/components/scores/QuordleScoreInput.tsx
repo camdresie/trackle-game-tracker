@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { calculateQuordleScore } from '@/utils/scoreUtils';
@@ -20,7 +19,6 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
   
   // Update internal state when prop values change
   useEffect(() => {
-    console.log('QuordleScoreInput: initialValues updated', initialValues);
     if (initialValues) {
       setQuordleValues(initialValues);
       setQuordleDisplayValues(initialValues.map(val => val === 10 ? 'X' : val.toString()));
@@ -35,17 +33,13 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
     newDisplayValues[index] = e.target.value;
     setQuordleDisplayValues(newDisplayValues);
     
-    console.log(`Quordle input change for word ${index + 1}: '${e.target.value}'`);
-    
     // Now process the input to update the actual values
     const newQuordleValues = [...quordleValues];
     
     if (e.target.value === '') {
       // Empty input means user is editing - keep the display empty but don't update the value yet
-      console.log(`User is editing word ${index + 1} (field emptied)`);
     } else if (e.target.value.toLowerCase() === 'x') {
       // "X" input for failed attempts - now worth 10 points instead of 9
-      console.log(`Setting word ${index + 1} to 10 (X input)`);
       newQuordleValues[index] = 10; // Changed from 9 to 10
       setQuordleValues(newQuordleValues);
       onScoreChange(newQuordleValues);
@@ -53,7 +47,6 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
       // Try to parse as a number
       const numValue = parseInt(e.target.value);
       if (!isNaN(numValue) && numValue >= 1 && numValue <= 9) {
-        console.log(`Setting word ${index + 1} to numeric value: ${numValue}`);
         newQuordleValues[index] = numValue;
         setQuordleValues(newQuordleValues);
         onScoreChange(newQuordleValues);
@@ -71,7 +64,6 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
     if (displayValue === '' || (displayValue !== 'X' && displayValue !== 'x' && (isNaN(parseInt(displayValue)) || parseInt(displayValue) < 1 || parseInt(displayValue) > 9))) {
       newDisplayValues[index] = '7'; // Default display
       newQuordleValues[index] = 7; // Default value
-      console.log(`Restoring word ${index + 1} to default 7 (invalid input on blur)`);
       
       setQuordleDisplayValues(newDisplayValues);
       setQuordleValues(newQuordleValues);

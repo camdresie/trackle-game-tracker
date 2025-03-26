@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -16,7 +15,6 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   
   // Ensure the local state stays in sync with the prop
   useEffect(() => {
-    console.log(`StandardScoreInput: initialValue updated to ${initialValue}`);
     setValue(initialValue);
   }, [initialValue]);
   
@@ -50,7 +48,6 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     }
     
     setValue(newValue);
-    console.log(`StandardScoreInput: value changed to ${newValue} via input`);
     onScoreChange(newValue);
   };
   
@@ -59,7 +56,6 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     if (newValues && newValues.length > 0) {
       const newValue = newValues[0];
       setValue(newValue);
-      console.log(`StandardScoreInput: value changed to ${newValue} via slider`);
       onScoreChange(newValue);
     }
   };

@@ -67,7 +67,6 @@ const Index = () => {
           onOpenChange={setShowGameSelection}
           games={gamesList}
           onSelectGame={(game) => {
-            console.log('Game selected:', game);
             setSelectedGame(game);
             setShowAddScore(true);
           }}
