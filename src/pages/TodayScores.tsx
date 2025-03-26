@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -40,7 +41,8 @@ const TodayScores = () => {
   // Get friends list using the appropriate hook
   const { friends } = useFriendsList();
   
-  const [activeTab, setActiveTab] = useState<'groups' | 'friends'>('groups');
+  // Changed default active tab to 'friends' instead of 'groups'
+  const [activeTab, setActiveTab] = useState<'friends' | 'groups'>('friends');
   const [showMessages, setShowMessages] = useState(false);
   const [selectedGroupForMessages, setSelectedGroupForMessages] = useState<{id: string, name: string} | null>(null);
   const isMobile = useIsMobile();
@@ -205,20 +207,150 @@ const TodayScores = () => {
           <div className="space-y-6">
             <Tabs 
               value={activeTab} 
-              onValueChange={(value) => setActiveTab(value as 'groups' | 'friends')}
+              onValueChange={(value) => setActiveTab(value as 'friends' | 'groups')}
               className="w-full"
             >
               <TabsList className="mb-4">
-                <TabsTrigger value="groups" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>By Group</span>
-                </TabsTrigger>
+                {/* Swapped tab order - All Friends first, By Group second */}
                 <TabsTrigger value="friends" className="flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
                   <span>All Friends</span>
                 </TabsTrigger>
+                <TabsTrigger value="groups" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <span>By Group</span>
+                </TabsTrigger>
               </TabsList>
               
+              {/* All Friends tab content - moved to be first */}
+              <TabsContent value="friends" className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
+                      <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
+                      <span className="truncate">All Friends' Today Scores</span>
+                    </h3>
+                    
+                    
+                    {friends.length > 0 && (
+                      <GroupScoresShare
+                        groupName="All Friends"
+                        gameName={selectedGame?.name || ""}
+                        gameColor={selectedGame?.color || ""}
+                        members={friends.map(friend => {
+                          // Find this friend's data in any group
+                          const friendData = groupPerformanceData.flatMap(group => group.members)
+                            .find(member => member.playerId === friend.id);
+                            
+                          return {
+                            playerName: friend.name,
+                            score: friendData?.score || null,
+                            hasPlayed: friendData?.hasPlayed || false
+                          };
+                        })}
+                        currentUserName={profile?.username || ""}
+                        currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
+                        currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
+                        useActualUsername={true}
+                      >
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center justify-center gap-1"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          <span>Share</span>
+                        </Button>
+                      </GroupScoresShare>
+                    )}
+                  </div>
+                  
+                  {/* Friends scores list */}
+                  <div className="space-y-3">
+                    {/* Include current user in the friends list for ranking */}
+                    {[
+                      // Add current user to the list if they've played and not already in friend list
+                      ...(groupPerformanceData.some(g => g.currentUserHasPlayed) && 
+                         !friends.some(f => user && f.id === user.id) ? [{
+                        playerId: user?.id || '',
+                        playerName: 'You',
+                        hasPlayed: true,
+                        score: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore || null,
+                        isCurrentUser: true
+                      }] : []),
+                      
+                      // Add friends to the list with explicitly set isCurrentUser property
+                      // Special handling for current user if they appear in friends list
+                      ...friends.map(friend => {
+                        // Is this friend entry the current user?
+                        const isCurrentUser = user && friend.id === user.id;
+                        
+                        // Find this friend's data in any group
+                        const friendData = groupPerformanceData.flatMap(group => group.members)
+                          .find(member => member.playerId === friend.id);
+                        
+                        // If this is the current user and they've already played, don't add again
+                        if (isCurrentUser && groupPerformanceData.some(g => g.currentUserHasPlayed)) {
+                          return null; // Skip this entry
+                        }
+                          
+                        return {
+                          playerId: friend.id,
+                          playerName: isCurrentUser ? 'You' : friend.name,
+                          hasPlayed: friendData?.hasPlayed || false,
+                          score: friendData?.score || null,
+                          isCurrentUser
+                        };
+                      }).filter(Boolean) // Filter out null entries
+                    ]
+                      // Sort by score (lower is better for some games)
+                      .sort((a, b) => {
+                        // Handle players with no scores
+                        if (!a.hasPlayed && !b.hasPlayed) return 0;
+                        if (!a.hasPlayed) return 1;
+                        if (!b.hasPlayed) return -1;
+                        
+                        // Sort by score
+                        return isLowerBetter 
+                          ? (a.score || 999) - (b.score || 999)
+                          : (b.score || 0) - (a.score || 0);
+                      })
+                      .map((person, index) => (
+                        <div 
+                          key={person.playerId}
+                          className={`flex items-center justify-between p-3 rounded-lg ${
+                            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                          } ${index === 0 && person.hasPlayed ? "border border-accent/20" : ""}`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+                            {index === 0 && person.hasPlayed && (
+                              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                            )}
+                            <div className="font-medium truncate">
+                              {person.playerName}
+                            </div>
+                            {index === 0 && person.hasPlayed && (
+                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                Top score
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0">
+                            {person.hasPlayed ? (
+                              <span className="font-semibold">{person.score}</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No score yet</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    }
+                    
+                  </div>
+                </Card>
+              </TabsContent>
+              
+              {/* By Group tab content - moved to be second */}
               <TabsContent value="groups" className="space-y-6">
                 <div className="space-y-6">
                   
@@ -399,133 +531,6 @@ const TodayScores = () => {
                     );
                   })}
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="friends" className="space-y-6">
-                <Card className="p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
-                      <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
-                      <span className="truncate">All Friends' Today Scores</span>
-                    </h3>
-                    
-                    
-                    {friends.length > 0 && (
-                      <GroupScoresShare
-                        groupName="All Friends"
-                        gameName={selectedGame?.name || ""}
-                        gameColor={selectedGame?.color || ""}
-                        members={friends.map(friend => {
-                          // Find this friend's data in any group
-                          const friendData = groupPerformanceData.flatMap(group => group.members)
-                            .find(member => member.playerId === friend.id);
-                            
-                          return {
-                            playerName: friend.name,
-                            score: friendData?.score || null,
-                            hasPlayed: friendData?.hasPlayed || false
-                          };
-                        })}
-                        currentUserName={profile?.username || ""}
-                        currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
-                        currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
-                        useActualUsername={true}
-                      >
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center justify-center gap-1"
-                        >
-                          <Share2 className="w-4 h-4" />
-                          <span>Share</span>
-                        </Button>
-                      </GroupScoresShare>
-                    )}
-                  </div>
-                  
-                  {/* Friends scores list */}
-                  <div className="space-y-3">
-                    {/* Include current user in the friends list for ranking */}
-                    {[
-                      // Add current user to the list if they've played and not already in friend list
-                      ...(groupPerformanceData.some(g => g.currentUserHasPlayed) && 
-                         !friends.some(f => user && f.id === user.id) ? [{
-                        playerId: user?.id || '',
-                        playerName: 'You',
-                        hasPlayed: true,
-                        score: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore || null,
-                        isCurrentUser: true
-                      }] : []),
-                      
-                      // Add friends to the list with explicitly set isCurrentUser property
-                      // Special handling for current user if they appear in friends list
-                      ...friends.map(friend => {
-                        // Is this friend entry the current user?
-                        const isCurrentUser = user && friend.id === user.id;
-                        
-                        // Find this friend's data in any group
-                        const friendData = groupPerformanceData.flatMap(group => group.members)
-                          .find(member => member.playerId === friend.id);
-                        
-                        // If this is the current user and they've already played, don't add again
-                        if (isCurrentUser && groupPerformanceData.some(g => g.currentUserHasPlayed)) {
-                          return null; // Skip this entry
-                        }
-                          
-                        return {
-                          playerId: friend.id,
-                          playerName: isCurrentUser ? 'You' : friend.name,
-                          hasPlayed: friendData?.hasPlayed || false,
-                          score: friendData?.score || null,
-                          isCurrentUser
-                        };
-                      }).filter(Boolean) // Filter out null entries
-                    ]
-                      // Sort by score (lower is better for some games)
-                      .sort((a, b) => {
-                        // Handle players with no scores
-                        if (!a.hasPlayed && !b.hasPlayed) return 0;
-                        if (!a.hasPlayed) return 1;
-                        if (!b.hasPlayed) return -1;
-                        
-                        // Sort by score
-                        return isLowerBetter 
-                          ? (a.score || 999) - (b.score || 999)
-                          : (b.score || 0) - (a.score || 0);
-                      })
-                      .map((person, index) => (
-                        <div 
-                          key={person.playerId}
-                          className={`flex items-center justify-between p-3 rounded-lg ${
-                            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                          } ${index === 0 && person.hasPlayed ? "border border-accent/20" : ""}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                            {index === 0 && person.hasPlayed && (
-                              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                            )}
-                            <div className="font-medium truncate">
-                              {person.playerName}
-                            </div>
-                            {index === 0 && person.hasPlayed && (
-                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
-                                Top score
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-shrink-0">
-                            {person.hasPlayed ? (
-                              <span className="font-semibold">{person.score}</span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No score yet</span>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    }
-                    
-                  </div>
-                </Card>
               </TabsContent>
             </Tabs>
           </div>
