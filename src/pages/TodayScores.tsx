@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -328,15 +327,11 @@ const TodayScores = () => {
                           index === getAllFriendsList()
                             .filter(p => p.hasPlayed)
                             .sort((a, b) => {
-                              // Fixed comparison to ensure proper number comparison
-                              if (a.hasPlayed && b.hasPlayed) {
-                                // Make sure we're comparing numbers
-                                const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                                const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-                                
-                                return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                              }
-                              return 0;
+                              // We only compare scores for players who have played
+                              const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                              const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                              
+                              return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
                             })
                             .findIndex(p => p.playerId === person.playerId);
                             
