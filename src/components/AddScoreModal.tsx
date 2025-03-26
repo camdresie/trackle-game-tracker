@@ -186,6 +186,7 @@ const AddScoreModal = ({
           {game.id === 'quordle' ? (
             <QuordleScoreInput 
               game={game} 
+              initialValues={quordleValues}
               onScoreChange={handleQuordleScoreChange} 
             />
           ) : (

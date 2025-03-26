@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { calculateQuordleScore } from '@/utils/scoreUtils';
 import { getScoreColor, getScoreLabel } from '@/utils/scoreUtils';
@@ -6,13 +7,24 @@ import { Game } from '@/utils/types';
 
 interface QuordleScoreInputProps {
   game: Game;
+  initialValues?: number[];
   onScoreChange: (values: number[]) => void;
 }
 
-const QuordleScoreInput = ({ game, onScoreChange }: QuordleScoreInputProps) => {
+const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }: QuordleScoreInputProps) => {
   // State for Quordle inputs
-  const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
-  const [quordleDisplayValues, setQuordleDisplayValues] = useState(['7', '7', '7', '7']);
+  const [quordleValues, setQuordleValues] = useState(initialValues);
+  const [quordleDisplayValues, setQuordleDisplayValues] = useState(
+    initialValues.map(val => val === 10 ? 'X' : val.toString())
+  );
+  
+  // Update internal state when prop values change
+  useEffect(() => {
+    if (initialValues) {
+      setQuordleValues(initialValues);
+      setQuordleDisplayValues(initialValues.map(val => val === 10 ? 'X' : val.toString()));
+    }
+  }, [initialValues]);
   
   // Completely revamped Quordle input handling
   const handleQuordleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
