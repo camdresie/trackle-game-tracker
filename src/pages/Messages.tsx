@@ -6,11 +6,10 @@ import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { useQueryClient } from '@tanstack/react-query';
 import NavBar from '@/components/NavBar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import ConnectionsModal from '@/components/ConnectionsModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
-import { MessageCircle, Users, UserPlus, RotateCw, UsersRound } from 'lucide-react';
+import { MessageCircle, RotateCw, UsersRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,7 @@ const Messages = () => {
   } = useGroupInvitations();
   
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupName, setSelectedGroupName] = useState<string>('');
   const [isLoadingFriends, setIsLoadingFriends] = useState(true);
   const [invitationsInitialized, setInvitationsInitialized] = useState(false);
   const [acceptedInvitation, setAcceptedInvitation] = useState(false);
@@ -82,6 +82,7 @@ const Messages = () => {
       if (!selectedGroupId || acceptedInvitation) {
         console.log('Auto-selecting the first group:', friendGroups[0].id);
         setSelectedGroupId(friendGroups[0].id);
+        setSelectedGroupName(friendGroups[0].name);
         setAcceptedInvitation(false); // Reset the flag
       } else if (selectedGroupId) {
         // Check if the selected group still exists in the updated friendGroups
@@ -89,11 +90,13 @@ const Messages = () => {
         if (!stillExists && friendGroups.length > 0) {
           console.log('Selected group no longer exists, selecting first available group');
           setSelectedGroupId(friendGroups[0].id);
+          setSelectedGroupName(friendGroups[0].name);
         }
       }
     } else if (friendGroups && friendGroups.length === 0) {
       // Reset selected group if there are no longer any groups
       setSelectedGroupId(null);
+      setSelectedGroupName('');
     }
   }, [friendGroups, selectedGroupId, acceptedInvitation]);
 
@@ -180,6 +183,12 @@ const Messages = () => {
     }
   };
 
+  // Handle group selection
+  const handleGroupSelection = (groupId: string, groupName: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedGroupName(groupName);
+  };
+
   return (
     <div className="min-h-screen pb-6">
       <NavBar />
@@ -218,55 +227,38 @@ const Messages = () => {
           />
         )}
 
-        {/* Mobile Group Dropdown Selector */}
-        {friendGroups && friendGroups.length > 0 && (
-          <GroupDropdownSelector
-            selectedGroupId={selectedGroupId}
-            groups={friendGroups}
-            onSelectGroup={setSelectedGroupId}
-            className="mb-4"
-          />
-        )}
-
-        {/* Friend groups for messaging */}
-        {(isGroupsLoading || isLoadingFriends || isRefreshing) ? (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Loading your groups...</p>
-          </div>
-        ) : friendGroups && friendGroups.length > 0 ? (
-          <Tabs 
-            value={selectedGroupId || undefined} 
-            onValueChange={setSelectedGroupId} 
-            className="w-full"
-          >
-            {/* Only show TabsList on desktop */}
-            <div className="hidden sm:block">
-              <TabsList className="mb-6 flex-wrap">
-                {friendGroups.map(group => (
-                  <TabsTrigger key={group.id} value={group.id} className="flex items-center gap-2">
-                    {group.isJoinedGroup ? <UserPlus className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                    {group.name}
-                    {group.isJoinedGroup && (
-                      <Badge variant="outline" className="ml-1 bg-secondary/30">
-                        Joined
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+        {/* Group Dropdown Selector */}
+        <div className="mb-6">
+          <label className="text-sm font-medium mb-2 block">
+            Message Group
+          </label>
+          {friendGroups && friendGroups.length > 0 ? (
+            <GroupDropdownSelector
+              selectedGroupId={selectedGroupId}
+              groups={friendGroups}
+              onSelectGroup={handleGroupSelection}
+              className="w-full"
+              label="Select Message Group"
+            />
+          ) : (isGroupsLoading || isLoadingFriends || isRefreshing) ? (
+            <div className="flex items-center justify-center h-12 border rounded-md bg-muted/20">
+              <p className="text-muted-foreground">Loading your groups...</p>
             </div>
-            
-            {friendGroups.map(group => (
-              <TabsContent key={group.id} value={group.id} className="mt-0">
-                <MessagesPanel 
-                  groupId={group.id} 
-                  groupName={group.name}
-                  isJoinedGroup={group.isJoinedGroup}
-                  className="h-[700px]"
-                />
-              </TabsContent>
-            ))}
-          </Tabs>
+          ) : (
+            <div className="flex items-center justify-center h-12 border rounded-md bg-muted/20">
+              <p className="text-muted-foreground">No groups available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Messages Panel */}
+        {selectedGroupId ? (
+          <MessagesPanel 
+            groupId={selectedGroupId} 
+            groupName={selectedGroupName}
+            isJoinedGroup={friendGroups?.find(g => g.id === selectedGroupId)?.isJoinedGroup}
+            className="h-[700px]"
+          />
         ) : (
           <Card className="border border-dashed bg-card/50">
             <CardHeader>

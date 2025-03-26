@@ -5,7 +5,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { FriendGroup } from '@/utils/types';
@@ -18,13 +19,15 @@ interface GroupDropdownSelectorProps {
   onSelectGroup: (groupId: string, groupName: string) => void;
   className?: string;
   groups?: FriendGroup[]; // Make groups optional to support both usage patterns
+  label?: string;
 }
 
 const GroupDropdownSelector = ({ 
   selectedGroupId, 
   onSelectGroup,
   className = '',
-  groups: externalGroups // Rename to avoid conflicts
+  groups: externalGroups, // Rename to avoid conflicts
+  label = "Select Group"
 }: GroupDropdownSelectorProps) => {
   const isMobile = useIsMobile();
   
@@ -79,11 +82,12 @@ const GroupDropdownSelector = ({
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="w-full justify-between border border-input"
+            className="w-full justify-between border border-input bg-background"
+            size="lg"
           >
             <div className="flex items-center truncate">
               <UsersRound className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">{selectedGroup ? truncateText(selectedGroup.name) : "Select Group"}</span>
+              <span className="truncate">{selectedGroup ? truncateText(selectedGroup.name, 30) : label}</span>
               {selectedGroup?.isJoinedGroup && (
                 <Badge variant="outline" className="ml-2 bg-secondary/30 flex-shrink-0">
                   Joined
@@ -93,7 +97,8 @@ const GroupDropdownSelector = ({
             <ChevronDown className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full min-w-[200px]" align="start">
+        <DropdownMenuContent className="w-full min-w-[240px]" align="start">
+          <DropdownMenuLabel>Message Group</DropdownMenuLabel>
           {groups.map(group => (
             <DropdownMenuItem
               key={group.id}
