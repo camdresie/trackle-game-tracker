@@ -1,3 +1,4 @@
+
 import React, { useState, ReactNode } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,22 +47,34 @@ const GroupScoresShare = ({
   const generateShareText = () => {
     let shareText = `🎮 ${groupName} - ${gameName} Scores for ${getTodayFormatted()}\n\n`;
     
-    // Add current user's score if they've played
+    // Create a Set to track which player names have already been added
+    // This prevents duplicate entries for the current user
+    const addedPlayers = new Set<string>();
+    
+    // Add current user's score if they've played and we want to show them separately
     if (currentUserHasPlayed && currentUserScore !== null) {
       // Use actual username if specified, otherwise use "You"
       const displayName = useActualUsername ? currentUserName : 'You';
       shareText += `${displayName}: ${currentUserScore}\n`;
+      
+      // Add this player to our tracking set
+      addedPlayers.add(useActualUsername ? currentUserName : 'You');
     }
     
-    // Add scores for all group members who have played
+    // Add scores for all group members who have played,
+    // but skip the current user if they've already been added
     members.forEach(member => {
-      if (member.hasPlayed && member.score !== null) {
+      // Skip if the player is the current user and we've already added them
+      const isCurrentUser = useActualUsername && member.playerName === currentUserName;
+      
+      if (member.hasPlayed && member.score !== null && !addedPlayers.has(member.playerName)) {
         shareText += `${member.playerName}: ${member.score}\n`;
+        addedPlayers.add(member.playerName);
       }
     });
     
     // Add message for members who haven't played
-    const notPlayedMembers = members.filter(m => !m.hasPlayed);
+    const notPlayedMembers = members.filter(m => !m.hasPlayed && !addedPlayers.has(m.playerName));
     if (notPlayedMembers.length > 0) {
       shareText += "\nNot played yet today:\n";
       notPlayedMembers.forEach(member => {
@@ -69,8 +82,8 @@ const GroupScoresShare = ({
       });
     }
     
-    // If current user hasn't played
-    if (!currentUserHasPlayed) {
+    // If current user hasn't played and not already listed
+    if (!currentUserHasPlayed && !addedPlayers.has(useActualUsername ? currentUserName : 'You')) {
       // Use actual username if specified, otherwise use "You"
       const displayName = useActualUsername ? currentUserName : 'You';
       shareText += `${displayName}\n`;
