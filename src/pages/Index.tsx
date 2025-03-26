@@ -30,6 +30,11 @@ const Index = () => {
     handleAddScore
   } = useHomeData();
   
+  // Filter scores for the currently selected game (for edit mode in modal)
+  const selectedGameScores = selectedGame 
+    ? scores.filter(score => score.gameId === selectedGame.id) 
+    : [];
+  
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -62,6 +67,7 @@ const Index = () => {
           onOpenChange={setShowGameSelection}
           games={gamesList}
           onSelectGame={(game) => {
+            console.log('Game selected:', game);
             setSelectedGame(game);
             setShowAddScore(true);
           }}
@@ -73,6 +79,7 @@ const Index = () => {
             onOpenChange={setShowAddScore}
             game={selectedGame}
             onAddScore={handleAddScore}
+            existingScores={selectedGameScores}
           />
         )}
         

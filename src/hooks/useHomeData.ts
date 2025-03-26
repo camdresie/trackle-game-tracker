@@ -7,7 +7,7 @@ import { games } from '@/utils/gameData';
 import { getGameScores } from '@/services/gameStatsService';
 import { getTodaysGames } from '@/services/todayService';
 import { useQueryClient } from '@tanstack/react-query';
-import { getTodayInEasternTime } from '@/utils/dateUtils'; // Add this import
+import { getTodayInEasternTime } from '@/utils/dateUtils';
 
 export interface HomeDataResult {
   isLoading: boolean;
@@ -90,6 +90,8 @@ export const useHomeData = (): HomeDataResult => {
   }, [user, gamesList, toast]);
   
   const handleAddScore = (newScore: Score) => {
+    console.log('[useHomeData] handleAddScore called with:', newScore);
+    
     // First, check if this is an update to an existing score
     const isUpdating = scores.some(score => 
       score.gameId === newScore.gameId && score.date === newScore.date

@@ -20,6 +20,7 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
   
   // Update internal state when prop values change
   useEffect(() => {
+    console.log('QuordleScoreInput: initialValues updated', initialValues);
     if (initialValues) {
       setQuordleValues(initialValues);
       setQuordleDisplayValues(initialValues.map(val => val === 10 ? 'X' : val.toString()));

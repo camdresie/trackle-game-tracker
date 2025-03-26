@@ -16,6 +16,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   
   // Ensure the local state stays in sync with the prop
   useEffect(() => {
+    console.log(`StandardScoreInput: initialValue updated to ${initialValue}`);
     setValue(initialValue);
   }, [initialValue]);
   
