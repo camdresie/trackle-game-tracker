@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -309,11 +310,13 @@ const TodayScores = () => {
                         if (a.hasPlayed && !b.hasPlayed) return -1;
                         if (!a.hasPlayed && b.hasPlayed) return 1;
                         
-                        // If both have played, sort by score
+                        // If both have played, sort by score (fixed comparison to ensure proper number comparison)
                         if (a.hasPlayed && b.hasPlayed) {
-                          return isLowerBetter 
-                            ? (a.score || 999) - (b.score || 999)
-                            : (b.score || 0) - (a.score || 0);
+                          // Make sure we're comparing numbers
+                          const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                          const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                          
+                          return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
                         }
                         
                         // If neither has played, keep original order
@@ -325,9 +328,15 @@ const TodayScores = () => {
                           index === getAllFriendsList()
                             .filter(p => p.hasPlayed)
                             .sort((a, b) => {
-                              return isLowerBetter 
-                                ? (a.score || 999) - (b.score || 999)
-                                : (b.score || 0) - (a.score || 0);
+                              // Fixed comparison to ensure proper number comparison
+                              if (a.hasPlayed && b.hasPlayed) {
+                                // Make sure we're comparing numbers
+                                const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                                const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                                
+                                return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                              }
+                              return 0;
                             })
                             .findIndex(p => p.playerId === person.playerId);
                             
@@ -421,11 +430,11 @@ const TodayScores = () => {
                     const sortedMembers = [...allMembers]
                       .filter(m => m.hasPlayed)
                       .sort((a, b) => {
-                        if (isLowerBetter) {
-                          return (a.score || 999) - (b.score || 999);
-                        } else {
-                          return (b.score || 0) - (a.score || 0);
-                        }
+                        // Fixed comparison to ensure proper number comparison
+                        const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                        const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                        
+                        return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
                       });
                   
                     // Get members who haven't played
