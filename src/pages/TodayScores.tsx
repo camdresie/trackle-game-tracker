@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -228,7 +227,7 @@ const TodayScores = () => {
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
                       <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
-                      <span className="truncate">All Friends' Today Scores</span>
+                      <span className="truncate">All Friends' Scores Today</span>
                     </h3>
                     
                     
