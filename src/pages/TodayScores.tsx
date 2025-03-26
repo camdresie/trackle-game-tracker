@@ -4,11 +4,11 @@ import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useGroupScores } from '@/hooks/useGroupScores';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
-import { useFriendsList } from '@/hooks/useFriendsList'; // Import the useFriendsList hook
+import { useFriendsList } from '@/hooks/useFriendsList';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle, InfoIcon } from 'lucide-react';
+import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle, InfoIcon, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
@@ -291,8 +291,7 @@ const TodayScores = () => {
                       <Card key={group.groupId} className="p-6 overflow-hidden">
                         
                         <div className="flex flex-col">
-                          {/* Mobile Layout: Full width group name at top */}
-                          
+                          {/* Group header with title */}
                           <>
                               <div className="mb-3">
                                 <div className="flex items-center justify-between">
@@ -308,7 +307,7 @@ const TodayScores = () => {
                                   )}
                                 </div>
                                 
-                                {/* Mobile buttons below group name */}
+                                {/* Updated button styling to match the app's style */}
                                 <div className="flex items-center gap-2 mt-3">
                                   <GroupScoresShare
                                     groupName={group.groupName}
@@ -319,30 +318,29 @@ const TodayScores = () => {
                                     currentUserScore={group.currentUserScore}
                                     currentUserHasPlayed={group.currentUserHasPlayed}
                                     useActualUsername={true}
-                                    className="flex-1"
                                   >
                                     <Button 
                                       variant="outline" 
                                       size="sm" 
-                                      className="w-full flex items-center justify-center gap-1"
+                                      className="flex items-center justify-center gap-1"
                                     >
-                                      <span className="truncate">Share Scores</span>
+                                      <Share2 className="w-4 h-4" />
+                                      <span>Share</span>
                                     </Button>
                                   </GroupScoresShare>
                                   
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    className="flex-1 flex items-center justify-center gap-1"
                                     onClick={() => handleOpenMessages(group.groupId, group.groupName)}
+                                    className="flex items-center justify-center gap-1"
                                   >
-                                    <MessageCircle className="w-4 h-4 flex-shrink-0" />
-                                    <span className="truncate">Messages</span>
+                                    <MessageCircle className="w-4 h-4" />
+                                    <span>Messages</span>
                                   </Button>
                                 </div>
                               </div>
                             </>
-                          
                           
                           {/* Group members scores */}
                           <div className="space-y-3">
@@ -432,7 +430,16 @@ const TodayScores = () => {
                         currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
                         currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
                         useActualUsername={true}
-                      />
+                      >
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center justify-center gap-1"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          <span>Share</span>
+                        </Button>
+                      </GroupScoresShare>
                     )}
                   </div>
                   
