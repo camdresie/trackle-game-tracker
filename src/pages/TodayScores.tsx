@@ -324,32 +324,36 @@ const TodayScores = () => {
                       .map((person, index) => {
                         // Find if this person is the top scorer (only among those who have played)
                         const isTopScore = person.hasPlayed && 
-                          index === getAllFriendsList()
+                          getAllFriendsList()
                             .filter(p => p.hasPlayed)
                             .sort((a, b) => {
-                              // We only compare scores for players who have played
-                              const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                              const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                              if (typeof a.score !== 'number' || typeof b.score !== 'number') {
+                                // Handle case where one or both scores aren't numbers
+                                const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                                const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                                return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                              }
                               
-                              return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                              // Both are numbers, safe to compare
+                              return isLowerBetter ? a.score - b.score : b.score - a.score;
                             })
-                            .findIndex(p => p.playerId === person.playerId);
+                            .findIndex(p => p.playerId === person.playerId) === 0;
                             
                         return (
                           <div 
                             key={person.playerId}
                             className={`flex items-center justify-between p-3 rounded-lg ${
                               person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                            } ${isTopScore === 0 ? "border border-accent/20" : ""}`}
+                            } ${isTopScore ? "border border-accent/20" : ""}`}
                           >
                             <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                              {isTopScore === 0 && (
+                              {isTopScore && (
                                 <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                               )}
                               <div className="font-medium truncate">
                                 {person.playerName}
                               </div>
-                              {isTopScore === 0 && (
+                              {isTopScore && (
                                 <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
                                   Top score
                                 </span>
