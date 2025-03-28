@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -77,7 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile details:', error);
-        throw error;
+        // Don't throw error here, just set profile to null
+        setProfile(null);
+        setIsLoading(false);
+        return;
       }
 
       console.log('Fetched profile data:', data);
@@ -85,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
       setIsLoading(false);
     }
   };

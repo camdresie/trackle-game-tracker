@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRound } from 'lucide-react';
@@ -22,6 +21,7 @@ const OnboardingFlow = () => {
   useEffect(() => {
     if (profile) {
       console.log('Initializing form with profile data:', profile);
+      // Only set username if it's not null, otherwise keep it empty
       setUsername(profile.username || '');
       setFullName(profile.full_name || '');
       setIsLoading(false);

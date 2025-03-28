@@ -39,7 +39,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   // A user needs onboarding if their profile doesn't exist or has null username
-  // We don't need to check full_name now since username is the required field
   const needsOnboarding = !profile || profile.username === null;
   
   console.log('Protected route check - profile:', profile);
