@@ -138,28 +138,13 @@ const TodayScores = () => {
   };
 
   // Create a combined list for all friends including those without scores
-  // UPDATED: Always include the current user in the list even if they haven't played
+  // Fixed: Always include the current user in the list even if they have no friends
   const getAllFriendsList = () => {
-    // Start with all the user's friends
-    const allFriends = [...friends.map(friend => {
-      // Is this friend entry the current user?
-      const isCurrentUser = user && friend.id === user.id;
-      
-      // Find this friend's data in any group
-      const friendData = groupPerformanceData.flatMap(group => group.members)
-        .find(member => member.playerId === friend.id);
-        
-      return {
-        playerId: friend.id,
-        playerName: isCurrentUser ? 'You' : friend.name,
-        hasPlayed: friendData?.hasPlayed || false,
-        score: friendData?.score || null,
-        isCurrentUser
-      };
-    })];
+    // Start with the current user if they exist
+    const allFriends = [];
     
-    // Add current user if they're not already in the list
-    if (user && !allFriends.some(f => f.isCurrentUser)) {
+    // Add current user first if they exist
+    if (user) {
       // Find if the user has played this game today
       const hasPlayed = groupPerformanceData.some(g => g.currentUserHasPlayed);
       const userScore = hasPlayed ? 
@@ -175,6 +160,24 @@ const TodayScores = () => {
       });
     }
     
+    // Then add all the user's friends
+    friends.forEach(friend => {
+      // Is this friend entry the current user? (skip if so, we already added them)
+      if (user && friend.id === user.id) return;
+      
+      // Find this friend's data in any group
+      const friendData = groupPerformanceData.flatMap(group => group.members)
+        .find(member => member.playerId === friend.id);
+        
+      allFriends.push({
+        playerId: friend.id,
+        playerName: friend.name,
+        hasPlayed: friendData?.hasPlayed || false,
+        score: friendData?.score || null,
+        isCurrentUser: false
+      });
+    });
+    
     return allFriends;
   };
 
@@ -188,6 +191,7 @@ const TodayScores = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-background">
       <NavBar />
       
@@ -307,7 +311,7 @@ const TodayScores = () => {
                     )}
                   </div>
                   
-                  {/* Friends scores list - Add check for empty friends list */}
+                  {/* Friends scores list - Modified to always show current user */}
                   <div className="space-y-3">
                     {getAllFriendsList().length > 0 ? (
                       /* Get all friends + current user and sort by those who have played first, then by score */
@@ -380,8 +384,8 @@ const TodayScores = () => {
                         })
                     ) : (
                       <div className="text-center py-6 text-muted-foreground">
-                        <p>You haven't added any friends yet.</p>
-                        <p className="mt-2">Go to the connections menu to add friends and see their scores here.</p>
+                        <p>No scores found for today.</p>
+                        <p className="mt-2">Add your scores for the day and they will appear here.</p>
                       </div>
                     )}
                   </div>
