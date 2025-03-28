@@ -1,69 +1,138 @@
-# Welcome to your Lovable project
 
-## Project info
+# Trackle - Game Tracker
 
-**URL**: https://lovable.dev/projects/18c0adca-1c30-444c-8b79-d76b51df6c19
+A web application for tracking scores from popular word games and puzzles, sharing with friends, and competing on leaderboards.
 
-## How can I edit this code?
+![Trackle Screenshot](public/og-image.png)
 
-There are several ways of editing your application.
+## 🎮 Features
 
-**Use Lovable**
+- **Track Your Scores**: Log and track your daily scores for Wordle, Mini Crossword, Connections, and more
+- **Friend System**: Connect with friends to see their scores and compete
+- **Leaderboards**: See how you stack up against others
+- **Game Details**: View detailed statistics for each game, including best scores and averages
+- **Profile Management**: Customize your profile and select your favorite games
+- **Responsive Design**: Works on desktop and mobile devices
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/18c0adca-1c30-444c-8b79-d76b51df6c19) and start prompting.
+## 🚀 Technology Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React, TypeScript, Vite
+- **UI Framework**: Tailwind CSS with shadcn/ui components
+- **State Management**: React Query for server state, React Context for app state
+- **Authentication**: Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Hosting**: Lovable platform
 
-**Use your preferred IDE**
+## 🛠️ Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js (v16+)
+- npm, yarn, or pnpm
+- Git
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd trackle-game-tracker
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Start the development server:
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+```
 
-**Use GitHub Codespaces**
+4. Open your browser and navigate to `http://localhost:5173`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🏗️ Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/    # UI components
+│   ├── ui/        # Base UI components from shadcn/ui
+│   ├── auth/      # Authentication components
+│   ├── game/      # Game-related components
+│   ├── home/      # Home page components
+│   └── ...
+├── contexts/      # React contexts for state management
+├── hooks/         # Custom React hooks
+│   ├── connections/   # Connection-related hooks
+│   ├── leaderboard/   # Leaderboard-related hooks
+│   └── ...
+├── lib/           # Utility libraries and configurations
+├── pages/         # Application pages/routes
+├── services/      # API service functions
+├── types/         # TypeScript type definitions
+└── utils/         # Utility functions
+```
 
-This project is built with .
+## 🔐 Authentication
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The application uses Supabase for authentication. Users can sign up with email/password and are required to complete an onboarding flow when they first sign in.
 
-## How can I deploy this project?
+## 💾 Database Schema
 
-Simply open [Lovable](https://lovable.dev/projects/18c0adca-1c30-444c-8b79-d76b51df6c19) and click on Share -> Publish.
+The main tables in the database include:
+- `profiles`: User profile information
+- `connections`: Friend connections between users
+- `game_stats`: Aggregated statistics for each game and user
+- `scores`: Individual game scores
 
-## I want to use a custom domain - is that possible?
+## 🧩 Key Components
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### AuthContext
+
+Manages user authentication state and provides authentication-related functions throughout the app.
+
+### ProtectedRoute
+
+Ensures that routes are only accessible to authenticated users, redirecting to the login page if not authenticated.
+
+### Game-related Hooks
+
+- `useGameData`: Retrieves comprehensive game data
+- `useGameDetails`: Fetches basic game information and player scores
+- `useFriendScores`: Gets scores for friends on a specific game
+
+### Connection System
+
+- `useConnections`: Gets a user's friend connections
+- `useConnectionMutations`: Functions for creating/accepting/rejecting friend requests
+
+## 📝 Development Guidelines
+
+1. **Component Creation**: Create new files for every component, no matter how small
+2. **TypeScript**: Use TypeScript types for all components and functions
+3. **Error Handling**: Implement proper error handling for API calls
+4. **Testing**: Test all features on both desktop and mobile viewports
+
+## 🚀 Deployment
+
+The app can be deployed directly from Lovable by clicking on the "Publish" button. For custom domain setup, refer to the [Lovable documentation](https://docs.lovable.dev/).
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Commit your changes: `git commit -m 'Add new feature'`
+4. Push to the branch: `git push origin feature/new-feature`
+5. Open a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
