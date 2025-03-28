@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -19,7 +18,7 @@ type AuthContextType = {
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
 };
@@ -104,34 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
-      // First, check if username is already taken
-      const { data: existingUser, error: usernameCheckError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .maybeSingle();
-        
-      if (usernameCheckError) {
-        throw usernameCheckError;
-      }
+      console.log(`Starting signup process with email: ${email}`);
       
-      if (existingUser) {
-        throw new Error('Username is already taken');
-      }
-      
-      console.log(`Starting signup process with username: ${username}`);
-      
-      // Sign up the user with username in metadata
+      // Sign up the user without a username in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            username: username,
-          },
-        },
       });
       
       if (error) throw error;
@@ -142,14 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('User data not returned from signup');
       }
       
-      // Create the profile record immediately
-      console.log(`Creating new profile for user ${data.user.id} with username: ${username}`);
+      // Create the profile record immediately with null username
+      // Username will be set during onboarding
+      console.log(`Creating new profile for user ${data.user.id}`);
       
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: data.user.id,
-          username: username,
+          username: null,
           full_name: null,
           avatar_url: null,
           selected_games: null
@@ -157,19 +137,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
       if (insertError) {
         console.error('Error creating profile after signup:', insertError);
-      }
-      
-      // Verify profile was created with correct username
-      const { data: profileVerification, error: verificationError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', data.user.id)
-        .maybeSingle();
-        
-      if (verificationError) {
-        console.error('Error verifying profile username:', verificationError);
-      } else if (profileVerification) {
-        console.log('Profile verification - username set to:', profileVerification.username);
       }
       
       uiToast({
