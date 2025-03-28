@@ -39,13 +39,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   // Check if this is a new user that needs to complete onboarding
-  const isNewUser = profile?.username === null && profile?.full_name === null;
+  // A user needs onboarding if their profile doesn't exist or has null username or null full_name
+  const needsOnboarding = !profile || profile.username === null || profile.full_name === null;
   
   console.log('Protected route check - profile:', profile);
-  console.log('Is new user needing onboarding:', isNewUser);
+  console.log('Is new user needing onboarding:', needsOnboarding);
   
   // Only redirect to onboarding if it's a new user and not already on the onboarding page
-  if (location.pathname !== '/onboarding' && isNewUser) {
+  if (location.pathname !== '/onboarding' && needsOnboarding) {
     console.log('Redirecting to onboarding - new user with incomplete profile');
     return <Navigate to="/onboarding" replace />;
   }

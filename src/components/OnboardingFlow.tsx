@@ -22,7 +22,14 @@ const OnboardingFlow = () => {
   useEffect(() => {
     if (profile) {
       console.log('Initializing form with profile data:', profile);
-      setUsername(profile.username || '');
+      
+      // If the profile exists but username is null, try to get it from user metadata
+      if (!profile.username && user?.user_metadata?.username) {
+        setUsername(user.user_metadata.username);
+      } else {
+        setUsername(profile.username || '');
+      }
+      
       setFullName(profile.full_name || '');
       setIsLoading(false);
     } else if (user) {
@@ -64,7 +71,7 @@ const OnboardingFlow = () => {
         full_name: fullName,
       });
       
-      toast.success('Profile updated successfully');
+      toast.success('Profile setup complete!');
       navigate('/profile');
     } catch (error) {
       console.error('Error updating profile:', error);

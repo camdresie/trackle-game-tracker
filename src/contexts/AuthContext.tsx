@@ -142,46 +142,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('User data not returned from signup');
       }
       
-      // Important: Check if profile exists first
-      const { data: existingProfile, error: profileCheckError } = await supabase
+      // Create the profile record immediately
+      console.log(`Creating new profile for user ${data.user.id} with username: ${username}`);
+      
+      const { error: insertError } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('id', data.user.id)
-        .maybeSingle();
-      
-      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
-        console.error('Error checking if profile exists:', profileCheckError);
-      }
-      
-      if (!existingProfile) {
-        // Profile doesn't exist yet, create it manually
-        console.log(`Creating new profile for user ${data.user.id} with username: ${username}`);
+        .insert({
+          id: data.user.id,
+          username: username,
+          full_name: null,
+          avatar_url: null,
+          selected_games: null
+        });
         
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username: username,
-            full_name: null,
-            avatar_url: null,
-            selected_games: null
-          });
-          
-        if (insertError) {
-          console.error('Error creating profile after signup:', insertError);
-        }
-      } else {
-        // Profile exists (likely created by trigger), update the username
-        console.log(`Updating existing profile for user ${data.user.id} with username: ${username}`);
-        
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ username: username })
-          .eq('id', data.user.id);
-          
-        if (updateError) {
-          console.error('Error updating profile with username:', updateError);
-        }
+      if (insertError) {
+        console.error('Error creating profile after signup:', insertError);
       }
       
       // Verify profile was created with correct username
