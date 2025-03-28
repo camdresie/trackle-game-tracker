@@ -41,8 +41,6 @@ const ConnectionsModal = ({
   // When the modal opens, invalidate relevant queries to ensure fresh data
   useEffect(() => {
     if (open) {
-      console.log('Connections modal opened, invalidating queries');
-      
       // Clear cache to ensure fresh data
       queryClient.removeQueries({ queryKey: ['friends'] });
       queryClient.removeQueries({ queryKey: ['game-friends'] });

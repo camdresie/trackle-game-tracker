@@ -38,16 +38,6 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     currentUserScores: scores
   });
   
-  // Log Supabase connection status for debugging RLS issues
-  useEffect(() => {
-    // Check if we're authenticated
-    supabase.auth.getSession().then(({ data }) => {
-      const sessionStatus = data.session ? 'Authenticated' : 'Not authenticated';
-      const userId = data.session?.user?.id || 'No user ID';
-      console.log(`Auth status: ${sessionStatus}, User ID: ${userId}`);
-    });
-  }, []);
-  
   // Enhanced refresh function that efficiently updates all data
   const refreshFriends = useCallback(async () => {
     try {
@@ -66,7 +56,6 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
         toast.success("Friend data refreshed successfully");
       }
     } catch (error) {
-      console.error("Error during friend refresh:", error);
       toast.error("Error refreshing friend data");
     }
   }, [baseFriendsRefresh, fetchFriendScores, gameId, queryClient]);

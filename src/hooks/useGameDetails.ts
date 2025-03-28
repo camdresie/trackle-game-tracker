@@ -32,7 +32,6 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
   useEffect(() => {
     async function fetchGameData() {
       if (!gameId || !user) {
-        console.log('Missing gameId or user, skipping game data fetch');
         return;
       }
       
@@ -42,7 +41,6 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
         // Get game data
         const gameData = getGameById(gameId);
         if (!gameData) {
-          console.error('Game not found with ID:', gameId);
           toast({
             title: "Error",
             description: "Game not found",
@@ -79,7 +77,6 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
           setAverageScore(sum / mappedScores.length);
         }
       } catch (error) {
-        console.error('Error fetching game data:', error);
         toast({
           title: "Error",
           description: "Failed to load game data",

@@ -30,13 +30,10 @@ export const useFriendsList = ({ refreshTrigger = 0 }: UseFriendsListProps = {})
   // Enhanced function to refresh friends data
   const refreshFriends = useCallback(async () => {
     if (!user) {
-      console.log('No user available, skipping friends refresh');
       return;
     }
     
     try {
-      console.log('Refreshing friends data...');
-      
       // Update refresh timestamp to force requery
       setRefreshKey(Date.now());
       
@@ -46,15 +43,12 @@ export const useFriendsList = ({ refreshTrigger = 0 }: UseFriendsListProps = {})
       // Trigger refetch from the query cache
       await refetchFriends();
       
-      console.log('Friends data refreshed successfully');
-      
       // Show success toast
       toast({
         title: "Success",
         description: "Friend data refreshed successfully"
       });
     } catch (error) {
-      console.error('Error refreshing friends data:', error);
       toast({
         title: "Error",
         description: "Failed to refresh friends data",

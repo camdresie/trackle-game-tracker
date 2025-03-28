@@ -39,12 +39,6 @@ export const useHomeData = (): HomeDataResult => {
   const [isLoading, setIsLoading] = useState(true);
   const [todaysGames, setTodaysGames] = useState<Score[]>([]);
   
-  // Debug logging
-  useEffect(() => {
-    console.log('[useHomeData] Current user:', user);
-    console.log('[useHomeData] Games list:', gamesList);
-  }, [user, gamesList]);
-  
   // Fetch user's scores and today's games
   useEffect(() => {
     const fetchUserData = async () => {
@@ -52,18 +46,10 @@ export const useHomeData = (): HomeDataResult => {
       
       try {
         setIsLoading(true);
-        console.log('[useHomeData] Fetching user data for:', user.id);
         
         // Fetch today's games
         const todayScores = await getTodaysGames(user.id);
-        console.log('[useHomeData] Fetched today\'s scores:', todayScores);
         setTodaysGames(todayScores);
-        
-        // Log each game score for debugging
-        todayScores.forEach(score => {
-          const game = gamesList.find(g => g.id === score.gameId);
-          console.log(`[useHomeData] Today's game: ${game?.name || 'Unknown'} (ID: ${score.gameId}), Score: ${score.value}`);
-        });
         
         // Fetch all user scores for stats
         const allUserScores: Score[] = [];
@@ -73,10 +59,8 @@ export const useHomeData = (): HomeDataResult => {
           allUserScores.push(...gameScores);
         }
         
-        console.log('[useHomeData] Fetched all user scores:', allUserScores);
         setScores(allUserScores);
       } catch (error: any) {
-        console.error('[useHomeData] Error fetching user data:', error);
         toast({
           title: 'Error fetching your data',
           description: error.message,

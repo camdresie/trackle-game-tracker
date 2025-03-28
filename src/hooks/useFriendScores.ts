@@ -67,7 +67,6 @@ export const useFriendScores = ({
           .in('user_id', friendsToFetch);
           
         if (error) {
-          console.error(`Error fetching scores:`, error);
           toast.error("Failed to load friend scores");
           return newFriendScores;
         }
@@ -100,7 +99,6 @@ export const useFriendScores = ({
         
         return newFriendScores;
       } catch (error) {
-        console.error('Global error in fetchFriendScores:', error);
         toast.error("Failed to load friend scores");
         return {};
       }
