@@ -17,6 +17,7 @@ import { getFormattedTodayInEasternTime } from '@/utils/dateUtils';
 import GroupScoresShare from '@/components/groups/GroupScoresShare';
 import GameDropdownSelector from '@/components/game/GameDropdownSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ConnectionsModal from '@/components/ConnectionsModal';
 
 // Define a consistent interface for group members
 interface GroupMember {
@@ -175,6 +176,15 @@ const TodayScores = () => {
     }
     
     return allFriends;
+  };
+
+  const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
+  const [activeConnectionsTab, setActiveConnectionsTab] = useState<string>('friends');
+  
+  // Handle opening connections modal with specific tab selected
+  const handleOpenConnectionsModal = (tab: string = 'friends') => {
+    setActiveConnectionsTab(tab);
+    setConnectionsModalOpen(true);
   };
 
   return (
@@ -565,7 +575,7 @@ const TodayScores = () => {
                       You haven't created any friend groups yet. Create a group to compare your scores.
                     </p>
                     <Button 
-                      onClick={() => setShowMessages(true)}
+                      onClick={() => handleOpenConnectionsModal('groups')}
                       className="mt-2"
                     >
                       Create Friend Group
@@ -585,6 +595,17 @@ const TodayScores = () => {
           onOpenChange={setShowMessages}
           groupId={selectedGroupForMessages.id}
           groupName={selectedGroupForMessages.name}
+        />
+      )}
+      
+      {/* Connections Modal */}
+      {user && (
+        <ConnectionsModal
+          open={connectionsModalOpen}
+          onOpenChange={setConnectionsModalOpen}
+          currentPlayerId={user.id}
+          onFriendRemoved={() => {/* Refresh friends if needed */}}
+          defaultTab={activeConnectionsTab}
         />
       )}
     </div>

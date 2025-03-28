@@ -18,11 +18,25 @@ interface ConnectionsModalProps {
   onOpenChange: (open: boolean) => void;
   currentPlayerId: string;
   onFriendRemoved?: () => void;
+  defaultTab?: string;
 }
 
-const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved }: ConnectionsModalProps) => {
-  const [activeTab, setActiveTab] = useState<string>('friends');
+const ConnectionsModal = ({ 
+  open, 
+  onOpenChange, 
+  currentPlayerId, 
+  onFriendRemoved,
+  defaultTab = 'friends' 
+}: ConnectionsModalProps) => {
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
   const queryClient = useQueryClient();
+  
+  // Set the active tab when defaultTab prop changes
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
   
   // When the modal opens, invalidate relevant queries to ensure fresh data
   useEffect(() => {
@@ -53,7 +67,7 @@ const ConnectionsModal = ({ open, onOpenChange, currentPlayerId, onFriendRemoved
         </DialogHeader>
 
         <Tabs
-          defaultValue="friends"
+          defaultValue={defaultTab}
           value={activeTab}
           onValueChange={setActiveTab}
           className="flex-1 min-h-0 flex flex-col"
