@@ -27,7 +27,8 @@ const Index = () => {
     setShowGameSelection,
     showConnections,
     setShowConnections,
-    handleAddScore
+    handleAddScore,
+    handleDeleteScore
   } = useHomeData();
   
   // Filter scores for the currently selected game (for edit mode in modal)
@@ -51,6 +52,7 @@ const Index = () => {
             isLoading={isLoading}
             todaysGames={todaysGames}
             gamesList={gamesList}
+            onDeleteScore={handleDeleteScore}
           />
         </section>
         

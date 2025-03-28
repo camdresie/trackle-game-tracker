@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
 
@@ -233,6 +232,62 @@ export const addGameScore = async (
     };
   } catch (error) {
     console.error('[addGameScore] Exception in addGameScore:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a score for a specific game
+ */
+export const deleteGameScore = async (scoreId: string): Promise<boolean> => {
+  try {
+    console.log(`[deleteGameScore] Deleting score with ID: ${scoreId}`);
+    
+    // Get the score data before deleting (for stats update)
+    const { data: scoreData, error: fetchError } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('id', scoreId)
+      .single();
+      
+    if (fetchError) {
+      console.error('[deleteGameScore] Error fetching score before deletion:', fetchError);
+      throw fetchError;
+    }
+    
+    // Delete the score record
+    const { error: deleteError } = await supabase
+      .from('scores')
+      .delete()
+      .eq('id', scoreId);
+      
+    if (deleteError) {
+      console.error('[deleteGameScore] Error deleting score:', deleteError);
+      throw deleteError;
+    }
+    
+    console.log('[deleteGameScore] Score deleted successfully');
+    
+    // If score was deleted, update the game stats
+    // This will recalculate stats based on remaining scores
+    if (scoreData) {
+      const { error: statsError } = await supabase
+        .rpc('update_game_stats', {
+          p_user_id: scoreData.user_id,
+          p_game_id: scoreData.game_id,
+          p_score: 0, // The score value doesn't matter for recalculation
+          p_date: scoreData.date
+        });
+        
+      if (statsError) {
+        console.error('[deleteGameScore] Error updating game stats after deletion:', statsError);
+        // We still return true since the score was deleted successfully
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('[deleteGameScore] Exception in deleteGameScore:', error);
     throw error;
   }
 };

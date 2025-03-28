@@ -23,6 +23,7 @@ export interface HomeDataResult {
   showConnections: boolean;
   setShowConnections: (show: boolean) => void;
   handleAddScore: (newScore: Score) => void;
+  handleDeleteScore: (scoreId: string) => void;
 }
 
 export const useHomeData = (): HomeDataResult => {
@@ -125,6 +126,19 @@ export const useHomeData = (): HomeDataResult => {
     queryClient.invalidateQueries({ queryKey: ['today-games'] });
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
   };
+  
+  const handleDeleteScore = (scoreId: string) => {
+    // Remove the score from the scores array
+    setScores(prevScores => prevScores.filter(score => score.id !== scoreId));
+    
+    // Remove from today's games if present
+    setTodaysGames(prevGames => prevGames.filter(game => game.id !== scoreId));
+    
+    // Invalidate relevant query cache to ensure data consistency
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['today-games'] });
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+  };
 
   return {
     isLoading,
@@ -139,6 +153,7 @@ export const useHomeData = (): HomeDataResult => {
     setShowGameSelection,
     showConnections,
     setShowConnections,
-    handleAddScore
+    handleAddScore,
+    handleDeleteScore
   };
 };

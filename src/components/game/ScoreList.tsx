@@ -1,17 +1,36 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Game, Score } from '@/utils/types';
 import { getScoreLabel, getScoreColor } from '@/utils/scoreUtils';
+import { Trash2 } from 'lucide-react';
+import { deleteGameScore } from '@/services/scoreService';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { isToday } from '@/utils/dateUtils';
 
 interface ScoreListProps {
   scores: Score[];
   game: Game;
   onAddScore: () => void;
   user: any;
+  onScoreDeleted?: (scoreId: string) => void;
 }
 
-const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
+const ScoreList = ({ scores, game, onAddScore, user, onScoreDeleted }: ScoreListProps) => {
+  const [isDeletingScore, setIsDeletingScore] = useState(false);
+  const [scoreToDelete, setScoreToDelete] = useState<Score | null>(null);
+
   const formatDate = (dateString: string) => {
     // Create date object from date string without timezone conversion
     const [year, month, day] = dateString.split('-').map(Number);
@@ -30,6 +49,38 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
     }
     return score;
   };
+
+  const handleDeleteClick = (score: Score) => {
+    setScoreToDelete(score);
+  };
+
+  const confirmDelete = async () => {
+    if (!scoreToDelete) return;
+    
+    setIsDeletingScore(true);
+    try {
+      const success = await deleteGameScore(scoreToDelete.id);
+      if (success) {
+        toast.success('Score deleted successfully');
+        if (onScoreDeleted) {
+          onScoreDeleted(scoreToDelete.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting score:', error);
+      toast.error('Failed to delete score');
+    } finally {
+      setIsDeletingScore(false);
+      setScoreToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setScoreToDelete(null);
+  };
+
+  // Check if a score is from today
+  const scoreIsFromToday = (score: Score) => isToday(score.date);
 
   return (
     <>
@@ -56,8 +107,20 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
                       )}
                     </div>
                   </div>
-                  <div className={getScoreColor(score.value, game, undefined)}>
-                    {getScoreLabel(score.value, game, undefined)}
+                  <div className="flex items-center gap-2">
+                    <div className={getScoreColor(score.value, game, undefined)}>
+                      {getScoreLabel(score.value, game, undefined)}
+                    </div>
+                    {scoreIsFromToday(score) && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteClick(score)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -72,6 +135,27 @@ const ScoreList = ({ scores, game, onAddScore, user }: ScoreListProps) => {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={!!scoreToDelete} onOpenChange={(open) => !open && cancelDelete()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete score?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove your score for today. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingScore}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              disabled={isDeletingScore}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeletingScore ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

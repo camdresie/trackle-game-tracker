@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGameData } from '@/hooks/useGameData';
 import { Score } from '@/utils/types';
 import { Users } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const GameDetail = () => {
   const { gameId } = useParams<{ gameId: string }>();
@@ -22,6 +23,7 @@ const GameDetail = () => {
   const [showAddScore, setShowAddScore] = useState(false);
   const [showConnectionsModal, setShowConnectionsModal] = useState(false);
   const [activeTab, setActiveTab] = useState('friends');
+  const queryClient = useQueryClient();
   
   const {
     game,
@@ -63,6 +65,19 @@ const GameDetail = () => {
     } else {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev, newScore.value));
     }
+  };
+  
+  const handleScoreDeleted = (scoreId: string) => {
+    // Remove the deleted score from local state
+    setLocalScores(prev => prev.filter(score => score.id !== scoreId));
+    
+    // Invalidate relevant queries to refresh the data
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['today-games'] });
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    
+    // Recalculate best score - we'll let the server handle this and it will be
+    // reflected in the UI after the queries are refreshed
   };
   
   const displayScores = localScores.length > 0 ? localScores : scores;
@@ -169,6 +184,7 @@ const GameDetail = () => {
                   game={game}
                   onAddScore={() => setShowAddScore(true)}
                   user={user}
+                  onScoreDeleted={handleScoreDeleted}
                 />
               </TabsContent>
             </Tabs>
