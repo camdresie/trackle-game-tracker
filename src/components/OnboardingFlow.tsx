@@ -22,32 +22,20 @@ const OnboardingFlow = () => {
   useEffect(() => {
     if (profile) {
       console.log('Initializing form with profile data:', profile);
-      
-      // If the profile exists but username is null, try to get it from user metadata
-      if (!profile.username && user?.user_metadata?.username) {
-        setUsername(user.user_metadata.username);
-      } else {
-        setUsername(profile.username || '');
-      }
-      
+      setUsername(profile.username || '');
       setFullName(profile.full_name || '');
       setIsLoading(false);
     } else if (user) {
-      // If we have user metadata but no profile yet, check if there's a username in user metadata
-      const userMetadataUsername = user.user_metadata?.username;
-      if (userMetadataUsername) {
-        setUsername(userMetadataUsername);
-      } else {
-        const emailPrefix = user.email?.split('@')[0] || '';
-        setUsername(emailPrefix);
-      }
+      // If we have user but no profile yet, suggest username based on email
+      const emailPrefix = user.email?.split('@')[0] || '';
+      setUsername(emailPrefix);
       setIsLoading(false);
     } else {
       setIsLoading(false);
     }
   }, [profile, user]);
 
-  // Check if username is valid
+  // Validate username as user types
   useEffect(() => {
     if (username.length > 0 && username.length < 3) {
       setUsernameError('Username must be at least 3 characters');
@@ -96,7 +84,7 @@ const OnboardingFlow = () => {
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>Personalize your account with a custom username and your full name</CardDescription>
+          <CardDescription>Set up your username before you continue</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
@@ -112,11 +100,11 @@ const OnboardingFlow = () => {
                   <Input 
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your full name"
+                    placeholder="Enter your full name (optional)"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Username</label>
+                  <label className="text-sm font-medium mb-1 block">Username <span className="text-red-500">*</span></label>
                   <Input 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -127,7 +115,7 @@ const OnboardingFlow = () => {
                     <p className="text-xs text-red-500 mt-1">{usernameError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    This is the username you'll use across the platform.
+                    This username will be used across the platform and cannot be changed later.
                   </p>
                 </div>
               </div>
