@@ -84,7 +84,7 @@ const ScoreList = ({ scores, game, onAddScore, user, onScoreDeleted }: ScoreList
 
   return (
     <>
-      <h2 className="text-xl font-semibold mb-2">Your Score History</h2>
+      <h2 className="text-xl font-semibold mb-4 md:mb-2">Your Score History</h2>
       
       {scores.length > 0 ? (
         <ScrollArea className="h-[300px] w-full rounded-md border p-4">
