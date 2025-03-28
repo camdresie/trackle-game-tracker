@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,10 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import AdSense from '@/components/ads/AdSense';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Auth = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('login');
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Redirect if user is already logged in
   if (user) {
@@ -26,11 +28,16 @@ const Auth = () => {
         <Card className="glass-card">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-2">
-              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shadow-sm">
+              <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm shadow-sm relative" style={{ height: imageLoaded ? 'auto' : '260px', width: imageLoaded ? 'auto' : '260px' }}>
+                {!imageLoaded && (
+                  <Skeleton className="absolute inset-0 rounded-lg" />
+                )}
                 <img 
                   src="/lovable-uploads/024cdc2b-a9ed-44eb-af0f-8772dfc665a0.png" 
                   alt="Trackle Logo" 
-                  className="h-64 w-auto" 
+                  className={`h-64 w-auto ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setImageLoaded(true)}
+                  loading="eager"
                 />
               </div>
             </div>
