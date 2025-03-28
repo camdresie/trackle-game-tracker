@@ -1,4 +1,3 @@
-
 // Game data and utility functions
 
 // List of all games in the application
@@ -96,8 +95,8 @@ export const games = [
 ];
 
 // Get a game by ID
-export const getGameById = (gameId: string) => {
-  return games.find(game => game.id === gameId) || null;
+export const getGameById = (gameId: string, gamesList = games) => {
+  return gamesList.find(game => game.id === gameId) || null;
 };
 
 // Calculate the best score for a player in a specific game

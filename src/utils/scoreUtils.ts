@@ -2,7 +2,9 @@
 import { Game } from '@/utils/types';
 
 // Calculate what "good score" means for each game
-export const getScoreLabel = (value: number, game: Game, quordleValues?: number[]) => {
+export const getScoreLabel = (value: number, game?: Game, quordleValues?: number[]) => {
+  if (!game) return 'N/A';
+  
   if (game.id === 'wordle') {
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
@@ -39,7 +41,9 @@ export const getScoreLabel = (value: number, game: Game, quordleValues?: number[
 };
 
 // Get color styling based on score
-export const getScoreColor = (value: number, game: Game, quordleValues?: number[]) => {
+export const getScoreColor = (value: number, game?: Game, quordleValues?: number[]) => {
+  if (!game) return 'text-gray-500';
+  
   if (game.id === 'wordle') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
