@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -236,14 +235,6 @@ const TodayScores = () => {
             <div className="h-40 bg-muted/30 animate-pulse rounded-lg"></div>
             <div className="h-40 bg-muted/30 animate-pulse rounded-lg"></div>
           </div>
-        ) : groupPerformanceData.length === 0 ? (
-          <Card className="p-8 flex flex-col items-center justify-center text-center">
-            <Users className="w-12 h-12 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
-            <p className="text-muted-foreground">
-              You haven't created any friend groups yet. Create a group to compare your scores.
-            </p>
-          </Card>
         ) : (
           <div className="space-y-6">
             <Tabs 
@@ -306,262 +297,281 @@ const TodayScores = () => {
                     )}
                   </div>
                   
-                  {/* Friends scores list */}
+                  {/* Friends scores list - Add check for empty friends list */}
                   <div className="space-y-3">
-                    {/* Get all friends + current user and sort by those who have played first, then by score */}
-                    {getAllFriendsList()
-                      // Sort played first, then by score (lower is better for some games)
-                      .sort((a, b) => {
-                        // First sort by played status - people who played come first
-                        if (a.hasPlayed && !b.hasPlayed) return -1;
-                        if (!a.hasPlayed && b.hasPlayed) return 1;
-                        
-                        // If both have played, sort by score (fixed comparison to ensure proper number comparison)
-                        if (a.hasPlayed && b.hasPlayed) {
-                          // Make sure we're comparing numbers
-                          const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                          const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                    {getAllFriendsList().length > 0 ? (
+                      /* Get all friends + current user and sort by those who have played first, then by score */
+                      getAllFriendsList()
+                        // Sort played first, then by score (lower is better for some games)
+                        .sort((a, b) => {
+                          // First sort by played status - people who played come first
+                          if (a.hasPlayed && !b.hasPlayed) return -1;
+                          if (!a.hasPlayed && b.hasPlayed) return 1;
                           
-                          return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                        }
-                        
-                        // If neither has played, keep original order
-                        return 0;
-                      })
-                      .map((person, index) => {
-                        // Find if this person is the top scorer (only among those who have played)
-                        const isTopScore = person.hasPlayed && 
-                          getAllFriendsList()
-                            .filter(p => p.hasPlayed)
-                            .sort((a, b) => {
-                              if (typeof a.score !== 'number' || typeof b.score !== 'number') {
-                                // Handle case where one or both scores aren't numbers
-                                const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                                const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-                                return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                              }
-                              
-                              // Both are numbers, safe to compare
-                              return isLowerBetter ? a.score - b.score : b.score - a.score;
-                            })
-                            .findIndex(p => p.playerId === person.playerId) === 0;
+                          // If both have played, sort by score (fixed comparison to ensure proper number comparison)
+                          if (a.hasPlayed && b.hasPlayed) {
+                            // Make sure we're comparing numbers
+                            const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                            const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
                             
-                        return (
-                          <div 
-                            key={person.playerId}
-                            className={`flex items-center justify-between p-3 rounded-lg ${
-                              person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                            } ${isTopScore ? "border border-accent/20" : ""}`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                              {isTopScore && (
-                                <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                              )}
-                              <div className="font-medium truncate">
-                                {person.playerName}
+                            return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                          }
+                          
+                          // If neither has played, keep original order
+                          return 0;
+                        })
+                        .map((person, index) => {
+                          // Find if this person is the top scorer (only among those who have played)
+                          const isTopScore = person.hasPlayed && 
+                            getAllFriendsList()
+                              .filter(p => p.hasPlayed)
+                              .sort((a, b) => {
+                                if (typeof a.score !== 'number' || typeof b.score !== 'number') {
+                                  // Handle case where one or both scores aren't numbers
+                                  const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                                  const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+                                  return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                                }
+                                
+                                // Both are numbers, safe to compare
+                                return isLowerBetter ? a.score - b.score : b.score - a.score;
+                              })
+                              .findIndex(p => p.playerId === person.playerId) === 0;
+                              
+                          return (
+                            <div 
+                              key={person.playerId}
+                              className={`flex items-center justify-between p-3 rounded-lg ${
+                                person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                              } ${isTopScore ? "border border-accent/20" : ""}`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+                                {isTopScore && (
+                                  <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                )}
+                                <div className="font-medium truncate">
+                                  {person.playerName}
+                                </div>
+                                {isTopScore && (
+                                  <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                    Top score
+                                  </span>
+                                )}
                               </div>
-                              {isTopScore && (
-                                <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
-                                  Top score
-                                </span>
-                              )}
+                              <div className="flex-shrink-0">
+                                {person.hasPlayed ? (
+                                  <span className="font-semibold">{person.score}</span>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">No score yet</span>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex-shrink-0">
-                              {person.hasPlayed ? (
-                                <span className="font-semibold">{person.score}</span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">No score yet</span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    }
+                          );
+                        })
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <p>You haven't added any friends yet.</p>
+                        <p className="mt-2">Go to the connections menu to add friends and see their scores here.</p>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </TabsContent>
               
               {/* By Group tab content - moved to be second */}
               <TabsContent value="groups" className="space-y-6">
-                <div className="space-y-6">
-                  
-                  {groupPerformanceData.map((group) => {
-                    const leadingPlayer = getLeadingPlayerInGroup(group);
-                    // Convert members array to the format expected by GroupScoresShare
-                    const groupMemberScores = convertToGroupMemberScores(group.members);
-                  
-                    // FIXED: Create a combined list of all members properly handling current user
-                    const allMembers: GroupMember[] = [];
-                  
-                    // If the current user has played, add them to the list first
-                    if (group.currentUserHasPlayed) {
-                      console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
-                      allMembers.push({
-                        playerId: user?.id || '',
-                        playerName: 'You',
-                        hasPlayed: true,
-                        score: group.currentUserScore,
-                        isCurrentUser: true
-                      });
-                    } else if (user) {
-                      // If current user hasn't played, add them as not played
-                      console.log(`Group ${group.groupName}: Adding current user as not played`);
-                      allMembers.push({
-                        playerId: user.id,
-                        playerName: 'You',
-                        hasPlayed: false,
-                        isCurrentUser: true
-                      });
-                    }
-                  
-                    // Add all other group members (excluding the current user)
-                    group.members.forEach(m => {
-                      // Skip if this is the current user - we've already handled them above
-                      if (user && m.playerId === user.id) {
-                        console.log(`Group ${group.groupName}: Skipping current user ${m.playerName} from members list`);
-                        return;
+                {groupPerformanceData.length > 0 ? (
+                  <div className="space-y-6">
+                    {groupPerformanceData.map((group) => {
+                      const leadingPlayer = getLeadingPlayerInGroup(group);
+                      // Convert members array to the format expected by GroupScoresShare
+                      const groupMemberScores = convertToGroupMemberScores(group.members);
+                    
+                      // FIXED: Create a combined list of all members properly handling current user
+                      const allMembers: GroupMember[] = [];
+                    
+                      // If the current user has played, add them to the list first
+                      if (group.currentUserHasPlayed) {
+                        console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
+                        allMembers.push({
+                          playerId: user?.id || '',
+                          playerName: 'You',
+                          hasPlayed: true,
+                          score: group.currentUserScore,
+                          isCurrentUser: true
+                        });
+                      } else if (user) {
+                        // If current user hasn't played, add them as not played
+                        console.log(`Group ${group.groupName}: Adding current user as not played`);
+                        allMembers.push({
+                          playerId: user.id,
+                          playerName: 'You',
+                          hasPlayed: false,
+                          isCurrentUser: true
+                        });
                       }
                     
-                      // Add non-current-user member
-                      console.log(`Group ${group.groupName}: Adding member ${m.playerName}`);
-                      allMembers.push({
-                        ...m,
-                        isCurrentUser: false
-                      });
-                    });
-                  
-                    console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
-                  
-                    // Sort all members by score, with played members at the top
-                    const sortedMembers = [...allMembers]
-                      .filter(m => m.hasPlayed)
-                      .sort((a, b) => {
-                        // Fixed comparison to ensure proper number comparison
-                        const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                        const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-                        
-                        return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                      });
-                  
-                    // Get members who haven't played
-                    const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
-                  
-                    console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
-                    console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
-                  
-                    return (
+                      // Add all other group members (excluding the current user)
+                      group.members.forEach(m => {
+                        // Skip if this is the current user - we've already handled them above
+                        if (user && m.playerId === user.id) {
+                          console.log(`Group ${group.groupName}: Skipping current user ${m.playerName} from members list`);
+                          return;
+                        }
                       
-                      <Card key={group.groupId} className="p-6 overflow-hidden">
-                        
-                        <div className="flex flex-col">
-                          {/* Group header with title */}
-                          <>
-                              <div className="mb-3">
-                                <div className="flex items-center justify-between">
-                                  <h3 className="font-semibold text-xl flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                                    <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
-                                  </h3>
-                                  {/* Only show Leading badge here on mobile, not in the score section below */}
-                                  {leadingPlayer?.isCurrentUser && (
-                                    <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
-                                      <Trophy className="w-3 h-3 mr-1" /> Leading
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                {/* Updated button styling to match the app's style */}
-                                <div className="flex items-center gap-2 mt-3">
-                                  <GroupScoresShare
-                                    groupName={group.groupName}
-                                    gameName={selectedGame?.name || ""}
-                                    gameColor={selectedGame?.color || ""}
-                                    members={groupMemberScores}
-                                    currentUserName={profile?.username || ""}
-                                    currentUserScore={group.currentUserScore}
-                                    currentUserHasPlayed={group.currentUserHasPlayed}
-                                    useActualUsername={true}
-                                  >
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
-                                      className="flex items-center justify-center gap-1"
-                                    >
-                                      <Share2 className="w-4 h-4" />
-                                      <span>Share</span>
-                                    </Button>
-                                  </GroupScoresShare>
-                                  
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                    className="flex items-center justify-center gap-1"
-                                  >
-                                    <MessageCircle className="w-4 h-4" />
-                                    <span>Messages</span>
-                                  </Button>
-                                </div>
-                              </div>
-                            </>
+                        // Add non-current-user member
+                        console.log(`Group ${group.groupName}: Adding member ${m.playerName}`);
+                        allMembers.push({
+                          ...m,
+                          isCurrentUser: false
+                        });
+                      });
+                    
+                      console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
+                    
+                      // Sort all members by score, with played members at the top
+                      const sortedMembers = [...allMembers]
+                        .filter(m => m.hasPlayed)
+                        .sort((a, b) => {
+                          // Fixed comparison to ensure proper number comparison
+                          const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+                          const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
                           
-                          {/* Group members scores */}
-                          <div className="space-y-3">
-                            {sortedMembers.length > 0 ? (
-                              sortedMembers.map((member, index) => (
-                                <div 
-                                  key={`${member.playerId}-${index}`} 
-                                  className={cn(
-                                    "flex items-center justify-between p-3 rounded-lg transition-colors",
-                                    member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
-                                    index === 0 ? "border border-accent/20" : ""
-                                  )}
-                                >
-                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                    <span className="truncate">
-                                      {member.playerName}
-                                    </span>
-                                    {index === 0 && (
+                          return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+                        });
+                    
+                      // Get members who haven't played
+                      const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
+                    
+                      console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
+                      console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
+                    
+                      return (
+                        <Card key={group.groupId} className="p-6 overflow-hidden">
+                          <div className="flex flex-col">
+                            {/* Group header with title */}
+                            <>
+                                <div className="mb-3">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className="font-semibold text-xl flex items-center gap-2">
+                                      <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                                      <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
+                                    </h3>
+                                    {/* Only show Leading badge here on mobile, not in the score section below */}
+                                    {leadingPlayer?.isCurrentUser && (
                                       <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
                                         <Trophy className="w-3 h-3 mr-1" /> Leading
                                       </span>
                                     )}
                                   </div>
+                                  
+                                  {/* Updated button styling to match the app's style */}
+                                  <div className="flex items-center gap-2 mt-3">
+                                    <GroupScoresShare
+                                      groupName={group.groupName}
+                                      gameName={selectedGame?.name || ""}
+                                      gameColor={selectedGame?.color || ""}
+                                      members={groupMemberScores}
+                                      currentUserName={profile?.username || ""}
+                                      currentUserScore={group.currentUserScore}
+                                      currentUserHasPlayed={group.currentUserHasPlayed}
+                                      useActualUsername={true}
+                                    >
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="flex items-center justify-center gap-1"
+                                      >
+                                        <Share2 className="w-4 h-4" />
+                                        <span>Share</span>
+                                      </Button>
+                                    </GroupScoresShare>
+                                    
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      onClick={() => handleOpenMessages(group.groupId, group.groupName)}
+                                      className="flex items-center justify-center gap-1"
+                                    >
+                                      <MessageCircle className="w-4 h-4" />
+                                      <span>Messages</span>
+                                    </Button>
+                                  </div>
+                                </div>
+                              </>
+                            
+                            {/* Group members scores */}
+                            <div className="space-y-3">
+                              {sortedMembers.length > 0 ? (
+                                sortedMembers.map((member, index) => (
+                                  <div 
+                                    key={`${member.playerId}-${index}`} 
+                                    className={cn(
+                                      "flex items-center justify-between p-3 rounded-lg transition-colors",
+                                      member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
+                                      index === 0 ? "border border-accent/20" : ""
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                      <span className="truncate">
+                                        {member.playerName}
+                                      </span>
+                                      {index === 0 && (
+                                        <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
+                                          <Trophy className="w-3 h-3 mr-1" /> Leading
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center flex-shrink-0">
+                                      <span className="font-semibold">{member.score}</span>
+                                      <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-4 text-muted-foreground">
+                                  No scores recorded for this group today
+                                </div>
+                              )}
+                            
+                              {notPlayedMembers.map((member, index) => (
+                                <div 
+                                  key={`${member.playerId}-notplayed-${index}`} 
+                                  className={cn(
+                                    "flex items-center justify-between p-3 rounded-lg transition-colors text-muted-foreground",
+                                    member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
+                                    <span className="truncate">{member.playerName}</span>
+                                  </div>
                                   <div className="flex items-center flex-shrink-0">
-                                    <span className="font-semibold">{member.score}</span>
+                                    <span className="text-sm text-muted-foreground">No score yet</span>
                                     <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
                                   </div>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="text-center py-4 text-muted-foreground">
-                                No scores recorded for this group today
-                              </div>
-                            )}
-                          
-                            {notPlayedMembers.map((member, index) => (
-                              <div 
-                                key={`${member.playerId}-notplayed-${index}`} 
-                                className={cn(
-                                  "flex items-center justify-between p-3 rounded-lg transition-colors text-muted-foreground",
-                                  member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                                )}
-                              >
-                                <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                  <span className="truncate">{member.playerName}</span>
-                                </div>
-                                <div className="flex items-center flex-shrink-0">
-                                  <span className="text-sm text-muted-foreground">No score yet</span>
-                                  <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Card className="p-8 flex flex-col items-center justify-center text-center">
+                    <Users className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
+                    <p className="text-muted-foreground mb-4">
+                      You haven't created any friend groups yet. Create a group to compare your scores.
+                    </p>
+                    <Button 
+                      onClick={() => setShowMessages(true)}
+                      className="mt-2"
+                    >
+                      Create Friend Group
+                    </Button>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>
