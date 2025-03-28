@@ -11,7 +11,7 @@ export const useLeaderboardFilters = () => {
   const [selectedGame, setSelectedGame] = useState<string>(games.length > 0 ? games[0].id : '');
   const [sortBy, setSortBy] = useState<SortByOption>('averageScore'); // Changed default to match "all" time view
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showFriendsOnly, setShowFriendsOnly] = useState(false);
+  const [showFriendsOnly, setShowFriendsOnly] = useState(true); // Changed default to true to show friends only
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all'); // Changed default to 'all'
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
