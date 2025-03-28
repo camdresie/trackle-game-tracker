@@ -38,8 +38,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // A user needs onboarding if their profile doesn't exist or has null username
-  const needsOnboarding = !profile || profile.username === null;
+  // A user needs onboarding if their profile doesn't exist or has null/empty username
+  const needsOnboarding = !profile || !profile.username;
   
   console.log('Protected route check - profile:', profile);
   console.log('Is new user needing onboarding:', needsOnboarding);
