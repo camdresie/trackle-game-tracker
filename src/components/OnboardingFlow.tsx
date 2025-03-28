@@ -25,18 +25,20 @@ const OnboardingFlow = () => {
       setUsername(profile.username || '');
       setFullName(profile.full_name || '');
       setIsLoading(false);
+    } else if (user) {
+      // If we have user metadata but no profile yet, check if there's a username in user metadata
+      const userMetadataUsername = user.user_metadata?.username;
+      if (userMetadataUsername) {
+        setUsername(userMetadataUsername);
+      } else {
+        const emailPrefix = user.email?.split('@')[0] || '';
+        setUsername(emailPrefix);
+      }
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
-  }, [profile]);
-
-  // If we have a user email but no username, set the default to email prefix
-  useEffect(() => {
-    if (user?.email && (!username || username.length === 0)) {
-      const emailPrefix = user.email.split('@')[0];
-      setUsername(emailPrefix);
-    }
-  }, [user, username]);
+  }, [profile, user]);
 
   // Check if username is valid
   useEffect(() => {
@@ -118,7 +120,7 @@ const OnboardingFlow = () => {
                     <p className="text-xs text-red-500 mt-1">{usernameError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    We've suggested a username based on your email. Feel free to change it to something you prefer.
+                    This is the username you'll use across the platform.
                   </p>
                 </div>
               </div>
