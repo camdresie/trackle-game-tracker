@@ -102,8 +102,8 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
                   </div>
                   <div>
                     <h3 className="font-medium">{game.name}</h3>
-                    <div className={getScoreColor(score.value, game)}>
-                      {getScoreLabel(score.value, game)}
+                    <div className={getScoreColor(score.value)}>
+                      {getScoreLabel(score.value)}
                     </div>
                   </div>
                 </div>
