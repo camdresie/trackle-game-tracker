@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -166,7 +165,7 @@ const AddScoreModal = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="py-4 space-y-4">
+        <div className="py-4 space-y-6 md:space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Date</label>
             <Input

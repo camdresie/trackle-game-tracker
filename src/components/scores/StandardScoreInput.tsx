@@ -71,7 +71,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   const markers = getSliderMarkers(game);
   
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <label className="text-sm font-medium">Score</label>
         <div className="flex items-center gap-2">
