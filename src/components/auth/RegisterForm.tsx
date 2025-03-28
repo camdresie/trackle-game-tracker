@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyRound, Mail, Loader2 } from 'lucide-react';
+import { KeyRound, Mail, Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/contexts/AuthContext';
 
 const registerSchema = z.object({
+  username: z.string().min(3, { message: 'Username must be at least 3 characters' }),
   email: z.string().email({ message: 'Please enter a valid email' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
 });
@@ -32,6 +33,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      username: '',
       email: '',
       password: '',
     },
@@ -42,12 +44,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setError(null);
     
     try {
-      // Extract username from email (part before @)
-      const tempUsername = values.email.split('@')[0];
-      console.log(`Auto-generating temporary username: ${tempUsername} from email: ${values.email}`);
-      
-      // Use the email prefix as the username
-      await signUp(values.email, values.password, tempUsername);
+      await signUp(values.email, values.password, values.username);
       if (onRegisterSuccess) {
         onRegisterSuccess();
       } else {
@@ -63,6 +60,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="username"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Username</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Choose a username" className="pl-9" {...field} />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"
