@@ -26,9 +26,8 @@ const OnboardingFlow = () => {
       setFullName(profile.full_name || '');
       setIsLoading(false);
     } else if (user) {
-      // If we have user but no profile yet, suggest username based on email
-      const emailPrefix = user.email?.split('@')[0] || '';
-      setUsername(emailPrefix);
+      // If we have user but no profile yet, leave username blank
+      setUsername('');
       setIsLoading(false);
     } else {
       setIsLoading(false);
