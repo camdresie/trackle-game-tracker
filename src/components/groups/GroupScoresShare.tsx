@@ -95,8 +95,8 @@ const GroupScoresShare = ({
   // Generate the share text with promotional link for external sharing only
   const generateShareText = () => {
     const shareContent = generateShareContent();
-    // Put the URL on a separate line to help with link detection in messaging apps
-    return `${shareContent}\n\nI'm tracking our scores on Trackle!\nhttps://www.ontrackle.com`;
+    // Format to ensure proper link preview - URL on its own line
+    return `${shareContent}\n\nI'm tracking game scores on Trackle!\nhttps://www.ontrackle.com`;
   };
   
   // Handle opening the share modal

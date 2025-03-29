@@ -78,8 +78,8 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
       shareText += `⭐ Average: ${formatScore(averageScore)} ${unitLabel}\n`;
     }
     
-    // Add URL on a new line to help with link detection in messaging apps
-    shareText += `\nI'm keeping my stats on Trackle!\nhttps://www.ontrackle.com`;
+    // Add promotional text and URL on separate lines for better link preview
+    shareText += `\nI'm tracking game scores on Trackle!\nhttps://www.ontrackle.com`;
     
     return shareText;
   };

@@ -35,7 +35,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   // Remove the link for preview display
   const getDisplayContent = () => {
     // Split the text by the link line and take only the content part
-    const parts = shareText.split('\n\nI\'m tracking our scores on Trackle! Join us at https://www.ontrackle.com');
+    const parts = shareText.split('\n\nI\'m tracking our scores on Trackle!');
     return parts[0]; // Return just the content without the link
   };
 
@@ -43,8 +43,8 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   const getMessageContentForGroup = () => {
     // Split the text by any variation of the link text to ensure we capture all possible forms
     const linkPatterns = [
-      '\n\nI\'m tracking our scores on Trackle! Join us at https://www.ontrackle.com',
-      '\n\nI\'m keeping my stats on Trackle! Join me at https://www.ontrackle.com'
+      '\n\nI\'m tracking our scores on Trackle!',
+      '\n\nI\'m keeping my stats on Trackle!'
     ];
     
     let content = shareText;
@@ -60,19 +60,25 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
 
   const handleCopyToClipboard = async () => {
     try {
-      // Ensure we're sharing the full URL with proper link format
-      // This helps ensure the URL is recognized properly by messaging platforms
-      const urlPattern = /https:\/\/www\.ontrackle\.com/;
+      // Create a clean version of the text that ensures the URL is properly formatted
+      // for optimal link preview recognition
       let textToCopy = shareText;
       
-      // If we have a URL in the text, ensure it's isolated on its own line
-      // This helps many apps recognize it as a preview-able link
+      // Make sure the URL is properly formatted for link previews
+      // Many messaging platforms need the URL on its own line and as the last element
+      const urlPattern = /https:\/\/www\.ontrackle\.com/g;
+      
       if (urlPattern.test(textToCopy)) {
-        // First make sure the URL is the last thing in the text
-        const parts = textToCopy.split(urlPattern);
-        if (parts.length > 1) {
-          textToCopy = parts[0] + 'https://www.ontrackle.com';
-        }
+        // Format the text to ensure the URL is properly recognized
+        const textWithoutUrl = textToCopy.replace(urlPattern, '');
+        
+        // Reconstruct the text with the URL on its own line at the end
+        textToCopy = textWithoutUrl
+          .replace(/\n\nI\'m (keeping my stats|tracking our scores) on Trackle!\n?/g, '')
+          .trim();
+        
+        // Add the promotional text and URL, ensuring URL is on its own line
+        textToCopy += '\n\nI\'m tracking game scores on Trackle!\nhttps://www.ontrackle.com';
       }
       
       await navigator.clipboard.writeText(textToCopy);
