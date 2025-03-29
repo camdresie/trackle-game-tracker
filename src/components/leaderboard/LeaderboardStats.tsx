@@ -6,6 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import LeaderboardShare from './LeaderboardShare';
 import { cn } from '@/lib/utils';
 
+// Define games where lower scores are better for reuse
+const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'];
+
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';
   isLoading: boolean;
@@ -84,7 +87,7 @@ const LeaderboardStats = ({
   let highestAveragePlayer = null;
   if (activePlayers.length > 0) {
     highestAveragePlayer = [...activePlayers].sort((a, b) => {
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+      if (lowerScoreBetterGames.includes(selectedGame)) {
         // For games where lower is better
         if (a.average_score === 0) return 1;
         if (b.average_score === 0) return -1;
@@ -107,14 +110,14 @@ const LeaderboardStats = ({
       const value = score.value;
       
       if (!userBestScores.has(userId) || 
-          ((['wordle', 'mini-crossword'].includes(selectedGame) && value < userBestScores.get(userId).score) ||
-           (!['wordle', 'mini-crossword'].includes(selectedGame) && value > userBestScores.get(userId).score))) {
+          ((lowerScoreBetterGames.includes(selectedGame) && value < userBestScores.get(userId).score) ||
+           (!lowerScoreBetterGames.includes(selectedGame) && value > userBestScores.get(userId).score))) {
         userBestScores.set(userId, { username, score: value });
       }
     });
     
     const sortedUsers = [...userBestScores.entries()].sort(([, a], [, b]) => {
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+      if (lowerScoreBetterGames.includes(selectedGame)) {
         return a.score - b.score; // Lower is better
       } else {
         return b.score - a.score; // Higher is better
@@ -127,7 +130,7 @@ const LeaderboardStats = ({
   } else if (activePlayers.length > 0) {
     // For all-time view, use best_score
     bestScorePlayer = [...activePlayers].sort((a, b) => {
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+      if (lowerScoreBetterGames.includes(selectedGame)) {
         // For games where lower is better
         if (a.best_score === 0) return 1;
         if (b.best_score === 0) return -1;

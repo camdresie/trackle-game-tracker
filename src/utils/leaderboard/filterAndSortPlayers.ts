@@ -1,4 +1,3 @@
-
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -9,6 +8,9 @@ import { formatInTimeZone } from 'date-fns-tz';
 const getEasternTimeDate = (): string => {
   return formatInTimeZone(new Date(), 'America/New_York', 'yyyy-MM-dd');
 };
+
+// Define games where lower scores are better for reuse
+const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'];
 
 /**
  * Filter and sort players based on selected criteria
@@ -85,7 +87,7 @@ export const filterAndSortPlayers = (
   filteredPlayers.sort((a, b) => {
     if (timeFilter === 'today') {
       // For today view, sort by today's score
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+      if (lowerScoreBetterGames.includes(selectedGame)) {
         // For games where lower is better
         return (a.today_score || 999) - (b.today_score || 999);
       } else {
@@ -96,7 +98,7 @@ export const filterAndSortPlayers = (
       // Sort by the selected criteria for all-time
       switch (sortBy) {
         case 'bestScore':
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+          if (lowerScoreBetterGames.includes(selectedGame)) {
             // For games where lower is better, handle 0 scores
             if (a.best_score === 0 && b.best_score === 0) return 0;
             if (a.best_score === 0) return 1;
@@ -107,7 +109,7 @@ export const filterAndSortPlayers = (
         case 'totalGames':
           return b.total_games - a.total_games;
         case 'averageScore':
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+          if (lowerScoreBetterGames.includes(selectedGame)) {
             // For games where lower is better, handle 0 scores
             if (a.average_score === 0 && b.average_score === 0) return 0;
             if (a.average_score === 0) return 1;
@@ -117,7 +119,7 @@ export const filterAndSortPlayers = (
           return b.average_score - a.average_score;
         default:
           // Default sorting for all-time view is average score
-          if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+          if (lowerScoreBetterGames.includes(selectedGame)) {
             if (a.average_score === 0 && b.average_score === 0) return 0;
             if (a.average_score === 0) return 1;
             if (b.average_score === 0) return -1;

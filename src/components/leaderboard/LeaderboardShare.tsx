@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -87,7 +86,7 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
   // Generate the share text
   const generateShareText = () => {
     const topPlayers = getTopPlayers();
-    const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame);
+    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'].includes(selectedGame);
     const unitLabel = getUnitLabel();
     
     let shareText = `🎮 ${gameTitle} Leaderboard`;
