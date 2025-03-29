@@ -25,11 +25,16 @@ interface GroupPerformance {
 
 export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => {
   const { user } = useAuth();
-  const { friends } = useFriendsList();
+  const { friends, refreshFriends } = useFriendsList();
   const { friendGroups } = useFriendGroups(friends);
   const [isLoading, setIsLoading] = useState(true);
   const [groupPerformanceData, setGroupPerformanceData] = useState<GroupPerformance[]>([]);
   const [allTodaysScores, setAllTodaysScores] = useState<Score[]>([]);
+  
+  // Debug friends list to see all connections
+  useEffect(() => {
+    console.log('useGroupScores - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
+  }, [friends]);
   
   // Fetch all today's scores for the selected game
   useEffect(() => {
@@ -57,6 +62,19 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           // Check overlap
           const friendScores = scores.filter(s => friendIds.includes(s.playerId));
           console.log(`Found ${friendScores.length} scores from friends`);
+          
+          // Log scores that are from friends
+          friendScores.forEach(score => {
+            const friend = friends.find(f => f.id === score.playerId);
+            console.log(`Friend score: ${friend?.name} (${score.playerId}), value: ${score.value}`);
+          });
+          
+          // Log scores that are not from friends
+          const nonFriendScores = scores.filter(s => !friendIds.includes(s.playerId) && s.playerId !== user?.id);
+          console.log(`Found ${nonFriendScores.length} scores from non-friends`);
+          nonFriendScores.forEach(score => {
+            console.log(`Non-friend score: ${score.playerId}, value: ${score.value}`);
+          });
         }
         
         setAllTodaysScores(scores);
@@ -68,7 +86,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     };
     
     fetchAllTodaysScores();
-  }, [gameId, friends]);
+  }, [gameId, friends, user?.id]);
   
   // Process the data whenever dependencies change
   useEffect(() => {
@@ -107,6 +125,14 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       
       // Process friend groups
       const processedGroups = friendGroups.map(group => {
+        // Debug the group members
+        console.log(`Processing group: ${group.name} with ${group.members?.length || 0} members`);
+        if (group.members) {
+          group.members.forEach(member => {
+            console.log(`Group member: ${member.name} (${member.id})`);
+          });
+        }
+        
         // Get today's scores for each member of the group
         const members = group.members?.map(member => {
           // Look in allTodaysScores for this friend's score
@@ -144,5 +170,5 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     }
   }, [user, gameId, todaysScores, friends, friendGroups, allTodaysScores]);
   
-  return { isLoading, groupPerformanceData };
+  return { isLoading, groupPerformanceData, refreshFriends };
 };

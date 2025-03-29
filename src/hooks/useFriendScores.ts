@@ -47,8 +47,11 @@ export const useFriendScores = ({
       }
       
       if (friendsToFetch.length === 0) {
+        console.log('No friends to fetch scores for.');
         return {};
       }
+      
+      console.log(`Fetching scores for game ${gameId} and ${friendsToFetch.length} friends:`, friendsToFetch);
       
       try {
         // Initialize empty scores for all friends
@@ -67,6 +70,7 @@ export const useFriendScores = ({
           .in('user_id', friendsToFetch);
           
         if (error) {
+          console.error('Error fetching friend scores:', error);
           toast.error("Failed to load friend scores");
           return newFriendScores;
         }
@@ -102,7 +106,11 @@ export const useFriendScores = ({
             };
             
             // Add to the appropriate user's scores array
-            newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
+            if (newFriendScores[userId]) {
+              newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
+            } else {
+              console.warn(`Found scores for user ${userId} but they are not in the friends list.`);
+            }
           });
         }
         
@@ -113,6 +121,7 @@ export const useFriendScores = ({
         
         return newFriendScores;
       } catch (error) {
+        console.error('Exception in useFriendScores:', error);
         toast.error("Failed to load friend scores");
         return {};
       }
@@ -126,6 +135,7 @@ export const useFriendScores = ({
   useEffect(() => {
     // If the friends list changes, automatically refetch data
     if (gameId && friends.length > 0) {
+      console.log('Friends list changed, refreshing scores data.');
       refetch();
     }
   }, [friends, gameId, refetch]);
@@ -133,6 +143,7 @@ export const useFriendScores = ({
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
     if (gameId) {
+      console.log('Manually refreshing friend scores.');
       await refetch();
     }
   }, [gameId, refetch]);

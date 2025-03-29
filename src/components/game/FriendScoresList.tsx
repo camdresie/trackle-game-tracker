@@ -34,8 +34,9 @@ const FriendScoresList = ({
   // Enhanced debug logging on every render
   useEffect(() => {
     console.log('FriendScoresList render - Game:', game?.id);
+    console.log('FriendScoresList render - Friends count:', friends.length);
     console.log('FriendScoresList render - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
-    console.log('FriendScoresList render - Friend scores object keys:', Object.keys(friendScores));
+    console.log('FriendScoresList render - Friend scores keys:', Object.keys(friendScores));
     
     // Log each friend's scores individually
     friends.forEach(friend => {
@@ -43,16 +44,26 @@ const FriendScoresList = ({
       console.log(`Friend ${friend.name} (${friend.id}) has ${scores.length} scores:`, 
         scores.length > 0 ? scores : 'No scores found');
     });
-  }, [friends, friendScores, game]);
+
+    // Log any friend scores that are missing from the friendScores object
+    friends.forEach(friend => {
+      if (!friendScores[friend.id]) {
+        console.warn(`Friend ${friend.name} (${friend.id}) has no entry in friendScores object`);
+      }
+    });
+
+    // Log any scores in friendScores that don't belong to a friend
+    Object.keys(friendScores).forEach(userId => {
+      const friend = friends.find(f => f.id === userId);
+      if (!friend && userId !== user?.id) {
+        console.warn(`Found scores for user ${userId} but they are not in the friends list`);
+      }
+    });
+  }, [friends, friendScores, game, user?.id]);
   
   // Check if there are any friend scores at all (with more detailed logging)
   const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
   console.log('FriendScoresList - Has any scores:', hasAnyScores);
-  console.log('FriendScoresList - Detailed scores:', Object.entries(friendScores).map(([id, scores]) => ({
-    friendId: id,
-    scoreCount: scores?.length || 0,
-    scores: scores || []
-  })));
   
   // Calculate stats for each friend
   const getFriendStats = (friendId: string) => {
@@ -109,6 +120,7 @@ const FriendScoresList = ({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      console.log('Refreshing friend scores...');
       await onRefreshFriends();
       toast.success("Friend scores refreshed");
     } catch (error) {
@@ -161,9 +173,9 @@ const FriendScoresList = ({
       ) : allPlayers.length > 0 ? (
         <div className="space-y-4">
           {allPlayers.map((player, index) => {
-            const stats = getFriendStats(player.id);
             const scores = friendScores[player.id] || [];
             const hasScores = scores.length > 0;
+            const stats = getFriendStats(player.id);
             
             return (
               <div key={player.id} className="space-y-2">

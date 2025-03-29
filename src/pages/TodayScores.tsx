@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -18,7 +17,8 @@ import {
   MessageCircle, 
   InfoIcon, 
   Share2,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
@@ -29,6 +29,7 @@ import GroupScoresShare from '@/components/groups/GroupScoresShare';
 import GameDropdownSelector from '@/components/game/GameDropdownSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConnectionsModal from '@/components/ConnectionsModal';
+import { toast } from 'sonner';
 
 // Define a consistent interface for group members
 interface GroupMember {
@@ -76,7 +77,7 @@ const TodayScores = () => {
   }, [gamesList, selectedGame, setSelectedGame]);
   
   // Fetch group performance data for selected game
-  const { isLoading, groupPerformanceData } = useGroupScores(
+  const { isLoading, groupPerformanceData, refreshFriends } = useGroupScores(
     selectedGame?.id || null,
     todaysGames
   );
@@ -189,6 +190,7 @@ const TodayScores = () => {
       });
     });
     
+    console.log('getAllFriendsList returning:', allFriends);
     return allFriends;
   };
 
@@ -199,6 +201,20 @@ const TodayScores = () => {
   const handleOpenConnectionsModal = (tab: string = 'friends') => {
     setActiveConnectionsTab(tab);
     setConnectionsModalOpen(true);
+  };
+  
+  // Function to handle manual refresh
+  const handleManualRefresh = async () => {
+    console.log("Manual refresh triggered");
+    try {
+      if (refreshFriends) {
+        await refreshFriends();
+        toast.success("Friend data refreshed");
+      }
+    } catch (error) {
+      console.error("Error refreshing friend data:", error);
+      toast.error("Failed to refresh friend data");
+    }
   };
 
   return (
@@ -288,38 +304,49 @@ const TodayScores = () => {
                       <span className="truncate">All Friends' {selectedGame?.name || ''} Scores Today</span>
                     </h3>
                     
-                    
-                    {friends.length > 0 && (
-                      <GroupScoresShare
-                        groupName="All Friends"
-                        gameName={selectedGame?.name || ""}
-                        gameColor={selectedGame?.color || ""}
-                        members={friends.map(friend => {
-                          // Find this friend's data in any group
-                          const friendData = groupPerformanceData.flatMap(group => group.members)
-                            .find(member => member.playerId === friend.id);
-                            
-                          return {
-                            playerName: friend.name,
-                            score: friendData?.score || null,
-                            hasPlayed: friendData?.hasPlayed || false
-                          };
-                        })}
-                        currentUserName={profile?.username || ""}
-                        currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
-                        currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
-                        useActualUsername={true}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleManualRefresh}
+                        className="flex items-center gap-1"
                       >
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center justify-center gap-1"
+                        <RefreshCw className="w-4 h-4" />
+                        <span className={cn(isMobile ? "sr-only" : "")}>Refresh</span>
+                      </Button>
+                      
+                      {friends.length > 0 && (
+                        <GroupScoresShare
+                          groupName="All Friends"
+                          gameName={selectedGame?.name || ""}
+                          gameColor={selectedGame?.color || ""}
+                          members={friends.map(friend => {
+                            // Find this friend's data in any group
+                            const friendData = groupPerformanceData.flatMap(group => group.members)
+                              .find(member => member.playerId === friend.id);
+                              
+                            return {
+                              playerName: friend.name,
+                              score: friendData?.score || null,
+                              hasPlayed: friendData?.hasPlayed || false
+                            };
+                          })}
+                          currentUserName={profile?.username || ""}
+                          currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
+                          currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
+                          useActualUsername={true}
                         >
-                          <Share2 className="w-4 h-4" />
-                          <span>Share</span>
-                        </Button>
-                      </GroupScoresShare>
-                    )}
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center justify-center gap-1"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
+                          </Button>
+                        </GroupScoresShare>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Friends scores list - Modified to always show current user */}

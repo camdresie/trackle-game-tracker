@@ -13,6 +13,11 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
     queryFn: async () => {
       console.log(`Fetching connections for player: ${currentPlayerId}`);
       
+      if (!currentPlayerId) {
+        console.log('No currentPlayerId provided, returning empty array');
+        return [];
+      }
+      
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`
@@ -39,8 +44,15 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
 
       console.log(`Found ${connections.length} connections`);
       
+      // Debug each connection to see what data we have
+      connections.forEach(conn => {
+        console.log(`Connection ${conn.id}: user_id=${conn.user_id}, friend_id=${conn.friend_id}, currentPlayer=${currentPlayerId}`);
+        console.log('User profile:', conn.user);
+        console.log('Friend profile:', conn.friend);
+      });
+      
       // Transform the data into the expected format
-      return connections.map(conn => {
+      const friendsList = connections.map(conn => {
         // Determine which profile to use based on the relationship direction
         const isUserInitiator = conn.user_id === currentPlayerId;
         const profileData = isUserInitiator ? conn.friend : conn.user;
@@ -48,15 +60,9 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
         console.log(`Connection: ${conn.id}, isUserInitiator: ${isUserInitiator}, profileData:`, profileData);
         
         // Handle profile data safely
-        let formattedProfile = null;
+        const formattedProfile = profileData || {};
         
-        if (Array.isArray(profileData) && profileData.length > 0) {
-          formattedProfile = profileData[0];
-        } else if (profileData && typeof profileData === 'object') {
-          formattedProfile = profileData;
-        }
-        
-        if (!formattedProfile) {
+        if (!formattedProfile || (typeof formattedProfile === 'object' && Object.keys(formattedProfile).length === 0)) {
           console.error('Profile data missing in connection:', conn);
           return null;
         }
@@ -68,6 +74,11 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
           connectionId: conn.id, // Include connectionId for removal
         } as Player;
       }).filter(Boolean) as Player[];
+      
+      // Log the final friends list
+      console.log(`Processed ${friendsList.length} friends:`, friendsList.map(f => ({ id: f.id, name: f.name })));
+      
+      return friendsList;
     },
     enabled: enabled && !!currentPlayerId,
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
