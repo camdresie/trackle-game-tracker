@@ -636,6 +636,7 @@ const TodayScores = () => {
       <ConnectionsModal
         open={connectionsModalOpen}
         onOpenChange={setConnectionsModalOpen}
+        currentPlayerId={user?.id || ''}
         defaultTab={activeConnectionsTab}
       />
     </div>
