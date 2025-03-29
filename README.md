@@ -3,8 +3,6 @@
 
 A web application for tracking scores from popular word games and puzzles, sharing with friends, and competing on leaderboards.
 
-![Trackle Screenshot](public/og-image.png)
-
 ## 🎮 Features
 
 - **Track Your Scores**: Log and track your daily scores for Wordle, Mini Crossword, Connections, and more
