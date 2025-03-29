@@ -35,7 +35,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   // Remove the link for preview display
   const getDisplayContent = () => {
     // Split the text by the link line and take only the content part
-    const parts = shareText.split('\n\nI\'m tracking our scores on Trackle!');
+    const parts = shareText.split('\n\nI\'m tracking game scores on Trackle!');
     return parts[0]; // Return just the content without the link
   };
 
@@ -43,6 +43,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   const getMessageContentForGroup = () => {
     // Split the text by any variation of the link text to ensure we capture all possible forms
     const linkPatterns = [
+      '\n\nI\'m tracking game scores on Trackle!',
       '\n\nI\'m tracking our scores on Trackle!',
       '\n\nI\'m keeping my stats on Trackle!'
     ];
@@ -60,26 +61,16 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
 
   const handleCopyToClipboard = async () => {
     try {
-      // Create a clean version of the text that ensures the URL is properly formatted
-      // for optimal link preview recognition
-      let textToCopy = shareText;
+      // Split the text into content and URL
+      let statsContent = shareText;
+      const urlLine = 'https://www.ontrackle.com';
       
-      // Make sure the URL is properly formatted for link previews
-      // Many messaging platforms need the URL on its own line and as the last element
-      const urlPattern = /https:\/\/www\.ontrackle\.com/g;
+      // Format the text for proper link preview detection
+      // Ensure stats content doesn't have promotional text
+      statsContent = statsContent.replace(/\n\nI\'m (tracking|keeping) (game scores|my stats|our scores) on Trackle!\n?/g, '');
       
-      if (urlPattern.test(textToCopy)) {
-        // Format the text to ensure the URL is properly recognized
-        const textWithoutUrl = textToCopy.replace(urlPattern, '');
-        
-        // Reconstruct the text with the URL on its own line at the end
-        textToCopy = textWithoutUrl
-          .replace(/\n\nI\'m (keeping my stats|tracking our scores) on Trackle!\n?/g, '')
-          .trim();
-        
-        // Add the promotional text and URL, ensuring URL is on its own line
-        textToCopy += '\n\nI\'m tracking game scores on Trackle!\nhttps://www.ontrackle.com';
-      }
+      // Add a clean promotional line with the URL on its own line
+      const textToCopy = `${statsContent.trim()}\n\nI'm tracking game scores on Trackle!\n${urlLine}`;
       
       await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);

@@ -121,7 +121,8 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
       });
     }
     
-    shareText += `\nI'm keeping my stats on Trackle! Join me at https://www.ontrackle.com`;
+    // Add the promotional line only - URL will be added by ShareModal
+    shareText += `\nI'm keeping my stats on Trackle!`;
     
     return shareText;
   };

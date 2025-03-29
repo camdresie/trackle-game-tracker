@@ -43,7 +43,7 @@ const GroupScoresShare = ({
     return formatInTimeZone(new Date(), 'America/New_York', 'MMMM d, yyyy');
   };
   
-  // Generate the core share text content without the promotional link
+  // Generate the core share text content
   const generateShareContent = () => {
     let shareText = `🎮 ${groupName} - ${gameName} Scores for ${getTodayFormatted()}\n\n`;
     
@@ -92,11 +92,11 @@ const GroupScoresShare = ({
     return shareText;
   };
   
-  // Generate the share text with promotional link for external sharing only
+  // Generate the share text with promotional line only
   const generateShareText = () => {
     const shareContent = generateShareContent();
-    // Format to ensure proper link preview - URL on its own line
-    return `${shareContent}\n\nI'm tracking game scores on Trackle!\nhttps://www.ontrackle.com`;
+    // Add the promotional line only - URL will be added by ShareModal
+    return `${shareContent}\n\nI'm tracking game scores on Trackle!`;
   };
   
   // Handle opening the share modal
