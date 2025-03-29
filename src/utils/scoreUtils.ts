@@ -8,6 +8,7 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
   } else if (game.id === 'framed') {
+    if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
   } else if (game.id === 'connections') {
     if (value === 8) return 'Loss';
@@ -47,6 +48,7 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'framed') {
+    if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'connections') {
     if (value === 8) return 'text-gray-500';
@@ -79,8 +81,8 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
 // Calculate slider marker positions
 export const getSliderMarkers = (game: Game) => {
   if (game.id === 'wordle' || game.id === 'framed') {
-    // For Wordle and Framed with fixed positions (1-7, where 7 is a loss for Wordle)
-    return game.id === 'wordle' ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5, 6];
+    // For Wordle and Framed with fixed positions (1-7, where 7 is a loss)
+    return [1, 2, 3, 4, 5, 6, 7];
   } else if (game.id === 'connections') {
     // For Connections with range 4-8
     return [4, 5, 6, 7, 8];

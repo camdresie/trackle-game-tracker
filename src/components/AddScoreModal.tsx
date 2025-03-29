@@ -20,6 +20,7 @@ import StandardScoreInput from './scores/StandardScoreInput';
 import { getDefaultValue, calculateQuordleScore } from '@/utils/scoreUtils';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
 import { useQueryClient } from '@tanstack/react-query';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AddScoreModalProps {
   open: boolean;
@@ -44,6 +45,7 @@ const AddScoreModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [existingScoreId, setExistingScoreId] = useState<string | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
   
   // For Quordle, we use separate inputs for each word
   const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
@@ -67,6 +69,9 @@ const AddScoreModal = ({
         setValue(todayScore.value);
         setNotes(todayScore.notes || '');
         
+        // Show notes section if there are existing notes
+        setShowNotes(!!todayScore.notes);
+        
         // For Quordle, we need to reverse engineer the individual values
         if (game.id === 'quordle') {
           // This is a simplified approach - in a real app you would store the individual values
@@ -80,6 +85,7 @@ const AddScoreModal = ({
         setValue(getDefaultValue(game));
         setQuordleValues([7, 7, 7, 7]);
         setNotes('');
+        setShowNotes(false);
       }
     }
   }, [open, existingScores, game]);
@@ -156,6 +162,10 @@ const AddScoreModal = ({
     setQuordleValues(newValues);
   };
 
+  const toggleNotes = () => {
+    setShowNotes(!showNotes);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md animate-scale-in">
@@ -196,15 +206,29 @@ const AddScoreModal = ({
             />
           )}
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Notes (optional)</label>
-            <Textarea
-              placeholder="Add any notes about your game..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="resize-none"
-              rows={3}
-            />
+          <div>
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center justify-between w-full p-2 text-sm font-medium text-left" 
+              onClick={toggleNotes}
+            >
+              <span>Notes {notes && !showNotes ? "(Added)" : "(optional)"}</span>
+              {showNotes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            
+            {showNotes && (
+              <div className="mt-2">
+                <Textarea
+                  placeholder="Add any notes about your game..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="resize-none"
+                  rows={2}
+                />
+              </div>
+            )}
           </div>
         </div>
 
