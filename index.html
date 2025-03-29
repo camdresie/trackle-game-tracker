@@ -8,7 +8,10 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-8C3L7JVHNJ');
+      // Initialize with page_view set to false - we'll handle this in the React app
+      gtag('config', 'G-8C3L7JVHNJ', {
+        send_page_view: false
+      });
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
