@@ -40,7 +40,7 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
       if (scoreA === null) return 1;
       if (scoreB === null) return -1;
       
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
+      if (['wordle', 'mini-crossword', 'betweenle'].includes(selectedGame)) {
         // Lower is better for these games
         return scoreA - scoreB;
       } else {
@@ -86,7 +86,7 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
   // Generate the share text
   const generateShareText = () => {
     const topPlayers = getTopPlayers();
-    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'].includes(selectedGame);
+    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'].includes(selectedGame);
     const unitLabel = getUnitLabel();
     
     let shareText = `🎮 ${gameTitle} Leaderboard`;

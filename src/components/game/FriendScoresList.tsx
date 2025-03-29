@@ -76,8 +76,8 @@ const FriendScoresList = ({
     const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
     
     let bestScore = scores[0]?.value || 0;
-    if (game.id === 'wordle') {
-      // For Wordle, lower is better
+    if (game.id === 'wordle' || game.id === 'betweenle') {
+      // For Wordle and Betweenle, lower is better
       bestScore = Math.min(...scores.map(s => s.value));
     } else {
       // For other games, higher is better
@@ -104,7 +104,7 @@ const FriendScoresList = ({
   };
 
   // Create a list with the current user first (if available), followed by friends
-  const allPlayers = user && profile 
+  let allPlayers = user && profile 
     ? [{ 
         id: user.id, 
         name: profile.full_name || profile.username || 'You', 
@@ -112,6 +112,31 @@ const FriendScoresList = ({
         isCurrentUser: true 
       }, ...friends]
     : [...friends];
+    
+  // Sort players based on their scores
+  // Only sort when there are scores to sort by
+  const hasScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
+  
+  if (hasScores) {
+    allPlayers = [...allPlayers].sort((a, b) => {
+      const statsA = getFriendStats(a.id);
+      const statsB = getFriendStats(b.id);
+      
+      // If a player has no scores, they should be sorted to the bottom
+      if (statsA.totalGames === 0 && statsB.totalGames === 0) return 0;
+      if (statsA.totalGames === 0) return 1;
+      if (statsB.totalGames === 0) return -1;
+      
+      // Sort by average score based on game type
+      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'].includes(game.id)) {
+        // For games where lower is better
+        return statsA.averageScore - statsB.averageScore;
+      } else {
+        // For games where higher is better
+        return statsB.averageScore - statsA.averageScore;
+      }
+    });
+  }
 
   return (
     <div className="space-y-6">
