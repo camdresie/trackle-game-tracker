@@ -60,7 +60,22 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
 
   const handleCopyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(shareText);
+      // Ensure we're sharing the full URL with proper link format
+      // This helps ensure the URL is recognized properly by messaging platforms
+      const urlPattern = /https:\/\/www\.ontrackle\.com/;
+      let textToCopy = shareText;
+      
+      // If we have a URL in the text, ensure it's isolated on its own line
+      // This helps many apps recognize it as a preview-able link
+      if (urlPattern.test(textToCopy)) {
+        // First make sure the URL is the last thing in the text
+        const parts = textToCopy.split(urlPattern);
+        if (parts.length > 1) {
+          textToCopy = parts[0] + 'https://www.ontrackle.com';
+        }
+      }
+      
+      await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
       toast.success('Copied to clipboard!');
       
