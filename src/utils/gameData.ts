@@ -35,7 +35,7 @@ export const games = [
     description: 'Guess the movie from visual clues.',
     icon: 'film',
     color: 'bg-blue-500',
-    maxScore: 6,
+    maxScore: 7,
     externalUrl: 'https://framed.wtf/'
   },
   {
@@ -106,9 +106,9 @@ export const calculateBestScore = (scores: any[], game: any) => {
   // For these games, lower scores are better
   if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections'].includes(game.id)) {
     // Filter out zeros for games where 0 is not a valid score
-    // For Wordle, also filter out 7 (loss) when calculating best score
+    // For Wordle and Framed, also filter out 7 (loss) when calculating best score
     const validScores = scores.filter(score => 
-      score.value > 0 && (game.id !== 'wordle' || score.value < 7)
+      score.value > 0 && ((['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true)
     );
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
