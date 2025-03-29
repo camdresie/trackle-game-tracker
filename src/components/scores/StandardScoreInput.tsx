@@ -32,7 +32,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
     if (game.id === 'wordle') {
       newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
     } else if (game.id === 'framed') {
-      newValue = Math.max(1, Math.min(game.maxScore || 6, inputValue));
+      newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
     } else if (game.id === 'connections') {
       newValue = Math.max(4, Math.min(game.maxScore || 8, inputValue));
     } else if (game.id === 'betweenle') {

@@ -9,6 +9,11 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  preview: {
+    port: Number(process.env.PORT) || 4173,
+    host: true,
+    allowedHosts: ["trackle-staging-app-cce9a637424e.herokuapp.com", "localhost"]
+  },
   plugins: [
     react(),
     mode === 'development' &&
