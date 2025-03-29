@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -63,7 +62,8 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
     try {
       // Split the text into content and URL
       let statsContent = shareText;
-      const urlLine = 'https://www.ontrackle.com';
+      // Add UTM parameters to ensure consistent link preview generation
+      const urlLine = 'https://www.ontrackle.com/?utm_source=share&utm_medium=social';
       
       // Format the text to ensure iOS link preview detection
       // Ensure stats content doesn't have promotional text
