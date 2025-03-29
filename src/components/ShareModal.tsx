@@ -65,11 +65,12 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
       let statsContent = shareText;
       const urlLine = 'https://www.ontrackle.com';
       
-      // Format the text for proper link preview detection
+      // Format the text to ensure iOS link preview detection
       // Ensure stats content doesn't have promotional text
       statsContent = statsContent.replace(/\n\nI\'m (tracking|keeping) (game scores|my stats|our scores) on Trackle!\n?/g, '');
       
-      // Add a clean promotional line with the URL on its own line
+      // iOS requires the URL to be on its own line with no additional text
+      // and the URL should be the last thing in the message
       const textToCopy = `${statsContent.trim()}\n\nI'm tracking game scores on Trackle!\n${urlLine}`;
       
       await navigator.clipboard.writeText(textToCopy);
