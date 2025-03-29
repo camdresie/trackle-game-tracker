@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Score } from '@/utils/types';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Puzzle, Grid, LayoutGrid, Sword, Film, Link as LinkIcon, GitMerge, Calculator, Square, Dices } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getGameById } from '@/utils/gameData';
 import { getScoreColor, getScoreLabel } from '@/utils/scoreUtils';
@@ -76,6 +75,54 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
     setScoreToDelete(null);
   };
 
+  // Add a function to get the correct icon for each game
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'puzzle':
+        return <Puzzle className="w-5 h-5" />;
+      case 'grid':
+        return <Grid className="w-5 h-5" />;
+      case 'layout-grid':
+        return <LayoutGrid className="w-5 h-5" />;
+      case 'sword':
+        return <Sword className="w-5 h-5" />;
+      case 'film':
+        return <Film className="w-5 h-5" />;
+      case 'link':
+        return <LinkIcon className="w-5 h-5" />;
+      case 'merge':
+        return <GitMerge className="w-5 h-5" />;
+      case 'calculator':
+        return <Calculator className="w-5 h-5" />;
+      case 'bee':
+        // Custom bee SVG icon
+        return (
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            className="w-5 h-5"
+          >
+            <path d="M12 1l4 4-4 4-4-4 4-4z" />
+            <path d="M18 5l4 4-4 4-4-4 4-4z" />
+            <path d="M6 5l4 4-4 4-4-4 4-4z" />
+            <path d="M12 9l4 4-4 4-4-4 4-4z" />
+            <path d="M12 17l4 4-4 4-4-4 4-4z" />
+          </svg>
+        );
+      case 'square':
+        return <Square className="w-5 h-5" />;
+      default:
+        return <Dices className="w-5 h-5" />;
+    }
+  };
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-4">Today's Games</h2>
@@ -98,7 +145,7 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center text-white`}>
-                    {/* Icon would be here */}
+                    {getIcon(game.icon)}
                   </div>
                   <div>
                     <h3 className="font-medium">{game.name}</h3>
