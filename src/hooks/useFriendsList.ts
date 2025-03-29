@@ -22,7 +22,7 @@ export const useFriendsList = ({ refreshTrigger = 0 }: UseFriendsListProps = {})
   const { user } = useAuth();
   const [refreshKey, setRefreshKey] = useState<number>(refreshTrigger);
   
-  const { data: friends = [], refetch: refetchFriends } = useConnections(
+  const { data: friends = [], refetch: refetchFriends, isLoading } = useConnections(
     user?.id || '', 
     !!user
   );
@@ -34,6 +34,8 @@ export const useFriendsList = ({ refreshTrigger = 0 }: UseFriendsListProps = {})
     }
     
     try {
+      console.log('Refreshing friends data...');
+      
       // Update refresh timestamp to force requery
       setRefreshKey(Date.now());
       
@@ -43,19 +45,22 @@ export const useFriendsList = ({ refreshTrigger = 0 }: UseFriendsListProps = {})
       // Trigger refetch from the query cache
       await refetchFriends();
       
+      console.log(`Refreshed friends list. Found ${friends.length} friends.`);
+      
       // Show success toast
       toast({
         title: "Success",
         description: "Friend data refreshed successfully"
       });
     } catch (error) {
+      console.error('Error refreshing friends:', error);
       toast({
         title: "Error",
         description: "Failed to refresh friends data",
         variant: "destructive"
       });
     }
-  }, [user, refetchFriends]);
+  }, [user, refetchFriends, friends.length]);
 
   return {
     friends,

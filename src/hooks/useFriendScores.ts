@@ -71,6 +71,20 @@ export const useFriendScores = ({
           return newFriendScores;
         }
         
+        // Debug logs to help track what scores are being found
+        console.log(`Found ${scoresData?.length || 0} scores for ${friendsToFetch.length} friends`);
+        if (scoresData && scoresData.length > 0) {
+          const scoresByUser = {};
+          friendsToFetch.forEach(id => { scoresByUser[id] = 0; });
+          
+          scoresData.forEach(score => {
+            const userId = score.user_id;
+            scoresByUser[userId] = (scoresByUser[userId] || 0) + 1;
+          });
+          
+          console.log('Scores breakdown by user:', scoresByUser);
+        }
+        
         // Process all scores
         if (scoresData) {
           scoresData.forEach(score => {

@@ -34,7 +34,7 @@ const FriendScoresList = ({
   // Enhanced debug logging on every render
   useEffect(() => {
     console.log('FriendScoresList render - Game:', game?.id);
-    console.log('FriendScoresList render - Friends:', friends);
+    console.log('FriendScoresList render - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
     console.log('FriendScoresList render - Friend scores object keys:', Object.keys(friendScores));
     
     // Log each friend's scores individually

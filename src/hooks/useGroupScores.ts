@@ -44,6 +44,21 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         console.log(`Fetching ALL today's scores for game ${gameId}`);
         const scores = await getTodaysGamesForAllUsers(gameId);
         console.log(`Got ${scores.length} today scores for all users`);
+        
+        // Log the player IDs of the scores
+        if (scores.length > 0) {
+          const uniquePlayerIds = [...new Set(scores.map(s => s.playerId))];
+          console.log(`Scores from ${uniquePlayerIds.length} unique players:`, uniquePlayerIds);
+          
+          // Log friend IDs to compare
+          const friendIds = friends.map(f => f.id);
+          console.log(`Current friend IDs (${friendIds.length}):`, friendIds);
+          
+          // Check overlap
+          const friendScores = scores.filter(s => friendIds.includes(s.playerId));
+          console.log(`Found ${friendScores.length} scores from friends`);
+        }
+        
         setAllTodaysScores(scores);
       } catch (error) {
         console.error('Error fetching all today\'s scores:', error);
@@ -53,7 +68,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     };
     
     fetchAllTodaysScores();
-  }, [gameId]);
+  }, [gameId, friends]);
   
   // Process the data whenever dependencies change
   useEffect(() => {

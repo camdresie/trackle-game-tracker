@@ -11,6 +11,8 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
   return useQuery({
     queryKey: ['friends', currentPlayerId],
     queryFn: async () => {
+      console.log(`Fetching connections for player: ${currentPlayerId}`);
+      
       const { data: connections, error } = await supabase
         .from('connections')
         .select(`
@@ -35,11 +37,15 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
         return [];
       }
 
+      console.log(`Found ${connections.length} connections`);
+      
       // Transform the data into the expected format
       return connections.map(conn => {
         // Determine which profile to use based on the relationship direction
         const isUserInitiator = conn.user_id === currentPlayerId;
         const profileData = isUserInitiator ? conn.friend : conn.user;
+        
+        console.log(`Connection: ${conn.id}, isUserInitiator: ${isUserInitiator}, profileData:`, profileData);
         
         // Handle profile data safely
         let formattedProfile = null;
@@ -66,6 +72,6 @@ export const useConnections = (currentPlayerId: string, enabled: boolean = true)
     enabled: enabled && !!currentPlayerId,
     staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
     refetchOnWindowFocus: false, // Only refetch when explicitly told to
-    refetchOnMount: false, // Don't refetch on component mount
+    refetchOnMount: true, // Refetch on component mount to ensure fresh data
   });
 };
