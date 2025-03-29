@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
@@ -8,7 +9,17 @@ import { useFriendsList } from '@/hooks/useFriendsList';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { GamepadIcon, Users, Trophy, ChevronRight, CalendarDays, MessageCircle, InfoIcon, Share2 } from 'lucide-react';
+import { 
+  GamepadIcon, 
+  Users, 
+  Trophy, 
+  ChevronRight, 
+  CalendarDays, 
+  MessageCircle, 
+  InfoIcon, 
+  Share2,
+  Loader2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
 import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
@@ -167,7 +178,7 @@ const TodayScores = () => {
       
       // Find this friend's data in any group
       const friendData = groupPerformanceData.flatMap(group => group.members)
-        .find(member => member.playerId === friend.id);
+        .find(member => member?.playerId === friend.id);
         
       allFriends.push({
         playerId: friend.id,
@@ -497,92 +508,113 @@ const TodayScores = () => {
                                         className="flex items-center justify-center gap-1"
                                       >
                                         <Share2 className="w-4 h-4" />
-                                        <span>Share</span>
+                                        <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
                                       </Button>
                                     </GroupScoresShare>
                                     
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
                                       onClick={() => handleOpenMessages(group.groupId, group.groupName)}
                                       className="flex items-center justify-center gap-1"
                                     >
                                       <MessageCircle className="w-4 h-4" />
-                                      <span>Messages</span>
+                                      <span className={cn(isMobile ? "sr-only" : "")}>Message</span>
                                     </Button>
                                   </div>
                                 </div>
-                              </>
-                            
-                            {/* Group members scores */}
-                            <div className="space-y-3">
-                              {sortedMembers.length > 0 ? (
-                                sortedMembers.map((member, index) => (
-                                  <div 
-                                    key={`${member.playerId}-${index}`} 
-                                    className={cn(
-                                      "flex items-center justify-between p-3 rounded-lg transition-colors",
-                                      member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
-                                      index === 0 ? "border border-accent/20" : ""
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                      <span className="truncate">
-                                        {member.playerName}
-                                      </span>
-                                      {index === 0 && (
-                                        <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
-                                          <Trophy className="w-3 h-3 mr-1" /> Leading
-                                        </span>
-                                      )}
+                                
+                                {/* Group members with scores */}
+                                <div className="space-y-1 mt-2">
+                                  {sortedMembers.length > 0 ? (
+                                    // People who have played, sorted by score
+                                    sortedMembers.map((member, i) => {
+                                      const isFirst = i === 0;
+                                      return (
+                                        <div
+                                          key={`${member.playerId}-played`}
+                                          className={`flex items-center justify-between p-3 rounded-lg ${
+                                            member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                                          } ${isFirst ? "border border-accent/20" : ""}`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+                                            {isFirst && (
+                                              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                            )}
+                                            <div className="font-medium truncate">
+                                              {member.playerName}
+                                            </div>
+                                            {isFirst && (
+                                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                                Top score
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="font-semibold">{member.score}</span>
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    <div className="text-center py-3 text-muted-foreground">
+                                      <p>No one has played {selectedGame?.name} today</p>
                                     </div>
-                                    <div className="flex items-center flex-shrink-0">
-                                      <span className="font-semibold">{member.score}</span>
-                                      <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-center py-4 text-muted-foreground">
-                                  No scores recorded for this group today
-                                </div>
-                              )}
-                            
-                              {notPlayedMembers.map((member, index) => (
-                                <div 
-                                  key={`${member.playerId}-notplayed-${index}`} 
-                                  className={cn(
-                                    "flex items-center justify-between p-3 rounded-lg transition-colors text-muted-foreground",
-                                    member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
                                   )}
-                                >
-                                  <div className="flex items-center gap-2 font-medium min-w-0 max-w-[70%]">
-                                    <span className="truncate">{member.playerName}</span>
-                                  </div>
-                                  <div className="flex items-center flex-shrink-0">
-                                    <span className="text-sm text-muted-foreground">No score yet</span>
-                                    <ChevronRight className="ml-2 w-4 h-4 text-muted-foreground" />
-                                  </div>
+                                  
+                                  {/* People who haven't played yet */}
+                                  {notPlayedMembers.length > 0 && (
+                                    <>
+                                      {sortedMembers.length > 0 && (
+                                        <div className="text-xs text-muted-foreground my-2 px-3">
+                                          Not played yet
+                                        </div>
+                                      )}
+                                      
+                                      {notPlayedMembers.map(member => (
+                                        <div
+                                          key={`${member.playerId}-not-played`}
+                                          className={`flex items-center justify-between p-3 rounded-lg ${
+                                            member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                                          }`}
+                                        >
+                                          <div className="font-medium">{member.playerName}</div>
+                                          <span className="text-sm text-muted-foreground">No score yet</span>
+                                        </div>
+                                      ))}
+                                    </>
+                                  )}
                                 </div>
-                              ))}
-                            </div>
+                              </>
                           </div>
                         </Card>
                       );
                     })}
+                    
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={() => handleOpenConnectionsModal('groups')}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        <Users className="w-4 h-4" />
+                        Manage Groups
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Card className="p-8 flex flex-col items-center justify-center text-center">
                     <Users className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
+                    <h2 className="text-xl font-semibold mb-2">No Friend Groups</h2>
                     <p className="text-muted-foreground mb-4">
-                      You haven't created any friend groups yet. Create a group to compare your scores.
+                      Create groups of friends to track your scores together.
                     </p>
                     <Button 
                       onClick={() => handleOpenConnectionsModal('groups')}
-                      className="mt-2"
+                      variant="default"
+                      className="gap-2"
                     >
-                      Create Friend Group
+                      <Users className="w-4 h-4" />
+                      Create Group
                     </Button>
                   </Card>
                 )}
@@ -592,26 +624,20 @@ const TodayScores = () => {
         )}
       </main>
       
-      {/* Messages Modal */}
-      {selectedGroupForMessages && (
-        <GroupMessagesModal
-          open={showMessages}
-          onOpenChange={setShowMessages}
-          groupId={selectedGroupForMessages.id}
-          groupName={selectedGroupForMessages.name}
-        />
-      )}
+      {/* Group Messages Modal */}
+      <GroupMessagesModal
+        open={showMessages}
+        onOpenChange={setShowMessages}
+        groupId={selectedGroupForMessages?.id || ''}
+        groupName={selectedGroupForMessages?.name || ''}
+      />
       
-      {/* Connections Modal */}
-      {user && (
-        <ConnectionsModal
-          open={connectionsModalOpen}
-          onOpenChange={setConnectionsModalOpen}
-          currentPlayerId={user.id}
-          onFriendRemoved={() => {/* Refresh friends if needed */}}
-          defaultTab={activeConnectionsTab}
-        />
-      )}
+      {/* Connections Modal for managing friends and groups */}
+      <ConnectionsModal
+        open={connectionsModalOpen}
+        onOpenChange={setConnectionsModalOpen}
+        defaultTab={activeConnectionsTab}
+      />
     </div>
   );
 };
