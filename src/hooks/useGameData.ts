@@ -38,6 +38,13 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     currentUserScores: scores
   });
   
+  // Effect to refresh friend scores when friends list changes
+  useEffect(() => {
+    if (gameId && friends.length > 0) {
+      fetchFriendScores();
+    }
+  }, [friends, fetchFriendScores, gameId]);
+  
   // Enhanced refresh function that efficiently updates all data
   const refreshFriends = useCallback(async () => {
     try {
@@ -46,6 +53,8 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       
       // Invalidate relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
       
       // Then refresh the friends list
       await baseFriendsRefresh();

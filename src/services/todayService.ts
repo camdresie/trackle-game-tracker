@@ -42,6 +42,9 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
 
 /**
  * Get today's games for all users (to get friend scores)
+ * 
+ * This function now fetches ALL scores for today regardless of the user
+ * so that we can still see scores from users who were added as friends after they played
  */
 export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<Score[]> => {
   try {
@@ -53,7 +56,8 @@ export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<
     
     console.log(`Fetching today's scores for all users for game: ${gameId}, date: ${today}`);
     
-    // Query scores for the specific game and today's date
+    // Modified query to fetch ALL scores for today for the specified game
+    // This ensures we get scores from users who become friends after they played
     const { data, error } = await supabase
       .from('scores')
       .select('*')

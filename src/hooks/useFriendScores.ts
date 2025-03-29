@@ -1,5 +1,5 @@
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
@@ -107,6 +107,14 @@ export const useFriendScores = ({
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false
   });
+
+  // Effect to refetch when friends list changes
+  useEffect(() => {
+    // If the friends list changes, automatically refetch data
+    if (gameId && friends.length > 0) {
+      refetch();
+    }
+  }, [friends, gameId, refetch]);
 
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
