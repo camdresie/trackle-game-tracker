@@ -77,7 +77,7 @@ const TodayScores = () => {
   }, [gamesList, selectedGame, setSelectedGame]);
   
   // Fetch group performance data for selected game
-  const { isLoading, groupPerformanceData, refreshFriends } = useGroupScores(
+  const { isLoading, groupPerformanceData, allFriendsData, refreshFriends } = useGroupScores(
     selectedGame?.id || null,
     todaysGames
   );
@@ -106,7 +106,10 @@ const TodayScores = () => {
     if (groupPerformanceData) {
       console.log("TodayScores: Raw group performance data:", JSON.stringify(groupPerformanceData, null, 2));
     }
-  }, [groupPerformanceData]);
+    if (allFriendsData) {
+      console.log("TodayScores: All friends data:", JSON.stringify(allFriendsData, null, 2));
+    }
+  }, [groupPerformanceData, allFriendsData]);
   
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: any) => {
@@ -150,19 +153,39 @@ const TodayScores = () => {
   };
 
   // Create a combined list for all friends including those without scores
-  // Fixed: Always include the current user in the list even if they have no friends
+  // Use the new allFriendsData that comes directly from the hook
   const getAllFriendsList = () => {
-    // Start with the current user if they exist
-    const allFriends = [];
+    // Start with an empty list
+    const allFriends: GroupMember[] = [];
     
-    // Add current user first if they exist
-    if (user) {
-      // Find if the user has played this game today
+    // Add current user first if they exist and we have allFriendsData
+    if (user && allFriendsData) {
+      allFriends.push({
+        playerId: user.id,
+        playerName: 'You',
+        hasPlayed: allFriendsData.currentUserHasPlayed,
+        score: allFriendsData.currentUserScore,
+        isCurrentUser: true
+      });
+      
+      // Add all friends from the allFriendsData
+      allFriendsData.members.forEach(member => {
+        allFriends.push({
+          playerId: member.playerId,
+          playerName: member.playerName,
+          hasPlayed: member.hasPlayed,
+          score: member.score,
+          isCurrentUser: false
+        });
+      });
+    } 
+    // Fallback to the old method if we don't have allFriendsData
+    else if (user) {
+      // First add the current user
       const hasPlayed = groupPerformanceData.some(g => g.currentUserHasPlayed);
       const userScore = hasPlayed ? 
         groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore : null;
         
-      // Add current user to the list
       allFriends.push({
         playerId: user.id,
         playerName: 'You',
@@ -170,25 +193,25 @@ const TodayScores = () => {
         score: userScore,
         isCurrentUser: true
       });
-    }
-    
-    // Then add all the user's friends
-    friends.forEach(friend => {
-      // Is this friend entry the current user? (skip if so, we already added them)
-      if (user && friend.id === user.id) return;
       
-      // Find this friend's data in any group
-      const friendData = groupPerformanceData.flatMap(group => group.members)
-        .find(member => member?.playerId === friend.id);
+      // Then add all the user's friends
+      friends.forEach(friend => {
+        // Skip if this is the current user (already added)
+        if (friend.id === user.id) return;
         
-      allFriends.push({
-        playerId: friend.id,
-        playerName: friend.name,
-        hasPlayed: friendData?.hasPlayed || false,
-        score: friendData?.score || null,
-        isCurrentUser: false
+        // Find this friend's data in any group
+        const friendData = groupPerformanceData.flatMap(group => group.members)
+          .find(member => member?.playerId === friend.id);
+          
+        allFriends.push({
+          playerId: friend.id,
+          playerName: friend.name,
+          hasPlayed: friendData?.hasPlayed || false,
+          score: friendData?.score || null,
+          isCurrentUser: false
+        });
       });
-    });
+    }
     
     console.log('getAllFriendsList returning:', allFriends);
     return allFriends;
@@ -215,6 +238,37 @@ const TodayScores = () => {
       console.error("Error refreshing friend data:", error);
       toast.error("Failed to refresh friend data");
     }
+  };
+  
+  // Use the allFriendsData for the GroupScoresShare component in the All Friends tab
+  const getAllFriendsForScoreShare = () => {
+    if (allFriendsData) {
+      return {
+        members: allFriendsData.members.map(member => ({
+          playerName: member.playerName,
+          score: member.score,
+          hasPlayed: member.hasPlayed
+        })),
+        currentUserHasPlayed: allFriendsData.currentUserHasPlayed,
+        currentUserScore: allFriendsData.currentUserScore
+      };
+    }
+    
+    // Fallback to the old method
+    return {
+      members: friends.map(friend => {
+        const friendData = groupPerformanceData.flatMap(group => group.members)
+          .find(member => member?.playerId === friend.id);
+          
+        return {
+          playerName: friend.name,
+          score: friendData?.score || null,
+          hasPlayed: friendData?.hasPlayed || false
+        };
+      }),
+      currentUserHasPlayed: groupPerformanceData.some(g => g.currentUserHasPlayed),
+      currentUserScore: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore
+    };
   };
 
   return (
@@ -320,20 +374,10 @@ const TodayScores = () => {
                           groupName="All Friends"
                           gameName={selectedGame?.name || ""}
                           gameColor={selectedGame?.color || ""}
-                          members={friends.map(friend => {
-                            // Find this friend's data in any group
-                            const friendData = groupPerformanceData.flatMap(group => group.members)
-                              .find(member => member.playerId === friend.id);
-                              
-                            return {
-                              playerName: friend.name,
-                              score: friendData?.score || null,
-                              hasPlayed: friendData?.hasPlayed || false
-                            };
-                          })}
+                          members={getAllFriendsForScoreShare().members}
                           currentUserName={profile?.username || ""}
-                          currentUserScore={groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore}
-                          currentUserHasPlayed={groupPerformanceData.some(g => g.currentUserHasPlayed)}
+                          currentUserScore={getAllFriendsForScoreShare().currentUserScore}
+                          currentUserHasPlayed={getAllFriendsForScoreShare().currentUserHasPlayed}
                           useActualUsername={true}
                         >
                           <Button 

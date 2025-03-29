@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendsList } from '@/hooks/useFriendsList';
@@ -23,6 +22,13 @@ interface GroupPerformance {
   members: GroupMemberPerformance[];
 }
 
+// Define a type for all friends' performance data
+interface AllFriendsPerformance {
+  members: GroupMemberPerformance[];
+  currentUserHasPlayed: boolean;
+  currentUserScore: number | null;
+}
+
 export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => {
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
@@ -30,6 +36,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   const [isLoading, setIsLoading] = useState(true);
   const [groupPerformanceData, setGroupPerformanceData] = useState<GroupPerformance[]>([]);
   const [allTodaysScores, setAllTodaysScores] = useState<Score[]>([]);
+  const [allFriendsData, setAllFriendsData] = useState<AllFriendsPerformance | null>(null);
   
   // Debug friends list to see all connections
   useEffect(() => {
@@ -92,6 +99,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   useEffect(() => {
     if (!user || !gameId) {
       setGroupPerformanceData([]);
+      setAllFriendsData(null);
       setIsLoading(false);
       return;
     }
@@ -107,6 +115,33 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       const userHasPlayed = !!userTodayScore;
       const userScore = userHasPlayed ? userTodayScore.value : null;
       console.log(`Current user has played: ${userHasPlayed}, score: ${userScore}`);
+      
+      // Process all friends' performance data regardless of group membership
+      const allFriendsMembers: GroupMemberPerformance[] = friends.map(friend => {
+        // Look for each friend's score in allTodaysScores
+        const friendScore = allTodaysScores.find(score => 
+          score.playerId === friend.id && score.gameId === gameId
+        );
+        
+        const hasPlayed = !!friendScore;
+        const score = hasPlayed ? friendScore.value : null;
+        
+        console.log(`All Friends View: ${friend.name} (${friend.id}) has played: ${hasPlayed}, score: ${score || 'none'}`);
+        
+        return {
+          playerId: friend.id,
+          playerName: friend.name,
+          hasPlayed: hasPlayed,
+          score: score
+        };
+      });
+      
+      // Set all friends performance data
+      setAllFriendsData({
+        members: allFriendsMembers,
+        currentUserHasPlayed: userHasPlayed,
+        currentUserScore: userScore
+      });
       
       // Even if the user has no groups/friends, we should return an empty array
       // but with the current user's data for the "All Friends" view
@@ -170,5 +205,5 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     }
   }, [user, gameId, todaysScores, friends, friendGroups, allTodaysScores]);
   
-  return { isLoading, groupPerformanceData, refreshFriends };
+  return { isLoading, groupPerformanceData, allFriendsData, refreshFriends };
 };
