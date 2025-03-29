@@ -99,7 +99,11 @@ const TodayScores = () => {
   const today = getFormattedTodayInEasternTime();
   
   // Determine if lower scores are better for the selected game
-  const isLowerBetter = selectedGame?.id === 'wordle' || selectedGame?.id === 'mini-crossword';
+  const isLowerBetter = selectedGame?.id === 'wordle' || 
+                       selectedGame?.id === 'mini-crossword' || 
+                       selectedGame?.id === 'connections' ||
+                       selectedGame?.id === 'framed' ||
+                       selectedGame?.id === 'nerdle';
   
   // Add debugging
   useEffect(() => {
