@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, RefreshCw, Bug } from 'lucide-react';
+import { Loader2, User, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
-import { addFriendTestScores } from '@/services/testScoreHelpers';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FriendScoresListProps {
@@ -28,7 +26,6 @@ const FriendScoresList = ({
   hideRefreshButton = false
 }: FriendScoresListProps) => {
   const { user, profile } = useAuth();
-  const [addingTestScores, setAddingTestScores] = useState<{[key: string]: boolean}>({});
   const [refreshing, setRefreshing] = useState(false);
   
   // Enhanced debug logging on every render
@@ -90,31 +87,6 @@ const FriendScoresList = ({
     const stats = { bestScore, totalScore, averageScore, totalGames };
     console.log(`Stats for friend ${friendId}:`, stats);
     return stats;
-  };
-  
-  const handleAddTestScores = async (friendId: string) => {
-    if (!user || !game) return;
-    
-    setAddingTestScores(prev => ({ ...prev, [friendId]: true }));
-    
-    try {
-      console.log(`Adding test scores for friend ${friendId} and game ${game.id}`);
-      const result = await addFriendTestScores(game.id, friendId, user.id);
-      
-      if (result.success) {
-        toast.success("Test scores added successfully");
-        // Refresh friend scores after adding test data
-        await onRefreshFriends();
-      } else {
-        console.error("Failed to add test scores:", result.error);
-        toast.error("Failed to add test scores");
-      }
-    } catch (error) {
-      console.error("Error adding test scores:", error);
-      toast.error("Error adding test scores");
-    } finally {
-      setAddingTestScores(prev => ({ ...prev, [friendId]: false }));
-    }
   };
   
   const handleRefresh = async () => {
@@ -191,30 +163,6 @@ const FriendScoresList = ({
                   rank={index + 1}
                   className={'isCurrentUser' in player ? "border-2 border-primary/30" : undefined}
                 />
-                
-                {!hasScores && !('isCurrentUser' in player) && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddTestScores(player.id)}
-                      disabled={addingTestScores[player.id]}
-                      className="gap-1"
-                    >
-                      {addingTestScores[player.id] ? (
-                        <>
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          Adding test scores...
-                        </>
-                      ) : (
-                        <>
-                          <Bug className="w-3 h-3 mr-1" />
-                          Add test scores
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -222,7 +170,6 @@ const FriendScoresList = ({
           {!hasAnyScores && (
             <div className="bg-secondary/30 rounded-lg p-4 text-sm text-center text-muted-foreground mt-4">
               <p>No scores found for your friends yet</p>
-              <p className="mt-1">Add test scores to see how they would appear</p>
             </div>
           )}
         </div>
