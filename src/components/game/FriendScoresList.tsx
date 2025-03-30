@@ -76,11 +76,11 @@ const FriendScoresList = ({
     const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
     
     let bestScore = scores[0]?.value || 0;
-    if (game.id === 'wordle' || game.id === 'betweenle') {
-      // For Wordle and Betweenle, lower is better
+    if (game.id === 'wordle') {
+      // For Wordle, lower is better
       bestScore = Math.min(...scores.map(s => s.value));
     } else {
-      // For other games, higher is better
+      // For other games including Betweenle, higher is better
       bestScore = Math.max(...scores.map(s => s.value));
     }
     
@@ -128,11 +128,11 @@ const FriendScoresList = ({
       if (statsB.totalGames === 0) return -1;
       
       // Sort by average score based on game type
-      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'].includes(game.id)) {
+      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'].includes(game.id)) {
         // For games where lower is better
         return statsA.averageScore - statsB.averageScore;
       } else {
-        // For games where higher is better
+        // For games where higher is better (including Betweenle)
         return statsB.averageScore - statsA.averageScore;
       }
     });

@@ -113,7 +113,7 @@ export const calculateBestScore = (scores: any[], game: any) => {
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
   } else {
-    // For other games, higher scores are better
+    // For other games (including betweenle), higher scores are better
     return Math.max(...scores.map(score => score.value));
   }
 };
