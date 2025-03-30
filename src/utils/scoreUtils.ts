@@ -54,8 +54,8 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     if (value === 8) return 'text-gray-500';
     return value <= 5 ? 'text-emerald-500' : value <= 7 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'betweenle') {
-    // For Betweenle, lower is better
-    return value <= 2 ? 'text-emerald-500' : value <= 4 ? 'text-amber-500' : 'text-rose-500';
+    // For Betweenle, higher is better
+    return value >= 4 ? 'text-emerald-500' : value >= 2 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'nerdle') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';

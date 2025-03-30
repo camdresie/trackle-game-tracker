@@ -7,7 +7,7 @@ import LeaderboardShare from './LeaderboardShare';
 import { cn } from '@/lib/utils';
 
 // Define games where lower scores are better for reuse
-const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'];
+const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'];
 
 interface LeaderboardStatsProps {
   timeFilter: 'all' | 'today';

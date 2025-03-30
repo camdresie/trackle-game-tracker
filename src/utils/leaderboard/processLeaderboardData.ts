@@ -123,11 +123,11 @@ export const processLeaderboardData = (
       }
       
       // Update best score
-      if (['wordle', 'mini-crossword', 'betweenle'].includes(selectedGame)) {
+      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
         // For games where lower is better
         bestScore = bestScore === 0 ? score.value : Math.min(bestScore, score.value);
       } else {
-        // For games where higher is better
+        // For games where higher is better (including betweenle)
         bestScore = Math.max(bestScore, score.value);
       }
       

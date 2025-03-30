@@ -10,7 +10,7 @@ const getEasternTimeDate = (): string => {
 };
 
 // Define games where lower scores are better for reuse
-const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'];
+const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'];
 
 /**
  * Filter and sort players based on selected criteria
