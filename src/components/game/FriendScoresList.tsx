@@ -28,44 +28,12 @@ const FriendScoresList = ({
   const { user, profile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   
-  // Enhanced debug logging on every render
-  useEffect(() => {
-    console.log('FriendScoresList render - Game:', game?.id);
-    console.log('FriendScoresList render - Friends count:', friends.length);
-    console.log('FriendScoresList render - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
-    console.log('FriendScoresList render - Friend scores keys:', Object.keys(friendScores));
-    
-    // Log each friend's scores individually
-    friends.forEach(friend => {
-      const scores = friendScores[friend.id] || [];
-      console.log(`Friend ${friend.name} (${friend.id}) has ${scores.length} scores:`, 
-        scores.length > 0 ? scores : 'No scores found');
-    });
-
-    // Log any friend scores that are missing from the friendScores object
-    friends.forEach(friend => {
-      if (!friendScores[friend.id]) {
-        console.warn(`Friend ${friend.name} (${friend.id}) has no entry in friendScores object`);
-      }
-    });
-
-    // Log any scores in friendScores that don't belong to a friend
-    Object.keys(friendScores).forEach(userId => {
-      const friend = friends.find(f => f.id === userId);
-      if (!friend && userId !== user?.id) {
-        console.warn(`Found scores for user ${userId} but they are not in the friends list`);
-      }
-    });
-  }, [friends, friendScores, game, user?.id]);
-  
-  // Check if there are any friend scores at all (with more detailed logging)
+  // Check if there are any friend scores at all
   const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
-  console.log('FriendScoresList - Has any scores:', hasAnyScores);
   
   // Calculate stats for each friend
   const getFriendStats = (friendId: string) => {
     const scores = friendScores[friendId] || [];
-    console.log(`Calculating stats for friend ${friendId}, scores:`, scores);
     
     if (scores.length === 0) {
       return { bestScore: 0, totalScore: 0, averageScore: 0, totalGames: 0 };
@@ -85,14 +53,12 @@ const FriendScoresList = ({
     }
     
     const stats = { bestScore, totalScore, averageScore, totalGames };
-    console.log(`Stats for friend ${friendId}:`, stats);
     return stats;
   };
   
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      console.log('Refreshing friend scores...');
       await onRefreshFriends();
       toast.success("Friend scores refreshed");
     } catch (error) {

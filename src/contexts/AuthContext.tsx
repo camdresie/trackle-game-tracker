@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -68,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('Fetching profile for user:', userId);
-
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -84,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      console.log('Fetched profile data:', data);
       setProfile(data);
       setIsLoading(false);
     } catch (error) {
@@ -110,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      console.log(`Starting signup process with email: ${email}`);
-      
       // Sign up the user without a username in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -120,16 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (error) throw error;
       
-      console.log("Sign up successful, user data:", data);
-      
       if (!data.user) {
         throw new Error('User data not returned from signup');
       }
       
       // Create the profile record immediately with null username
       // Username will be set during onboarding
-      console.log(`Creating new profile for user ${data.user.id}`);
-      
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
@@ -175,8 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      console.log('Updating profile with:', updates);
-      
       // First check if profile exists
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
@@ -192,7 +180,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // If profile doesn't exist, create it first
       if (!existingProfile) {
-        console.log('Profile not found, creating new profile');
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -208,7 +195,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw insertError;
         }
         
-        console.log('New profile created:', newProfile);
         setProfile(newProfile);
         toast.success('Profile created successfully');
         return;
@@ -227,8 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         toast.error('Failed to update profile');
         throw error;
       }
-
-      console.log('Profile updated successfully:', data);
       
       // Fix: Update the profile state with the complete data returned from the server
       setProfile(data);

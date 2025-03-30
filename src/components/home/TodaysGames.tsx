@@ -57,9 +57,9 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
           onDeleteScore(scoreToDelete.id);
         } else {
           // If no callback provided, invalidate queries to refresh data
-          queryClient.invalidateQueries({ queryKey: ['all-scores'] });
-          queryClient.invalidateQueries({ queryKey: ['today-games'] });
-          queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+          queryClient.invalidateQueries({ 
+            queryKey: ['game-data', 'scores'] 
+          });
         }
       }
     } catch (error) {
