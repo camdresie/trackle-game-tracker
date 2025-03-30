@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/database.types';
 import { getEnvironment, getDatabaseEnvironment } from '@/utils/environment';
@@ -5,6 +6,15 @@ import { getEnvironment, getDatabaseEnvironment } from '@/utils/environment';
 // Get environment variables with fallbacks
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+// Check for missing environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('==================== SUPABASE CONFIGURATION ERROR ====================');
+  console.error('Missing Supabase environment variables. Please check your .env file:');
+  if (!supabaseUrl) console.error('- VITE_SUPABASE_URL is missing');
+  if (!supabaseAnonKey) console.error('- VITE_SUPABASE_ANON_KEY is missing');
+  console.error('=================================================================');
+}
 
 // Log which environment we're using (for debugging)
 const appEnv = getEnvironment();

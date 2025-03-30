@@ -2,87 +2,84 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Player } from '@/utils/types';
-import { toast } from '@/components/ui/use-toast';
 
 /**
- * Hook to fetch a user's connections (friends)
+ * Custom hook to get a user's connections (friends)
+ * 
+ * This hook fetches all connections where the user is either the sender or receiver,
+ * and returns a list of friend profiles.
  */
-export const useConnections = (currentPlayerId: string, enabled: boolean = true) => {
+export const useConnections = (userId: string, enabled: boolean) => {
   return useQuery({
-    queryKey: ['friends', currentPlayerId],
+    queryKey: ['friends', userId],
     queryFn: async () => {
-      console.log(`Fetching connections for player: ${currentPlayerId}`);
+      if (!userId) return [];
       
-      if (!currentPlayerId) {
-        console.log('No currentPlayerId provided, returning empty array');
-        return [];
-      }
+      console.log(`Fetching connections for user ${userId}`);
       
-      const { data: connections, error } = await supabase
+      // Get all connections where the user is either the requester or the receiver
+      const { data: connections, error: connectionsError } = await supabase
         .from('connections')
-        .select(`
-          id,
-          status,
-          user_id,
-          friend_id,
-          friend:profiles!connections_friend_id_fkey(id, username, full_name, avatar_url),
-          user:profiles!connections_user_id_fkey(id, username, full_name, avatar_url)
-        `)
-        .eq('status', 'accepted')
-        .or(`user_id.eq.${currentPlayerId},friend_id.eq.${currentPlayerId}`)
-        .order('id', { ascending: false });
+        .select('*')
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+        .eq('status', 'accepted');
       
-      if (error) {
-        console.error('Error fetching friends:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load friends",
-          variant: "destructive"
-        });
+      if (connectionsError) {
+        console.error('Error fetching connections:', connectionsError);
+        throw connectionsError;
+      }
+      
+      console.log(`Found ${connections?.length || 0} connections for user ${userId}`);
+      
+      if (!connections || connections.length === 0) {
         return [];
       }
-
-      console.log(`Found ${connections.length} connections`);
       
-      // Debug each connection to see what data we have
-      connections.forEach(conn => {
-        console.log(`Connection ${conn.id}: user_id=${conn.user_id}, friend_id=${conn.friend_id}, currentPlayer=${currentPlayerId}`);
-        console.log('User profile:', conn.user);
-        console.log('Friend profile:', conn.friend);
-      });
+      // Extract friend IDs from connections (the ID that's not the user's)
+      const friendIds = connections.map(conn => 
+        conn.user_id === userId ? conn.friend_id : conn.user_id
+      );
       
-      // Transform the data into the expected format
-      const friendsList = connections.map(conn => {
-        // Determine which profile to use based on the relationship direction
-        const isUserInitiator = conn.user_id === currentPlayerId;
-        const profileData = isUserInitiator ? conn.friend : conn.user;
-        
-        console.log(`Connection: ${conn.id}, isUserInitiator: ${isUserInitiator}, profileData:`, profileData);
-        
-        // Handle profile data safely
-        const formattedProfile = profileData || {};
-        
-        if (!formattedProfile || (typeof formattedProfile === 'object' && Object.keys(formattedProfile).length === 0)) {
-          console.error('Profile data missing in connection:', conn);
-          return null;
+      console.log(`Extracted ${friendIds.length} unique friend IDs:`, friendIds);
+      
+      // Fetch friend profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', friendIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+      
+      console.log(`Found ${profiles?.length || 0} profiles for friends`);
+      
+      // Transform profiles into Player objects with proper null checks
+      const friends: Player[] = (profiles || []).map(profile => {
+        // Check that profile is not null and has necessary properties
+        if (!profile) {
+          console.warn('Received null profile in useConnections');
+          return {
+            id: 'unknown',
+            name: 'Unknown User',
+            avatar: null
+          };
         }
         
         return {
-          id: formattedProfile.id,
-          name: formattedProfile.username || formattedProfile.full_name || 'Unknown User',
-          avatar: formattedProfile.avatar_url,
-          connectionId: conn.id, // Include connectionId for removal
-        } as Player;
-      }).filter(Boolean) as Player[];
+          id: profile.id || 'unknown',
+          name: profile.username || profile.full_name || 'Unknown User',
+          avatar: profile.avatar_url
+        };
+      });
       
-      // Log the final friends list
-      console.log(`Processed ${friendsList.length} friends:`, friendsList.map(f => ({ id: f.id, name: f.name })));
+      console.log(`Transformed ${friends.length} friends:`, friends);
       
-      return friendsList;
+      return friends;
     },
-    enabled: enabled && !!currentPlayerId,
-    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
-    refetchOnWindowFocus: false, // Only refetch when explicitly told to
-    refetchOnMount: true, // Refetch on component mount to ensure fresh data
+    enabled: enabled && !!userId,
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false
   });
 };
