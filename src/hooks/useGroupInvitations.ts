@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -25,7 +24,7 @@ export const useGroupInvitations = () => {
     refetch,
     isError
   } = useQuery({
-    queryKey: ['group-invitations', user?.id],
+    queryKey: ['social-data', 'group-invitations', user?.id],
     queryFn: async () => {
       if (!user) return [];
       
@@ -139,11 +138,15 @@ export const useGroupInvitations = () => {
       }
     },
     onSuccess: (data) => {
-      // Aggressive cache invalidation
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-      queryClient.removeQueries({ queryKey: ['group-invitations', user?.id] });
+      // Targeted cache invalidation using the parent key
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data']
+      });
+      
+      // Remove specific invitation query to force refetch
+      queryClient.removeQueries({ 
+        queryKey: ['social-data', 'group-invitations', user?.id] 
+      });
       
       // Force refetch after a short delay to ensure DB has updated
       setTimeout(() => {
@@ -175,7 +178,9 @@ export const useGroupInvitations = () => {
       return invitationId;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data', 'group-invitations']
+      });
       toast.success('Group invitation declined');
     },
     onError: (error) => {

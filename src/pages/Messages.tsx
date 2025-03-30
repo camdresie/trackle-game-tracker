@@ -116,15 +116,17 @@ const Messages = () => {
         // Clear all related caches first
         queryClient.removeQueries({ queryKey: ['group-invitations'] });
         queryClient.removeQueries({ queryKey: ['friend-groups'] });
-        queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-        queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-        queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+        
+        // Use more targeted invalidations for social data
+        queryClient.invalidateQueries({ 
+          queryKey: ['social-data'],
+          refetchType: 'all'
+        });
         
         // Then refetch everything with fresh data
         await Promise.all([
           refetchGroups(),
-          refetchInvitations(),
-          queryClient.invalidateQueries() // Invalidate all queries to be safe
+          refetchInvitations()
         ]);
         
         setProcessingInvitation(false);
@@ -142,7 +144,7 @@ const Messages = () => {
     toast.info('Refreshing invitations and groups...');
     
     // Clear caches more aggressively
-    queryClient.removeQueries();
+    queryClient.removeQueries({ queryKey: ['social-data'] });
     
     try {
       // Force a refresh of the friends list first

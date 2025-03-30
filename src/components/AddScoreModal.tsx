@@ -131,10 +131,10 @@ const AddScoreModal = ({
         createdAt: score.createdAt
       });
       
-      // Invalidate relevant queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['all-scores'] });
-      queryClient.invalidateQueries({ queryKey: ['today-games'] });
-      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      // Invalidate relevant queries to refresh the data using a common parent key
+      queryClient.invalidateQueries({ 
+        queryKey: ['game-data', 'scores'] 
+      });
       
       toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
       

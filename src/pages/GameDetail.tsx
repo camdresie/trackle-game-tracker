@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -71,10 +70,10 @@ const GameDetail = () => {
     // Remove the deleted score from local state
     setLocalScores(prev => prev.filter(score => score.id !== scoreId));
     
-    // Invalidate relevant queries to refresh the data
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
-    queryClient.invalidateQueries({ queryKey: ['today-games'] });
-    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    // Invalidate relevant queries to refresh the data using a common parent key
+    queryClient.invalidateQueries({ 
+      queryKey: ['game-data', 'scores'] 
+    });
     
     // Recalculate best score - we'll let the server handle this and it will be
     // reflected in the UI after the queries are refreshed

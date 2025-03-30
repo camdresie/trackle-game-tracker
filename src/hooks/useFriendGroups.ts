@@ -15,7 +15,7 @@ export const useFriendGroups = (friends: Player[]) => {
     isLoading, 
     refetch
   } = useQuery({
-    queryKey: ['friend-groups', user?.id],
+    queryKey: ['social-data', 'friend-groups', user?.id],
     queryFn: async () => {
       try {
         if (!user) return [];
@@ -236,7 +236,9 @@ export const useFriendGroups = (friends: Player[]) => {
     },
     onSuccess: () => {
       toast.success('Friend group created successfully');
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data', 'friend-groups'] 
+      });
     },
     onError: (error) => {
       console.error('Error creating friend group:', error);
@@ -266,7 +268,9 @@ export const useFriendGroups = (friends: Player[]) => {
     },
     onSuccess: () => {
       toast.success('Friend group updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data', 'friend-groups']
+      });
     },
     onError: (error) => {
       console.error('Error updating friend group:', error);
@@ -363,9 +367,9 @@ export const useFriendGroups = (friends: Player[]) => {
     onSuccess: (data) => {
       toast.success('Friend invitation sent');
       console.log('Invitation successfully sent, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data']
+      });
     },
     onError: (error) => {
       console.error('Error in addFriendToGroupMutation:', error);
@@ -398,8 +402,9 @@ export const useFriendGroups = (friends: Player[]) => {
     },
     onSuccess: () => {
       toast.success('Friend removed from group');
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['social-data']
+      });
     },
     onError: (error) => {
       console.error('Error removing friend from group:', error);
