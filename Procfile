@@ -1,1 +1,1 @@
-web: npm run build:staging && npm start
+web: npm run build:staging && NODE_OPTIONS="--optimize_for_size --max_old_space_size=460" npm start
