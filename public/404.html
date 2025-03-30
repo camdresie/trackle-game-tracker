@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Trackle - Game Score Tracking</title>
+  <script type="text/javascript">
+    // Single Page Apps for GitHub Pages
+    // MIT License - https://github.com/rafgraph/spa-github-pages
+    // This script handles SPA routing for GitHub Pages by redirecting to index.html
+    var segmentCount = 1;
+    var l = window.location;
+    var repoName = l.pathname.split('/')[1];
+    
+    l.replace(
+      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+      l.pathname.split('/').slice(0, segmentCount + 1).join('/') + '/?p=/' +
+      l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+      (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+      l.hash
+    );
+  </script>
+</head>
+<body>
+  <h2>Redirecting...</h2>
+</body>
+</html> 
