@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
@@ -158,7 +158,7 @@ const TodayScores = () => {
 
   // Create a combined list for all friends including those without scores
   // Use the new allFriendsData that comes directly from the hook
-  const getAllFriendsList = () => {
+  const getAllFriendsList = useMemo(() => {
     // Start with an empty list
     const allFriends: GroupMember[] = [];
     
@@ -217,9 +217,8 @@ const TodayScores = () => {
       });
     }
     
-    console.log('getAllFriendsList returning:', allFriends);
     return allFriends;
-  };
+  }, [user, allFriendsData, groupPerformanceData, friends]);
 
   const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
   const [activeConnectionsTab, setActiveConnectionsTab] = useState<string>('friends');
@@ -248,31 +247,34 @@ const TodayScores = () => {
   const getAllFriendsForScoreShare = () => {
     if (allFriendsData) {
       return {
-        members: allFriendsData.members.map(member => ({
-          playerName: member.playerName,
-          score: member.score,
-          hasPlayed: member.hasPlayed
+        groupName: "All Friends",
+        members: allFriendsData.members.map(m => ({
+          playerName: m.playerName,
+          score: m.score,
+          hasPlayed: m.hasPlayed
         })),
+        currentUserName: profile?.full_name || profile?.username || 'You',
+        currentUserScore: allFriendsData.currentUserScore,
         currentUserHasPlayed: allFriendsData.currentUserHasPlayed,
-        currentUserScore: allFriendsData.currentUserScore
+        allFriends: true
+      };
+    } else {
+      // Create from the memoized list
+      return {
+        groupName: "All Friends",
+        members: getAllFriendsList
+          .filter(f => !f.isCurrentUser)
+          .map(m => ({
+            playerName: m.playerName,
+            score: m.score,
+            hasPlayed: m.hasPlayed
+          })),
+        currentUserName: profile?.full_name || profile?.username || 'You',
+        currentUserScore: getAllFriendsList.find(m => m.isCurrentUser)?.score || null,
+        currentUserHasPlayed: getAllFriendsList.find(m => m.isCurrentUser)?.hasPlayed || false,
+        allFriends: true
       };
     }
-    
-    // Fallback to the old method
-    return {
-      members: friends.map(friend => {
-        const friendData = groupPerformanceData.flatMap(group => group.members)
-          .find(member => member?.playerId === friend.id);
-          
-        return {
-          playerName: friend.name,
-          score: friendData?.score || null,
-          hasPlayed: friendData?.hasPlayed || false
-        };
-      }),
-      currentUserHasPlayed: groupPerformanceData.some(g => g.currentUserHasPlayed),
-      currentUserScore: groupPerformanceData.find(g => g.currentUserHasPlayed)?.currentUserScore
-    };
   };
 
   return (
@@ -399,9 +401,9 @@ const TodayScores = () => {
                   
                   {/* Friends scores list - Modified to always show current user */}
                   <div className="space-y-3">
-                    {getAllFriendsList().length > 0 ? (
+                    {getAllFriendsList.length > 0 ? (
                       /* Get all friends + current user and sort by those who have played first, then by score */
-                      getAllFriendsList()
+                      getAllFriendsList
                         // Sort played first, then by score (lower is better for some games)
                         .sort((a, b) => {
                           // First sort by played status - people who played come first
@@ -423,7 +425,7 @@ const TodayScores = () => {
                         .map((person, index) => {
                           // Find if this person is the top scorer (only among those who have played)
                           const isTopScore = person.hasPlayed && 
-                            getAllFriendsList()
+                            getAllFriendsList
                               .filter(p => p.hasPlayed)
                               .sort((a, b) => {
                                 if (typeof a.score !== 'number' || typeof b.score !== 'number') {
