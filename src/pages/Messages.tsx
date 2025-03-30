@@ -53,7 +53,6 @@ const Messages = () => {
   // Ensure we fetch the latest groups and invitations when the component mounts
   useEffect(() => {
     if (user) {
-      console.log('Messages component mounted, fetching groups and invitations');
       // Clear cache before fetching
       queryClient.removeQueries({ queryKey: ['group-invitations'] });
       queryClient.removeQueries({ queryKey: ['friend-groups'] });
@@ -76,11 +75,8 @@ const Messages = () => {
   // Auto-select the first group when groups are loaded or when groups change
   useEffect(() => {
     if (friendGroups && friendGroups.length > 0) {
-      console.log('Friend groups loaded or changed:', friendGroups);
-      
       // Only auto-select if no group is selected or after accepting an invitation
       if (!selectedGroupId || acceptedInvitation) {
-        console.log('Auto-selecting the first group:', friendGroups[0].id);
         setSelectedGroupId(friendGroups[0].id);
         setSelectedGroupName(friendGroups[0].name);
         setAcceptedInvitation(false); // Reset the flag
@@ -88,7 +84,6 @@ const Messages = () => {
         // Check if the selected group still exists in the updated friendGroups
         const stillExists = friendGroups.some(group => group.id === selectedGroupId);
         if (!stillExists && friendGroups.length > 0) {
-          console.log('Selected group no longer exists, selecting first available group');
           setSelectedGroupId(friendGroups[0].id);
           setSelectedGroupName(friendGroups[0].name);
         }
@@ -103,7 +98,6 @@ const Messages = () => {
   // Handle accepting a group invitation
   const handleAcceptInvitation = async (invitationId: string) => {
     if (processingInvitation) {
-      console.log('Already processing an invitation, aborting');
       return;
     }
     
@@ -111,8 +105,6 @@ const Messages = () => {
     toast.info('Processing invitation...');
     
     try {
-      console.log('Accepting invitation:', invitationId);
-      
       // Accept the invitation
       acceptInvitation(invitationId);
       
@@ -121,8 +113,6 @@ const Messages = () => {
       
       // Immediately refetch data to update UI
       setTimeout(async () => {
-        console.log('Refreshing data after accepting invitation');
-        
         // Clear all related caches first
         queryClient.removeQueries({ queryKey: ['group-invitations'] });
         queryClient.removeQueries({ queryKey: ['friend-groups'] });
