@@ -5,11 +5,6 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Base path for GitHub Pages - use your repo name
-  // If your repo is username.github.io, you can use "/"
-  // Otherwise use "/repo-name/"
-  base: "/trackle-game-tracker/",
-  
   server: {
     host: "::",
     port: 8080,

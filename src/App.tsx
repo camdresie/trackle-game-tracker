@@ -141,7 +141,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter basename="/trackle-game-tracker">
+        <BrowserRouter>
           <AppRoutes />
         </BrowserRouter>
       </TooltipProvider>
