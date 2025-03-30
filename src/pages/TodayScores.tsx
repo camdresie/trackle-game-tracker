@@ -357,9 +357,9 @@ const TodayScores = () => {
               <TabsContent value="friends" className="space-y-6">
                 <Card className="p-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-xl flex items-center gap-2 truncate max-w-[60%]">
-                      <CalendarDays className="w-5 h-5 text-accent flex-shrink-0" />
-                      <span className="truncate">All Friends' {selectedGame?.name || ''} Scores Today</span>
+                    <h3 className="font-semibold text-base sm:text-lg md:text-xl flex items-center gap-2 truncate max-w-[70%]">
+                      <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0" />
+                      <span className="truncate">{selectedGame?.name || ''} Scores Today</span>
                     </h3>
                     
                     <div className="flex gap-2">
