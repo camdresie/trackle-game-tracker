@@ -87,16 +87,19 @@ const FriendScoresList = ({
       
       // If either player has no scores, they go to the bottom
       if (!aStats || !bStats) return 0;
+      if (aStats.totalGames === 0 && bStats.totalGames === 0) return 0;
+      if (aStats.totalGames === 0) return 1;
+      if (bStats.totalGames === 0) return -1;
       
       // For Wordle and mini-crossword, lower scores are better
       if (game.id === 'wordle' || game.id === 'mini-crossword') {
-        return aStats.bestScore - bStats.bestScore;
+        return aStats.averageScore - bStats.averageScore;
       }
       
       // For other games, higher scores are better
-      return bStats.bestScore - aStats.bestScore;
+      return bStats.averageScore - aStats.averageScore;
     });
-  }, [friends, user, profile, game.id]);
+  }, [friends, user, profile, game.id, friendScores]);
 
   return (
     <div className="space-y-6">
