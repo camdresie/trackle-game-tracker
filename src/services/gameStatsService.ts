@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Score, Game } from '@/utils/types';
 import { format } from 'date-fns';
@@ -8,8 +7,6 @@ import { format } from 'date-fns';
  */
 export const getGameScores = async (gameId: string, userId: string): Promise<Score[]> => {
   try {
-    console.log(`[getGameScores] Fetching scores for game ${gameId} and user ${userId}`);
-    
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -33,8 +30,6 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
       createdAt: score.created_at
     }));
     
-    console.log(`[getGameScores] Found ${scores.length} scores for game ${gameId}:`, scores);
-    
     return scores;
   } catch (error) {
     console.error('[getGameScores] Exception in getGameScores:', error);
@@ -48,7 +43,6 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
 export const getTodaysGames = async (userId: string): Promise<Score[]> => {
   try {
     const today = format(new Date(), 'yyyy-MM-dd');
-    console.log(`[getTodaysGames] Fetching games for user ${userId} on ${today}`);
     
     const { data, error } = await supabase
       .from('scores')
@@ -72,8 +66,6 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
       createdAt: score.created_at
     }));
     
-    console.log(`[getTodaysGames] Found ${scores.length} games for today:`, scores);
-    
     return scores;
   } catch (error) {
     console.error('[getTodaysGames] Exception in getTodaysGames:', error);
@@ -86,8 +78,6 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
  */
 export const getGameStats = async (gameId: string, userId: string): Promise<any> => {
   try {
-    console.log(`[getGameStats] Fetching stats for game ${gameId} and user ${userId}`);
-    
     const { data, error } = await supabase
       .from('game_stats')
       .select('*')
@@ -98,14 +88,11 @@ export const getGameStats = async (gameId: string, userId: string): Promise<any>
     if (error) {
       if (error.code === 'PGRST116') {
         // No data found
-        console.log('[getGameStats] No stats found for this game and user');
         return null;
       }
       console.error('[getGameStats] Error fetching game stats:', error);
       throw error;
     }
-    
-    console.log('[getGameStats] Found game stats:', data);
     
     return data;
   } catch (error) {
@@ -119,8 +106,6 @@ export const getGameStats = async (gameId: string, userId: string): Promise<any>
  */
 export const getUserGameStats = async (userId: string): Promise<any[]> => {
   try {
-    console.log(`[getUserGameStats] Fetching game stats for user ${userId}`);
-    
     const { data, error } = await supabase
       .rpc('get_user_game_stats', { user_id_param: userId });
       
@@ -128,8 +113,6 @@ export const getUserGameStats = async (userId: string): Promise<any[]> => {
       console.error('[getUserGameStats] Error fetching user game stats:', error);
       throw error;
     }
-    
-    console.log(`[getUserGameStats] Found ${data?.length || 0} game stats for user ${userId}:`, data);
     
     return data || [];
   } catch (error) {
@@ -143,8 +126,6 @@ export const getUserGameStats = async (userId: string): Promise<any[]> => {
  */
 export const getPlayedGames = async (userId: string): Promise<string[]> => {
   try {
-    console.log(`[getPlayedGames] Fetching played games for user ${userId}`);
-    
     const { data, error } = await supabase
       .from('scores')
       .select('game_id')
@@ -159,8 +140,6 @@ export const getPlayedGames = async (userId: string): Promise<string[]> => {
     
     // Get unique game IDs
     const uniqueGameIds = [...new Set(data.map(item => item.game_id))];
-    
-    console.log(`[getPlayedGames] Found ${uniqueGameIds.length} unique games played by user ${userId}:`, uniqueGameIds);
     
     return uniqueGameIds;
   } catch (error) {
@@ -181,8 +160,6 @@ export const addGameScore = async (scoreData: {
   createdAt: string;
 }): Promise<{ stats: any; score: Score }> => {
   try {
-    console.log('[addGameScore] Adding new score:', scoreData);
-    
     // Insert the score
     const { data, error } = await supabase
       .from('scores')
@@ -201,8 +178,6 @@ export const addGameScore = async (scoreData: {
       throw error;
     }
     
-    console.log('[addGameScore] Score added successfully:', data);
-    
     // Update game stats for this game/user
     const { data: statsData, error: statsError } = await supabase
       .rpc('update_game_stats', {
@@ -216,8 +191,6 @@ export const addGameScore = async (scoreData: {
       console.error('[addGameScore] Error updating game stats:', statsError);
       // Continue despite stats error, the score was saved
     }
-    
-    console.log('[addGameScore] Game stats updated:', statsData);
     
     // Format the response
     const scoreObj: Score = {
