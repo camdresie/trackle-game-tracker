@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from '@/components/NavBar';
 import { useHomeData } from '@/hooks/useHomeData';
@@ -18,7 +18,8 @@ import {
   InfoIcon, 
   Share2,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
@@ -30,6 +31,11 @@ import GameDropdownSelector from '@/components/game/GameDropdownSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ConnectionsModal from '@/components/ConnectionsModal';
 import { toast } from 'sonner';
+import { FixedSizeList as List } from 'react-window';
+import { useResizeObserver } from '@/hooks/useResizeObserver';
+import { format } from 'date-fns';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 // Define a consistent interface for group members
 interface GroupMember {
@@ -39,6 +45,9 @@ interface GroupMember {
   score?: number | null;
   isCurrentUser?: boolean;
 }
+
+// Define this constant for friend item height
+const FRIEND_ITEM_HEIGHT = 90; // Estimated height of each friend card
 
 const TodayScores = () => {
   const { user, profile } = useAuth();
@@ -277,6 +286,139 @@ const TodayScores = () => {
     }
   };
 
+  // Component to render the virtualized friends list
+  const FriendListVirtualized = ({ 
+    friends, 
+    isLowerBetter,
+    selectedGame
+  }: { 
+    friends: GroupMember[], 
+    isLowerBetter: boolean,
+    selectedGame: any
+  }) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const { width } = useResizeObserver(containerRef);
+    
+    // Sort the friends list
+    const sortedFriends = useMemo(() => {
+      return [...friends].sort((a, b) => {
+        // First sort by played status - people who played come first
+        if (a.hasPlayed && !b.hasPlayed) return -1;
+        if (!a.hasPlayed && b.hasPlayed) return 1;
+        
+        // If both have played, sort by score
+        if (a.hasPlayed && b.hasPlayed) {
+          // Make sure we're comparing numbers
+          const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+          const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
+          
+          return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+        }
+        
+        // If neither has played, keep original order
+        return 0;
+      });
+    }, [friends, isLowerBetter]);
+    
+    // Row renderer for the virtualized list
+    const FriendRow = ({ index, style }: { index: number, style: React.CSSProperties }) => {
+      const person = sortedFriends[index];
+      
+      // Find if this person is the top scorer (only among those who have played)
+      const isTopScore = person.hasPlayed && 
+        sortedFriends
+          .filter(p => p.hasPlayed)
+          .findIndex(p => p.playerId === person.playerId) === 0;
+          
+      const rank = sortedFriends
+        .filter(p => p.hasPlayed)
+        .findIndex(p => p.playerId === person.playerId) + 1;
+      
+      return (
+        <div style={style} className="px-1 py-1">
+          <div 
+            className={cn(
+              "w-full rounded-lg border p-3",
+              person.isCurrentUser ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-accent/5",
+              isTopScore ? "border-amber-500/40 bg-amber-500/5" : ""
+            )}
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>
+                    {person.playerName.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium flex items-center">
+                    <span className={cn(person.isCurrentUser ? "text-primary" : "")}>
+                      {person.playerName}
+                    </span>
+                    {isTopScore && <Trophy className="w-4 h-4 text-amber-500 ml-1" />}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm">
+                {person.hasPlayed ? (
+                  <>
+                    <Badge className="font-medium" variant={isTopScore ? "default" : "secondary"}>
+                      {rank}
+                    </Badge>
+                    <span className="font-bold text-lg">
+                      {formatScoreValue(person.score, selectedGame?.id)}
+                    </span>
+                  </>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground">
+                    No score yet
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
+    if (friends.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <User className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+          <p className="text-muted-foreground">No friends found</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div ref={containerRef} style={{ height: '400px' }}>
+        {width && (
+          <List
+            height={400}
+            width={width}
+            itemCount={sortedFriends.length}
+            itemSize={FRIEND_ITEM_HEIGHT}
+          >
+            {FriendRow}
+          </List>
+        )}
+      </div>
+    );
+  };
+
+  // Helper function to format score values based on game type
+  const formatScoreValue = (score: number | null | undefined, gameId: string) => {
+    if (score === null || score === undefined) return '-';
+    
+    // For games with special formatting like Quordle
+    if (gameId === 'quordle') {
+      return score.toString();
+    }
+    
+    return score.toString();
+  };
+
   return (
     
     <div className="min-h-screen bg-background">
@@ -399,84 +541,12 @@ const TodayScores = () => {
                     </div>
                   </div>
                   
-                  {/* Friends scores list - Modified to always show current user */}
-                  <div className="space-y-3">
-                    {getAllFriendsList.length > 0 ? (
-                      /* Get all friends + current user and sort by those who have played first, then by score */
-                      getAllFriendsList
-                        // Sort played first, then by score (lower is better for some games)
-                        .sort((a, b) => {
-                          // First sort by played status - people who played come first
-                          if (a.hasPlayed && !b.hasPlayed) return -1;
-                          if (!a.hasPlayed && b.hasPlayed) return 1;
-                          
-                          // If both have played, sort by score (fixed comparison to ensure proper number comparison)
-                          if (a.hasPlayed && b.hasPlayed) {
-                            // Make sure we're comparing numbers
-                            const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                            const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-                            
-                            return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                          }
-                          
-                          // If neither has played, keep original order
-                          return 0;
-                        })
-                        .map((person, index) => {
-                          // Find if this person is the top scorer (only among those who have played)
-                          const isTopScore = person.hasPlayed && 
-                            getAllFriendsList
-                              .filter(p => p.hasPlayed)
-                              .sort((a, b) => {
-                                if (typeof a.score !== 'number' || typeof b.score !== 'number') {
-                                  // Handle case where one or both scores aren't numbers
-                                  const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
-                                  const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-                                  return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
-                                }
-                                
-                                // Both are numbers, safe to compare
-                                return isLowerBetter ? a.score - b.score : b.score - a.score;
-                              })
-                              .findIndex(p => p.playerId === person.playerId) === 0;
-                              
-                          return (
-                            <div 
-                              key={person.playerId}
-                              className={`flex items-center justify-between p-3 rounded-lg ${
-                                person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                              } ${isTopScore ? "border border-accent/20" : ""}`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                                {isTopScore && (
-                                  <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                                )}
-                                <div className="font-medium truncate">
-                                  {person.playerName}
-                                </div>
-                                {isTopScore && (
-                                  <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
-                                    Top score
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex-shrink-0">
-                                {person.hasPlayed ? (
-                                  <span className="font-semibold">{person.score}</span>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">No score yet</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <p>No scores found for today.</p>
-                        <p className="mt-2">Add your scores for the day and they will appear here.</p>
-                      </div>
-                    )}
-                  </div>
+                  {/* Friends scores list - Modified to use virtualization */}
+                  <FriendListVirtualized 
+                    friends={getAllFriendsList}
+                    isLowerBetter={isLowerBetter}
+                    selectedGame={selectedGame}
+                  />
                 </Card>
               </TabsContent>
               

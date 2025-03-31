@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 import { getTodayInEasternTime, isToday } from '@/utils/dateUtils';
 
 // Constants to control pagination and memory usage
-const PAGE_SIZE = 100; // Number of records to fetch per page
-const MAX_RECORDS = 1000; // Maximum number of records to load in total to prevent memory issues
+const PAGE_SIZE = 50; // Reduced from 100 to 50 for faster initial load
+const MAX_RECORDS = 500; // Reduced from 1000 to 500 for better performance
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes cache expiry
 
 /**
  * Hook for fetching ALL scores data across users with pagination to reduce memory usage
@@ -44,6 +45,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           if (!pageData || pageData.length === 0) {
             hasMore = false;
           } else {
+            // Only add new records to avoid duplicates
             allScores = [...allScores, ...pageData];
             page++;
             
@@ -64,18 +66,19 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         
         // If we have scores, fetch the matching profiles
         if (allScores.length > 0) {
-          // Get unique user IDs from scores
-          const userIds = [...new Set(allScores.map(score => score.user_id))];
+          // Get unique user IDs from scores - use Set for faster deduplication
+          const userIdSet = new Set(allScores.map(score => score.user_id));
+          const userIds = Array.from(userIdSet);
           
           // Batch profile fetching to avoid large IN clauses
-          const BATCH_SIZE = 100; // Maximum number of IDs to include in a single query
+          const BATCH_SIZE = 50; // Reduced from 100 to 50
           for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
             const batchIds = userIds.slice(i, i + BATCH_SIZE);
             
             // Fetch profiles for this batch of users
             const { data: profilesData, error: profilesError } = await supabase
               .from('profiles')
-              .select('*')
+              .select('id, username, full_name, avatar_url') // Only select needed fields
               .in('id', batchIds);
               
             if (profilesError) {
@@ -113,21 +116,23 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           const uniqueScores = Array.from(uniqueScoreMap.values());
           console.log('Unique scores after deduplication:', uniqueScores.length);
           
-          // Transform and combine the data
-          const transformedData = uniqueScores.map(item => {
+          // Transform and combine the data - using for loop instead of map for better performance
+          const transformedData = [];
+          for (let i = 0; i < uniqueScores.length; i++) {
+            const item = uniqueScores[i];
             // Use the isToday function to check if the score's date matches today's date
             const scoreIsToday = isToday(item.date);
             
             // Get the matching profile
             const profile = profilesMap.get(item.user_id);
             
-            return {
+            transformedData.push({
               ...item,
               isToday: scoreIsToday,
               formattedDate: item.date,
               profiles: profile || null
-            };
-          });
+            });
+          }
           
           // Count and log today's scores
           const todayScoresCount = transformedData.filter(item => item.isToday).length;
@@ -143,6 +148,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         return [];
       }
     },
+    staleTime: CACHE_EXPIRY, // Cache data for 5 minutes to reduce API calls
     enabled: true // Always fetch all scores data regardless of user ID
   });
 

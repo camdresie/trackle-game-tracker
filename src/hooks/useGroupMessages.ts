@@ -1,22 +1,33 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { GroupMessage } from '@/utils/types';
 
+// Number of messages to fetch initially and per page
+const MESSAGES_PER_PAGE = 25;
+
 export const useGroupMessages = (groupId: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  // Track current page and hasMore state
+  const [page, setPage] = useState(0);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [allMessages, setAllMessages] = useState<GroupMessage[]>([]);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+  const isLoadingMoreRef = useRef(false);
   
   // Fetch messages for a specific group
   const { 
-    data: messages = [], 
+    data: pageMessages = [], 
     isLoading,
-    refetch
+    isFetching,
+    refetch,
+    isSuccess,
+    error
   } = useQuery({
-    queryKey: ['group-messages', groupId],
+    queryKey: ['group-messages', groupId, page],
     queryFn: async () => {
       if (!groupId || !user) return [];
       
@@ -37,12 +48,29 @@ export const useGroupMessages = (groupId: string | null) => {
         return [];
       }
       
-      // Fetch just the messages first
+      console.log(`Fetching messages for group ${groupId}, page ${page}`);
+      
+      // Calculate range for pagination
+      const from = page * MESSAGES_PER_PAGE;
+      const to = from + MESSAGES_PER_PAGE - 1;
+      
+      // First get count of total messages to determine if there are more
+      const { count, error: countError } = await supabase
+        .from('group_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('group_id', groupId);
+      
+      if (countError) {
+        console.error('Error counting messages:', countError);
+      }
+      
+      // Fetch paginated messages with the newest first
       const { data: messagesData, error } = await supabase
         .from('group_messages')
         .select('id, group_id, user_id, content, created_at')
         .eq('group_id', groupId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false }) // Newest first
+        .range(from, to);
       
       if (error) {
         console.error('Error fetching group messages:', error);
@@ -54,7 +82,16 @@ export const useGroupMessages = (groupId: string | null) => {
       
       // If no messages, return empty array
       if (!messagesData || messagesData.length === 0) {
+        setHasMoreMessages(false);
         return [];
+      }
+      
+      // Check if we have more messages
+      if (count) {
+        setHasMoreMessages(from + messagesData.length < count);
+        console.log(`Loaded ${from + messagesData.length} of ${count} total messages`);
+      } else {
+        setHasMoreMessages(messagesData.length === MESSAGES_PER_PAGE);
       }
       
       // Collect unique user IDs to fetch profiles
@@ -89,10 +126,74 @@ export const useGroupMessages = (groupId: string | null) => {
       return messagesWithSender as GroupMessage[];
     },
     enabled: !!groupId && !!user,
-    refetchInterval: 5000 // Poll for new messages every 5 seconds
+    staleTime: 60000, // 1 minute
+    retry: 1, // Only retry once in case of failure
   });
   
-  // Set up realtime subscription only once when groupId changes
+  // Force initial fetch when component mounts
+  useEffect(() => {
+    if (groupId && user && page === 0 && allMessages.length === 0) {
+      refetch();
+    }
+  }, [groupId, user, refetch, page, allMessages.length]);
+  
+  // After initial load is successful, mark it as complete
+  useEffect(() => {
+    if (isSuccess && !isInitialLoadComplete && page === 0) {
+      setIsInitialLoadComplete(true);
+    }
+  }, [isSuccess, isInitialLoadComplete, page]);
+  
+  // Reset loading more ref when fetch completes
+  useEffect(() => {
+    if (!isFetching) {
+      isLoadingMoreRef.current = false;
+    }
+  }, [isFetching]);
+  
+  // Update allMessages when new page data is loaded
+  useEffect(() => {
+    if (pageMessages.length > 0) {
+      setAllMessages(prev => {
+        // Create a map of existing messages by ID for quick lookup
+        const existingMap = new Map(prev.map(msg => [msg.id, msg]));
+        
+        // Add new messages
+        pageMessages.forEach(message => {
+          if (!existingMap.has(message.id)) {
+            existingMap.set(message.id, message);
+          }
+        });
+        
+        // Convert back to array and sort by created_at (newest first)
+        const combined = Array.from(existingMap.values())
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        return combined;
+      });
+    }
+  }, [pageMessages]);
+  
+  // Reset when groupId changes
+  useEffect(() => {
+    setPage(0);
+    setAllMessages([]);
+    setHasMoreMessages(true);
+    setIsInitialLoadComplete(false);
+    isLoadingMoreRef.current = false;
+  }, [groupId]);
+  
+  // Load more messages - with protection against multiple calls
+  const loadMoreMessages = useCallback(() => {
+    if (hasMoreMessages && !isLoading && !isFetching && !isLoadingMoreRef.current) {
+      // Set loading flag to prevent multiple calls
+      isLoadingMoreRef.current = true;
+      console.log('Loading more messages, increasing page to', page + 1);
+      setPage(prevPage => prevPage + 1);
+    }
+  }, [hasMoreMessages, isLoading, isFetching, page]);
+  
+  // Set up realtime subscription for new messages
   useEffect(() => {
     if (!groupId || !user) {
       return;
@@ -112,8 +213,8 @@ export const useGroupMessages = (groupId: string | null) => {
           filter: `group_id=eq.${groupId}`
         },
         (payload) => {
-          // Invalidate the query to refetch messages
-          queryClient.invalidateQueries({ queryKey: ['group-messages', groupId] });
+          // When a new message arrives, invalidate only the first page query
+          queryClient.invalidateQueries({ queryKey: ['group-messages', groupId, 0] });
         }
       )
       .subscribe();
@@ -159,8 +260,8 @@ export const useGroupMessages = (groupId: string | null) => {
       return data;
     },
     onSuccess: () => {
-      // Manually trigger a refetch to get the newly sent message immediately
-      refetch();
+      // Invalidate only the first page query to get the newly sent message
+      queryClient.invalidateQueries({ queryKey: ['group-messages', groupId, 0] });
     },
     onError: (error: any) => {
       console.error('Error sending message:', error);
@@ -169,9 +270,14 @@ export const useGroupMessages = (groupId: string | null) => {
   });
   
   return {
-    messages,
+    messages: allMessages,
     isLoading,
+    isFetchingNextPage: isFetching && page > 0,
+    hasMoreMessages,
+    loadMoreMessages,
+    isInitialLoadComplete,
     sendMessage: (content: string) => sendMessageMutation.mutate(content),
-    isSending: sendMessageMutation.isPending
+    isSending: sendMessageMutation.isPending,
+    error
   };
 };
