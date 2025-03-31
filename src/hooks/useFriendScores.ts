@@ -104,16 +104,33 @@ export const useFriendScores = ({
     },
     enabled: !!gameId && (friends.length > 0 || includeCurrentUser),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Add placeholder data for better UX
+    placeholderData: (oldData) => {
+      if (!oldData) return {};
+      
+      // If we have current user scores, include them in placeholder data
+      if (includeCurrentUser && user && currentUserScores.length > 0) {
+        return {
+          ...oldData,
+          [user.id]: currentUserScores
+        };
+      }
+      
+      return oldData;
+    }
   });
 
-  // Effect to refetch when friends list changes
+  // Effect to refetch only when necessary
   useEffect(() => {
-    // If the friends list changes, automatically refetch data
-    if (gameId && friends.length > 0) {
+    // Only refetch if:
+    // 1. We have a gameId
+    // 2. We have friends or includeCurrentUser is true
+    // 3. We don't have any data yet
+    if (gameId && (friends.length > 0 || includeCurrentUser) && Object.keys(friendScores).length === 0) {
       refetch();
     }
-  }, [friends, gameId, refetch]);
+  }, [friends, gameId, refetch, includeCurrentUser, friendScores]);
 
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
