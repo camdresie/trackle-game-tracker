@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
@@ -84,8 +84,6 @@ export const useFriendScores = ({
             // Add to the appropriate user's scores array
             if (newFriendScores[userId]) {
               newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
-            } else {
-              console.warn(`Found scores for user ${userId} but they are not in the friends list.`);
             }
           });
         }
@@ -118,6 +116,20 @@ export const useFriendScores = ({
       }
       
       return oldData;
+    },
+    // Add initial data to ensure current user scores are included immediately
+    initialData: (oldData) => {
+      if (!oldData) return {};
+      
+      // If we have current user scores, include them in initial data
+      if (includeCurrentUser && user && currentUserScores.length > 0) {
+        return {
+          ...oldData,
+          [user.id]: currentUserScores
+        };
+      }
+      
+      return oldData;
     }
   });
 
@@ -139,8 +151,20 @@ export const useFriendScores = ({
     }
   }, [gameId, refetch]);
 
+  // If we're loading and have current user scores, include them immediately
+  const scoresWithCurrentUser = useMemo(() => {
+    if (!isLoading || !includeCurrentUser || !user || currentUserScores.length === 0) {
+      return friendScores;
+    }
+
+    return {
+      ...friendScores,
+      [user.id]: currentUserScores
+    };
+  }, [friendScores, isLoading, includeCurrentUser, user, currentUserScores]);
+
   return {
-    friendScores,
+    friendScores: scoresWithCurrentUser,
     fetchFriendScores,
     isLoading
   };

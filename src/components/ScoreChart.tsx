@@ -98,7 +98,6 @@ const ScoreChart = ({
       };
     });
     
-    console.log('Chart data prepared:', formattedScores);
     setChartData(formattedScores);
   }, [scores, effectiveGameId]);
   
