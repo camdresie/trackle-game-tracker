@@ -1,4 +1,3 @@
-
 import { useGameDetails } from './useGameDetails';
 import { useFriendsList } from './useFriendsList';
 import { useFriendScores } from './useFriendScores';
@@ -37,6 +36,35 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     includeCurrentUser: true,
     currentUserScores: scores
   });
+  
+  // Set up real-time subscription for score updates
+  useEffect(() => {
+    if (!gameId) return;
+
+    // Subscribe to score changes for this game
+    const subscription = supabase
+      .channel(`scores-${gameId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scores',
+          filter: `game_id=eq.${gameId}`
+        },
+        (payload) => {
+          // Invalidate relevant queries to refresh the data
+          queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+          queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+          queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [gameId, queryClient]);
   
   // Effect to refresh friend scores when friends list changes
   useEffect(() => {

@@ -58,31 +58,34 @@ const GameDetail = () => {
       setLocalScores(prev => [newScore, ...prev]);
     }
     
-    // Update best score
+    // Update best score immediately
     if (newScore.gameId === 'wordle' || newScore.gameId === 'mini-crossword') {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.min(prev, newScore.value));
     } else {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev, newScore.value));
     }
+
+    // Invalidate queries to ensure server state is updated
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['game-stats'] });
   };
   
   const handleScoreDeleted = (scoreId: string) => {
     // Remove the deleted score from local state
     setLocalScores(prev => prev.filter(score => score.id !== scoreId));
     
-    // Invalidate relevant queries to refresh the data using a common parent key
-    queryClient.invalidateQueries({ 
-      queryKey: ['game-data', 'scores'] 
-    });
-    
-    // Recalculate best score - we'll let the server handle this and it will be
-    // reflected in the UI after the queries are refreshed
+    // Invalidate relevant queries to refresh the data
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['game-stats'] });
   };
   
+  // Use local state for immediate updates, fall back to server state
   const displayScores = localScores.length > 0 ? localScores : scores;
   const displayBestScore = localBestScore !== null ? localBestScore : bestScore;
   
-  // Get latest score
+  // Get latest score from displayScores (which includes local updates)
   const latestScore = displayScores.length > 0 
     ? displayScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
     : undefined;
