@@ -35,6 +35,13 @@ const FriendScoresList = ({
   const getFriendStats = (friendId: string) => {
     const scores = friendScores[friendId] || [];
     
+    // If we're loading and this is the current user, return null stats
+    // This will show loading state for the current user's stats
+    if (isLoading && user && friendId === user.id) {
+      return { bestScore: null, totalScore: null, averageScore: null, totalGames: null };
+    }
+    
+    // If we have no scores, return zero stats
     if (scores.length === 0) {
       return { bestScore: 0, totalScore: 0, averageScore: 0, totalGames: 0 };
     }

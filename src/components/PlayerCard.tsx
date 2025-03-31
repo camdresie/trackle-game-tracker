@@ -1,4 +1,3 @@
-
 import { User, Trophy, Calendar, Award } from 'lucide-react';
 import { Player, Score, Game } from '@/utils/types';
 import { calculateBestScore, calculateAverageScore } from '@/utils/gameData';
@@ -29,9 +28,9 @@ const PlayerCard = ({
   showTodayOnly = false // Default to showing all stats
 }: PlayerCardProps) => {
   // Calculate statistics or use provided stats
-  const totalGames = stats?.totalGames || scores.length;
-  const bestScore = stats?.bestScore || (game ? calculateBestScore(scores, game) : 0);
-  const averageScore = stats?.averageScore || calculateAverageScore(scores);
+  const totalGames = stats?.totalGames ?? (scores.length || null);
+  const bestScore = stats?.bestScore ?? (game ? calculateBestScore(scores, game) : null);
+  const averageScore = stats?.averageScore ?? calculateAverageScore(scores);
   
   // Get latest play date
   const latestDate = scores.length > 0 
@@ -46,7 +45,9 @@ const PlayerCard = ({
   };
 
   // Format score display for Wordle (display "-" for 0 scores)
-  const formatScore = (score: number) => {
+  const formatScore = (score: number | null) => {
+    if (score === null) return '-';
+    
     if (game?.id === 'wordle' && score === 0) {
       return '-';
     }
@@ -107,7 +108,7 @@ const PlayerCard = ({
           <>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Games</p>
-              <p className="font-semibold">{totalGames}</p>
+              <p className="font-semibold">{totalGames ?? '-'}</p>
             </div>
             
             <div className="text-center">
@@ -120,7 +121,7 @@ const PlayerCard = ({
           <>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Games</p>
-              <p className="font-semibold">{totalGames}</p>
+              <p className="font-semibold">{totalGames ?? '-'}</p>
             </div>
             
             <div className="text-center">
