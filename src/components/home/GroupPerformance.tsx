@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GroupScoresShare from '@/components/groups/GroupScoresShare';
+import { isDevelopment } from '@/utils/environment';
 
 interface GroupPerformanceProps {
   selectedGame: Game | null;
@@ -27,16 +28,16 @@ interface GroupMember {
 }
 
 const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPerformanceProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isLoading, groupPerformanceData } = useGroupScores(
     selectedGame?.id || null,
     todaysGames
   );
   const isMobile = useIsMobile();
   
-  // Add logging to understand what data we're getting
+  // Add logging to understand what data we're getting - only in development
   useEffect(() => {
-    if (groupPerformanceData && groupPerformanceData.length > 0) {
+    if (isDevelopment() && groupPerformanceData && groupPerformanceData.length > 0) {
       console.log("GroupPerformance: Raw group data received:", JSON.stringify(groupPerformanceData, null, 2));
       
       // Log specific group details for each group
@@ -55,7 +56,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
     // For games like Wordle and Mini Crossword, lower scores are better
     const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
     
-    console.log(`Group ${group.groupName}: Processing leading player determination`);
+    if (isDevelopment()) {
+      console.log(`Group ${group.groupName}: Processing leading player determination`);
+    }
     
     // Combine current user and members into one array to find the leading player
     const allPlayers = [
@@ -73,7 +76,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         }))
     ];
     
-    console.log(`Group ${group.groupName}: All players for leading determination:`, allPlayers);
+    if (isDevelopment()) {
+      console.log(`Group ${group.groupName}: All players for leading determination:`, allPlayers);
+    }
     
     if (allPlayers.length === 0) return null;
     
@@ -86,7 +91,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
       }
     });
     
-    console.log(`Group ${group.groupName}: Sorted players:`, sortedPlayers);
+    if (isDevelopment()) {
+      console.log(`Group ${group.groupName}: Sorted players:`, sortedPlayers);
+    }
     
     // Return the leading player
     return sortedPlayers[0];
@@ -189,7 +196,9 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
         <ScrollArea className="max-h-64">
           <div className="space-y-4">
             {groupPerformanceData.map((group) => {
-              console.log(`Rendering group: ${group.groupName}`);
+              if (isDevelopment()) {
+                console.log(`Rendering group: ${group.groupName}`);
+              }
               const leadingPlayer = getLeadingPlayerInGroup(group);
               const userIsLeading = leadingPlayer?.isCurrentUser;
               const groupMemberScores = convertToGroupMemberScores(group.members);
@@ -199,60 +208,71 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               
               // First add the current user if they've played
               if (group.currentUserHasPlayed) {
-                console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
+                if (isDevelopment()) {
+                  console.log(`Group ${group.groupName}: Adding current user with score ${group.currentUserScore}`);
+                }
                 allMembers.push({
                   playerId: user?.id || '',
-                  playerName: 'You',
+                  playerName: profile?.username || 'You',
                   hasPlayed: true,
                   score: group.currentUserScore,
                   isCurrentUser: true
                 });
-              } else if (user) {
-                // If current user hasn't played, add them as not played
-                console.log(`Group ${group.groupName}: Adding current user as not played`);
+              } else {
+                if (isDevelopment()) {
+                  console.log(`Group ${group.groupName}: Adding current user as not played`);
+                }
                 allMembers.push({
-                  playerId: user.id,
-                  playerName: 'You',
+                  playerId: user?.id || '',
+                  playerName: profile?.username || 'You',
                   hasPlayed: false,
+                  score: null,
                   isCurrentUser: true
                 });
               }
               
-              // Then add all other members (excluding the current user)
+              // Then add all other members
               group.members.forEach(member => {
-                // Skip if this is the current user - we've already handled them above
-                if (user && member.playerId === user.id) {
-                  console.log(`Group ${group.groupName}: Skipping current user ${member.playerName} from members list`);
-                  return;
+                if (member.playerId === user?.id) {
+                  if (isDevelopment()) {
+                    console.log(`Group ${group.groupName}: Skipping current user ${member.playerName} from members list`);
+                  }
+                  return; // Skip current user in members list since we added them already
                 }
                 
-                // Add non-current-user member
-                console.log(`Group ${group.groupName}: Adding member ${member.playerName}`);
+                if (isDevelopment()) {
+                  console.log(`Group ${group.groupName}: Adding member ${member.playerName}`);
+                }
                 allMembers.push({
-                  ...member,
+                  playerId: member.playerId,
+                  playerName: member.playerName,
+                  hasPlayed: member.hasPlayed,
+                  score: member.score,
                   isCurrentUser: false
                 });
               });
               
-              console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
+              if (isDevelopment()) {
+                console.log(`Group ${group.groupName}: Final allMembers:`, allMembers);
+              }
               
-              // Sort members who have played by score
+              // Sort members: first by played status, then by score
+              const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
               const sortedMembers = [...allMembers]
-                .filter(m => m.hasPlayed)
+                .filter(m => m.hasPlayed && m.score !== null && m.score !== undefined)
                 .sort((a, b) => {
-                  const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
                   if (isLowerBetter) {
                     return (a.score || 999) - (b.score || 999);
                   } else {
                     return (b.score || 0) - (a.score || 0);
                   }
                 });
+              const notPlayedMembers = allMembers.filter(m => !m.hasPlayed || m.score === null || m.score === undefined);
               
-              // Get members who haven't played
-              const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
-              
-              console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
-              console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
+              if (isDevelopment()) {
+                console.log(`Group ${group.groupName}: Sorted members:`, sortedMembers);
+                console.log(`Group ${group.groupName}: Not played members:`, notPlayedMembers);
+              }
               
               return (
                 <div key={group.groupId} className="rounded-md border p-3">

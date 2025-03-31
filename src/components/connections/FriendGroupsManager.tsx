@@ -36,6 +36,7 @@ import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
+import { isDevelopment } from '@/utils/environment';
 
 interface FriendGroupsManagerProps {
   currentPlayerId: string;
@@ -82,7 +83,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   // Ensure we fetch the latest groups and invitations when the modal opens
   useEffect(() => {
     if (open) {
-      console.log('Groups manager opened, fetching invitations and groups');
+      if (isDevelopment()) {
+        console.log('Groups manager opened, fetching invitations and groups');
+      }
       
       // Clear cache before fetching
       queryClient.removeQueries({ queryKey: ['group-invitations'] });
@@ -117,7 +120,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const handleLeaveGroup = async (groupId: string) => {
     try {
       setIsProcessingLeave(true);
-      console.log('Initiating leave group process for group:', groupId);
+      if (isDevelopment()) {
+        console.log('Initiating leave group process for group:', groupId);
+      }
       
       // Close the dialog immediately
       setGroupToLeave(null);
@@ -130,7 +135,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
       
       // Manually refetch groups after a short delay to ensure database has updated
       setTimeout(() => {
-        console.log('Refetching groups after leaving');
+        if (isDevelopment()) {
+          console.log('Refetching groups after leaving');
+        }
         queryClient.removeQueries({ queryKey: ['friend-groups'] });
         refetchGroups();
         setIsProcessingLeave(false);
@@ -159,7 +166,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   // Handle accepting a group invitation
   const handleAcceptInvitation = async (invitationId: string) => {
     if (processingInvitation) {
-      console.log('Already processing an invitation, aborting');
+      if (isDevelopment()) {
+        console.log('Already processing an invitation, aborting');
+      }
       return;
     }
     
@@ -167,14 +176,18 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     toast.info('Processing invitation...');
     
     try {
-      console.log('Accepting invitation from groups manager:', invitationId);
+      if (isDevelopment()) {
+        console.log('Accepting invitation from groups manager:', invitationId);
+      }
       
       // Accept the invitation
       acceptInvitation(invitationId);
       
       // Immediately refetch data to update UI
       setTimeout(async () => {
-        console.log('Refreshing data after accepting invitation');
+        if (isDevelopment()) {
+          console.log('Refreshing data after accepting invitation');
+        }
         
         // Clear all related caches first
         queryClient.removeQueries({ queryKey: ['group-invitations'] });

@@ -12,6 +12,7 @@ import { FriendGroup } from '@/utils/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
+import { isDevelopment } from '@/utils/environment';
 
 interface GroupDropdownSelectorProps {
   selectedGroupId: string | null;
@@ -36,7 +37,9 @@ const GroupDropdownSelector = memo(({
   const componentId = useRef(`group-selector-${Math.random().toString(36).substr(2, 9)}`).current;
   
   // Log for debugging
-  console.log(`[GroupSelector:${componentId}] RENDER #${thisRenderCount} with selectedGroupId=${selectedGroupId}`);
+  if (isDevelopment()) {
+    console.log(`[GroupSelector:${componentId}] RENDER #${thisRenderCount} with selectedGroupId=${selectedGroupId}`);
+  }
   
   const isMobile = useIsMobile();
   
@@ -66,7 +69,9 @@ const GroupDropdownSelector = memo(({
   
   // Log state changes
   useEffect(() => {
-    console.log(`[GroupSelector:${componentId}] Selected group updated: ${selectedGroup?.name}`);
+    if (isDevelopment()) {
+      console.log(`[GroupSelector:${componentId}] Selected group updated: ${selectedGroup?.name}`);
+    }
   }, [selectedGroup, componentId]);
   
   const handleSelectGroup = (groupId: string) => {

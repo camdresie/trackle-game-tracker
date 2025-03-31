@@ -18,6 +18,7 @@ import { UserPlus, Search, X, Check, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { isDevelopment } from '@/utils/environment';
 
 interface AddFriendsToGroupModalProps {
   open: boolean;
@@ -50,7 +51,9 @@ const AddFriendsToGroupModal = ({
     if (open && user && group?.id) {
       const checkPendingInvites = async () => {
         try {
-          console.log(`Checking pending invites for group ${group.id}`);
+          if (isDevelopment()) {
+            console.log(`Checking pending invites for group ${group.id}`);
+          }
           const { data, error } = await supabase
             .from('friend_group_members')
             .select('friend_id, status')
@@ -62,7 +65,9 @@ const AddFriendsToGroupModal = ({
             return;
           }
           
-          console.log('Pending invites data:', data);
+          if (isDevelopment()) {
+            console.log('Pending invites data:', data);
+          }
           
           // Update pending invites state
           const pendingMap: Record<string, boolean> = {};
@@ -97,14 +102,18 @@ const AddFriendsToGroupModal = ({
   }, [open, user, group?.id, group?.pendingMembers]);
 
   const handleAddFriend = (friendId: string) => {
-    console.log(`INVITATION FLOW - User clicked to add friend ${friendId} to group ${group.id}`);
+    if (isDevelopment()) {
+      console.log(`INVITATION FLOW - User clicked to add friend ${friendId} to group ${group.id}`);
+    }
     
     // Set processing state for this friend
     setProcessingFriends(prev => ({ ...prev, [friendId]: true }));
     
     try {
       // Log before calling the provided callback
-      console.log(`INVITATION FLOW - About to call onAddFriend with friendId=${friendId}`);
+      if (isDevelopment()) {
+        console.log(`INVITATION FLOW - About to call onAddFriend with friendId=${friendId}`);
+      }
       
       // Call the provided callback to add the friend
       onAddFriend(friendId);
@@ -113,7 +122,9 @@ const AddFriendsToGroupModal = ({
       setPendingInvites(prev => ({ ...prev, [friendId]: true }));
       setInvitedFriends(prev => ({ ...prev, [friendId]: 'pending' }));
       
-      console.log(`INVITATION FLOW - Invitation sent successfully to friendId=${friendId}`);
+      if (isDevelopment()) {
+        console.log(`INVITATION FLOW - Invitation sent successfully to friendId=${friendId}`);
+      }
     } catch (error) {
       console.error("INVITATION FLOW - Error adding friend to group:", error);
     }
