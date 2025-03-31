@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Plus, UsersRound } from 'lucide-react';
 import { Game } from '@/utils/types';
@@ -33,7 +32,7 @@ const HomeHeader = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
       <div>
         <div className="mb-1">
-          {/* Logo removed from HomeHeader as requested */}
+          <h1 className="text-3xl font-bold tracking-tight">Game Tracker</h1>
         </div>
         <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
       </div>
