@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useFriendsList } from '@/hooks/useFriendsList';
@@ -9,16 +9,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MessagesPanel from '@/components/messages/MessagesPanel';
 import ConnectionsModal from '@/components/ConnectionsModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
-import { MessageCircle, RotateCw, UsersRound } from 'lucide-react';
+import { MessageCircle, RotateCw, UsersRound, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import GroupDropdownSelector from '@/components/messages/GroupDropdownSelector';
+import { useLocation, useSearchParams } from 'react-router-dom';
+
+// Track render count to identify potential infinite loops
+let renderCount = 0;
 
 const Messages = () => {
+  // Increment render count for debugging
+  const thisRenderCount = ++renderCount;
+  const componentId = useRef(`messages-page-${Math.random().toString(36).substr(2, 9)}`).current;
+  
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const { friends, refreshFriends } = useFriendsList();
+  
+  // All relevant state in one place
+  const [appState, setAppState] = useState({
+    selectedGroupId: searchParams.get('groupId'),
+    selectedGroupName: searchParams.get('groupName') || '',
+    isLoadingFriends: true,
+    invitationsInitialized: false,
+    acceptedInvitation: false,
+    processingInvitation: false,
+    connectionsModalOpen: false,
+    isRefreshing: false
+  });
+  
+  // Simplify state updates with a single function
+  const updateAppState = useCallback((updates: Partial<typeof appState>) => {
+    setAppState(prev => ({
+      ...prev,
+      ...updates
+    }));
+  }, []);
+  
+  // Get groups from custom hook
   const { 
     friendGroups,
     isLoading: isGroupsLoading, 
@@ -34,74 +65,82 @@ const Messages = () => {
     refetch: refetchInvitations,
   } = useGroupInvitations();
   
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [selectedGroupName, setSelectedGroupName] = useState<string>('');
-  const [isLoadingFriends, setIsLoadingFriends] = useState(true);
-  const [invitationsInitialized, setInvitationsInitialized] = useState(false);
-  const [acceptedInvitation, setAcceptedInvitation] = useState(false);
-  const [processingInvitation, setProcessingInvitation] = useState(false);
-  const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Handle friends loading state - use a ref to prevent unnecessary re-renders
+  const friendsProcessedRef = useRef(false);
   
-  // Handle friends loading state
   useEffect(() => {
-    if (friends) {
-      setIsLoadingFriends(false);
+    if (friends && !friendsProcessedRef.current) {
+      updateAppState({ isLoadingFriends: false });
+      friendsProcessedRef.current = true;
     }
-  }, [friends]);
+  }, [friends, updateAppState]);
 
-  // Ensure we fetch the latest groups and invitations when the component mounts
+  // Simplify group selection changes using a callback that won't change
+  const handleGroupSelection = useCallback((groupId: string, groupName: string) => {
+    updateAppState({ 
+      selectedGroupId: groupId,
+      selectedGroupName: groupName
+    });
+  }, [updateAppState]);
+
+  // Initial data load - only run ONCE when the component mounts
   useEffect(() => {
-    if (user) {
-      // Clear cache before fetching
-      queryClient.removeQueries({ queryKey: ['group-invitations'] });
-      queryClient.removeQueries({ queryKey: ['friend-groups'] });
-      
-      // Force a hard refresh of the data
-      Promise.all([
-        refetchGroups(),
-        refetchInvitations()
-      ]).catch(error => {
-        console.error('Error fetching initial data:', error);
+    if (!user) return;
+    
+    // Clear cache and fetch initial data
+    const initializeData = async () => {
+      try {
+        // Clear caches before fetching
+        queryClient.removeQueries({ queryKey: ['group-invitations'] });
+        queryClient.removeQueries({ queryKey: ['friend-groups'] });
+        
+        // Fetch data
+        const results = await Promise.all([
+          refetchGroups(),
+          refetchInvitations()
+        ]);
+        
+        // Mark invitations as initialized after a short delay
+        setTimeout(() => {
+          updateAppState({ invitationsInitialized: true });
+        }, 500);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    
+    initializeData();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Only re-run if user ID changes
+
+  // Set initial group only once when groups become available
+  const groupsProcessedRef = useRef(false);
+  
+  useEffect(() => {
+    // Skip if we've already processed groups or if there are no groups
+    if (groupsProcessedRef.current || !friendGroups || friendGroups.length === 0) return;
+    
+    // Use URL group if specified, otherwise use first group
+    const initialGroupId = appState.selectedGroupId || friendGroups[0].id;
+    const initialGroup = friendGroups.find(g => g.id === initialGroupId) || friendGroups[0];
+    
+    if (initialGroup) {
+      updateAppState({
+        selectedGroupId: initialGroup.id,
+        selectedGroupName: initialGroup.name,
+        acceptedInvitation: false
       });
       
-      // Mark invitations as initialized after the first load
-      setTimeout(() => {
-        setInvitationsInitialized(true);
-      }, 500);
+      groupsProcessedRef.current = true;
     }
-  }, [user, refetchGroups, refetchInvitations, queryClient]);
-
-  // Auto-select the first group when groups are loaded or when groups change
-  useEffect(() => {
-    if (friendGroups && friendGroups.length > 0) {
-      // Only auto-select if no group is selected or after accepting an invitation
-      if (!selectedGroupId || acceptedInvitation) {
-        setSelectedGroupId(friendGroups[0].id);
-        setSelectedGroupName(friendGroups[0].name);
-        setAcceptedInvitation(false); // Reset the flag
-      } else if (selectedGroupId) {
-        // Check if the selected group still exists in the updated friendGroups
-        const stillExists = friendGroups.some(group => group.id === selectedGroupId);
-        if (!stillExists && friendGroups.length > 0) {
-          setSelectedGroupId(friendGroups[0].id);
-          setSelectedGroupName(friendGroups[0].name);
-        }
-      }
-    } else if (friendGroups && friendGroups.length === 0) {
-      // Reset selected group if there are no longer any groups
-      setSelectedGroupId(null);
-      setSelectedGroupName('');
-    }
-  }, [friendGroups, selectedGroupId, acceptedInvitation]);
+  }, [friendGroups, appState.selectedGroupId, updateAppState]);
 
   // Handle accepting a group invitation
   const handleAcceptInvitation = async (invitationId: string) => {
-    if (processingInvitation) {
-      return;
-    }
+    if (appState.processingInvitation) return;
     
-    setProcessingInvitation(true);
+    updateAppState({ processingInvitation: true });
     toast.info('Processing invitation...');
     
     try {
@@ -109,77 +148,115 @@ const Messages = () => {
       acceptInvitation(invitationId);
       
       // Set flag to trigger group selection update
-      setAcceptedInvitation(true);
+      updateAppState({ acceptedInvitation: true });
       
       // Immediately refetch data to update UI
       setTimeout(async () => {
-        // Clear all related caches first
-        queryClient.removeQueries({ queryKey: ['group-invitations'] });
-        queryClient.removeQueries({ queryKey: ['friend-groups'] });
-        
-        // Use more targeted invalidations for social data
-        queryClient.invalidateQueries({ 
-          queryKey: ['social-data'],
-          refetchType: 'all'
-        });
-        
-        // Then refetch everything with fresh data
-        await Promise.all([
-          refetchGroups(),
-          refetchInvitations()
-        ]);
-        
-        setProcessingInvitation(false);
-      }, 8000); // Increased timeout to ensure database operations complete
+        try {
+          // Clear caches and refetch
+          queryClient.removeQueries({ queryKey: ['group-invitations'] });
+          queryClient.removeQueries({ queryKey: ['friend-groups'] });
+          queryClient.invalidateQueries({ 
+            queryKey: ['social-data'],
+            refetchType: 'all'
+          });
+          
+          await Promise.all([
+            refetchGroups(),
+            refetchInvitations()
+          ]);
+          
+          // Reset group selection to first available group
+          groupsProcessedRef.current = false;
+          
+          updateAppState({ processingInvitation: false });
+        } catch (error) {
+          console.error('Error refreshing after invitation:', error);
+          updateAppState({ processingInvitation: false });
+        }
+      }, 8000);
     } catch (error) {
-      console.error('Error handling invitation accept:', error);
+      console.error('Error accepting invitation:', error);
       toast.error('Failed to process invitation');
-      setProcessingInvitation(false);
+      updateAppState({ processingInvitation: false });
     }
   };
 
-  // Handle manual refresh - more aggressive version
+  // Handle manual refresh
   const handleManualRefresh = async () => {
-    setIsRefreshing(true);
+    updateAppState({ isRefreshing: true });
     toast.info('Refreshing invitations and groups...');
     
-    // Clear caches more aggressively
-    queryClient.removeQueries({ queryKey: ['social-data'] });
-    
     try {
-      // Force a refresh of the friends list first
+      // Clear caches
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      
+      // Refresh data
       await refreshFriends();
       
-      // Then fetch invitations and groups
       await Promise.all([
         refetchInvitations(),
         refetchGroups()
       ]);
       
-      // Reset any selected group if there's an issue
-      if (friendGroups && friendGroups.length > 0) {
-        const stillExists = friendGroups.some(group => group.id === selectedGroupId);
-        if (!stillExists) {
-          setSelectedGroupId(friendGroups[0].id);
-        }
-      } else {
-        setSelectedGroupId(null);
-      }
+      // Reset group processing flag to ensure we select a valid group
+      groupsProcessedRef.current = false;
       
       toast.success('Refreshed successfully');
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      console.error('Error refreshing:', error);
       toast.error('Failed to refresh data');
     } finally {
-      setIsRefreshing(false);
+      updateAppState({ isRefreshing: false });
     }
   };
 
-  // Handle group selection
-  const handleGroupSelection = (groupId: string, groupName: string) => {
-    setSelectedGroupId(groupId);
-    setSelectedGroupName(groupName);
-  };
+  // Memoize the MessagesPanel component to prevent unnecessary rerenders
+  const messagesPanelComponent = useMemo(() => {
+    if (!appState.selectedGroupId) return null;
+    
+    const isJoinedGroup = !!friendGroups?.find(g => g.id === appState.selectedGroupId)?.isJoinedGroup;
+    
+    return (
+      <MessagesPanel
+        key={`msg-panel-${appState.selectedGroupId}`} // Key based on group ID to remount on group change
+        groupId={appState.selectedGroupId}
+        groupName={appState.selectedGroupName}
+        isJoinedGroup={isJoinedGroup}
+        className="h-[calc(100vh-280px)] min-h-[400px]"
+      />
+    );
+  }, [appState.selectedGroupId, appState.selectedGroupName, friendGroups]);
+
+  // Memoize the empty state panel
+  const emptyStatePanel = useMemo(() => (
+    <Card className="border border-dashed bg-card/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UsersRound className="h-5 w-5 text-muted-foreground" />
+          No Groups Found
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center pb-6">
+        <div className="text-center mb-6">
+          <p className="text-muted-foreground mb-2">
+            You don't have any friend groups yet. Create a friend group to start messaging.
+          </p>
+          <p className="text-sm text-muted-foreground/80">
+            Friend groups allow you to chat and compete with specific sets of friends.
+          </p>
+        </div>
+        
+        <Button 
+          onClick={() => updateAppState({ connectionsModalOpen: true })}
+          className="flex items-center gap-2"
+        >
+          <UsersRound className="h-4 w-4" />
+          <span>Manage Friends & Groups</span>
+        </Button>
+      </CardContent>
+    </Card>
+  ), [updateAppState]);
 
   return (
     <div className="min-h-screen pb-6">
@@ -197,23 +274,25 @@ const Messages = () => {
             </p>
           </div>
           
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleManualRefresh}
-            className="flex items-center gap-1"
-            disabled={isRefreshing}
-          >
-            <RotateCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </Button>
+          <div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={handleManualRefresh}
+              className="flex items-center gap-1"
+              disabled={appState.isRefreshing}
+            >
+              <RotateCw className={`h-4 w-4 ${appState.isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{appState.isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Group Invitations - Only show if invitations have been initialized and there are invitations */}
-        {invitationsInitialized && invitations && invitations.length > 0 && (
+        {/* Group Invitations */}
+        {appState.invitationsInitialized && invitations && invitations.length > 0 && (
           <GroupInvitationsList 
             invitations={invitations}
-            isLoading={isLoadingInvitations || processingInvitation}
+            isLoading={isLoadingInvitations || appState.processingInvitation}
             onAccept={handleAcceptInvitation}
             onDecline={declineInvitation}
           />
@@ -226,13 +305,13 @@ const Messages = () => {
           </label>
           {friendGroups && friendGroups.length > 0 ? (
             <GroupDropdownSelector
-              selectedGroupId={selectedGroupId}
+              selectedGroupId={appState.selectedGroupId}
               groups={friendGroups}
               onSelectGroup={handleGroupSelection}
               className="w-full"
               label="Select Message Group"
             />
-          ) : (isGroupsLoading || isLoadingFriends || isRefreshing) ? (
+          ) : (isGroupsLoading || appState.isLoadingFriends || appState.isRefreshing) ? (
             <div className="flex items-center justify-center h-12 border rounded-md bg-muted/20">
               <p className="text-muted-foreground">Loading your groups...</p>
             </div>
@@ -243,49 +322,15 @@ const Messages = () => {
           )}
         </div>
 
-        {/* Messages Panel */}
-        {selectedGroupId ? (
-          <MessagesPanel 
-            groupId={selectedGroupId} 
-            groupName={selectedGroupName}
-            isJoinedGroup={friendGroups?.find(g => g.id === selectedGroupId)?.isJoinedGroup}
-            className="h-[700px]"
-          />
-        ) : (
-          <Card className="border border-dashed bg-card/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UsersRound className="h-5 w-5 text-muted-foreground" />
-                No Groups Found
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center pb-6">
-              <div className="text-center mb-6">
-                <p className="text-muted-foreground mb-2">
-                  You don't have any friend groups yet. Create a friend group to start messaging.
-                </p>
-                <p className="text-sm text-muted-foreground/80">
-                  Friend groups allow you to chat and compete with specific sets of friends.
-                </p>
-              </div>
-              
-              <Button 
-                onClick={() => setConnectionsModalOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <UsersRound className="h-4 w-4" />
-                <span>Manage Friends & Groups</span>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        {/* MessagesPanel or Empty State */}
+        {appState.selectedGroupId ? messagesPanelComponent : emptyStatePanel}
       </div>
       
       {/* Connections Modal for managing friends and groups */}
       {user && (
         <ConnectionsModal
-          open={connectionsModalOpen}
-          onOpenChange={setConnectionsModalOpen}
+          open={appState.connectionsModalOpen}
+          onOpenChange={(open) => updateAppState({ connectionsModalOpen: open })}
           currentPlayerId={user.id}
           onFriendRemoved={refreshFriends}
         />

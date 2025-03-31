@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/database.types';
 import { getEnvironment, getDatabaseEnvironment } from '@/utils/environment';
@@ -27,8 +26,38 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  // Configure realtime with minimal settings to avoid WebSocket issues
+  realtime: {
+    // We just use minimal settings rather than trying to explicitly disable
+    timeout: 1000, // Very short timeout to avoid long connection attempts
+    params: {
+      eventsPerSecond: 1,
+    },
+  },
+  // Global error handler
+  global: {
+    fetch: (url: RequestInfo | URL, options?: RequestInit) => {
+      // You can add custom headers or logging here if needed
+      return fetch(url, options);
+    },
+    headers: {
+      'X-App-Environment': appEnv,
+    },
+  },
 });
+
+// Disable all realtime subscriptions immediately after client creation
+try {
+  // @ts-ignore - Access internal method to disable realtime completely
+  if (supabase?.realtime?.disconnect) {
+    // This will immediately disconnect any realtime connections
+    console.log('Explicitly disconnecting realtime connections');
+    supabase.realtime.disconnect();
+  }
+} catch (error) {
+  console.error('Error disabling realtime:', error);
+}
 
 // Create or ensure avatar bucket exists
 export const ensureAvatarBucketExists = async () => {

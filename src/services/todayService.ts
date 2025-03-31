@@ -57,7 +57,7 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
  * 
  * Optimized with caching to reduce database calls and memory usage
  */
-export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<Score[]> => {
+export const getTodaysGamesForAllUsers = async (gameId: string | null, forceRefresh = false): Promise<Score[]> => {
   try {
     // Skip query if no gameId is provided
     if (!gameId) return [];
@@ -68,9 +68,9 @@ export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<
     // Create a cache key based on gameId and date
     const cacheKey = `scores_${gameId}_${today}`;
     
-    // Check if we have valid cached data
+    // Check if we have valid cached data and aren't forcing a refresh
     const cachedData = scoreCache.get(cacheKey);
-    if (cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
+    if (!forceRefresh && cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
       console.log(`Using cached data for game ${gameId} (${cachedData.scores.length} scores)`);
       return cachedData.scores;
     }

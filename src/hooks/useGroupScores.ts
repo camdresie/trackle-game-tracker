@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendsList } from '@/hooks/useFriendsList';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
@@ -39,88 +39,87 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   const [allFriendsData, setAllFriendsData] = useState<AllFriendsPerformance | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   
-  // Debug friends list to see all connections
-  useEffect(() => {
-    console.log('useGroupScores - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
-  }, [friends]);
+  // Use ref to track if this is the first render
+  const isFirstRender = useRef(true);
+  const firstLoadDone = useRef(false);
+  
+  // Store previous values to compare and avoid unnecessary updates
+  const prevGameId = useRef<string | null>(null);
+  const prevAllTodaysScores = useRef<Score[]>([]);
+  
+  // Create a fetchAllTodaysScores ref to use in callbacks
+  const fetchAllTodaysScoresRef = useRef<(forceRefresh?: boolean) => Promise<void>>();
+  
+  // Memoize the gameId to avoid triggering effects unnecessarily
+  const memoizedGameId = useMemo(() => gameId, [gameId]);
+  
+  // Memoize friends and friendGroups to prevent unnecessary re-renders
+  const memoizedFriends = useMemo(() => friends, [friends.length]);
+  const memoizedFriendGroups = useMemo(() => friendGroups, [
+    friendGroups.length,
+    // Use a stable way to check for deep changes in friendGroups
+    JSON.stringify(friendGroups.map(g => g.id))
+  ]);
+  
+  // Memoize todaysScores to prevent unnecessary re-renders
+  const memoizedTodaysScores = useMemo(() => todaysScores, [
+    todaysScores.length,
+    // Use a stable way to check for deep changes in todaysScores
+    JSON.stringify(todaysScores.map(s => s.id))
+  ]);
   
   // Fetch all today's scores for the selected game with improved memory handling
   useEffect(() => {
+    // Skip the first render to prevent double-fetching
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    
+    // Skip if the gameId hasn't changed or is null
+    if (memoizedGameId === prevGameId.current && firstLoadDone.current) {
+      return;
+    }
+    
+    prevGameId.current = memoizedGameId;
+    
+    if (!memoizedGameId) {
+      setAllTodaysScores([]);
+      setIsLoading(false);
+      return;
+    }
+    
     // Create a flag to track if the component is still mounted
     let isMounted = true;
     const controller = new AbortController();
     
-    const fetchAllTodaysScores = async () => {
-      if (!gameId) {
-        if (isMounted) {
-          setAllTodaysScores([]);
-          setIsLoading(false);
-        }
-        return;
-      }
-      
+    const fetchAllTodaysScores = async (forceRefresh = false) => {
       // Throttle API calls to reduce memory usage - only fetch every 30 seconds
       const now = Date.now();
       const FETCH_THROTTLE = 30000; // 30 seconds
       
-      if (now - lastFetchTime < FETCH_THROTTLE && allTodaysScores.length > 0) {
-        console.log(`Skipping fetch - last fetch was ${Math.round((now - lastFetchTime) / 1000)}s ago`);
+      // Always fetch on first load, when gameId changes, or when force refresh is requested
+      if (!forceRefresh && now - lastFetchTime < FETCH_THROTTLE && allTodaysScores.length > 0 && firstLoadDone.current && memoizedGameId === prevGameId.current) {
         return;
       }
       
       try {
-        if (isMounted) setIsLoading(true);
-        console.log(`Fetching ALL today's scores for game ${gameId}`);
+        setIsLoading(true);
         
-        const scores = await getTodaysGamesForAllUsers(gameId);
+        const scores = await getTodaysGamesForAllUsers(memoizedGameId, forceRefresh);
+        
+        // Skip update if data is the same and not forcing a refresh
+        if (!forceRefresh && JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current && memoizedGameId === prevGameId.current) {
+          setIsLoading(false);
+          return;
+        }
         
         // Only update state if component is still mounted
         if (isMounted) {
-          console.log(`Got ${scores.length} today scores for all users`);
+          prevAllTodaysScores.current = scores;
           setAllTodaysScores(scores);
-          setLastFetchTime(Date.now());
-          
-          // Log the player IDs of the scores
-          if (scores.length > 0) {
-            const uniquePlayerIds = [...new Set(scores.map(s => s.playerId))];
-            console.log(`Scores from ${uniquePlayerIds.length} unique players:`, uniquePlayerIds);
-            
-            // Log friend IDs to compare
-            const friendIds = friends.map(f => f.id);
-            console.log(`Current friend IDs (${friendIds.length}):`, friendIds);
-            
-            // Check overlap
-            const friendScores = scores.filter(s => friendIds.includes(s.playerId));
-            console.log(`Found ${friendScores.length} scores from friends`);
-            
-            // Log scores that are from friends (limit the logging to avoid spamming the console)
-            const MAX_LOG_ENTRIES = 5;
-            if (friendScores.length > 0) {
-              console.log(`Showing first ${Math.min(MAX_LOG_ENTRIES, friendScores.length)} friend scores:`);
-              friendScores.slice(0, MAX_LOG_ENTRIES).forEach(score => {
-                const friend = friends.find(f => f.id === score.playerId);
-                console.log(`Friend score: ${friend?.name} (${score.playerId}), value: ${score.value}`);
-              });
-              
-              if (friendScores.length > MAX_LOG_ENTRIES) {
-                console.log(`... and ${friendScores.length - MAX_LOG_ENTRIES} more`);
-              }
-            }
-            
-            // Log scores that are not from friends
-            const nonFriendScores = scores.filter(s => !friendIds.includes(s.playerId) && s.playerId !== user?.id);
-            if (nonFriendScores.length > 0) {
-              console.log(`Found ${nonFriendScores.length} scores from non-friends`);
-              console.log(`Showing first ${Math.min(MAX_LOG_ENTRIES, nonFriendScores.length)} non-friend scores:`);
-              nonFriendScores.slice(0, MAX_LOG_ENTRIES).forEach(score => {
-                console.log(`Non-friend score: ${score.playerId}, value: ${score.value}`);
-              });
-              
-              if (nonFriendScores.length > MAX_LOG_ENTRIES) {
-                console.log(`... and ${nonFriendScores.length - MAX_LOG_ENTRIES} more`);
-              }
-            }
-          }
+          setLastFetchTime(now);
+          firstLoadDone.current = true;
         }
       } catch (error) {
         console.error('Error fetching all today\'s scores:', error);
@@ -128,6 +127,9 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         if (isMounted) setIsLoading(false);
       }
     };
+
+    // Store the fetch function in the ref so it can be used in handleRefreshFriends
+    fetchAllTodaysScoresRef.current = fetchAllTodaysScores;
     
     fetchAllTodaysScores();
     
@@ -136,31 +138,32 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       isMounted = false;
       controller.abort();
     };
-  }, [gameId, friends, user?.id, lastFetchTime, allTodaysScores.length]);
+  }, [memoizedGameId, lastFetchTime]); // Keep minimal dependencies
   
-  // Memoize processing of friend data to reduce unnecessary recalculations
+  // Process friend data when related data changes
   const processedFriendData = useMemo(() => {
-    if (!user || !gameId || !allTodaysScores.length) {
+    if (!user || !memoizedGameId || !allTodaysScores.length) {
       return null;
     }
     
     try {
       // Get today's score for the current user from their own scores
-      const userTodayScore = todaysScores.find(score => 
-        score.gameId === gameId && score.playerId === user.id
+      const userTodayScore = memoizedTodaysScores.find(score => 
+        score.gameId === memoizedGameId && score.playerId === user.id
       );
       
       const userHasPlayed = !!userTodayScore;
       const userScore = userHasPlayed ? userTodayScore.value : null;
       
       // Process all friends' performance data regardless of group membership
-      const allFriendsMembers: GroupMemberPerformance[] = friends.map(friend => {
+      const allFriendsMembers: GroupMemberPerformance[] = memoizedFriends.map(friend => {
         // Look for each friend's score in allTodaysScores
         const friendScore = allTodaysScores.find(score => 
-          score.playerId === friend.id && score.gameId === gameId
+          score.playerId === friend.id && score.gameId === memoizedGameId
         );
         
         const hasPlayed = !!friendScore;
+        // Only set score if hasPlayed is true, otherwise null
         const score = hasPlayed ? friendScore.value : null;
         
         return {
@@ -180,132 +183,121 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       console.error('Error processing friend data:', error);
       return null;
     }
-  }, [user, gameId, allTodaysScores, todaysScores, friends]);
+  }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriends]);
   
-  // Update all friends data when processed data changes
+  // Update all friends data only when processed data actually changes
   useEffect(() => {
-    if (processedFriendData) {
+    if (processedFriendData && JSON.stringify(processedFriendData) !== JSON.stringify(allFriendsData)) {
       setAllFriendsData(processedFriendData);
     }
   }, [processedFriendData]);
   
   // Process group data more efficiently
   useEffect(() => {
-    // Create a flag to track if the component is still mounted
-    let isMounted = true;
+    if (!user || !memoizedGameId) {
+      setGroupPerformanceData([]);
+      setIsLoading(false);
+      return;
+    }
     
-    const processGroupData = () => {
-      if (!user || !gameId) {
-        if (isMounted) {
-          setGroupPerformanceData([]);
-          setIsLoading(false);
-        }
+    try {
+      // Get today's score for the current user from their own scores
+      const userTodayScore = memoizedTodaysScores.find(score => 
+        score.gameId === memoizedGameId && score.playerId === user.id
+      );
+      
+      const userHasPlayed = !!userTodayScore;
+      const userScore = userHasPlayed ? userTodayScore.value : null;
+      
+      // Even if the user has no groups/friends, we should return an empty array
+      // but with the current user's data for the "All Friends" view
+      if (memoizedFriendGroups.length === 0) {
+        // If no groups exist, still include user data
+        setGroupPerformanceData([{
+          groupId: 'default',
+          groupName: 'All Friends',
+          currentUserHasPlayed: userHasPlayed,
+          currentUserScore: userScore,
+          members: [] // No friends yet
+        }]);
+        setIsLoading(false);
         return;
       }
       
-      try {
-        console.log(`Processing group data with ${allTodaysScores.length} today scores`);
-        
-        // Get today's score for the current user from their own scores
-        const userTodayScore = todaysScores.find(score => 
-          score.gameId === gameId && score.playerId === user.id
-        );
-        
-        const userHasPlayed = !!userTodayScore;
-        const userScore = userHasPlayed ? userTodayScore.value : null;
-        console.log(`Current user has played: ${userHasPlayed}, score: ${userScore}`);
-        
-        // Even if the user has no groups/friends, we should return an empty array
-        // but with the current user's data for the "All Friends" view
-        if (friendGroups.length === 0) {
-          // If no groups exist, still include user data
-          if (isMounted) {
-            setGroupPerformanceData([{
-              groupId: 'default',
-              groupName: 'All Friends',
-              currentUserHasPlayed: userHasPlayed,
-              currentUserScore: userScore,
-              members: [] // No friends yet
-            }]);
-            setIsLoading(false);
-          }
-          return;
-        }
-        
-        // Process friend groups
-        const processedGroups = friendGroups.map(group => {
-          // Get today's scores for each member of the group
-          const members = group.members?.map(member => {
-            // Look in allTodaysScores for this friend's score
-            const memberTodayScore = allTodaysScores.find(score =>
-              score.gameId === gameId && score.playerId === member.id
-            );
-            
-            const hasPlayed = !!memberTodayScore;
-            const score = hasPlayed ? memberTodayScore.value : null;
-            
-            return {
-              playerId: member.id,
-              playerName: member.name,
-              hasPlayed: hasPlayed,
-              score: score
-            };
-          }) || [];
+      // Process friend groups
+      const processedGroups = memoizedFriendGroups.map(group => {
+        // Get today's scores for each member of the group
+        const members = group.members?.map(member => {
+          // Look in allTodaysScores for this friend's score
+          const memberTodayScore = allTodaysScores.find(score =>
+            score.gameId === memoizedGameId && score.playerId === member.id
+          );
+          
+          const hasPlayed = !!memberTodayScore;
+          // Only set score if hasPlayed is true, otherwise null
+          const score = hasPlayed ? memberTodayScore.value : null;
           
           return {
-            groupId: group.id,
-            groupName: group.name,
-            currentUserHasPlayed: userHasPlayed,
-            currentUserScore: userScore,
-            members: members
+            playerId: member.id,
+            playerName: member.name,
+            hasPlayed: hasPlayed,
+            score: score
           };
-        });
+        }) || [];
         
-        if (isMounted) {
-          setGroupPerformanceData(processedGroups);
-        }
-      } catch (error) {
-        console.error('Error processing group performance data:', error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    processGroupData();
-    
-    // Return cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, [user, gameId, todaysScores, friends, friendGroups, allTodaysScores]);
-  
-  // Define the refresh function
-  const handleRefreshFriends = async () => {
-    try {
-      setIsLoading(true);
-      // Force a new fetch by updating the last fetch time
-      setLastFetchTime(0);
+        return {
+          groupId: group.id,
+          groupName: group.name,
+          currentUserHasPlayed: userHasPlayed,
+          currentUserScore: userScore,
+          members: members
+        };
+      });
       
-      // Then call the normal refresh function
-      if (refreshFriends) {
-        await refreshFriends();
+      // Only update state if the data has actually changed
+      setGroupPerformanceData(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(processedGroups)) {
+          return processedGroups;
+        }
+        return prev;
+      });
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error processing group data:', error);
+      setIsLoading(false);
+    }
+  }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriendGroups]);
+  
+  const handleRefreshFriends = useCallback(async () => {
+    try {
+      await refreshFriends();
+      
+      // Force a re-fetch of today's scores with forceRefresh=true
+      if (fetchAllTodaysScoresRef.current) {
+        await fetchAllTodaysScoresRef.current(true);
       }
+      
+      // Also reset the firstLoadDone flag to force a fresh load
+      firstLoadDone.current = false;
       
       return true;
     } catch (error) {
-      console.error('Error refreshing friends data:', error);
+      console.error('Error refreshing friends:', error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [refreshFriends]);
   
-  return { 
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(() => ({ 
     isLoading, 
     groupPerformanceData, 
-    allFriendsData, 
+    allFriendsData,
     refreshFriends: handleRefreshFriends 
-  };
+  }), [
+    isLoading, 
+    groupPerformanceData, 
+    allFriendsData,
+    handleRefreshFriends
+  ]);
 };

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useRef } from 'react';
 import { ChevronDown, UsersRound } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -13,41 +12,67 @@ import { FriendGroup } from '@/utils/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
+import { isDevelopment } from '@/utils/environment';
 
 interface GroupDropdownSelectorProps {
-  selectedGroupId: string;
+  selectedGroupId: string | null;
   onSelectGroup: (groupId: string, groupName: string) => void;
   className?: string;
   groups?: FriendGroup[]; // Make groups optional to support both usage patterns
   label?: string;
 }
 
-const GroupDropdownSelector = ({ 
+// Debug counter
+let renderCount = 0;
+
+// Wrap in memo to prevent unnecessary rerenders
+const GroupDropdownSelector = memo(({ 
   selectedGroupId, 
   onSelectGroup,
   className = '',
   groups: externalGroups, // Rename to avoid conflicts
   label = "Select Group"
 }: GroupDropdownSelectorProps) => {
+  const thisRenderCount = ++renderCount;
+  const componentId = useRef(`group-selector-${Math.random().toString(36).substr(2, 9)}`).current;
+  
+  // Log for debugging
+  if (isDevelopment()) {
+    console.log(`[GroupSelector:${componentId}] RENDER #${thisRenderCount} with selectedGroupId=${selectedGroupId}`);
+  }
+  
   const isMobile = useIsMobile();
   
-  // Pass an empty array to useFriendGroups as required by the hook
-  const { friendGroups: internalGroups } = useFriendGroups([]);
+  // Don't use internal groups here - only use if externally provided
+  // This was causing a double data fetch that might contribute to re-render cycles
+  // const { friendGroups: internalGroups } = useFriendGroups([]);
   
   const [selectedGroup, setSelectedGroup] = useState<FriendGroup | null>(null);
   
-  // Use externally provided groups if available, otherwise use internal groups from hook
-  const groups = externalGroups || internalGroups;
+  // Use externally provided groups
+  const groups = externalGroups || [];
   
   // Find the current group object
   useEffect(() => {
-    if (groups && selectedGroupId) {
-      const group = groups.find(g => g.id === selectedGroupId);
-      setSelectedGroup(group || null);
+    if (!groups || !selectedGroupId) {
+      setSelectedGroup(null);
+      return;
+    }
+    
+    const group = groups.find(g => g.id === selectedGroupId);
+    if (group) {
+      setSelectedGroup(group);
     } else {
       setSelectedGroup(null);
     }
   }, [selectedGroupId, groups]);
+  
+  // Log state changes
+  useEffect(() => {
+    if (isDevelopment()) {
+      console.log(`[GroupSelector:${componentId}] Selected group updated: ${selectedGroup?.name}`);
+    }
+  }, [selectedGroup, componentId]);
   
   const handleSelectGroup = (groupId: string) => {
     const group = groups?.find(g => g.id === groupId);
@@ -118,6 +143,16 @@ const GroupDropdownSelector = ({
       </DropdownMenu>
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Return true if props are equal and component should NOT re-render
+  const sameSelectedId = prevProps.selectedGroupId === nextProps.selectedGroupId;
+  const sameGroups = prevProps.groups?.length === nextProps.groups?.length && 
+    prevProps.groups?.every((g, i) => nextProps.groups?.[i]?.id === g.id);
+  
+  return sameSelectedId && sameGroups;
+});
+
+// Add display name for debugging
+GroupDropdownSelector.displayName = 'GroupDropdownSelector';
 
 export default GroupDropdownSelector;

@@ -3,7 +3,7 @@ import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
 
 /**
- * Transforms game stats and scores data into leaderboard players format
+ * Transforms game stats and scores data into leaderboard players format with performance optimizations
  */
 export const processLeaderboardData = (
   gameStatsData: GameStatsWithProfile[] | undefined,
@@ -13,6 +13,7 @@ export const processLeaderboardData = (
   userId: string | undefined,
   profilesData: any[] | undefined
 ): LeaderboardPlayer[] => {
+  console.time('processLeaderboardData');
   if (!profilesData) return [];
   
   // Get today's date in Eastern Time for filtering
@@ -21,9 +22,10 @@ export const processLeaderboardData = (
   // Initialize user stats map
   const userStatsMap = new Map<string, LeaderboardPlayer>();
   
-  // First, add all users from profiles data
+  // First, add all users from profiles data - only include essential fields
   if (profilesData && profilesData.length > 0) {
-    profilesData.forEach(profile => {
+    for (let i = 0; i < profilesData.length; i++) {
+      const profile = profilesData[i];
       if (!userStatsMap.has(profile.id)) {
         userStatsMap.set(profile.id, {
           player_id: profile.id,
@@ -38,27 +40,32 @@ export const processLeaderboardData = (
           latest_play: null
         });
       }
-    });
+    }
   }
   
-  // Filter scores for the current game if a specific game is selected
+  // Filter scores for the current game if a specific game is selected - do this early to reduce processing
   const gameScores = scoresData && selectedGame && selectedGame !== 'all' ? 
     scoresData.filter(score => score.game_id === selectedGame) : 
     scoresData || [];
   
-  // Count and log today's scores using the isToday flag
-  const todayScores = gameScores.filter(score => score.isToday);
+  // Optimization: Early exit if no scores
+  if (gameScores.length === 0) {
+    console.timeEnd('processLeaderboardData');
+    return Array.from(userStatsMap.values());
+  }
   
   // Process all unique scores for each user by deduplicating dates
   const userUniqueScores = new Map<string, Map<string, any>>();
   
-  // First, sort scores by created_at date (newest first)
-  const sortedScores = [...gameScores].sort((a, b) => 
+  // First, sort scores by created_at date (newest first) - sort in place to avoid copying
+  const sortedScores = gameScores.slice(0);
+  sortedScores.sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   
   // Group scores by user and date, keeping only the newest for each day
-  sortedScores.forEach(score => {
+  for (let i = 0; i < sortedScores.length; i++) {
+    const score = sortedScores[i];
     const userId = score.user_id;
     const date = score.date;
     const dateKey = `${date}`;
@@ -74,7 +81,7 @@ export const processLeaderboardData = (
     if (!userScoresMap.has(dateKey)) {
       userScoresMap.set(dateKey, score);
     }
-  });
+  }
   
   // Process each user's unique scores
   userUniqueScores.forEach((datesMap, userId) => {
@@ -114,6 +121,7 @@ export const processLeaderboardData = (
     let latestPlay = null;
     let bestScore = 0;
     
+    // Process scores using for...of instead of creating additional arrays
     for (const score of datesMap.values()) {
       totalScore += score.value;
       
@@ -148,12 +156,13 @@ export const processLeaderboardData = (
   
   // Make sure game stats entries are also represented
   if (gameStatsData && gameStatsData.length > 0) {
-    gameStatsData.forEach(stat => {
+    for (let i = 0; i < gameStatsData.length; i++) {
+      const stat = gameStatsData[i];
       const userId = stat.user_id;
       
       // Skip if user already has processed scores
       if (userUniqueScores.has(userId)) {
-        return;
+        continue;
       }
       
       // Otherwise create or update entry from game stats
@@ -182,11 +191,12 @@ export const processLeaderboardData = (
           userStats.total_score = stat.average_score * stat.total_plays;
         }
       }
-    });
+    }
   }
   
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
+  console.timeEnd('processLeaderboardData');
   return leaderboardPlayers;
 };

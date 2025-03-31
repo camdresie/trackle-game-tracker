@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, User, Home, Menu, X, LogOut, Calendar, MessageCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,13 +7,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
-const NavBar = () => {
+// Memoize the NavBar component to prevent unnecessary re-renders
+const NavBar = memo(() => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isMobile = useIsMobile();
   const { user, profile, signOut } = useAuth();
   
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  // Memoize handlers
+  const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+  }, [signOut]);
   
   const navItems = [
     { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> },
@@ -23,11 +28,7 @@ const NavBar = () => {
     { name: 'Leaderboard', path: '/leaderboard', icon: <BarChart3 className="w-5 h-5" /> },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
+  const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
   // If screen is mobile, use a hamburger menu
   if (isMobile) {
@@ -57,7 +58,7 @@ const NavBar = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={closeMenu}
                   className={cn(
                     "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors mb-1",
                     isActive(item.path) 
@@ -72,7 +73,7 @@ const NavBar = () => {
               
               <Link
                 to="/profile"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={closeMenu}
                 className={cn(
                   "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors mb-1",
                   isActive('/profile') 
@@ -86,7 +87,7 @@ const NavBar = () => {
               
               <Link
                 to="/contact"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={closeMenu}
                 className={cn(
                   "flex items-center gap-3 py-3 px-4 rounded-lg transition-colors mb-1",
                   isActive('/contact') 
@@ -148,7 +149,7 @@ const NavBar = () => {
               <Button variant="ghost" size="sm" className="p-2">
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center overflow-hidden">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt={profile.username || user?.email} className="w-full h-full object-cover" />
+                    <img src={profile.avatar_url} alt={profile.username || user?.email || ''} className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-4 h-4 text-muted-foreground" />
                   )}
@@ -183,6 +184,6 @@ const NavBar = () => {
       </div>
     </div>
   );
-};
+});
 
 export default NavBar;

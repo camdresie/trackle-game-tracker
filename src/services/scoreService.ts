@@ -6,8 +6,6 @@ import { Score } from '@/utils/types';
  */
 export const getGameScores = async (gameId: string, userId: string): Promise<Score[]> => {
   try {
-    console.log(`[getGameScores] Fetching scores for game ${gameId} and user ${userId}`);
-    
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -19,8 +17,6 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
       console.error('[getGameScores] Error fetching scores:', error);
       throw error;
     }
-    
-    console.log(`[getGameScores] Found ${data?.length || 0} scores for game ${gameId} and user ${userId}`);
     
     // Process scores to deduplicate by date (keeping the most recent version)
     const uniqueScoresByDate = new Map();
@@ -41,8 +37,6 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
     // Convert map back to array
     const uniqueScores = Array.from(uniqueScoresByDate.values());
     
-    console.log(`[getGameScores] After deduplication: ${uniqueScores.length} unique scores`);
-    
     // Transform the data to match our Score type
     const scores = uniqueScores.map(score => ({
       id: score.id,
@@ -53,8 +47,6 @@ export const getGameScores = async (gameId: string, userId: string): Promise<Sco
       notes: score.notes || '',
       createdAt: score.created_at
     }));
-    
-    console.log(`[getGameScores] Successfully retrieved ${scores.length} scores:`, scores);
     
     return scores;
   } catch (error) {
@@ -72,8 +64,6 @@ export const checkExistingScore = async (
   date: string
 ): Promise<Score | null> => {
   try {
-    console.log(`[checkExistingScore] Checking for existing score: game=${gameId}, user=${userId}, date=${date}`);
-    
     // Query all scores for this game, user, and date ordered by creation time (newest first)
     const { data, error } = await supabase
       .from('scores')
@@ -90,13 +80,11 @@ export const checkExistingScore = async (
     }
     
     if (!data || data.length === 0) {
-      console.log(`[checkExistingScore] No existing score found`);
       return null;
     }
     
     // Take the most recently created score
     const latestScore = data[0];
-    console.log(`[checkExistingScore] Found existing score:`, latestScore);
     
     return {
       id: latestScore.id,
@@ -130,8 +118,6 @@ export const addGameScore = async (
   isUpdate: boolean = false
 ): Promise<{ stats: any; score: Score }> => {
   try {
-    console.log(`[addGameScore] ${isUpdate ? 'Updating' : 'Adding'} score:`, scoreData);
-    
     // First check if a score already exists for this date if not in update mode
     if (!isUpdate) {
       const existingScore = await checkExistingScore(
@@ -141,7 +127,6 @@ export const addGameScore = async (
       );
       
       if (existingScore) {
-        console.log('[addGameScore] Found existing score for this date, switching to update mode', existingScore);
         // Switch to update mode and use the existing score ID
         isUpdate = true;
         scoreData.id = existingScore.id;
@@ -152,13 +137,10 @@ export const addGameScore = async (
     
     if (isUpdate && scoreData.id) {
       // Update existing score
-      console.log('[addGameScore] Updating existing score with ID:', scoreData.id);
-      console.log('[addGameScore] Using user-provided value:', scoreData.value);
-      
       const { data, error } = await supabase
         .from('scores')
         .update({
-          value: scoreData.value, // Make sure we're using the user-provided value
+          value: scoreData.value,
           notes: scoreData.notes || null
           // Don't update date - users can only edit their score for the current day
         })
@@ -172,18 +154,14 @@ export const addGameScore = async (
       }
       
       result = data;
-      console.log('[addGameScore] Score updated successfully:', data);
     } else {
       // Insert new score
-      console.log('[addGameScore] Creating new score record');
-      console.log('[addGameScore] Using user-provided value:', scoreData.value);
-      
       const { data, error } = await supabase
         .from('scores')
         .insert({
           game_id: scoreData.gameId,
           user_id: scoreData.playerId,
-          value: scoreData.value, // Make sure we're using the user-provided value
+          value: scoreData.value,
           date: scoreData.date,
           notes: scoreData.notes || null
         })
@@ -196,7 +174,6 @@ export const addGameScore = async (
       }
       
       result = data;
-      console.log('[addGameScore] Score added successfully:', data);
     }
     
     // Update game stats for this game/user
@@ -204,7 +181,7 @@ export const addGameScore = async (
       .rpc('update_game_stats', {
         p_user_id: scoreData.playerId,
         p_game_id: scoreData.gameId,
-        p_score: scoreData.value, // Make sure we're passing the user-provided value
+        p_score: scoreData.value,
         p_date: scoreData.date
       });
       
@@ -212,8 +189,6 @@ export const addGameScore = async (
       console.error('[addGameScore] Error updating game stats:', statsError);
       // Continue despite stats error, the score was saved
     }
-    
-    console.log('[addGameScore] Game stats updated:', statsData);
     
     // Format the response
     const scoreObj: Score = {
@@ -241,8 +216,6 @@ export const addGameScore = async (
  */
 export const deleteGameScore = async (scoreId: string): Promise<boolean> => {
   try {
-    console.log(`[deleteGameScore] Deleting score with ID: ${scoreId}`);
-    
     // Get the score data before deleting (for stats update)
     const { data: scoreData, error: fetchError } = await supabase
       .from('scores')
@@ -255,7 +228,20 @@ export const deleteGameScore = async (scoreId: string): Promise<boolean> => {
       throw fetchError;
     }
     
-    // Delete the score record
+    // Get the latest scores to recalculate stats (excluding the one we're deleting)
+    const { data: latestScores, error: latestError } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('game_id', scoreData.game_id)
+      .eq('user_id', scoreData.user_id)
+      .neq('id', scoreId)
+      .order('date', { ascending: false });
+      
+    if (latestError) {
+      console.error('[deleteGameScore] Error fetching other scores:', latestError);
+    }
+    
+    // Now delete the score
     const { error: deleteError } = await supabase
       .from('scores')
       .delete()
@@ -266,28 +252,82 @@ export const deleteGameScore = async (scoreId: string): Promise<boolean> => {
       throw deleteError;
     }
     
-    console.log('[deleteGameScore] Score deleted successfully');
+    // Recalculate user stats for this game
+    const latestScore = latestScores && latestScores.length > 0 ? latestScores[0] : null;
     
-    // If score was deleted, update the game stats
-    // This will recalculate stats based on remaining scores
-    if (scoreData) {
-      const { error: statsError } = await supabase
-        .rpc('update_game_stats', {
-          p_user_id: scoreData.user_id,
-          p_game_id: scoreData.game_id,
-          p_score: 0, // The score value doesn't matter for recalculation
-          p_date: scoreData.date
-        });
-        
-      if (statsError) {
-        console.error('[deleteGameScore] Error updating game stats after deletion:', statsError);
-        // We still return true since the score was deleted successfully
-      }
+    const { error: statsError } = await supabase
+      .rpc('recalculate_user_game_stats', {
+        p_user_id: scoreData.user_id,
+        p_game_id: scoreData.game_id
+      });
+      
+    if (statsError) {
+      console.error('[deleteGameScore] Error recalculating game stats:', statsError);
+      // Still return true since the score was deleted
     }
     
     return true;
   } catch (error) {
     console.error('[deleteGameScore] Exception in deleteGameScore:', error);
-    throw error;
+    return false;
+  }
+};
+
+/**
+ * Get best score for a user and game
+ */
+export const getBestScore = async (gameId: string, userId: string): Promise<number | null> => {
+  try {
+    const { data, error } = await supabase
+      .rpc('get_best_score', {
+        p_game_id: gameId,
+        p_user_id: userId
+      });
+      
+    if (error) {
+      console.error('[getBestScore] Error getting best score:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('[getBestScore] Exception in getBestScore:', error);
+    return null;
+  }
+};
+
+// Get the latest score for a user and game
+export const getLatestScore = async (gameId: string, userId: string): Promise<Score | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('scores')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(1);
+      
+    if (error) {
+      console.error('[getLatestScore] Error getting latest score:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      return null;
+    }
+    
+    const score = data[0];
+    return {
+      id: score.id,
+      gameId: score.game_id,
+      playerId: score.user_id,
+      value: score.value,
+      date: score.date,
+      notes: score.notes || '',
+      createdAt: score.created_at
+    };
+  } catch (error) {
+    console.error('[getLatestScore] Exception in getLatestScore:', error);
+    return null;
   }
 };
