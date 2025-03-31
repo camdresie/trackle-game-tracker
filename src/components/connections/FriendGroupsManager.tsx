@@ -289,7 +289,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                         <MessageCircle className="mr-2 h-4 w-4" />
                         <span>Messages</span>
                       </DropdownMenuItem>
-                      {group.isJoinedGroup ? (
+                      {!group.isOwner && group.isJoinedGroup && (
                         <DropdownMenuItem 
                           onClick={() => setGroupToLeave(group.id)}
                           className="text-destructive focus:text-destructive"
@@ -297,7 +297,8 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                           <LogOut className="mr-2 h-4 w-4" />
                           <span>Leave Group</span>
                         </DropdownMenuItem>
-                      ) : (
+                      )}
+                      {group.isOwner && (
                         <>
                           <DropdownMenuItem onClick={() => handleEditGroup(group)}>
                             <Edit className="mr-2 h-4 w-4" />
@@ -332,7 +333,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                     </Badge>
                     
                     {/* Show pending invitations badge */}
-                    {!group.isJoinedGroup && group.pendingCount > 0 && (
+                    {group.isOwner && group.pendingCount > 0 && (
                       <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
                         <Clock className="mr-1 h-3 w-3" />
                         {group.pendingCount} Pending
@@ -364,7 +365,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                               <AvatarImage src={member.avatar} />
                               <AvatarFallback>{member.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
                             </Avatar>
-                            {!group.isJoinedGroup && (
+                            {group.isOwner && (
                               <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   variant="destructive"
@@ -387,7 +388,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                   </div>
                   
                   {/* Pending Invitations - only shown for groups you own */}
-                  {!group.isJoinedGroup && group.pendingMembers && group.pendingMembers.length > 0 && (
+                  {group.isOwner && group.pendingMembers && group.pendingMembers.length > 0 && (
                     <div>
                       <h4 className="text-sm font-medium mb-1 text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -417,7 +418,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                   )}
                 </div>
               </CardContent>
-              {!group.isJoinedGroup && (
+              {group.isOwner && (
                 <CardFooter>
                   <Button 
                     variant="outline" 
@@ -457,8 +458,8 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
           open={addFriendsModalOpen}
           onOpenChange={setAddFriendsModalOpen}
           group={currentGroup}
-          availableFriends={getFriendsNotInGroup(currentGroup.id)}
-          onAddFriend={(friendId) => addFriendToGroup({ groupId: currentGroup.id, friendId })}
+          availableFriends={getFriendsNotInGroup(currentGroup?.id)}
+          onAddFriend={(friendId) => addFriendToGroup({ groupId: currentGroup?.id, friendId })}
         />
       )}
 

@@ -1,4 +1,3 @@
-
 import { Database } from '@/types/database.types';
 
 // Game 
@@ -91,6 +90,7 @@ export interface FriendGroup {
   pendingMembers?: Player[];
   pendingCount?: number;
   isJoinedGroup?: boolean;
+  isOwner?: boolean;
   status?: 'pending' | 'accepted' | 'rejected' | 'left';
 }
 

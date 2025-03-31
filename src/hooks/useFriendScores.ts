@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Score } from '@/utils/types';
@@ -27,66 +26,43 @@ export const useFriendScores = ({
 }: UseFriendScoresProps): FriendScoresResult => {
   const { user } = useAuth();
   
-  // Create a stable array of friend IDs for query key
-  const friendIds = friends.map(f => f.id).sort().join(',');
-  
   // Use TanStack Query for better caching and fetch management
   const { data: friendScores = {}, isLoading, refetch } = useQuery({
-    queryKey: ['friend-scores', gameId, friendIds, includeCurrentUser],
+    queryKey: ['friend-scores', gameId, includeCurrentUser],
     queryFn: async () => {
       if (!gameId) {
         return {};
       }
       
-      // Get a list of all unique friend IDs
-      const friendsToFetch = [...new Set([...friends.map(f => f.id)])];
-      
-      // Add current user to friends list if includeCurrentUser is true
-      if (includeCurrentUser && user && !friendsToFetch.includes(user.id)) {
-        friendsToFetch.push(user.id);
-      }
-      
-      if (friendsToFetch.length === 0) {
-        console.log('No friends to fetch scores for.');
-        return {};
-      }
-      
-      console.log(`Fetching scores for game ${gameId} and ${friendsToFetch.length} friends:`, friendsToFetch);
-      
       try {
-        // Initialize empty scores for all friends
-        const newFriendScores: { [key: string]: Score[] } = {};
+        // Determine which friends to fetch scores for
+        const friendsToFetch = friends.filter(friend => includeCurrentUser || true);
         
-        // Initialize empty arrays for all friends
-        friendsToFetch.forEach(friendId => {
-          newFriendScores[friendId] = [];
-        });
+        if (friendsToFetch.length === 0 && !includeCurrentUser) {
+          return {};
+        }
         
-        // Fetch all scores in a single query
-        const { data: scoresData, error } = await supabase
+        // Format friends array for API call - we need an array of friend IDs
+        const friendIds = friendsToFetch.map(friend => friend.id);
+        
+        // Make the API call 
+        const { data: scoresData } = await supabase
           .from('scores')
           .select('*')
           .eq('game_id', gameId)
-          .in('user_id', friendsToFetch);
+          .in('user_id', friendIds);
           
-        if (error) {
-          console.error('Error fetching friend scores:', error);
-          toast.error("Failed to load friend scores");
-          return newFriendScores;
-        }
+        // Initialize result object
+        const newFriendScores: { [key: string]: Score[] } = {};
         
-        // Debug logs to help track what scores are being found
-        console.log(`Found ${scoresData?.length || 0} scores for ${friendsToFetch.length} friends`);
-        if (scoresData && scoresData.length > 0) {
-          const scoresByUser = {};
-          friendsToFetch.forEach(id => { scoresByUser[id] = 0; });
-          
-          scoresData.forEach(score => {
-            const userId = score.user_id;
-            scoresByUser[userId] = (scoresByUser[userId] || 0) + 1;
-          });
-          
-          console.log('Scores breakdown by user:', scoresByUser);
+        // Initialize with empty arrays for each friend
+        friendIds.forEach(friendId => {
+          newFriendScores[friendId] = [];
+        });
+        
+        // Include current user ID if needed
+        if (includeCurrentUser && user) {
+          newFriendScores[user.id] = [];
         }
         
         // Process all scores
@@ -135,7 +111,6 @@ export const useFriendScores = ({
   useEffect(() => {
     // If the friends list changes, automatically refetch data
     if (gameId && friends.length > 0) {
-      console.log('Friends list changed, refreshing scores data.');
       refetch();
     }
   }, [friends, gameId, refetch]);
@@ -143,7 +118,6 @@ export const useFriendScores = ({
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
     if (gameId) {
-      console.log('Manually refreshing friend scores.');
       await refetch();
     }
   }, [gameId, refetch]);

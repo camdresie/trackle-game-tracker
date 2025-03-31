@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { ChevronDown, GamepadIcon } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -9,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Game } from '@/utils/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GameDropdownSelectorProps {
   selectedGame: string;
@@ -18,7 +18,8 @@ interface GameDropdownSelectorProps {
   showOnDesktop?: boolean;
 }
 
-const GameDropdownSelector = ({ 
+// Memoize the component to prevent unnecessary re-renders
+const GameDropdownSelector = memo(({ 
   selectedGame, 
   games, 
   onSelectGame,
@@ -26,12 +27,14 @@ const GameDropdownSelector = ({
   showOnDesktop = false
 }: GameDropdownSelectorProps) => {
   // Find the current game object
-  const currentGame = games.find(game => game.id === selectedGame) || games[0];
+  const currentGame = useMemo(() => games.find(game => game.id === selectedGame) || games[0], [games, selectedGame]);
   
-  // If not showing on desktop, check if it's mobile
-  if (!showOnDesktop) {
-    const isMobile = window.innerWidth < 640; // sm breakpoint in Tailwind
-    if (!isMobile) return null;
+  // Use the useIsMobile hook instead of directly accessing window.innerWidth
+  const isMobile = useIsMobile();
+  
+  // If not showing on desktop and not on mobile, return null
+  if (!showOnDesktop && !isMobile) {
+    return null;
   }
   
   return (
@@ -66,6 +69,9 @@ const GameDropdownSelector = ({
       </DropdownMenu>
     </div>
   );
-};
+});
+
+// Display name for debugging
+GameDropdownSelector.displayName = 'GameDropdownSelector';
 
 export default GameDropdownSelector;

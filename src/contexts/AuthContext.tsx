@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast: uiToast } = useToast();
 
+  // Memoize the fetchProfile function to prevent unnecessary re-renders
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile details:', error);
+        // Don't throw error here, just set profile to null
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setProfile(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setProfile(null);
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,34 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile details:', error);
-        // Don't throw error here, just set profile to null
-        setProfile(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setProfile(data);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
-      setIsLoading(false);
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
+  // Memoize auth methods to prevent unnecessary re-renders
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
@@ -102,9 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       throw error;
     }
-  };
+  }, [uiToast]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string) => {
     try {
       // Sign up the user without a username in metadata
       const { data, error } = await supabase.auth.signUp({
@@ -146,9 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       throw error;
     }
-  };
+  }, [uiToast]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -159,9 +161,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     }
-  };
+  }, [uiToast]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
+  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     if (!user) return;
 
     try {
@@ -201,31 +203,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // Update existing profile
-      const { data, error } = await supabase
+      const { data: updatedProfile, error: updateError } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id)
         .select()
         .single();
-
-      if (error) {
-        console.error('Error updating profile from Supabase:', error);
+        
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
         toast.error('Failed to update profile');
-        throw error;
+        throw updateError;
       }
       
-      // Fix: Update the profile state with the complete data returned from the server
-      setProfile(data);
-
+      setProfile(updatedProfile);
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      console.error('Failed to update profile:', error);
-      toast.error('Failed to update profile');
+    } catch (error) {
+      console.error('Error in updateProfile:', error);
+      toast.error('An error occurred while updating profile');
       throw error;
     }
-  };
+  }, [user]);
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders of consuming components
+  const contextValue = useMemo(() => ({
     session,
     user,
     profile,
@@ -234,9 +235,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     updateProfile,
-  };
+  }), [session, user, profile, isLoading, signIn, signUp, signOut, updateProfile]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => {

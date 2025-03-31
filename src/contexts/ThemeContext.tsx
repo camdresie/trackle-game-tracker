@@ -1,5 +1,4 @@
-
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -42,7 +41,7 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(getStoredTheme() || defaultTheme);
 
   // Save theme to localStorage and apply theme class to document
-  const applyTheme = (newTheme: Theme) => {
+  const applyTheme = useCallback((newTheme: Theme) => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
 
@@ -51,12 +50,12 @@ export function ThemeProvider({
 
     const resolvedTheme = getResolvedTheme(newTheme);
     root.classList.add(resolvedTheme);
-  };
+  }, []);
 
   // Apply theme when it changes
   useEffect(() => {
     applyTheme(theme);
-  }, [theme]);
+  }, [theme, applyTheme]);
 
   // Listen for system theme changes when in 'system' mode
   useEffect(() => {
@@ -74,12 +73,16 @@ export function ThemeProvider({
     }
   }, [theme]);
 
-  const value = { 
+  // Memoize the setTheme function to prevent unnecessary re-renders
+  const setThemeCallback = useCallback((newTheme: Theme) => {
+    setTheme(newTheme);
+  }, []);
+  
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({ 
     theme, 
-    setTheme: (newTheme: Theme) => {
-      setTheme(newTheme);
-    } 
-  };
+    setTheme: setThemeCallback
+  }), [theme, setThemeCallback]);
   
   return (
     <ThemeContext.Provider value={value}>
