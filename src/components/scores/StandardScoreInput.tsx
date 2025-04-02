@@ -91,7 +91,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   };
 
   // Determine if we should show the number input
-  const showNumberInput = !['wordle', 'framed', 'nerdle', 'minute-cryptic'].includes(game.id);
+  const showNumberInput = !['wordle', 'framed', 'nerdle'].includes(game.id);
 
   // Get markers for the slider
   const markers = getSliderMarkers(game);
@@ -111,9 +111,11 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
               max={getMaxValue()}
             />
           )}
-          <span className="text-xs text-muted-foreground">
-            / {getMaxValue()}
-          </span>
+          {showNumberInput && (
+            <span className="text-xs text-muted-foreground">
+              / {getMaxValue()}
+            </span>
+          )}
           <span className={`text-xs px-1.5 py-0.5 rounded-full ${getScoreColor(value, game)} bg-secondary`}>
             {getScoreLabel(value, game)}
           </span>
