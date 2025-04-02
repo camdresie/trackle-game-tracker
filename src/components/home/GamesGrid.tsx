@@ -71,11 +71,6 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
             const isSelected = selectedGames.includes(game.id);
             const hasPlayed = hasPlayedGame(game.id);
             
-            // If the game has been played but isn't selected, add it to selected games
-            if (hasPlayed && !isSelected) {
-              handleAddGame(game.id);
-            }
-            
             return (
               <div key={game.id} className="relative group w-full">
                 {!isSelected && (
