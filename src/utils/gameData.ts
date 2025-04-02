@@ -91,6 +91,15 @@ export const games = [
     color: 'bg-orange-500',
     maxScore: 10,
     externalUrl: 'https://fubargames.se/squardle/'
+  },
+  {
+    id: 'minute-cryptic',
+    name: 'Minute Cryptic',
+    description: 'Solve a daily cryptic clue. Score based on hints needed - par is based on hints needed.',
+    icon: 'timer',
+    color: 'bg-indigo-500',
+    maxScore: 13, // Range from -3 to +10, so total range is 13
+    externalUrl: 'https://www.minutecryptic.com/'
   }
 ];
 

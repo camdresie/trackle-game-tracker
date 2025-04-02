@@ -1,4 +1,3 @@
-
 import { 
   Dialog, 
   DialogContent, 
@@ -9,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Game } from '@/utils/types';
-import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
+import { Grid3X3, GridIcon, Layout, Puzzle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer } from 'lucide-react';
 
 interface GameSelectionModalProps {
   open: boolean;
@@ -67,6 +66,8 @@ const GameSelectionModal = ({
         return <Grid3X3 className="h-5 w-5" />;
       case 'squardle':
         return <Square className="h-5 w-5" />;
+      case 'minute-cryptic':
+        return <Timer className="h-5 w-5" />;
       default:
         return <Puzzle className="h-5 w-5" />;
     }
