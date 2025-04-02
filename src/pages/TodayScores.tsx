@@ -536,27 +536,22 @@ const TodayScores = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <Tabs 
-              value={activeTab} 
-              onValueChange={(value) => setActiveTab(value as 'friends' | 'groups')}
-              className="w-full"
-            >
-              <TabsList className="mb-4">
-                {/* Swapped tab order - All Friends first, By Group second */}
-                <TabsTrigger value="friends" className="flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4" />
-                  <span>All Friends</span>
+            <Tabs defaultValue="friends" className="w-full">
+              <TabsList className="inline-flex sm:inline-flex w-full sm:w-auto grid sm:grid-cols-none grid-cols-2 h-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <TabsTrigger value="friends" className="inline-flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  All Friends
                 </TabsTrigger>
-                <TabsTrigger value="groups" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>By Group</span>
+                <TabsTrigger value="groups" className="inline-flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  By Group
                 </TabsTrigger>
               </TabsList>
               
-              {/* All Friends tab content - moved to be first */}
+              {/* All Friends tab content */}
               {allFriendsTabContent}
               
-              {/* By Group tab content - moved to be second */}
+              {/* By Group tab content */}
               <TabsContent value="groups" className="space-y-6">
                 {groupPerformanceData.length > 0 ? (
                   <div className="space-y-6">

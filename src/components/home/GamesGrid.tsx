@@ -1,8 +1,11 @@
-
-import { Trophy } from 'lucide-react';
+import { GamepadIcon } from 'lucide-react';
 import GameCard from '@/components/GameCard';
 import { Game, Score } from '@/utils/types';
 import { calculateAverageScore, calculateBestScore } from '@/utils/gameData';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface GamesGridProps {
   isLoading: boolean;
@@ -11,19 +14,51 @@ interface GamesGridProps {
 }
 
 const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
+  const { profile, updateProfile } = useAuth();
+  
+  // Get the list of selected games
+  const selectedGames = profile?.selected_games || [];
+  
+  // Check if a game has been played
+  const hasPlayedGame = (gameId: string) => {
+    return scores.some(score => score.gameId === gameId);
+  };
+  
+  // Handle adding a game to My Games
+  const handleAddGame = async (gameId: string) => {
+    if (!profile) return;
+    
+    // Get current selected games or initialize empty array
+    const currentGames = profile.selected_games || [];
+    
+    // Add the game if it's not already in the array
+    if (!currentGames.includes(gameId)) {
+      const updatedGames = [...currentGames, gameId];
+      
+      // Update the profile
+      await updateProfile({
+        selected_games: updatedGames
+      });
+      
+      // Show success toast
+      const game = gamesList.find(g => g.id === gameId);
+      toast.success(`${game?.name || 'Game'} added to My Games`);
+    }
+  };
+
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-500" />
-          Games
+          <GamepadIcon className="w-5 h-5 text-primary" />
+          All Games
         </h2>
       </div>
       
-      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 justify-items-center">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
           Array(4).fill(0).map((_, index) => (
-            <div key={index} className="animate-pulse h-40 bg-muted rounded-xl"></div>
+            <div key={index} className="animate-pulse h-[320px] bg-muted rounded-xl w-full"></div>
           ))
         ) : (
           gamesList.map(game => {
@@ -33,15 +68,37 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
               : undefined;
             const averageScore = calculateAverageScore(gameScores);
             const bestScore = calculateBestScore(gameScores, game);
+            const isSelected = selectedGames.includes(game.id);
+            const hasPlayed = hasPlayedGame(game.id);
+            
+            // If the game has been played but isn't selected, add it to selected games
+            if (hasPlayed && !isSelected) {
+              handleAddGame(game.id);
+            }
             
             return (
-              <GameCard 
-                key={game.id}
-                game={game}
-                latestScore={latestScore}
-                averageScore={averageScore}
-                bestScore={bestScore}
-              />
+              <div key={game.id} className="relative group w-full">
+                {!isSelected && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -top-2 -right-2 z-50 text-primary hover:bg-primary/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddGame(game.id);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
+                <GameCard 
+                  game={game}
+                  latestScore={latestScore}
+                  averageScore={averageScore}
+                  bestScore={bestScore}
+                />
+              </div>
             );
           })
         )}
