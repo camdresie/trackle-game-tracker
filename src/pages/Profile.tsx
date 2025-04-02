@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -448,103 +447,60 @@ const Profile = () => {
         </div>
         
         <div className="animate-slide-up" style={{animationDelay: '200ms'}}>
-          <Tabs defaultValue="games">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="games" className="flex items-center gap-1">
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Your Games</span>
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Activity</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Activity
+            </h2>
+          </div>
+          
+          <div className="glass-card rounded-xl p-5">
+            <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
             
-            <TabsContent value="games" className="animate-fade-in mt-0">
-              {playedGames.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {playedGames.map(game => {
-                    const gameStat = gameStats.find(stat => stat.game_id === game.id);
+            {gameStats.length > 0 ? (
+              <div className="space-y-4">
+                {gameStats
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .slice(0, 10)
+                  .map(stat => {
+                    const game = getGameById(stat.game_id);
+                    if (!game) return null;
                     
                     return (
-                      <GameCard 
-                        key={game.id}
-                        game={game}
-                        latestScore={gameStat ? {
-                          id: `latest-${game.id}`,
-                          gameId: game.id,
-                          playerId: user?.id || '',
-                          value: gameStat.best_score || 0,
-                          date: new Date().toISOString(),
-                          createdAt: new Date().toISOString()
-                        } : undefined}
-                        averageScore={gameStat?.average_score}
-                        bestScore={gameStat?.best_score}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="glass-card rounded-xl p-8 text-center">
-                  <h3 className="text-lg font-semibold mb-2">No games played yet</h3>
-                  <p className="text-muted-foreground mb-4">Add your first game score to start tracking your progress</p>
-                  <Button variant="default">Add Your First Score</Button>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="activity" className="animate-fade-in mt-0">
-              <div className="glass-card rounded-xl p-5">
-                <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-                
-                {gameStats.length > 0 ? (
-                  <div className="space-y-4">
-                    {gameStats
-                      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-                      .slice(0, 10)
-                      .map(stat => {
-                        const game = getGameById(stat.game_id);
-                        if (!game) return null;
+                      <div 
+                        key={stat.id}
+                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center`}>
+                          <span className="font-semibold text-white">{stat.best_score}</span>
+                        </div>
                         
-                        return (
-                          <div 
-                            key={stat.id}
-                            className="flex items-center gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
-                          >
-                            <div className={`w-10 h-10 rounded-lg ${game.color} flex items-center justify-center`}>
-                              <span className="font-semibold text-white">{stat.best_score}</span>
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="font-medium">{game.name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {stat.total_plays} plays | {stat.current_streak} day streak
-                              </div>
-                            </div>
-                            
-                            <div className="text-right">
-                              <div className="text-sm font-medium">
-                                Best: {stat.best_score}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Avg: {Math.round(stat.average_score * 10) / 10}
-                              </div>
-                            </div>
+                        <div className="flex-1">
+                          <div className="font-medium">{game.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {stat.total_plays} plays | {stat.current_streak} day streak
                           </div>
-                        );
-                      })
-                    }
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No activity recorded yet</p>
-                  </div>
-                )}
+                        </div>
+                        
+                        <div className="text-right">
+                          <div className="text-sm font-medium">
+                            Best: {stat.best_score}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Avg: {Math.round(stat.average_score * 10) / 10}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                }
               </div>
-            </TabsContent>
-          </Tabs>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No activity recorded yet</p>
+              </div>
+            )}
+          </div>
         </div>
       </main>
       

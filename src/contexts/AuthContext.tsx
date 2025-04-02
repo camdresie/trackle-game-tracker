@@ -217,7 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setProfile(updatedProfile);
-      toast.success('Profile updated successfully');
+      // Only show success toast if we're updating more than just selected_games
+      if (Object.keys(updates).length !== 1 || !updates.hasOwnProperty('selected_games')) {
+        toast.success('Profile updated successfully');
+      }
     } catch (error) {
       console.error('Error in updateProfile:', error);
       toast.error('An error occurred while updating profile');

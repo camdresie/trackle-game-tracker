@@ -6,9 +6,16 @@ import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface Player {
+  id: string;
+  name: string;
+  avatar?: string;
+  isCurrentUser?: boolean;
+}
+
 interface FriendScoresListProps {
   game: Game;
-  friends: { id: string; name: string; avatar?: string }[];
+  friends: Player[];
   friendScores: { [key: string]: Score[] };
   isLoading: boolean;
   onManageFriends: () => void;
@@ -75,7 +82,8 @@ const FriendScoresList = ({
       ...(user ? [{ 
         id: user.id, 
         name: profile?.full_name || profile?.username || 'You',
-        avatar: profile?.avatar_url
+        avatar: profile?.avatar_url,
+        isCurrentUser: true
       }] : []),
       ...friends
     ];
@@ -142,14 +150,14 @@ const FriendScoresList = ({
                 <PlayerCard 
                   player={{
                     id: player.id,
-                    name: 'isCurrentUser' in player ? `${player.name} (You)` : player.name,
+                    name: player.isCurrentUser ? `${player.name} (You)` : player.name,
                     avatar: player.avatar
                   }}
                   scores={scores}
                   game={game}
                   stats={stats}
                   rank={index + 1}
-                  className={'isCurrentUser' in player ? "border-2 border-primary/30" : undefined}
+                  className={player.isCurrentUser ? "border-2 border-primary/30" : undefined}
                 />
               </div>
             );

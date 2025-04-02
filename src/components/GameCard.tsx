@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
@@ -81,7 +80,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   return (
     <Link 
       to={`/game/${game.id}`}
-      className="card-hover rounded-xl glass-card p-5 w-full max-w-xs flex flex-col"
+      className="card-hover rounded-xl glass-card p-5 w-full flex flex-col min-h-[320px]"
     >
       <div className="flex justify-between items-start mb-4">
         <div className={cn("p-2.5 rounded-lg", game.color)}>

@@ -1,5 +1,6 @@
-
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { GamepadIcon, Trophy } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import AddScoreModal from '@/components/AddScoreModal';
 import ConnectionsModal from '@/components/ConnectionsModal';
@@ -9,11 +10,14 @@ import { useHomeData } from '@/hooks/useHomeData';
 import HomeHeader from '@/components/home/HomeHeader';
 import TodaysGames from '@/components/home/TodaysGames';
 import GamesGrid from '@/components/home/GamesGrid';
+import MyGamesGrid from '@/components/home/MyGamesGrid';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Game } from '@/utils/types';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('my-games');
   const {
     isLoading,
     gamesList,
@@ -56,12 +60,35 @@ const Index = () => {
           />
         </section>
         
-        <div className="mb-8">
-          <GamesGrid
-            isLoading={isLoading}
-            gamesList={gamesList}
-            scores={scores}
-          />
+        <div className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="inline-flex sm:inline-flex w-full sm:w-auto grid sm:grid-cols-none grid-cols-2 h-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <TabsTrigger value="my-games" className="inline-flex items-center justify-center gap-2">
+                <Trophy className="h-4 w-4" />
+                My Games
+              </TabsTrigger>
+              <TabsTrigger value="all-games" className="inline-flex items-center justify-center gap-2">
+                <GamepadIcon className="h-4 w-4" />
+                All Games
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <div className="mt-4">
+            {activeTab === 'my-games' ? (
+              <MyGamesGrid
+                isLoading={isLoading}
+                gamesList={gamesList}
+                scores={scores}
+              />
+            ) : (
+              <GamesGrid
+                isLoading={isLoading}
+                gamesList={gamesList}
+                scores={scores}
+              />
+            )}
+          </div>
         </div>
         
         <GameSelectionModal
