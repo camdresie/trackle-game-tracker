@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FriendGroup, Player } from '@/utils/types';
 import { toast } from 'sonner';
+import { isDevelopment } from '@/utils/environment';
 
 // Interface for the hook props
 interface UseFriendGroupsProps {
@@ -38,6 +39,10 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
       if (!user) return [];
       
       try {
+        if (isDevelopment()) {
+          console.log('Fetching friend groups for user:', user.id);
+        }
+        
         // Query for groups that the current user owns
         const { data: ownedGroups, error: ownedError } = await supabase
           .from('friend_groups')
@@ -48,38 +53,77 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           throw ownedError;
         }
         
-        // Query for group memberships where user is a member (not owner)
+        if (isDevelopment()) {
+          console.log('Owned groups:', ownedGroups);
+        }
+        
+        // Query for groups where user is a member (not owner)
+        if (isDevelopment()) {
+          console.log('Querying member groups for user:', user.id);
+        }
+        
+        // First get the group IDs where the user is a member
         const { data: memberGroups, error: memberError } = await supabase
           .from('friend_group_members')
-          .select('group:group_id(id, name, created_at, updated_at, user_id, description)')
+          .select('group_id')
           .eq('friend_id', user.id)
           .eq('status', 'accepted');
           
         if (memberError) {
+          console.error('Error fetching member groups:', memberError);
           throw memberError;
         }
         
-        // Direct query from 'friend_groups' for groups where the user is a member
-        const { data: directResults, error: directError } = await supabase
-          .from('friend_groups')
-          .select('id, name, created_at, updated_at, user_id, description')
-          .neq('user_id', user.id) // Not owned by the current user
-          .in('id', memberGroups.map(m => m.group.id));
-          
-        if (directError) {
-          throw directError;
+        if (isDevelopment()) {
+          console.log('Member group IDs:', memberGroups);
         }
         
-        // Combine owned groups and groups the user is a member of
-        return [...ownedGroups, ...directResults];
+        if (memberGroups && memberGroups.length > 0) {
+          // Get the group IDs from the member groups
+          const groupIds = memberGroups.map(m => m.group_id);
+          
+          // Fetch the actual group data
+          const { data: memberGroupData, error: groupError } = await supabase
+            .from('friend_groups')
+            .select('id, name, created_at, updated_at, user_id, description')
+            .in('id', groupIds);
+            
+          if (groupError) {
+            console.error('Error fetching member group details:', groupError);
+            throw groupError;
+          }
+          
+          if (isDevelopment()) {
+            console.log('Member group details:', memberGroupData);
+          }
+          
+          // Combine owned groups and groups the user is a member of
+          const allGroups = [...(ownedGroups || []), ...(memberGroupData || [])];
+          
+          // Remove any duplicates based on group ID
+          const uniqueGroups = Array.from(
+            new Map(allGroups.map(group => [group.id, group])).values()
+          );
+          
+          if (isDevelopment()) {
+            console.log('Final unique groups:', uniqueGroups);
+          }
+          
+          return uniqueGroups;
+        }
+        
+        // If no member groups, just return owned groups
+        return ownedGroups || [];
       } catch (error) {
         console.error('Error fetching friend groups:', error);
         return [];
       }
     },
     enabled: !!user && enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false
+    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true
   });
   
   // Fetch all group members for each group in a single query for efficiency
@@ -187,14 +231,13 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
         name: group.name,
         user_id: group.user_id,
         created_at: group.created_at,
-        updated_at: group.updated_at || group.created_at, // Fallback to created_at if updated_at doesn't exist
+        updated_at: group.updated_at || group.created_at,
         isOwner: group.user_id === user?.id,
         members: enrichedAcceptedMembers,
         pendingMembers: enrichedPendingMembers,
-        // Optional fields with defaults
         description: group.description || '',
         pendingCount: pendingMembers.length,
-        isJoinedGroup: group.user_id === user?.id || acceptedMembers.some(m => m.id === user?.id)
+        isJoinedGroup: true // If we have this group, the user is definitely a member
       };
     });
     
@@ -260,7 +303,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
         created_at: responseData.created_at,
         updated_at: responseData.updated_at || responseData.created_at,
         members: [],
-        pendingMembers: [],
         description: responseData.description || '',
         pendingCount: 0,
         isOwner: true,
@@ -623,7 +665,7 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
   // Return the hook interface
   return {
     friendGroups,
-    isLoading: isLoading || isLoadingMembers || isLoadingProfiles || isCreatingGroup,
+    isLoading: isLoading || isLoadingMembers || isCreatingGroup,
     isError,
     refetch,
     createGroup,

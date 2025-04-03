@@ -180,33 +180,38 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         console.log('Accepting invitation from groups manager:', invitationId);
       }
       
-      // Accept the invitation
-      acceptInvitation(invitationId);
+      // Clear all related caches first
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
       
-      // Immediately refetch data to update UI
+      // Accept the invitation
+      await acceptInvitation(invitationId);
+      
+      // Force refetch all related data
+      await Promise.all([
+        refetchGroups(),
+        refetchInvitations()
+      ]);
+      
+      // Clear caches again after refetching
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
+      
+      // Force one final refetch after a short delay to ensure everything is in sync
       setTimeout(async () => {
         if (isDevelopment()) {
-          console.log('Refreshing data after accepting invitation');
+          console.log('Final refetch after accepting invitation');
         }
-        
-        // Clear all related caches first
-        queryClient.removeQueries({ queryKey: ['group-invitations'] });
-        queryClient.removeQueries({ queryKey: ['friend-groups'] });
-        
-        // Use more targeted invalidations for social data
-        queryClient.invalidateQueries({ 
-          queryKey: ['social-data'],
-          refetchType: 'all'
-        });
-        
-        // Then refetch everything with fresh data
         await Promise.all([
           refetchGroups(),
           refetchInvitations()
         ]);
-        
         setProcessingInvitation(false);
-      }, 5000); // Allow time for database operations to complete
+      }, 1000);
     } catch (error) {
       console.error('Error handling invitation accept:', error);
       toast.error('Failed to process invitation');

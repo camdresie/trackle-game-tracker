@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -43,6 +42,7 @@ export const useConnectionMutations = (currentPlayerId: string, onFriendRemoved?
         title: "Success",
         description: "Friend request sent"
       });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
     onError: (error) => {
       toast({
@@ -72,6 +72,7 @@ export const useConnectionMutations = (currentPlayerId: string, onFriendRemoved?
       });
       queryClient.invalidateQueries({ queryKey: ['friends', currentPlayerId] });
       queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
     onError: (error) => {
       toast({
@@ -100,6 +101,7 @@ export const useConnectionMutations = (currentPlayerId: string, onFriendRemoved?
         description: "Friend request declined"
       });
       queryClient.invalidateQueries({ queryKey: ['pending-requests', currentPlayerId] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
     onError: (error) => {
       toast({

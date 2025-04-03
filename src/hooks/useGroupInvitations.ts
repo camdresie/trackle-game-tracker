@@ -12,6 +12,16 @@ export interface GroupInvitation {
   status: string;
 }
 
+interface DirectQueryResult {
+  id: string;
+  group_id: string;
+  friend_id: string;
+  status: string;
+  group_name: string;
+  owner_id: string;
+  owner_username: string;
+}
+
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -59,12 +69,12 @@ export const useGroupInvitations = () => {
           throw directQueryError;
         }
         
-        if (!directResults || directResults.length === 0) {
+        if (!directResults || !Array.isArray(directResults) || directResults.length === 0) {
           return [];
         }
         
         // Format the invitations from the direct query results
-        const invitationsData: GroupInvitation[] = directResults.map(item => ({
+        const invitationsData: GroupInvitation[] = (directResults as unknown as DirectQueryResult[]).map(item => ({
           id: item.id,
           groupId: item.group_id,
           groupName: item.group_name || 'Unknown Group',
@@ -109,7 +119,7 @@ export const useGroupInvitations = () => {
         
         const groupId = invitation.groupId;
         
-        // Use RPC to ensure the update works reliably - Fix the SQL query syntax
+        // Use RPC to ensure the update works reliably
         const updateQuery = `
           UPDATE friend_group_members 
           SET status = 'accepted' 
@@ -126,7 +136,7 @@ export const useGroupInvitations = () => {
           throw updateError;
         }
         
-        if (!updateResult || updateResult.length === 0) {
+        if (!updateResult || !Array.isArray(updateResult) || updateResult.length === 0) {
           console.error('No rows updated - invitation may not exist');
           throw new Error('Failed to update invitation - record may have been deleted');
         }
@@ -137,21 +147,20 @@ export const useGroupInvitations = () => {
         throw error;
       }
     },
-    onSuccess: (data) => {
-      // Targeted cache invalidation using the parent key
-      queryClient.invalidateQueries({ 
-        queryKey: ['social-data']
-      });
+    onSuccess: async (data) => {
+      // Clear all related caches
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
       
-      // Remove specific invitation query to force refetch
-      queryClient.removeQueries({ 
-        queryKey: ['social-data', 'group-invitations', user?.id] 
-      });
-      
-      // Force refetch after a short delay to ensure DB has updated
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      // Force refetch all related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['social-data'] }),
+        queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+        queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+        queryClient.refetchQueries({ queryKey: ['notification-counts'] })
+      ]);
       
       toast.success('You have joined the group!');
     },
@@ -177,10 +186,21 @@ export const useGroupInvitations = () => {
       
       return invitationId;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['social-data', 'group-invitations']
-      });
+    onSuccess: async () => {
+      // Clear all related caches
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
+      
+      // Force refetch all related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['social-data'] }),
+        queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+        queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+        queryClient.refetchQueries({ queryKey: ['notification-counts'] })
+      ]);
+      
       toast.success('Group invitation declined');
     },
     onError: (error) => {

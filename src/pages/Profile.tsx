@@ -42,6 +42,8 @@ import { useFriendsList } from '@/hooks/useFriendsList';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useNotificationCounts } from '@/hooks/useNotificationCounts';
+import { NotificationBadge } from '@/components/ui/notification-badge';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -86,6 +88,9 @@ const Profile = () => {
     queryFn: () => user ? getUserRankByTotalGamesPlayed(user.id) : Promise.resolve({ rank: 1, totalUsers: 1 }),
     enabled: !!user,
   });
+
+  // Use React Query to fetch notification counts
+  const { data: notificationCounts } = useNotificationCounts();
 
   // Show error if needed
   useEffect(() => {
@@ -236,11 +241,12 @@ const Profile = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="gap-1"
+                  className="gap-1 relative"
                   onClick={() => setShowConnectionsModal(true)}
                 >
                   <Users className="w-4 h-4" />
                   <span>Friends</span>
+                  <NotificationBadge count={notificationCounts?.total || 0} />
                 </Button>
                 
                 <Button 
