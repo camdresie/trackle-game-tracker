@@ -94,7 +94,7 @@ export const useGroupInvitations = () => {
     refetchInterval: 30000, // Every 30 seconds
     staleTime: 15000, // Add a stale time of 15 seconds
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     retry: 1 // Limit retries to reduce database calls
   });
   
@@ -153,14 +153,30 @@ export const useGroupInvitations = () => {
       queryClient.removeQueries({ queryKey: ['friend-groups'] });
       queryClient.removeQueries({ queryKey: ['group-invitations'] });
       queryClient.removeQueries({ queryKey: ['notification-counts'] });
+      queryClient.removeQueries({ queryKey: ['group-members'] });
+      queryClient.removeQueries({ queryKey: ['member-profiles'] });
       
       // Force refetch all related data
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['social-data'] }),
         queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
         queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
-        queryClient.refetchQueries({ queryKey: ['notification-counts'] })
+        queryClient.refetchQueries({ queryKey: ['notification-counts'] }),
+        queryClient.refetchQueries({ queryKey: ['group-members'] }),
+        queryClient.refetchQueries({ queryKey: ['member-profiles'] })
       ]);
+      
+      // Add a small delay and then refetch again to ensure everything is in sync
+      setTimeout(async () => {
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ['social-data'] }),
+          queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+          queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+          queryClient.refetchQueries({ queryKey: ['notification-counts'] }),
+          queryClient.refetchQueries({ queryKey: ['group-members'] }),
+          queryClient.refetchQueries({ queryKey: ['member-profiles'] })
+        ]);
+      }, 1000);
       
       toast.success('You have joined the group!');
     },

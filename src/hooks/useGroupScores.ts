@@ -4,6 +4,7 @@ import { useFriendsList } from '@/hooks/useFriendsList';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { Score } from '@/utils/types';
 import { getTodaysGamesForAllUsers } from '@/services/todayService';
+import { supabase } from '@/lib/supabase';
 
 // Define a type for group member performance data
 interface GroupMemberPerformance {
@@ -29,6 +30,35 @@ interface AllFriendsPerformance {
   currentUserScore: number | null;
 }
 
+// Define interface for profile data
+interface MemberProfile {
+  id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role?: string;
+}
+
+// Define interface for group membership data
+interface GroupMembershipData {
+  groupId: string;
+  memberIds: string[];
+}
+
+// Define interface for member list by group
+interface GroupMembersData {
+  groupId: string;
+  members: MemberProfile[];
+}
+
+// Define interface for combined profile and membership data
+interface MemberProfilesData {
+  profiles: MemberProfile[];
+  groupMembership: GroupMembershipData[];
+  membersByGroup: GroupMembersData[];
+  lastUpdated: number;
+}
+
 export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => {
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
@@ -38,6 +68,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   const [allTodaysScores, setAllTodaysScores] = useState<Score[]>([]);
   const [allFriendsData, setAllFriendsData] = useState<AllFriendsPerformance | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [memberProfilesData, setMemberProfilesData] = useState<MemberProfilesData>({ profiles: [], groupMembership: [], membersByGroup: [], lastUpdated: 0 });
   
   // Use ref to track if this is the first render
   const isFirstRender = useRef(true);
@@ -192,7 +223,153 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     }
   }, [processedFriendData]);
   
-  // Process group data more efficiently
+  // Fetch profiles for all group members and creators - simplified approach
+  useEffect(() => {
+    if (!user || !memoizedFriendGroups.length) return;
+    
+    const fetchAllGroupMembers = async () => {
+      try {
+        console.log('Fetching all group members for groups:', memoizedFriendGroups.map(g => g.id).join(', '));
+        
+        // Get all group IDs the user is part of
+        const groupIds = memoizedFriendGroups.map(g => g.id);
+        
+        if (groupIds.length === 0) return;
+        
+        // 1. First get all group members
+        const { data: groupMembers, error: membersError } = await supabase
+          .from('friend_group_members')
+          .select('group_id, friend_id')
+          .in('group_id', groupIds)
+          .eq('status', 'accepted');
+          
+        if (membersError) {
+          console.error('Error fetching group members:', membersError);
+          return;
+        }
+        
+        // 2. Then get all group creators (from groups table)
+        const { data: groups, error: groupsError } = await supabase
+          .from('friend_groups')
+          .select('id, user_id')
+          .in('id', groupIds);
+          
+        if (groupsError) {
+          console.error('Error fetching group creators:', groupsError);
+          return;
+        }
+        
+        // 3. Combine all user IDs we need to fetch
+        const userIds = new Set<string>();
+        
+        // Add members
+        if (groupMembers) {
+          groupMembers.forEach(member => {
+            if (member.friend_id) {
+              userIds.add(member.friend_id);
+            }
+          });
+        }
+        
+        // Add creators
+        if (groups) {
+          groups.forEach(group => {
+            if (group.user_id) {
+              userIds.add(group.user_id);
+            }
+          });
+        }
+        
+        // Remove current user - we don't need to fetch their profile
+        if (user.id) {
+          userIds.delete(user.id);
+        }
+        
+        // Convert to array
+        const userIdsArray = Array.from(userIds);
+        
+        if (userIdsArray.length === 0) return;
+        
+        // 4. Fetch profiles for all these user IDs
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', userIdsArray);
+          
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          return;
+        }
+        
+        // 5. Prepare the data structure
+        const membersByGroup = new Map();
+        
+        // Initialize with empty arrays for each group
+        groupIds.forEach(groupId => {
+          membersByGroup.set(groupId, []);
+        });
+        
+        // Process members and add them to the appropriate groups
+        if (groupMembers && profiles) {
+          groupMembers.forEach(member => {
+            if (!member.friend_id || !member.group_id) return;
+            
+            const profile = profiles.find(p => p.id === member.friend_id);
+            if (profile && membersByGroup.has(member.group_id)) {
+              membersByGroup.get(member.group_id).push({
+                id: profile.id,
+                username: profile.username,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                role: 'member'
+              });
+            }
+          });
+        }
+        
+        // Process creators and add them to the appropriate groups
+        if (groups && profiles) {
+          groups.forEach(group => {
+            if (!group.user_id || !group.id) return;
+            
+            // Don't add if already added as a member
+            const existingMembers = membersByGroup.get(group.id) || [];
+            if (existingMembers.some(m => m.id === group.user_id)) return;
+            
+            const profile = profiles.find(p => p.id === group.user_id);
+            if (profile && membersByGroup.has(group.id)) {
+              membersByGroup.get(group.id).push({
+                id: profile.id,
+                username: profile.username,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                role: 'creator'
+              });
+            }
+          });
+        }
+        
+        console.log('Processed group members:', Array.from(membersByGroup.entries()));
+        
+        // 6. Store the results
+        setMemberProfilesData(prev => ({
+          ...prev,
+          membersByGroup: Array.from(membersByGroup.entries()).map(([groupId, members]) => ({
+            groupId,
+            members
+          })),
+          lastUpdated: Date.now()
+        }));
+        
+      } catch (error) {
+        console.error('Error in fetchAllGroupMembers:', error);
+      }
+    };
+    
+    fetchAllGroupMembers();
+  }, [user, memoizedFriendGroups]);
+  
+  // Process group data more efficiently with the simplified approach
   useEffect(() => {
     if (!user || !memoizedGameId) {
       setGroupPerformanceData([]);
@@ -224,50 +401,152 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         return;
       }
       
-      // Process friend groups
+      // Get the membersByGroup data from our database query results
+      const fetchedMembersByGroup = memberProfilesData.membersByGroup || [];
+      
+      // Create a lookup map for the fetched members
+      const membersByGroupMap = new Map();
+      fetchedMembersByGroup.forEach(item => {
+        membersByGroupMap.set(item.groupId, item.members || []);
+      });
+      
+      // Debug logs to check what we're working with
+      console.log('Found groups:', memoizedFriendGroups.map(g => `${g.name} (${g.id})`));
+      console.log('Fetched members by group:', fetchedMembersByGroup);
+      
+      // Simple approach to process groups
       const processedGroups = memoizedFriendGroups.map(group => {
-        // Get today's scores for each member of the group
-        const members = group.members?.map(member => {
-          // Look in allTodaysScores for this friend's score
-          const memberTodayScore = allTodaysScores.find(score =>
-            score.gameId === memoizedGameId && score.playerId === member.id
-          );
+        // Create a members array with just the current user for now
+        const members: GroupMemberPerformance[] = [];
+        const seenMemberIds = new Set<string>();
+        
+        // Always add the current user to their groups
+        if (group.isJoinedGroup || group.user_id === user.id) {
+          members.push({
+            playerId: user.id,
+            playerName: 'You',
+            hasPlayed: userHasPlayed,
+            score: userScore
+          });
           
-          const hasPlayed = !!memberTodayScore;
-          // Only set score if hasPlayed is true, otherwise null
-          const score = hasPlayed ? memberTodayScore.value : null;
+          seenMemberIds.add(user.id);
+        }
+        
+        // Add known group members from the group object (these are friends)
+        if (group.members && Array.isArray(group.members)) {
+          group.members.forEach(member => {
+            if (member.id === user.id || seenMemberIds.has(member.id)) return; // Skip duplicates
+            
+            // Find the member's score
+            const memberScore = allTodaysScores.find(score => 
+              score.gameId === memoizedGameId && score.playerId === member.id
+            );
+            
+            const hasPlayed = !!memberScore;
+            const score = hasPlayed ? memberScore.value : null;
+            
+            members.push({
+              playerId: member.id,
+              playerName: member.name,
+              hasPlayed,
+              score
+            });
+            
+            seenMemberIds.add(member.id);
+          });
+        }
+        
+        // Add any additional members we fetched from database (including non-friends)
+        const fetchedGroupMembers = membersByGroupMap.get(group.id) || [];
+        if (fetchedGroupMembers.length > 0) {
+          console.log(`Group ${group.name} has ${fetchedGroupMembers.length} fetched members`);
           
-          return {
-            playerId: member.id,
-            playerName: member.name,
-            hasPlayed: hasPlayed,
-            score: score
-          };
-        }) || [];
+          fetchedGroupMembers.forEach(member => {
+            // Skip if already added (don't add duplicates)
+            if (seenMemberIds.has(member.id)) return;
+            
+            // Find the member's score
+            const memberScore = allTodaysScores.find(score => 
+              score.gameId === memoizedGameId && score.playerId === member.id
+            );
+            
+            const hasPlayed = !!memberScore;
+            const score = hasPlayed ? memberScore.value : null;
+            
+            members.push({
+              playerId: member.id,
+              playerName: member.full_name || member.username || 'Group Member',
+              hasPlayed,
+              score
+            });
+            
+            seenMemberIds.add(member.id);
+          });
+        }
+        
+        // Log the final members list for debugging
+        console.log(`Group ${group.name} final members (${members.length}):`, 
+          members.map(m => m.playerName));
         
         return {
           groupId: group.id,
           groupName: group.name,
           currentUserHasPlayed: userHasPlayed,
           currentUserScore: userScore,
-          members: members
+          members
         };
       });
       
-      // Only update state if the data has actually changed
-      setGroupPerformanceData(prev => {
-        if (JSON.stringify(prev) !== JSON.stringify(processedGroups)) {
-          return processedGroups;
-        }
-        return prev;
-      });
-      
+      // Update state
+      setGroupPerformanceData(processedGroups);
       setIsLoading(false);
     } catch (error) {
       console.error('Error processing group data:', error);
       setIsLoading(false);
     }
-  }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriendGroups]);
+  }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriendGroups, memberProfilesData]);
+  
+  // Process all membership data when the hook is used
+  /*
+  useEffect(() => {
+    // Force a refresh of group data
+    const fetchData = async () => {
+      if (!user || !memoizedFriendGroups.length) return;
+      
+      try {
+        // Get all the group IDs
+        const groupIds = memoizedFriendGroups.map(group => group.id);
+        
+        if (groupIds.length === 0) return;
+        
+        // Get all accepted members of these groups
+        const { data: members, error } = await supabase
+          .from('friend_group_members')
+          .select('group_id, friend_id')
+          .in('group_id', groupIds)
+          .eq('status', 'accepted');
+          
+        if (error) {
+          throw error;
+        }
+        
+        console.log(`Found ${members?.length || 0} members across all groups`);
+        
+        // Force a refresh of data if needed
+        if (firstLoadDone.current && memberProfilesData.profiles.length === 0) {
+          // Force a re-fetch of today's scores
+          if (fetchAllTodaysScoresRef.current) {
+            await fetchAllTodaysScoresRef.current(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching group membership:', error);
+      }
+    };
+    
+    fetchData();
+  }, [user, memoizedFriendGroups]);
+  */
   
   const handleRefreshFriends = useCallback(async () => {
     try {
