@@ -17,8 +17,8 @@ const log = (...args: any[]) => {
 
 // Number of messages to fetch initially and per page
 const MESSAGES_PER_PAGE = 25;
-// Poll for new messages every 5 seconds
-const POLLING_INTERVAL = 5000;
+// Poll for new messages every 10 seconds
+const POLLING_INTERVAL = 10000;
 
 // Singleton for managing polling intervals
 class PollingManager {
@@ -26,7 +26,8 @@ class PollingManager {
   private intervals: Map<string, { 
     intervalId: number, 
     refCount: number, 
-    lastUsed: number 
+    lastUsed: number,
+    cleanup: boolean 
   }> = new Map();
   private cleanupIntervalId: number | null = null;
 
@@ -51,14 +52,21 @@ class PollingManager {
     if (existingInterval) {
       existingInterval.refCount += 1;
       existingInterval.lastUsed = Date.now();
+      existingInterval.cleanup = false;
       log(`[PollingManager] Using existing interval for ${groupId}, refCount: ${existingInterval.refCount}`);
     } else {
       // Create new interval
-      const intervalId = window.setInterval(callback, POLLING_INTERVAL);
+      const intervalId = window.setInterval(() => {
+        if (!this.intervals.get(groupId)?.cleanup) {
+          callback();
+        }
+      }, POLLING_INTERVAL);
+      
       this.intervals.set(groupId, {
         intervalId: intervalId as unknown as number, 
         refCount: 1,
-        lastUsed: Date.now()
+        lastUsed: Date.now(),
+        cleanup: false
       });
       log(`[PollingManager] Created new interval for ${groupId}, refCount: 1`);
     }
@@ -71,6 +79,9 @@ class PollingManager {
       log(`[PollingManager] No interval found for ${groupId}`);
       return;
     }
+    
+    // Mark for cleanup
+    interval.cleanup = true;
     
     // Decrement refCount
     interval.refCount -= 1;
