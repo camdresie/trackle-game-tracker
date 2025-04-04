@@ -239,14 +239,18 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         // 1. First get all group members
         const { data: groupMembers, error: membersError } = await supabase
           .from('friend_group_members')
-          .select('group_id, friend_id')
-          .in('group_id', groupIds)
-          .eq('status', 'accepted');
+          .select('group_id, friend_id, status')
+          .in('group_id', groupIds);
           
         if (membersError) {
           console.error('Error fetching group members:', membersError);
           return;
         }
+        
+        // Log all members with their status for debugging
+        console.log('All group members with status:', groupMembers?.map(m => 
+          `${m.friend_id} (${m.status}) in group ${m.group_id}`
+        ));
         
         // 2. Then get all group creators (from groups table)
         const { data: groups, error: groupsError } = await supabase
@@ -321,7 +325,8 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                 username: profile.username,
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
-                role: 'member'
+                role: 'member',
+                status: member.status || 'unknown'
               });
             }
           });
@@ -343,7 +348,8 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                 username: profile.username,
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
-                role: 'creator'
+                role: 'creator',
+                status: 'accepted'
               });
             }
           });
@@ -464,6 +470,13 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           fetchedGroupMembers.forEach(member => {
             // Skip if already added (don't add duplicates)
             if (seenMemberIds.has(member.id)) return;
+            
+            // Skip if member is not accepted and not the owner
+            // This ensures we don't show pending members in the scores list
+            if (member.role !== 'creator' && member.status && member.status !== 'accepted') {
+              console.log(`Skipping non-accepted member ${member.id} with status ${member.status}`);
+              return;
+            }
             
             // Find the member's score
             const memberScore = allTodaysScores.find(score => 
