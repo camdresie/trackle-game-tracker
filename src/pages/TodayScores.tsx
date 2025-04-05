@@ -557,6 +557,12 @@ const TodayScores = () => {
                   <div className="space-y-6">
                     {groupPerformanceData.map((group) => {
                       const leadingPlayer = getLeadingPlayerInGroup(group);
+                      const isLowerBetter = selectedGame?.id ? games[selectedGame.id]?.lowerIsBetter : false;
+                      
+                      // Check if the current group has a pending status by finding the group in friendGroups
+                      const pendingGroup = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
+                      const isPendingMember = !!pendingGroup;
+                      
                       // Convert members array to the format expected by GroupScoresShare
                       const groupMemberScores = convertToGroupMemberScores(group.members);
                     
@@ -610,99 +616,141 @@ const TodayScores = () => {
                       const sortedMembers = [...playedMembers, ...notPlayedMembers];
                     
                       return (
-                        <Card key={group.groupId} className="p-6 overflow-hidden">
-                          <div className="flex flex-col">
-                            {/* Group header with title */}
-                            <>
-                                <div className="mb-3">
-                                  <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold text-xl flex items-center gap-2">
-                                      <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                                      <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
-                                    </h3>
-                                    {/* Only show Leading badge here on mobile, not in the score section below */}
-                                    {leadingPlayer?.isCurrentUser && (
-                                      <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
-                                        <Trophy className="w-3 h-3 mr-1" /> Leading
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Updated button styling to match the app's style */}
-                                  <div className="flex items-center gap-2 mt-3">
-                                    <GroupScoresShare
-                                      groupName={group.groupName}
-                                      gameName={selectedGame?.name || ""}
-                                      gameColor={selectedGame?.color || ""}
-                                      members={groupMemberScores}
-                                      currentUserName={profile?.username || ""}
-                                      currentUserScore={group.currentUserScore}
-                                      currentUserHasPlayed={group.currentUserHasPlayed}
-                                      useActualUsername={true}
-                                    >
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                        <Card key={group.groupId} className="shadow-md">
+                          <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-lg font-semibold leading-none">{group.groupName}</h3>
+                              <div className="flex space-x-1">
+                                {/* Chat button */}
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8"
+                                  onClick={() => handleOpenMessages(group.groupId, group.groupName)}
+                                >
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                                
+                                {/* Share button */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleOpenConnectionsModal('groups')}
+                                >
+                                  <Share2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Show pending message if user is pending */}
+                          {isPendingMember && (
+                            <div className="px-3 py-2 bg-yellow-50 dark:bg-yellow-950 border-b border-yellow-200 dark:border-yellow-800">
+                              <div className="flex items-center">
+                                <InfoIcon className="h-4 w-4 text-yellow-500 mr-2" />
+                                <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                                  Your invitation to this group is pending. You'll see member scores once accepted.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="px-3 py-2">
+                            {/* Rest of group display content */}
+                            <div className="flex flex-col">
+                              {/* Group header with title */}
+                              <>
+                                  <div className="mb-3">
+                                    <div className="flex items-center justify-between">
+                                      <h3 className="font-semibold text-xl flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                                        <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
+                                      </h3>
+                                      {/* Only show Leading badge here on mobile, not in the score section below */}
+                                      {leadingPlayer?.isCurrentUser && (
+                                        <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
+                                          <Trophy className="w-3 h-3 mr-1" /> Leading
+                                        </span>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Updated button styling to match the app's style */}
+                                    <div className="flex items-center gap-2 mt-3">
+                                      <GroupScoresShare
+                                        groupName={group.groupName}
+                                        gameName={selectedGame?.name || ""}
+                                        gameColor={selectedGame?.color || ""}
+                                        members={groupMemberScores}
+                                        currentUserName={profile?.username || ""}
+                                        currentUserScore={group.currentUserScore}
+                                        currentUserHasPlayed={group.currentUserHasPlayed}
+                                        useActualUsername={true}
+                                      >
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="flex items-center justify-center gap-1"
+                                        >
+                                          <Share2 className="w-4 h-4" />
+                                          <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
+                                        </Button>
+                                      </GroupScoresShare>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleOpenMessages(group.groupId, group.groupName)}
                                         className="flex items-center justify-center gap-1"
                                       >
-                                        <Share2 className="w-4 h-4" />
-                                        <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
+                                        <MessageCircle className="w-4 h-4" />
+                                        <span className={cn(isMobile ? "sr-only" : "")}>Message</span>
                                       </Button>
-                                    </GroupScoresShare>
-                                    
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                      className="flex items-center justify-center gap-1"
-                                    >
-                                      <MessageCircle className="w-4 h-4" />
-                                      <span className={cn(isMobile ? "sr-only" : "")}>Message</span>
-                                    </Button>
+                                    </div>
                                   </div>
-                                </div>
-                                
-                                {/* Group members with scores */}
-                                <div className="space-y-1 mt-2">
-                                  {sortedMembers.length > 0 ? (
-                                    // People who have played, sorted by score
-                                    sortedMembers.map((member, i) => {
-                                      const isFirst = i === 0 && member.hasPlayed;
-                                      return (
-                                        <div
-                                          key={`${member.playerId}-${member.hasPlayed ? 'played' : 'not-played'}`}
-                                          className={`flex items-center justify-between p-3 rounded-lg ${
-                                            member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                                          } ${isFirst ? "border border-accent/20" : ""}`}
-                                        >
-                                          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                                            {isFirst && (
-                                              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                                            )}
-                                            <div className="font-medium truncate">
-                                              {member.playerName}
+                                  
+                                  {/* Group members with scores */}
+                                  <div className="space-y-1 mt-2">
+                                    {sortedMembers.length > 0 ? (
+                                      // People who have played, sorted by score
+                                      sortedMembers.map((member, i) => {
+                                        const isFirst = i === 0 && member.hasPlayed;
+                                        return (
+                                          <div
+                                            key={`${member.playerId}-${member.hasPlayed ? 'played' : 'not-played'}`}
+                                            className={`flex items-center justify-between p-3 rounded-lg ${
+                                              member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+                                            } ${isFirst ? "border border-accent/20" : ""}`}
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+                                              {isFirst && (
+                                                <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                              )}
+                                              <div className="font-medium truncate">
+                                                {member.playerName}
+                                              </div>
+                                              {isFirst && (
+                                                <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                                  Top score
+                                                </span>
+                                              )}
                                             </div>
-                                            {isFirst && (
-                                              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
-                                                Top score
-                                              </span>
+                                            {member.hasPlayed ? (
+                                              <span className="font-semibold">{member.score}</span>
+                                            ) : (
+                                              <span className="text-sm text-muted-foreground">No score yet</span>
                                             )}
                                           </div>
-                                          {member.hasPlayed ? (
-                                            <span className="font-semibold">{member.score}</span>
-                                          ) : (
-                                            <span className="text-sm text-muted-foreground">No score yet</span>
-                                          )}
-                                        </div>
-                                      );
-                                    })
-                                  ) : (
-                                    <div className="text-center py-3 text-muted-foreground">
-                                      <p>No one has played {selectedGame?.name} today</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </>
+                                        );
+                                      })
+                                    ) : (
+                                      <div className="text-center py-3 text-muted-foreground">
+                                        <p>No one has played {selectedGame?.name} today</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </>
+                            </div>
                           </div>
                         </Card>
                       );

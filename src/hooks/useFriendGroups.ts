@@ -12,6 +12,17 @@ interface UseFriendGroupsProps {
   enabled?: boolean;
 }
 
+// Interface for the group with status
+interface GroupWithStatus extends Record<string, any> {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  updated_at?: string;
+  description?: string;
+  member_status?: string;
+}
+
 // Hook result interface
 interface UseFriendGroupsResult {
   friendGroups: FriendGroup[];
@@ -62,12 +73,11 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           console.log('Querying member groups for user:', user.id);
         }
         
-        // First get the group IDs where the user is a member
+        // First get the group IDs where the user is a member or invited
         const { data: memberGroups, error: memberError } = await supabase
           .from('friend_group_members')
-          .select('group_id')
-          .eq('friend_id', user.id)
-          .eq('status', 'accepted');
+          .select('group_id, status')
+          .eq('friend_id', user.id);
           
         if (memberError) {
           console.error('Error fetching member groups:', memberError);
@@ -75,7 +85,9 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
         }
         
         if (isDevelopment()) {
-          console.log('Member group IDs:', memberGroups);
+          console.log('Member group IDs with status:', memberGroups?.map(m => 
+            `${m.group_id} (${m.status})`
+          ));
         }
         
         // If no member groups found, try a direct SQL query to debug
@@ -142,6 +154,12 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           // Get the group IDs from the member groups
           const groupIds = memberGroups.map(m => m.group_id);
           
+          // Create a map to store statuses for each group
+          const statusByGroupId = memberGroups.reduce((map, m) => {
+            map[m.group_id] = m.status;
+            return map;
+          }, {} as Record<string, string>);
+          
           // Fetch the actual group data
           const { data: memberGroupData, error: groupError } = await supabase
             .from('friend_groups')
@@ -157,8 +175,14 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
             console.log('Member group details:', memberGroupData);
           }
           
+          // Add status to each group
+          const memberGroupsWithStatus = memberGroupData?.map(group => ({
+            ...group,
+            member_status: statusByGroupId[group.id] || 'unknown'
+          })) || [];
+          
           // Combine owned groups and groups the user is a member of
-          const allGroups = [...(ownedGroups || []), ...(memberGroupData || [])];
+          const allGroups = [...(ownedGroups || []), ...memberGroupsWithStatus];
           
           // Remove any duplicates based on group ID
           const uniqueGroups = Array.from(
@@ -286,6 +310,19 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
       });
       
       // Build the final group object with members
+      const memberStatus = (group as GroupWithStatus).member_status;
+      
+      // Ensure status is of the correct type
+      let typedStatus: 'pending' | 'accepted' | 'rejected' | 'left' | undefined;
+      if (memberStatus === 'pending' || 
+          memberStatus === 'accepted' || 
+          memberStatus === 'rejected' || 
+          memberStatus === 'left') {
+        typedStatus = memberStatus;
+      } else {
+        typedStatus = undefined;
+      }
+      
       return {
         id: group.id,
         name: group.name,
@@ -297,7 +334,14 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
         pendingMembers: enrichedPendingMembers,
         description: group.description || '',
         pendingCount: pendingMembers.length,
-        isJoinedGroup: group.user_id === user?.id || enrichedAcceptedMembers.some(m => m.id === user?.id)
+        status: typedStatus, // Use the correctly typed status
+        // Consider user joined if:
+        // 1. They own the group OR
+        // 2. They are an accepted member OR
+        // 3. They have any status (pending/rejected) in the group
+        isJoinedGroup: group.user_id === user?.id || 
+          enrichedAcceptedMembers.some(m => m.id === user?.id) ||
+          memberStatus === 'pending' // Use the extracted member status
       };
     });
     
