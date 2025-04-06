@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { isToday } from '@/utils/dateUtils';
 
 interface GamesGridProps {
   isLoading: boolean;
@@ -22,6 +23,11 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
   // Check if a game has been played
   const hasPlayedGame = (gameId: string) => {
     return scores.some(score => score.gameId === gameId);
+  };
+  
+  // Check if a game has been played today
+  const hasPlayedGameToday = (gameId: string) => {
+    return scores.some(score => score.gameId === gameId && isToday(score.date));
   };
   
   // Handle adding a game to My Games
@@ -46,6 +52,19 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
     }
   };
 
+  // Sort the games list to put games played today at the end
+  const sortedGamesList = [...gamesList].sort((a, b) => {
+    const aPlayedToday = hasPlayedGameToday(a.id);
+    const bPlayedToday = hasPlayedGameToday(b.id);
+    
+    // If only one is played today, sort accordingly
+    if (aPlayedToday && !bPlayedToday) return 1;
+    if (!aPlayedToday && bPlayedToday) return -1;
+    
+    // Otherwise keep original order
+    return 0;
+  });
+
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
       <div className="flex items-center justify-between mb-4">
@@ -61,7 +80,7 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
             <div key={index} className="animate-pulse h-[320px] bg-muted rounded-xl w-full"></div>
           ))
         ) : (
-          gamesList.map(game => {
+          sortedGamesList.map(game => {
             const gameScores = scores.filter(score => score.gameId === game.id);
             const latestScore = gameScores.length > 0 
               ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]

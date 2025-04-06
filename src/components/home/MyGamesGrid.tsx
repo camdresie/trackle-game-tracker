@@ -5,6 +5,7 @@ import { calculateAverageScore, calculateBestScore } from '@/utils/gameData';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { isToday } from '@/utils/dateUtils';
 
 interface MyGamesGridProps {
   isLoading: boolean;
@@ -18,6 +19,11 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
   // Filter games to only show ones that are in the selected_games array
   const selectedGames = profile?.selected_games || [];
   const playedGames = gamesList.filter(game => selectedGames.includes(game.id));
+
+  // Check if a game has been played today
+  const hasPlayedGameToday = (gameId: string) => {
+    return scores.some(score => score.gameId === gameId && isToday(score.date));
+  };
 
   // Handle removing a game
   const handleRemoveGame = async (gameId: string) => {
@@ -39,6 +45,19 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
     toast.success(`${game?.name || 'Game'} removed from My Games`);
   };
 
+  // Sort the games to put games played today at the end
+  const sortedPlayedGames = [...playedGames].sort((a, b) => {
+    const aPlayedToday = hasPlayedGameToday(a.id);
+    const bPlayedToday = hasPlayedGameToday(b.id);
+    
+    // If only one is played today, sort accordingly
+    if (aPlayedToday && !bPlayedToday) return 1;
+    if (!aPlayedToday && bPlayedToday) return -1;
+    
+    // Otherwise keep original order
+    return 0;
+  });
+
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
       <div className="flex items-center justify-between mb-4">
@@ -59,7 +78,7 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
             <p className="mt-2">Find all available games in the <strong>All Games</strong> tab and add the ones you play regularly to <strong>My Games</strong>.</p>
           </div>
         ) : (
-          playedGames.map(game => {
+          sortedPlayedGames.map(game => {
             const gameScores = scores.filter(score => score.gameId === game.id);
             const latestScore = gameScores.length > 0 
               ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
