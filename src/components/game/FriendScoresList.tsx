@@ -99,8 +99,8 @@ const FriendScoresList = ({
       if (aStats.totalGames === 0) return 1;
       if (bStats.totalGames === 0) return -1;
       
-      // For Wordle and mini-crossword, lower scores are better
-      if (game.id === 'wordle' || game.id === 'mini-crossword') {
+      // For these games, lower scores are better
+      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(game.id)) {
         return aStats.averageScore - bStats.averageScore;
       }
       
