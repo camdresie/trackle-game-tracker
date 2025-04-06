@@ -55,7 +55,8 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
           ))
         ) : playedGames.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
-            You haven't selected any games yet. Add games from the "All Games" section or start playing to automatically add them!
+            You haven't added any games to your collection yet.
+            <p className="mt-2">Find all available games in the <strong>All Games</strong> tab and add the ones you play regularly to <strong>My Games</strong>.</p>
           </div>
         ) : (
           playedGames.map(game => {
