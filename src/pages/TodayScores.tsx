@@ -414,61 +414,82 @@ const TodayScores = () => {
   // Memoize the all friends tab content
   const allFriendsTabContent = useMemo(() => (
     <TabsContent value="friends" className="space-y-6">
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-base sm:text-lg md:text-xl flex items-center gap-2 truncate max-w-[70%]">
-            <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5 text-accent flex-shrink-0" />
-            <span className="truncate">{selectedGame?.name || ''} Scores Today</span>
-          </h3>
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleManualRefresh}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className={cn(isMobile ? "sr-only" : "")}>Refresh</span>
-            </Button>
-            
-            {friends.length > 0 && (
-              <GroupScoresShare
-                groupName="All Friends"
-                gameName={selectedGame?.name || ""}
-                gameColor={selectedGame?.color || ""}
-                members={getAllFriendsForScoreShare().members}
-                currentUserName={profile?.username || ""}
-                currentUserScore={getAllFriendsForScoreShare().currentUserScore}
-                currentUserHasPlayed={getAllFriendsForScoreShare().currentUserHasPlayed}
-                useActualUsername={true}
+      <Card className="shadow-md">
+        <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold leading-none">All Friends</h3>
+            <div className="flex space-x-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={handleManualRefresh}
               >
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center justify-center gap-1"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
-                </Button>
-              </GroupScoresShare>
-            )}
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         
-        {/* Friends scores list - Modified to use virtualization */}
-        <FriendListVirtualized 
-          friends={getAllFriendsList}
-          isLowerBetter={isLowerBetter}
-          selectedGame={selectedGame}
-        />
+        <div className="px-3 py-2">
+          <div className="flex flex-col">
+            <div className="mb-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-xl flex items-center gap-2">
+                  <Users className="w-5 h-5 text-accent flex-shrink-0" />
+                  <span className="truncate">All Friends {selectedGame?.name || ''} Scores</span>
+                </h3>
+              </div>
+              
+              <div className="flex items-center gap-2 mt-3">
+                <GroupScoresShare
+                  groupName="All Friends"
+                  gameName={selectedGame?.name || ""}
+                  gameColor={selectedGame?.color || ""}
+                  members={getAllFriendsForScoreShare().members}
+                  currentUserName={profile?.username || ""}
+                  currentUserScore={getAllFriendsForScoreShare().currentUserScore}
+                  currentUserHasPlayed={getAllFriendsForScoreShare().currentUserHasPlayed}
+                  useActualUsername={true}
+                >
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center justify-center gap-1"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
+                  </Button>
+                </GroupScoresShare>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleManualRefresh}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span className={cn(isMobile ? "sr-only" : "")}>Refresh</span>
+                </Button>
+              </div>
+            </div>
+            
+            {/* Friends scores list - Modified to use virtualization */}
+            <div className="space-y-1 mt-2">
+              <FriendListVirtualized 
+                friends={getAllFriendsList}
+                isLowerBetter={isLowerBetter}
+                selectedGame={selectedGame}
+              />
+            </div>
+          </div>
+        </div>
       </Card>
     </TabsContent>
   ), [
     selectedGame, 
     handleManualRefresh, 
     isMobile, 
-    friends.length, 
     getAllFriendsForScoreShare, 
     profile?.username, 
     getAllFriendsList, 
@@ -536,24 +557,21 @@ const TodayScores = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <Tabs defaultValue="friends" className="w-full">
+            <Tabs defaultValue="groups" className="w-full">
               <TabsList className="inline-flex sm:inline-flex w-full sm:w-auto grid sm:grid-cols-none grid-cols-2 h-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <TabsTrigger value="friends" className="inline-flex items-center justify-center gap-2">
-                  <Users className="h-4 w-4" />
-                  All Friends
-                </TabsTrigger>
                 <TabsTrigger value="groups" className="inline-flex items-center justify-center gap-2">
                   <Users className="h-4 w-4" />
                   By Group
                 </TabsTrigger>
+                <TabsTrigger value="friends" className="inline-flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  All Friends
+                </TabsTrigger>
               </TabsList>
-              
-              {/* All Friends tab content */}
-              {allFriendsTabContent}
               
               {/* By Group tab content */}
               <TabsContent value="groups" className="space-y-6">
-                {groupPerformanceData.length > 0 ? (
+                {groupPerformanceData && groupPerformanceData.length > 0 ? (
                   <div className="space-y-6">
                     {groupPerformanceData.map((group) => {
                       const leadingPlayer = getLeadingPlayerInGroup(group);
@@ -771,9 +789,10 @@ const TodayScores = () => {
                 ) : (
                   <Card className="p-8 flex flex-col items-center justify-center text-center">
                     <Users className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h2 className="text-xl font-semibold mb-2">No Friend Groups</h2>
+                    <h2 className="text-xl font-semibold mb-2">No Groups Yet</h2>
                     <p className="text-muted-foreground mb-4">
-                      Create groups of friends to track your scores together.
+                      Create groups to see how you and your friends compare in daily games.
+                      Share scores, compete, and chat with your friends in groups!
                     </p>
                     <Button 
                       onClick={() => handleOpenConnectionsModal('groups')}
@@ -781,11 +800,14 @@ const TodayScores = () => {
                       className="gap-2"
                     >
                       <Users className="w-4 h-4" />
-                      Create Group
+                      Create Your First Group
                     </Button>
                   </Card>
                 )}
               </TabsContent>
+              
+              {/* All Friends tab content */}
+              {allFriendsTabContent}
             </Tabs>
           </div>
         )}
