@@ -19,7 +19,8 @@ import {
   Share2,
   Loader2,
   RefreshCw,
-  User
+  User,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
@@ -47,7 +48,7 @@ interface GroupMember {
 }
 
 // Define this constant for friend item height
-const FRIEND_ITEM_HEIGHT = 90; // Estimated height of each friend card
+const FRIEND_ITEM_HEIGHT = 60; // Height to match By Group styling with p-3 padding
 
 // Component to render the virtualized friends list - moved outside the main component and memoized
 const FriendListVirtualized = memo(({ 
@@ -120,58 +121,40 @@ const FriendListVirtualized = memo(({
     const tiedPlayers = playersWithScores.filter(p => p.score === topScore);
     const isTied = tiedPlayers.length > 1;
     
-    // Calculate rank
-    const rank = playersWithScores
-      .findIndex(p => p.score === person.score) + 1;
+    // Check if this is the first item in the sorted list (for Top score badge)
+    const isFirst = index === 0 && person.hasPlayed;
+    const hasTiedTopScore = hasTopScore && isTied;
     
     return (
       <div style={style} className="px-1 py-1">
         <div 
-          className={cn(
-            "w-full rounded-lg border p-3",
-            person.isCurrentUser ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-accent/5",
-            hasTopScore ? "border-amber-500/40 bg-amber-500/5" : ""
-          )}
+          className={`flex items-center justify-between p-3 rounded-lg ${
+            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+          } ${hasTopScore ? "border border-accent/20" : ""}`}
         >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {person.playerName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-medium flex items-center">
-                  <span className={cn(person.isCurrentUser ? "text-primary" : "")}>
-                    {person.playerName}
-                  </span>
-                  {hasTopScore && <Trophy className="w-4 h-4 text-amber-500 ml-1" />}
-                  {hasTopScore && isTied && (
-                    <span className="text-xs bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full px-2 py-0.5 ml-1">
-                      Tied
-                    </span>
-                  )}
-                </div>
-              </div>
+          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+            {hasTopScore && (
+              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            )}
+            <div className="font-medium truncate">
+              {person.playerName}
             </div>
-            
-            <div className="flex items-center gap-2 text-sm">
-              {person.hasPlayed && person.score !== null && person.score !== undefined ? (
-                <>
-                  <Badge className="font-medium" variant={hasTopScore ? "default" : "secondary"}>
-                    {rank}
-                  </Badge>
-                  <span className="font-bold text-lg">
-                    {formatScoreValue(person.score, selectedGame?.id)}
-                  </span>
-                </>
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  No score yet
-                </Badge>
-              )}
-            </div>
+            {isFirst && !isTied && (
+              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                Top score
+              </span>
+            )}
+            {hasTiedTopScore && (
+              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                Tied
+              </span>
+            )}
           </div>
+          {person.hasPlayed ? (
+            <span className="font-semibold">{formatScoreValue(person.score, selectedGame?.id)}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">No score yet</span>
+          )}
         </div>
       </div>
     );
@@ -190,10 +173,10 @@ const FriendListVirtualized = memo(({
   }
   
   return (
-    <div ref={containerRef} style={{ height: '400px' }}>
+    <div ref={containerRef} style={{ height: '300px' }}>
       {width && (
         <List
-          height={400}
+          height={300}
           width={width}
           itemCount={sortedFriends.length}
           itemSize={FRIEND_ITEM_HEIGHT}
