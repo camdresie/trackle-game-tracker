@@ -24,11 +24,21 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
   const hasPlayedGame = (gameId: string) => {
     return scores.some(score => score.gameId === gameId);
   };
-  
-  // Check if a game has been played today
-  const hasPlayedGameToday = (gameId: string) => {
+
+  // Check if a game was played today
+  const wasPlayedToday = (gameId: string) => {
     return scores.some(score => score.gameId === gameId && isToday(score.date));
   };
+  
+  // Sort games - games played today go to the end of the list
+  const sortedGames = [...gamesList].sort((a, b) => {
+    const aPlayedToday = wasPlayedToday(a.id);
+    const bPlayedToday = wasPlayedToday(b.id);
+    
+    if (aPlayedToday && !bPlayedToday) return 1;
+    if (!aPlayedToday && bPlayedToday) return -1;
+    return 0;
+  });
   
   // Handle adding a game to My Games
   const handleAddGame = async (gameId: string) => {
@@ -52,19 +62,6 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
     }
   };
 
-  // Sort the games list to put games played today at the end
-  const sortedGamesList = [...gamesList].sort((a, b) => {
-    const aPlayedToday = hasPlayedGameToday(a.id);
-    const bPlayedToday = hasPlayedGameToday(b.id);
-    
-    // If only one is played today, sort accordingly
-    if (aPlayedToday && !bPlayedToday) return 1;
-    if (!aPlayedToday && bPlayedToday) return -1;
-    
-    // Otherwise keep original order
-    return 0;
-  });
-
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
       <div className="flex items-center justify-between mb-4">
@@ -80,7 +77,7 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
             <div key={index} className="animate-pulse h-[320px] bg-muted rounded-xl w-full"></div>
           ))
         ) : (
-          sortedGamesList.map(game => {
+          sortedGames.map(game => {
             const gameScores = scores.filter(score => score.gameId === game.id);
             const latestScore = gameScores.length > 0 
               ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]

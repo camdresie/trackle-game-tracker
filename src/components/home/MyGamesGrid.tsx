@@ -20,10 +20,20 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
   const selectedGames = profile?.selected_games || [];
   const playedGames = gamesList.filter(game => selectedGames.includes(game.id));
 
-  // Check if a game has been played today
-  const hasPlayedGameToday = (gameId: string) => {
+  // Check if a game was played today
+  const wasPlayedToday = (gameId: string) => {
     return scores.some(score => score.gameId === gameId && isToday(score.date));
   };
+  
+  // Sort games - games played today go to the end of the list
+  const sortedGames = [...playedGames].sort((a, b) => {
+    const aPlayedToday = wasPlayedToday(a.id);
+    const bPlayedToday = wasPlayedToday(b.id);
+    
+    if (aPlayedToday && !bPlayedToday) return 1;
+    if (!aPlayedToday && bPlayedToday) return -1;
+    return 0;
+  });
 
   // Handle removing a game
   const handleRemoveGame = async (gameId: string) => {
@@ -45,19 +55,6 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
     toast.success(`${game?.name || 'Game'} removed from My Games`);
   };
 
-  // Sort the games to put games played today at the end
-  const sortedPlayedGames = [...playedGames].sort((a, b) => {
-    const aPlayedToday = hasPlayedGameToday(a.id);
-    const bPlayedToday = hasPlayedGameToday(b.id);
-    
-    // If only one is played today, sort accordingly
-    if (aPlayedToday && !bPlayedToday) return 1;
-    if (!aPlayedToday && bPlayedToday) return -1;
-    
-    // Otherwise keep original order
-    return 0;
-  });
-
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
       <div className="flex items-center justify-between mb-4">
@@ -72,13 +69,13 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
           Array(4).fill(0).map((_, index) => (
             <div key={index} className="animate-pulse h-[320px] bg-muted rounded-xl w-full"></div>
           ))
-        ) : playedGames.length === 0 ? (
+        ) : sortedGames.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
             You haven't added any games to your collection yet.
             <p className="mt-2">Find all available games in the <strong>All Games</strong> tab and add the ones you play regularly to <strong>My Games</strong>.</p>
           </div>
         ) : (
-          sortedPlayedGames.map(game => {
+          sortedGames.map(game => {
             const gameScores = scores.filter(score => score.gameId === game.id);
             const latestScore = gameScores.length > 0 
               ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]

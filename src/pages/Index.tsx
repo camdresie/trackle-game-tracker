@@ -95,6 +95,7 @@ const Index = () => {
           open={showGameSelection}
           onOpenChange={setShowGameSelection}
           games={gamesList}
+          scores={scores}
           onSelectGame={(game) => {
             setSelectedGame(game);
             setShowAddScore(true);
