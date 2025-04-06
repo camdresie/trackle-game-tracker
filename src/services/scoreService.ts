@@ -175,33 +175,7 @@ export const addGameScore = async (
       
       result = data;
       
-      // Check if this is the first score for this game and add it to selected_games
-      const { data: existingScores } = await supabase
-        .from('scores')
-        .select('id')
-        .eq('game_id', scoreData.gameId)
-        .eq('user_id', scoreData.playerId);
-        
-      if (existingScores && existingScores.length === 1) {
-        // This is the first score, add the game to selected_games
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('selected_games')
-          .eq('id', scoreData.playerId)
-          .single();
-          
-        if (profile) {
-          const currentGames = profile.selected_games || [];
-          if (!currentGames.includes(scoreData.gameId)) {
-            await supabase
-              .from('profiles')
-              .update({
-                selected_games: [...currentGames, scoreData.gameId]
-              })
-              .eq('id', scoreData.playerId);
-          }
-        }
-      }
+      // The auto-adding to selected_games functionality has been removed
     }
     
     // Update game stats for this game/user
