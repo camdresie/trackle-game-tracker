@@ -5,6 +5,7 @@ import PlayerCard from '@/components/PlayerCard';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { isLowerScoreBetter } from '@/utils/gameData';
 
 interface Player {
   id: string;
@@ -52,8 +53,8 @@ const FriendScoresList = ({
     const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
     
     let bestScore = scores[0]?.value || 0;
-    if (game.id === 'wordle' || game.id === 'mini-crossword') {
-      // For Wordle and mini-crossword, lower is better
+    if (isLowerScoreBetter(game.id)) {
+      // For these games, lower is better (including losses)
       bestScore = Math.min(...scores.map(s => s.value));
     } else {
       // For other games, higher is better
@@ -99,12 +100,12 @@ const FriendScoresList = ({
       if (aStats.totalGames === 0) return 1;
       if (bStats.totalGames === 0) return -1;
       
-      // For these games, lower scores are better
-      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(game.id)) {
+      // For these games, lower average scores are better
+      if (isLowerScoreBetter(game.id)) {
         return aStats.averageScore - bStats.averageScore;
       }
       
-      // For other games, higher scores are better
+      // For other games, higher average scores are better
       return bStats.averageScore - aStats.averageScore;
     });
   }, [friends, user, profile, game.id, friendScores]);

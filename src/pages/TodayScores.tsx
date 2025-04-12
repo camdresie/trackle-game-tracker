@@ -37,6 +37,7 @@ import { useResizeObserver } from '@/hooks/useResizeObserver';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { isLowerScoreBetter } from '@/utils/gameData';
 
 // Define a consistent interface for group members
 interface GroupMember {
@@ -53,15 +54,16 @@ const FRIEND_ITEM_HEIGHT = 60; // Height to match By Group styling with p-3 padd
 // Component to render the virtualized friends list - moved outside the main component and memoized
 const FriendListVirtualized = memo(({ 
   friends, 
-  isLowerBetter,
   selectedGame
 }: { 
   friends: GroupMember[], 
-  isLowerBetter: boolean,
   selectedGame: any
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width } = useResizeObserver(containerRef);
+  
+  // Calculate isLowerBetter inside the component
+  const isLowerBetter = useMemo(() => isLowerScoreBetter(selectedGame?.id || ''), [selectedGame]);
   
   // Sort the friends list
   const sortedFriends = useMemo(() => {
@@ -100,17 +102,15 @@ const FriendListVirtualized = memo(({
   const FriendRow = useCallback(({ index, style }: { index: number, style: React.CSSProperties }) => {
     const person = sortedFriends[index];
     
-    // Find players with the same top score (to determine ties)
+    // Use the locally defined isLowerBetter
     const playersWithScores = sortedFriends.filter(p => p.hasPlayed && p.score !== null && p.score !== undefined);
     
     // Find the top score
     let topScore = null;
     if (playersWithScores.length > 0) {
       const sortedByScore = [...playersWithScores].sort((a, b) => {
-        // Make sure we're comparing numbers
         const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
         const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
-        
         return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
       });
       topScore = sortedByScore[0].score;
@@ -246,14 +246,6 @@ const TodayScores = () => {
   // Get today's date in Eastern Time for consistency
   const today = getFormattedTodayInEasternTime();
   
-  // Determine if lower scores are better for the selected game
-  const isLowerBetter = selectedGame?.id === 'wordle' || 
-                       selectedGame?.id === 'mini-crossword' || 
-                       selectedGame?.id === 'connections' ||
-                       selectedGame?.id === 'framed' ||
-                       selectedGame?.id === 'nerdle' ||
-                       selectedGame?.id === 'minute-cryptic';
-  
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = useCallback((group: any) => {
     if (!group || !group.members || group.members.length === 0) return null;
@@ -273,6 +265,9 @@ const TodayScores = () => {
     
     if (playersWithScores.length === 0) return null;
     
+    // Calculate isLowerBetter inside this function
+    const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
+    
     // Sort based on game type (lower or higher is better)
     const sorted = [...playersWithScores].sort((a, b) => {
       if (isLowerBetter) {
@@ -291,7 +286,7 @@ const TodayScores = () => {
       leaders: tiedPlayers,
       isTied: tiedPlayers.length > 1
     };
-  }, [isLowerBetter]);
+  }, [selectedGame]);
   
   // Convert member data to GroupMemberScore format
   const convertToGroupMemberScores = useCallback((members: any[]) => {
@@ -489,7 +484,6 @@ const TodayScores = () => {
             <div className="space-y-1 mt-2">
               <FriendListVirtualized 
                 friends={getAllFriendsList}
-                isLowerBetter={isLowerBetter}
                 selectedGame={selectedGame}
               />
             </div>
@@ -503,8 +497,7 @@ const TodayScores = () => {
     isMobile, 
     getAllFriendsForScoreShare, 
     profile?.username, 
-    getAllFriendsList, 
-    isLowerBetter
+    getAllFriendsList
   ]);
 
   return (
@@ -591,7 +584,8 @@ const TodayScores = () => {
                        selectedGame?.id === 'connections' ||
                        selectedGame?.id === 'framed' ||
                        selectedGame?.id === 'nerdle' ||
-                       selectedGame?.id === 'minute-cryptic';
+                       selectedGame?.id === 'minute-cryptic' ||
+                       selectedGame?.id === 'quordle';
                       
                       // Check if the current group has a pending status by finding the group in friendGroups
                       const pendingGroup = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
@@ -640,6 +634,7 @@ const TodayScores = () => {
                       
                       // Sort by who has played, then by score (if lower is better, lower scores first)
                       const playedMembers = allMembers.filter(m => m.hasPlayed && m.score !== null && m.score !== undefined).sort((a, b) => {
+                        // Use the memoized isLowerBetter flag
                         return isLowerBetter 
                           ? (a.score || 999) - (b.score || 999) 
                           : (b.score || 0) - (a.score || 0);
