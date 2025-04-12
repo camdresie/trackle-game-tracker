@@ -27,9 +27,11 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
     const percentage = (value / (game.maxScore || 2340)) * 100;
     return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
   } else if (game.id === 'quordle') {
+    // Use quordleValues if provided (e.g., from input), otherwise use the total value
     const score = quordleValues 
       ? quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0)
-      : 0;
+      : value; // Fallback to using the passed-in total value
+      
     // Lower is better: <=15 Excellent, <=25 Good, >25 Fair/Loss (Max 40)
     if (score === 40) return 'Loss'; // All X's
     return score <= 15 ? 'Excellent' : score <= 25 ? 'Good' : 'Fair';
@@ -73,9 +75,11 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     // For Mini Crossword, LOWER is better (it's time-based)
     return value < 90 ? 'text-emerald-500' : value < 180 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'quordle') {
+    // Use quordleValues if provided, otherwise use the total value for color
     const score = quordleValues 
       ? quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0)
-      : 0;
+      : value; // Fallback to using the passed-in total value
+      
     // Lower is better: <=15 Green, <=25 Amber, >25 Rose
     if (score === 40) return 'text-gray-500'; // All X's
     return score <= 15 ? 'text-emerald-500' : score <= 25 ? 'text-amber-500' : 'text-rose-500';
