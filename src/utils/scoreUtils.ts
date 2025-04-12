@@ -30,7 +30,9 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
     const score = quordleValues 
       ? quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0)
       : 0;
-    return score <= 20 ? 'Excellent' : score <= 28 ? 'Good' : 'Fair';
+    // Lower is better: <=15 Excellent, <=25 Good, >25 Fair/Loss (Max 40)
+    if (score === 40) return 'Loss'; // All X's
+    return score <= 15 ? 'Excellent' : score <= 25 ? 'Good' : 'Fair';
   } else if (game.id === 'squardle') {
     if (value === 0) return 'Loss';
     return value >= 8 ? 'Excellent' : value >= 5 ? 'Good' : 'Fair';
@@ -74,7 +76,9 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     const score = quordleValues 
       ? quordleValues.reduce((sum, val) => sum + (val === 10 ? 10 : val), 0)
       : 0;
-    return score <= 20 ? 'text-emerald-500' : score <= 28 ? 'text-amber-500' : 'text-rose-500';
+    // Lower is better: <=15 Green, <=25 Amber, >25 Rose
+    if (score === 40) return 'text-gray-500'; // All X's
+    return score <= 15 ? 'text-emerald-500' : score <= 25 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'squardle') {
     if (value === 0) return 'text-gray-500';
     return value >= 8 ? 'text-emerald-500' : value >= 5 ? 'text-amber-500' : 'text-rose-500';

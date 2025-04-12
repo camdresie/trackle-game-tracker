@@ -1,5 +1,6 @@
 import { LeaderboardPlayer } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
+import { isLowerScoreBetter } from '@/utils/gameData';
 
 /**
  * Get the current date in Eastern Time (ET)
@@ -10,7 +11,7 @@ const getEasternTimeDate = (): string => {
 };
 
 // Define games where lower scores are better for reuse
-const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'];
+// const lowerScoreBetterGames = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic']; // Remove this local list
 
 /**
  * Filter and sort players based on selected criteria with performance optimizations
@@ -97,7 +98,7 @@ export const filterAndSortPlayers = (
   }
   
   // Sorting - optimize before truncating to maxPlayers
-  const isLowerBetter = lowerScoreBetterGames.includes(selectedGame);
+  const isLowerBetter = isLowerScoreBetter(selectedGame);
   
   if (timeFilter === 'today') {
     // For today view, sort by today's score

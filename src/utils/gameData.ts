@@ -113,11 +113,14 @@ export const calculateBestScore = (scores: any[], game: any) => {
   if (!scores || scores.length === 0) return null;
   
   // For these games, lower scores are better
-  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic'].includes(game.id)) {
+  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle'].includes(game.id)) {
     // Filter out zeros for games where 0 is not a valid score
     // For Wordle and Framed, also filter out 7 (loss) when calculating best score
+    // For Quordle, filter out 40 (loss) when calculating best score
     const validScores = scores.filter(score => 
-      score.value > 0 && ((['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true)
+      score.value > 0 && 
+      ((['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true) &&
+      ((game.id === 'quordle') ? score.value < 40 : true)
     );
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
@@ -154,4 +157,9 @@ export const getLabelByGame = (gameId: string): string => {
     default:
       return 'points';
   }
+};
+
+// Determine if a game treats lower scores as better
+export const isLowerScoreBetter = (gameId: string): boolean => {
+  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle'].includes(gameId);
 };
