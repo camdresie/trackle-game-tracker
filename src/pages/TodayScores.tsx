@@ -19,7 +19,8 @@ import {
   Share2,
   Loader2,
   RefreshCw,
-  User
+  User,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
@@ -47,7 +48,7 @@ interface GroupMember {
 }
 
 // Define this constant for friend item height
-const FRIEND_ITEM_HEIGHT = 90; // Estimated height of each friend card
+const FRIEND_ITEM_HEIGHT = 60; // Height to match By Group styling with p-3 padding
 
 // Component to render the virtualized friends list - moved outside the main component and memoized
 const FriendListVirtualized = memo(({ 
@@ -99,63 +100,65 @@ const FriendListVirtualized = memo(({
   const FriendRow = useCallback(({ index, style }: { index: number, style: React.CSSProperties }) => {
     const person = sortedFriends[index];
     
-    // Find if this person is the top scorer (only among those who have played)
-    const isTopScore = person.hasPlayed && person.score !== null && person.score !== undefined && 
-      sortedFriends
-        .filter(p => p.hasPlayed && p.score !== null && p.score !== undefined)
-        .findIndex(p => p.playerId === person.playerId) === 0;
+    // Find players with the same top score (to determine ties)
+    const playersWithScores = sortedFriends.filter(p => p.hasPlayed && p.score !== null && p.score !== undefined);
+    
+    // Find the top score
+    let topScore = null;
+    if (playersWithScores.length > 0) {
+      const sortedByScore = [...playersWithScores].sort((a, b) => {
+        // Make sure we're comparing numbers
+        const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? 999 : 0);
+        const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? 999 : 0);
         
-    const rank = sortedFriends
-      .filter(p => p.hasPlayed && p.score !== null && p.score !== undefined)
-      .findIndex(p => p.playerId === person.playerId) + 1;
+        return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+      });
+      topScore = sortedByScore[0].score;
+    }
+    
+    // Check if this person has the top score and if there are ties
+    const hasTopScore = person.hasPlayed && person.score !== null && person.score !== undefined && person.score === topScore;
+    const tiedPlayers = playersWithScores.filter(p => p.score === topScore);
+    const isTied = tiedPlayers.length > 1;
+    
+    // Check if this is the first item in the sorted list (for Top score badge)
+    const isFirst = index === 0 && person.hasPlayed;
+    const hasTiedTopScore = hasTopScore && isTied;
     
     return (
       <div style={style} className="px-1 py-1">
         <div 
-          className={cn(
-            "w-full rounded-lg border p-3",
-            person.isCurrentUser ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-accent/5",
-            isTopScore ? "border-amber-500/40 bg-amber-500/5" : ""
-          )}
+          className={`flex items-center justify-between p-3 rounded-lg ${
+            person.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
+          } ${hasTopScore ? "border border-accent/20" : ""}`}
         >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {person.playerName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-medium flex items-center">
-                  <span className={cn(person.isCurrentUser ? "text-primary" : "")}>
-                    {person.playerName}
-                  </span>
-                  {isTopScore && <Trophy className="w-4 h-4 text-amber-500 ml-1" />}
-                </div>
-              </div>
+          <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
+            {hasTopScore && (
+              <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            )}
+            <div className="font-medium truncate">
+              {person.playerName}
             </div>
-            
-            <div className="flex items-center gap-2 text-sm">
-              {person.hasPlayed && person.score !== null && person.score !== undefined ? (
-                <>
-                  <Badge className="font-medium" variant={isTopScore ? "default" : "secondary"}>
-                    {rank}
-                  </Badge>
-                  <span className="font-bold text-lg">
-                    {formatScoreValue(person.score, selectedGame?.id)}
-                  </span>
-                </>
-              ) : (
-                <Badge variant="outline" className="text-muted-foreground">
-                  No score yet
-                </Badge>
-              )}
-            </div>
+            {isFirst && !isTied && (
+              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                Top score
+              </span>
+            )}
+            {hasTiedTopScore && (
+              <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                Tied
+              </span>
+            )}
           </div>
+          {person.hasPlayed ? (
+            <span className="font-semibold">{formatScoreValue(person.score, selectedGame?.id)}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">No score yet</span>
+          )}
         </div>
       </div>
     );
-  }, [sortedFriends, formatScoreValue, selectedGame?.id]);
+  }, [sortedFriends, formatScoreValue, selectedGame?.id, isLowerBetter]);
   
   // Set display name for debugging
   FriendListVirtualized.displayName = 'FriendListVirtualized';
@@ -170,10 +173,10 @@ const FriendListVirtualized = memo(({
   }
   
   return (
-    <div ref={containerRef} style={{ height: '400px' }}>
+    <div ref={containerRef} style={{ height: '300px' }}>
       {width && (
         <List
-          height={400}
+          height={300}
           width={width}
           itemCount={sortedFriends.length}
           itemSize={FRIEND_ITEM_HEIGHT}
@@ -248,7 +251,8 @@ const TodayScores = () => {
                        selectedGame?.id === 'mini-crossword' || 
                        selectedGame?.id === 'connections' ||
                        selectedGame?.id === 'framed' ||
-                       selectedGame?.id === 'nerdle';
+                       selectedGame?.id === 'nerdle' ||
+                       selectedGame?.id === 'minute-cryptic';
   
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = useCallback((group: any) => {
@@ -278,8 +282,15 @@ const TodayScores = () => {
       }
     });
     
-    // Return the leading player
-    return sorted[0];
+    // If there are multiple players with the same top score, they are tied
+    const topScore = sorted[0].score;
+    const tiedPlayers = sorted.filter(player => player.score === topScore);
+    
+    // Return an object with the leading player(s) and whether there's a tie
+    return {
+      leaders: tiedPlayers,
+      isTied: tiedPlayers.length > 1
+    };
   }, [isLowerBetter]);
   
   // Convert member data to GroupMemberScore format
@@ -575,7 +586,12 @@ const TodayScores = () => {
                   <div className="space-y-6">
                     {groupPerformanceData.map((group) => {
                       const leadingPlayer = getLeadingPlayerInGroup(group);
-                      const isLowerBetter = selectedGame?.id ? games[selectedGame.id]?.lowerIsBetter : false;
+                      const isLowerBetter = selectedGame?.id === 'wordle' || 
+                       selectedGame?.id === 'mini-crossword' || 
+                       selectedGame?.id === 'connections' ||
+                       selectedGame?.id === 'framed' ||
+                       selectedGame?.id === 'nerdle' ||
+                       selectedGame?.id === 'minute-cryptic';
                       
                       // Check if the current group has a pending status by finding the group in friendGroups
                       const pendingGroup = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
@@ -686,7 +702,7 @@ const TodayScores = () => {
                                         <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
                                       </h3>
                                       {/* Only show Leading badge here on mobile, not in the score section below */}
-                                      {leadingPlayer?.isCurrentUser && (
+                                      {leadingPlayer?.leaders.some(p => p.isCurrentUser) && (
                                         <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex items-center flex-shrink-0">
                                           <Trophy className="w-3 h-3 mr-1" /> Leading
                                         </span>
@@ -733,23 +749,35 @@ const TodayScores = () => {
                                       // People who have played, sorted by score
                                       sortedMembers.map((member, i) => {
                                         const isFirst = i === 0 && member.hasPlayed;
+                                        // Find if there are ties for the top score
+                                        const topScore = sortedMembers.find(m => m.hasPlayed)?.score;
+                                        const tiedPlayers = sortedMembers.filter(m => m.hasPlayed && m.score === topScore);
+                                        const isTied = tiedPlayers.length > 1;
+                                        const hasTiedTopScore = member.hasPlayed && member.score === topScore && isTied;
+                                        const hasTopScore = member.hasPlayed && member.score === topScore;
+                                        
                                         return (
                                           <div
                                             key={`${member.playerId}-${member.hasPlayed ? 'played' : 'not-played'}`}
                                             className={`flex items-center justify-between p-3 rounded-lg ${
                                               member.isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50"
-                                            } ${isFirst ? "border border-accent/20" : ""}`}
+                                            } ${hasTopScore ? "border border-accent/20" : ""}`}
                                           >
                                             <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                                              {isFirst && (
+                                              {hasTopScore && (
                                                 <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                                               )}
                                               <div className="font-medium truncate">
                                                 {member.playerName}
                                               </div>
-                                              {isFirst && (
+                                              {isFirst && !isTied && (
                                                 <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
                                                   Top score
+                                                </span>
+                                              )}
+                                              {hasTiedTopScore && (
+                                                <span className="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded-full flex-shrink-0">
+                                                  Tied
                                                 </span>
                                               )}
                                             </div>

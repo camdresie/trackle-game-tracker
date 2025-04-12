@@ -54,7 +54,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
     // For games like Wordle and Mini Crossword, lower scores are better
-    const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
+    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(selectedGame?.id || '');
     
     if (isDevelopment()) {
       console.log(`Group ${group.groupName}: Processing leading player determination`);
@@ -95,8 +95,15 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
       console.log(`Group ${group.groupName}: Sorted players:`, sortedPlayers);
     }
     
-    // Return the leading player
-    return sortedPlayers[0];
+    // If there are multiple players with the same top score, they are tied
+    const topScore = sortedPlayers[0].score;
+    const tiedPlayers = sortedPlayers.filter(player => player.score === topScore);
+    
+    // Return an object with the leading player(s) and whether there's a tie
+    return {
+      leaders: tiedPlayers,
+      isTied: tiedPlayers.length > 1
+    };
   };
   
   if (isLoading) {
@@ -200,7 +207,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                 console.log(`Rendering group: ${group.groupName}`);
               }
               const leadingPlayer = getLeadingPlayerInGroup(group);
-              const userIsLeading = leadingPlayer?.isCurrentUser;
+              const userIsLeading = leadingPlayer?.leaders.some(p => p.isCurrentUser);
               const groupMemberScores = convertToGroupMemberScores(group.members);
               
               // FIXED: Create a combined list of all members with current user handling
@@ -257,7 +264,7 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               }
               
               // Sort members: first by played status, then by score
-              const isLowerBetter = ['wordle', 'mini-crossword'].includes(selectedGame?.id || '');
+              const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(selectedGame?.id || '');
               const sortedMembers = [...allMembers]
                 .filter(m => m.hasPlayed && m.score !== null && m.score !== undefined)
                 .sort((a, b) => {
@@ -343,10 +350,10 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
                             <span className="truncate">
                               {member.playerName}
                             </span>
-                            {!leadingPlayer?.isCurrentUser && leadingPlayer?.playerId === member.playerId && (
+                            {leadingPlayer && leadingPlayer.leaders.some(p => p.playerId === member.playerId) && (
                               <Badge className="bg-amber-500 ml-1 px-1 py-0 h-4 text-[10px] shrink-0">
                                 <Trophy className="w-2 h-2 mr-0.5" />
-                                Leader
+                                {leadingPlayer.isTied ? "Tied" : "Leader"}
                               </Badge>
                             )}
                           </div>
