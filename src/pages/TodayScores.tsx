@@ -421,19 +421,9 @@ const TodayScores = () => {
   const allFriendsTabContent = useMemo(() => (
     <TabsContent value="friends" className="space-y-6">
       <Card className="shadow-md">
-        <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+        <div className="p-4 bg-accent/40 rounded-t-lg border-b border-accent">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold leading-none">All Friends</h3>
-            <div className="flex space-x-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={handleManualRefresh}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
         
@@ -467,16 +457,6 @@ const TodayScores = () => {
                     <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
                   </Button>
                 </GroupScoresShare>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleManualRefresh}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span className={cn(isMobile ? "sr-only" : "")}>Refresh</span>
-                </Button>
               </div>
             </div>
             
@@ -493,8 +473,6 @@ const TodayScores = () => {
     </TabsContent>
   ), [
     selectedGame, 
-    handleManualRefresh, 
-    isMobile, 
     getAllFriendsForScoreShare, 
     profile?.username, 
     getAllFriendsList
@@ -646,30 +624,9 @@ const TodayScores = () => {
                     
                       return (
                         <Card key={group.groupId} className="shadow-md">
-                          <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+                          <div className="p-4 bg-accent/40 rounded-t-lg border-b border-accent">
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg font-semibold leading-none">{group.groupName}</h3>
-                              <div className="flex space-x-1">
-                                {/* Chat button */}
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8"
-                                  onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                
-                                {/* Share button */}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleOpenConnectionsModal('groups')}
-                                >
-                                  <Share2 className="h-4 w-4" />
-                                </Button>
-                              </div>
                             </div>
                           </div>
                           
