@@ -162,6 +162,8 @@ export const getLabelByGame = (gameId: string): string => {
     case 'tightrope':
     case 'squardle':
       return 'points';
+    case 'minute-cryptic':
+      return 'hints';
     default:
       return 'points';
   }
