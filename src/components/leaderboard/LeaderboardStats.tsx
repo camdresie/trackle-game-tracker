@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Trophy, Users, Gamepad, Star, Loader2, Calendar, Award, Target, Blocks, Share2 } from 'lucide-react';
-import { LeaderboardPlayer } from '@/types/leaderboard';
+import { LeaderboardPlayer, SortByOption } from '@/types/leaderboard';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Card, CardContent } from '@/components/ui/card';
 import LeaderboardShare from './LeaderboardShare';
@@ -17,7 +17,8 @@ interface LeaderboardStatsProps {
   selectedGame: string;
   totalScoresCount: number; 
   rawScoresData: any[]; // Raw scores data for analysis
-  sortBy: string; // Add sortBy prop
+  sortByCategory: string; // Mapped category for internal display logic (e.g., 'highestAverage')
+  sortByOption: SortByOption; // Original sort option for sharing (e.g., 'averageScore')
   className?: string; // Add optional className prop
 }
 
@@ -28,7 +29,8 @@ const LeaderboardStats = ({
   selectedGame,
   totalScoresCount, 
   rawScoresData,
-  sortBy, // Use this to highlight relevant stat
+  sortByCategory, // Use this for internal display
+  sortByOption,   // Pass this to Share
   className
 }: LeaderboardStatsProps) => {
   // Get today's date in YYYY-MM-DD format for consistent comparison
@@ -126,7 +128,9 @@ const LeaderboardStats = ({
     });
     
     if (sortedUsers.length > 0) {
-      bestScorePlayer = { username: sortedUsers[0][1].username };
+      // Get the best score value to display
+      const bestScoreValue = sortedUsers[0][1].score;
+      bestScorePlayer = { username: sortedUsers[0][1].username, best_score: bestScoreValue };
     }
   } else if (activePlayers.length > 0) {
     // For all-time view, use best_score
@@ -160,29 +164,29 @@ const LeaderboardStats = ({
     const sortedUsers = [...userGameCounts.entries()].sort(([, a], [, b]) => b.count - a.count);
     
     if (sortedUsers.length > 0) {
-      mostGamesPlayer = { username: sortedUsers[0][1].username };
+      // Get the game count to display
+      const gamesCount = sortedUsers[0][1].count;
+      mostGamesPlayer = { username: sortedUsers[0][1].username, total_games: gamesCount };
     }
   } else if (activePlayers.length > 0) {
     // For all-time view, use total_games
     mostGamesPlayer = [...activePlayers].sort((a, b) => b.total_games - a.total_games)[0];
   }
   
-  // Determine which card should be highlighted based on the sortBy selection
-  const getHighlightClass = (statType: string) => {
-    if (timeFilter === 'today') {
-      return 'bg-secondary/50'; // Always use default for today view
-    }
-    
-    return sortBy === statType ? 'bg-primary/20' : 'bg-secondary/50';
-  };
-
   // Helper function to format score based on game type
-  const formatScore = (score: number): string => {
+  const formatScore = (score: number | null): string => { // Allow null
     if (score === null || score === undefined) return '-';
     
-    // Format to at most 2 decimal places for average scores
+    // Format time-based scores for Mini Crossword
+    if (selectedGame === 'mini-crossword') {
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Format to at most 1 decimal place for average scores
     if (typeof score === 'number' && !Number.isInteger(score)) {
-      return score.toFixed(2);
+      return score.toFixed(1);
     }
     
     return score.toString();
@@ -190,35 +194,46 @@ const LeaderboardStats = ({
 
   // Determine which leader card to show in the third position based on selected filter
   const renderDynamicLeaderCard = () => {
-    // Always show total scores for today view
+    // Card for today view (Today's Best Score)
     if (timeFilter === 'today') {
       return (
-        <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+        <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
           <CardContent className="p-0">
             <div className="flex items-center justify-center mb-2">
-              <Star className="w-5 h-5 text-amber-500" />
+              <Target className="w-5 h-5 text-emerald-500" />
             </div>
-            <div className="text-2xl font-semibold">
-              {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : totalScoresCount}
+            <div className="text-xl sm:text-2xl font-semibold truncate">
+              {isLoading ? (
+                  <Loader2 className="w-5 h-5 mx-auto animate-spin" />
+              ) : bestScorePlayer ? (
+                  bestScorePlayer.username
+              ) : (
+                  '-'
+              )}
             </div>
-            <div className="text-sm text-muted-foreground">
-              Total Scores
+            {!isLoading && bestScorePlayer && (
+                <div className="text-base font-medium">
+                  {formatScore(bestScorePlayer.best_score)}
+                </div>
+            )}
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Today's Best Score
             </div>
           </CardContent>
         </Card>
       );
     }
 
-    // For all-time view, show leader based on current sort option
-    switch(sortBy) {
+    // For all-time view, show leader based on the mapped sortByCategory prop
+    switch(sortByCategory) {
       case 'highestAverage':
         return (
-          <Card className="bg-primary/20 rounded-lg p-4 text-center transition-colors duration-200">
+          <Card className="bg-primary/20 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
             <CardContent className="p-0">
               <div className="flex items-center justify-center mb-2">
                 <Award className="w-5 h-5 text-blue-500" />
               </div>
-              <div className="text-xl font-semibold truncate">
+              <div className="text-xl sm:text-2xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : highestAveragePlayer ? (
@@ -232,7 +247,7 @@ const LeaderboardStats = ({
                   {formatScore(highestAveragePlayer.average_score)}
                 </div>
               )}
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Best Average Score
               </div>
             </CardContent>
@@ -240,12 +255,12 @@ const LeaderboardStats = ({
         );
       case 'bestScore':
         return (
-          <Card className="bg-primary/20 rounded-lg p-4 text-center transition-colors duration-200">
+          <Card className="bg-primary/20 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
             <CardContent className="p-0">
               <div className="flex items-center justify-center mb-2">
                 <Target className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-xl font-semibold truncate">
+              <div className="text-xl sm:text-2xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : bestScorePlayer ? (
@@ -259,7 +274,7 @@ const LeaderboardStats = ({
                   {formatScore(bestScorePlayer.best_score)}
                 </div>
               )}
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Best Score
               </div>
             </CardContent>
@@ -267,12 +282,12 @@ const LeaderboardStats = ({
         );
       case 'mostGames':
         return (
-          <Card className="bg-primary/20 rounded-lg p-4 text-center transition-colors duration-200">
+          <Card className="bg-primary/20 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
             <CardContent className="p-0">
               <div className="flex items-center justify-center mb-2">
                 <Blocks className="w-5 h-5 text-purple-500" />
               </div>
-              <div className="text-xl font-semibold truncate">
+              <div className="text-xl sm:text-2xl font-semibold truncate">
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 mx-auto animate-spin" />
                 ) : mostGamesPlayer ? (
@@ -283,31 +298,32 @@ const LeaderboardStats = ({
               </div>
               {!isLoading && mostGamesPlayer && (
                 <div className="text-base font-medium">
-                  {mostGamesPlayer.total_games}
+                  {/* Display total_games directly, don't format as time */} 
+                  {mostGamesPlayer.total_games?.toString() ?? '-'} 
                 </div>
               )}
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Most Games Played
               </div>
             </CardContent>
           </Card>
         );
-      default:
-        // Default to total scores
+      default: // Should not happen if sortByCategory is handled correctly
+        // Default to a non-highlighted card (e.g., Total Scores or empty)
         return (
-          <Card className="bg-secondary/50 rounded-lg p-4 text-center transition-colors duration-200">
+           <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
             <CardContent className="p-0">
-              <div className="flex items-center justify-center mb-2">
-                <Star className="w-5 h-5 text-amber-500" />
-              </div>
-              <div className="text-2xl font-semibold">
-                {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : totalScoresCount}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Total Scores
-              </div>
+                <div className="flex items-center justify-center mb-2">
+                    <Star className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="text-xl sm:text-2xl font-semibold">
+                    {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : '-'}
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                    Select Filter
+                </div>
             </CardContent>
-          </Card>
+           </Card>
         );
     }
   };
@@ -329,16 +345,18 @@ const LeaderboardStats = ({
           )}
         </h2>
         
-        {/* Share button */}
+        {/* Share button - Pass sortByOption here */}
         <LeaderboardShare 
           players={players}
           selectedGame={selectedGame}
           timeFilter={timeFilter}
+          sortBy={sortByOption} // Pass the original SortByOption
         />
       </div>
       
       {/* Stats cards - with dynamic third card */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+        {/* Active Players Card */}
         <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
           <CardContent className="p-0">
             <div className="flex items-center justify-center mb-2">
@@ -348,11 +366,12 @@ const LeaderboardStats = ({
               {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : playersCount}
             </div>
             <div className="text-xs sm:text-sm text-muted-foreground">
-              Active Players
+              {timeFilter === 'today' ? 'Players Today' : 'Active Players'}
             </div>
           </CardContent>
         </Card>
         
+        {/* Games Played Card */}
         <Card className="bg-secondary/50 rounded-lg p-3 sm:p-4 text-center transition-colors duration-200">
           <CardContent className="p-0">
             <div className="flex items-center justify-center mb-2">
@@ -362,14 +381,14 @@ const LeaderboardStats = ({
               {isLoading ? <Loader2 className="w-5 h-5 mx-auto animate-spin" /> : gamesPlayedCount}
             </div>
             <div className="text-xs sm:text-sm text-muted-foreground">
-              Games Played
+              {timeFilter === 'today' ? 'Games Today' : 'Games Played'}
             </div>
           </CardContent>
         </Card>
         
-        {/* Dynamic third card based on filter selection - for mobile, break to a new row on small screens */}
+        {/* Dynamic third card based on filter selection */}
         <div className="col-span-2 sm:col-span-1">
-          {renderDynamicLeaderCard()}
+          {renderDynamicLeaderCard()} 
         </div>
       </div>
     </div>
