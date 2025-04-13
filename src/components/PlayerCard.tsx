@@ -143,7 +143,18 @@ const PlayerCard = ({
             
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Avg</p>
-              <p className="font-semibold">{formatScore(averageScore)}</p>
+              <p className="font-semibold">
+                {/* Special formatting for Mini Crossword Average */}
+                {(game?.id === 'mini-crossword' && averageScore !== null) ?
+                  (() => {
+                    if (averageScore <= 0) return '0:00';
+                    const minutes = Math.floor(averageScore / 60);
+                    const seconds = Math.round(averageScore % 60); // Round seconds for average
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                  })()
+                  : formatScore(averageScore) /* Use standard formatting otherwise */
+                }
+              </p>
             </div>
           </>
         )}

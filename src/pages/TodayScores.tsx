@@ -90,6 +90,14 @@ const FriendListVirtualized = memo(({
   const formatScoreValue = useCallback((score: number | null | undefined, gameId: string) => {
     if (score === null || score === undefined) return '-';
     
+    // Specific formatting for time-based games (MM:SS)
+    if (gameId === 'mini-crossword') {
+        if (score <= 0) return '0:00';
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
     // For games with special formatting like Quordle
     if (gameId === 'quordle') {
       return score.toString();
@@ -246,6 +254,24 @@ const TodayScores = () => {
   // Get today's date in Eastern Time for consistency
   const today = getFormattedTodayInEasternTime();
   
+  // Format score utility function for TodayScores page
+  const formatScoreValue = useCallback((score: number | null | undefined, gameId: string | undefined) => {
+    if (score === null || score === undefined) return '-';
+    if (!gameId) return score.toString(); // Return raw score if gameId is missing
+
+    // Specific formatting for time-based games (MM:SS)
+    if (gameId === 'mini-crossword') {
+        if (score <= 0) return '0:00';
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Add other game-specific formatting here if needed
+    
+    return score.toString();
+  }, []);
+
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = useCallback((group: any) => {
     if (!group || !group.members || group.members.length === 0) return null;
@@ -740,7 +766,10 @@ const TodayScores = () => {
                                               )}
                                             </div>
                                             {member.hasPlayed ? (
-                                              <span className="font-semibold">{member.score}</span>
+                                              // Display formatted score directly
+                                              <span className="text-sm font-medium">
+                                                {formatScoreValue(member.score, selectedGame?.id)}
+                                              </span>
                                             ) : (
                                               <span className="text-sm text-muted-foreground">No score yet</span>
                                             )}
