@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,15 +34,31 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
     return score.toString();
   };
   
-  // Get unit label for the game
-  const getUnitLabel = (): string => {
-    if (['wordle', 'quordle'].includes(game.id)) {
-      return 'tries';
-    } else if (game.id === 'mini-crossword') {
-      return 'seconds';
+  // Get unit label for the game, potentially pluralized
+  const getUnitLabel = (scoreValue?: number | null): string => {
+    let baseUnit: string;
+    let singularUnit: string;
+
+    if (['wordle', 'quordle', 'framed', 'nerdle'].includes(game.id)) { // Added framed, nerdle
+      baseUnit = 'tries';
+      singularUnit = 'try';
+    } else if (['mini-crossword', 'minute-cryptic'].includes(game.id)) { // Added minute-cryptic
+      baseUnit = 'seconds';
+      singularUnit = 'second';
+    } else if (['connections'].includes(game.id)) { // Added connections
+      baseUnit = 'mistakes'; // Using 'mistakes' for connections
+      singularUnit = 'mistake';
     } else {
-      return 'points';
+      baseUnit = 'points'; // Default for points-based games like Betweenle, Spelling Bee
+      singularUnit = 'point';
     }
+
+    // Handle average scores (non-integers) or scores != 1 by returning plural
+    // Use Math.abs just in case, though scores should be positive
+    if (scoreValue !== null && scoreValue !== undefined && Math.abs(scoreValue) === 1 && Number.isInteger(scoreValue)) {
+      return singularUnit;
+    }
+    return baseUnit;
   };
   
   // Check if the game was played today
@@ -59,23 +74,26 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
   
   // Generate the share text
   const generateShareText = () => {
-    const unitLabel = getUnitLabel();
+    // Note: getUnitLabel is now called PER stat line with the score value
     
     let shareText = `🎮 My ${game.name} Stats - ${getTodayFormatted()}\n\n`;
     
     // Add today's score if available
     if (isPlayedToday() && latestScore) {
-      shareText += `🎯 Today: ${formatScore(latestScore.value)} ${unitLabel}\n`;
+      const scoreVal = latestScore.value;
+      shareText += `🎯 Today: ${formatScore(scoreVal)} ${getUnitLabel(scoreVal)}\n`;
     }
     
     // Add best score if available
-    if (bestScore) {
-      shareText += `🏆 Best: ${formatScore(bestScore)} ${unitLabel}\n`;
+    if (bestScore !== null && bestScore !== undefined) { // Check for null/undefined bestScore
+      shareText += `🏆 Best: ${formatScore(bestScore)} ${getUnitLabel(bestScore)}\n`;
     }
     
     // Add average score if available
-    if (averageScore) {
-      shareText += `⭐ Average: ${formatScore(averageScore)} ${unitLabel}\n`;
+    // For average, we generally expect plural unless it rounds exactly to 1.0
+    if (averageScore !== null && averageScore !== undefined) { // Check for null/undefined averageScore
+      // Let getUnitLabel handle non-integer averages (it will return plural)
+      shareText += `⭐ Average: ${formatScore(averageScore)} ${getUnitLabel(averageScore)}\n`;
     }
     
     // Add promotional text but no URL - the URL will be added by the ShareModal
