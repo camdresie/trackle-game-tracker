@@ -87,54 +87,73 @@ const AddScoreModal = ({
       toast.error('You must be logged in to add scores');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
+    // For Quordle, use the aggregate score from all 4 words
+    const scoreValue = game.id === 'quordle' ? calculateQuordleScore(quordleValues) : value;
+
+    // Construct the score object *before* the API call
+    const scorePayload: Score = {
+      gameId: game.id,
+      playerId: user.id,
+      value: scoreValue,
+      date,
+      createdAt: new Date().toISOString(),
+      id: existingScoreId || crypto.randomUUID(), // Use existing ID or generate a temporary one
+    };
+
+    // --- Optimistic Update --- 
+    // Call onAddScore immediately with the payload
+    onAddScore(scorePayload);
+
+    // Close the modal immediately for a snappier feel
+    // Reset local form state after optimistic update but before API call
+    setValue(getDefaultValue(game)); 
+    setQuordleValues([7, 7, 7, 7]);
+    onOpenChange(false); 
+    // --- End Optimistic Update ---
+
     try {
-      // For Quordle, use the aggregate score from all 4 words
-      const scoreValue = game.id === 'quordle' ? calculateQuordleScore(quordleValues) : value;
-      
       console.log(`Submitting score: ${scoreValue} for game ${game.id}`);
-      
-      // Make sure we're passing the existing ID if we're in edit mode
-      const newScore = {
-        gameId: game.id,
-        playerId: user.id,
-        value: scoreValue,
-        date,
-        createdAt: new Date().toISOString(), 
-        id: existingScoreId || undefined // Include ID if editing
-      };
-      
-      // Make sure to pass isUpdate flag properly
-      const { stats, score } = await addGameScore(newScore, isEditMode);
-      
-      console.log('Received response from addGameScore:', score);
-      
-      // Update local UI with the new score
-      onAddScore({
-        id: score.id,
-        gameId: score.gameId,
-        playerId: score.playerId,
-        value: score.value,
-        date: score.date,
-        createdAt: score.createdAt
-      });
-      
-      // Invalidate relevant queries to refresh the data using a common parent key
-      queryClient.invalidateQueries({ 
-        queryKey: ['game-data', 'scores'] 
-      });
-      
+
+      // Pass the payload (with temporary or existing ID) to the service
+      const { stats, score: savedScore } = await addGameScore(scorePayload, isEditMode);
+
+      console.log('Received response from addGameScore:', savedScore);
+
+      // --- Reconciliation (Optional but Recommended) --- 
+      // If the server returns a different ID (e.g., for new scores),
+      // you might want to update the local state again.
+      // However, React Query's invalidation handles this well enough for now.
+      // queryClient.setQueryData(['game-scores', game.id], (oldData: any) => ... );
+      // --- End Reconciliation --- 
+
+      // Invalidate queries *after* successful API call
+      queryClient.invalidateQueries({ queryKey: ['game-data', 'scores'] });
+      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+
       toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
-      
-      // Reset form and close modal
-      setValue(getDefaultValue(game));
-      setQuordleValues([7, 7, 7, 7]);
-      onOpenChange(false);
+
     } catch (error) {
       console.error('Error adding score:', error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'save'} score. Please try again.`);
+
+      // --- Rollback (Important for Optimistic Updates) --- 
+      // If the API call fails, we need to revert the optimistic update.
+      // This typically involves removing the optimistically added score 
+      // or restoring the previous state if it was an edit.
+      // For simplicity, we'll just invalidate queries to force a refresh from server state.
+      queryClient.invalidateQueries({ queryKey: ['game-data', 'scores'] });
+      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+      // You might also want to re-open the modal or show a specific error message
+      // onOpenChange(true); // Re-open modal on failure? 
+      // --- End Rollback --- 
+
     } finally {
       setIsSubmitting(false);
     }
