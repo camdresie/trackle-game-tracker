@@ -44,20 +44,32 @@ const PlayerCard = ({
     3: 'text-amber-700'
   };
 
-  // Format score display for Wordle (display "-" for 0 scores)
+  // Format score display
   const formatScore = (score: number | null) => {
-    if (score === null) return '-';
+    if (score === null || score === undefined) return '-';
     
+    // Specific formatting for time-based games (MM:SS) - ONLY Mini Crossword
+    if (game && game.id === 'mini-crossword') {
+      if (score <= 0) return '0:00'; // Handle zero scores
+      const minutes = Math.floor(score / 60);
+      const seconds = score % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Handle Wordle zero scores
     if (game?.id === 'wordle' && score === 0) {
       return '-';
     }
     
-    // Format average score to two decimal places
+    // Format average score to two decimal places (only if it's not an integer)
     if (typeof score === 'number' && !Number.isInteger(score)) {
+      // Check if it's the average score being formatted (more robust check needed if formatScore is reused)
+      // For now, assume non-integer scores are averages that need formatting.
       return score.toFixed(2);
     }
     
-    return score;
+    // Default: return score as is
+    return score.toString();
   };
   
   return (
