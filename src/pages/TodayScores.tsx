@@ -448,6 +448,7 @@ const TodayScores = () => {
                 <GroupScoresShare
                   groupName="All Friends"
                   gameName={selectedGame?.name || ""}
+                  gameId={selectedGame?.id}
                   gameColor={selectedGame?.color || ""}
                   members={getAllFriendsForScoreShare().members}
                   currentUserName={profile?.username || ""}
@@ -670,6 +671,7 @@ const TodayScores = () => {
                                       <GroupScoresShare
                                         groupName={group.groupName}
                                         gameName={selectedGame?.name || ""}
+                                        gameId={selectedGame?.id}
                                         gameColor={selectedGame?.color || ""}
                                         members={groupMemberScores}
                                         currentUserName={profile?.username || ""}
