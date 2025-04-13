@@ -68,9 +68,11 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     
     // Format MM:SS for Mini Crossword
     if (game.id === 'mini-crossword') {
-        if (score <= 0) return '0:00';
-        const minutes = Math.floor(score / 60);
-        const seconds = score % 60;
+        // Round the score to the nearest whole number (for average scores)
+        const roundedScore = Math.round(score); 
+        if (roundedScore <= 0) return '0:00';
+        const minutes = Math.floor(roundedScore / 60);
+        const seconds = roundedScore % 60;
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
