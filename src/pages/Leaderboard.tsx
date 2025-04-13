@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -121,7 +120,8 @@ const Leaderboard = () => {
           selectedGame={selectedGame}
           totalScoresCount={scoresData?.length || 0}
           rawScoresData={scoresData || []}
-          sortBy={sortByCategory}
+          sortByCategory={sortByCategory}
+          sortByOption={sortBy}
           className="mb-4 sm:mb-6"
         />
         

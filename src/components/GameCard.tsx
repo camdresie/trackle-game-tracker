@@ -62,15 +62,25 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
     }
   };
 
-  // Format the average score to show only up to 2 decimal places when needed
-  const formatAverageScore = (score?: number | null) => {
+  // Format score values based on game type
+  const formatScoreValue = (score?: number | null) => {
     if (score === undefined || score === null) return '-';
     
-    // If it's a whole number, return it as is
-    if (Number.isInteger(score)) return score.toString();
+    // Format MM:SS for Mini Crossword
+    if (game.id === 'mini-crossword') {
+        if (score <= 0) return '0:00';
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Format scores with decimals (like average) to 2 decimal places
+    if (typeof score === 'number' && !Number.isInteger(score)) {
+      return score.toFixed(2);
+    }
     
-    // Otherwise, truncate to 2 decimal places
-    return score.toFixed(2);
+    // Default: return score as string
+    return score.toString();
   };
 
   // Check if the game was played today using our utility function
@@ -107,19 +117,19 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <Trophy className="w-4 h-4 text-amber-500 mb-1" />
           <span className="text-xs text-muted-foreground">Best</span>
-          <span className="font-medium">{bestScore || '-'}</span>
+          <span className="font-medium">{formatScoreValue(bestScore)}</span>
         </div>
         
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <CalendarDays className="w-4 h-4 text-blue-500 mb-1" />
           <span className="text-xs text-muted-foreground">Last</span>
-          <span className="font-medium">{latestScore?.value || '-'}</span>
+          <span className="font-medium">{formatScoreValue(latestScore?.value)}</span>
         </div>
         
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <Star className="w-4 h-4 text-purple-500 mb-1" />
           <span className="text-xs text-muted-foreground">Avg</span>
-          <span className="font-medium">{formatAverageScore(averageScore)}</span>
+          <span className="font-medium">{formatScoreValue(averageScore)}</span>
         </div>
       </div>
       

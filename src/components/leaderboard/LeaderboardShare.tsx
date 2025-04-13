@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatInTimeZone } from 'date-fns-tz';
-import { LeaderboardPlayer } from '@/types/leaderboard';
-import { games } from '@/utils/gameData';
+import { LeaderboardPlayer, SortByOption } from '@/types/leaderboard';
+import { games, isLowerScoreBetter } from '@/utils/gameData';
 import ShareModal from '@/components/ShareModal';
 
 interface LeaderboardShareProps {
   players: LeaderboardPlayer[];
   selectedGame: string;
   timeFilter: 'all' | 'today';
+  sortBy: SortByOption;
   className?: string;
 }
 
-const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: LeaderboardShareProps) => {
+const LeaderboardShare = ({ players, selectedGame, timeFilter, sortBy, className }: LeaderboardShareProps) => {
   const [showShareModal, setShowShareModal] = useState(false);
   
   // Find the current game
@@ -25,27 +26,62 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
     return formatInTimeZone(new Date(), 'America/New_York', 'MMMM d, yyyy');
   };
   
-  // Get top 3 players for the share text
+  // Get top 3 players for the share text based on the current sort criteria
   const getTopPlayers = () => {
-    // Filter only relevant players (with today's scores for today view)
     const relevantPlayers = timeFilter === 'today' 
       ? players.filter(player => player.today_score !== null)
       : players;
     
-    // Sort players based on game type (for mini-crossword lower is better)
+    const lowerBetter = isLowerScoreBetter(selectedGame);
+
     const sortedPlayers = [...relevantPlayers].sort((a, b) => {
-      const scoreA = timeFilter === 'today' ? a.today_score : (selectedGame === 'mini-crossword' ? a.best_score : a.average_score);
-      const scoreB = timeFilter === 'today' ? b.today_score : (selectedGame === 'mini-crossword' ? b.best_score : a.average_score);
+      let scoreA: number | null = 0;
+      let scoreB: number | null = 0;
+
+      if (timeFilter === 'today') {
+        // Today view always sorts by today_score, regardless of the 'sortBy' prop
+        // which might be 'totalScore' in this case
+        scoreA = a.today_score;
+        scoreB = b.today_score;
+      } else {
+        // All-time view uses the sortBy prop
+        switch (sortBy) {
+          case 'averageScore': // Correct case
+            scoreA = a.average_score;
+            scoreB = b.average_score;
+            break;
+          case 'bestScore':
+            scoreA = a.best_score;
+            scoreB = b.best_score;
+            break;
+          case 'totalGames': // Correct case
+            scoreA = a.total_games;
+            scoreB = b.total_games;
+            break;
+          default: // Default case (should ideally not happen if sortBy is typed correctly)
+            scoreA = a.average_score; 
+            scoreB = b.average_score;
+        }
+      }
       
+      // Handle null scores - nulls go last
+      if (scoreA === null && scoreB === null) return 0;
       if (scoreA === null) return 1;
       if (scoreB === null) return -1;
       
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-        // Lower is better for these games
-        return scoreA - scoreB;
+      // Handle zero scores for lowerBetter games (0 means not played/no score)
+      // For totalGames, zero is valid, so skip this check
+      if (lowerBetter && sortBy !== 'totalGames') { 
+        if (scoreA === 0 && scoreB === 0) return 0;
+        if (scoreA === 0) return 1; // Zeros go last
+        if (scoreB === 0) return -1; // Zeros go last
+      }
+      
+      // Actual sorting logic
+      if (lowerBetter && sortBy !== 'totalGames') {
+          return scoreA - scoreB; // Lower is better (except for totalGames)
       } else {
-        // Higher is better for other games (including betweenle)
-        return scoreB - scoreA;
+          return scoreB - scoreA; // Higher is better (includes totalGames)
       }
     });
     
@@ -53,41 +89,53 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
     return sortedPlayers.slice(0, 3);
   };
   
-  // Format a score based on the game type
-  const formatScore = (score: number): string => {
+  // Format a score based on the game type and sort option
+  const formatScore = (score: number | null): string => {
     if (score === null || score === undefined) return '-';
     
-    // Format time-based scores for Mini Crossword
-    if (selectedGame === 'mini-crossword') {
+    // If sorting by total games, just return the number as a string
+    if (sortBy === 'totalGames') {
+      return score.toString();
+    }
+    
+    // Format time-based scores (MM:SS) for relevant games ONLY when NOT sorting by totalGames
+    if ((selectedGame === 'mini-crossword' || selectedGame === 'minute-cryptic')) { 
       const minutes = Math.floor(score / 60);
       const seconds = score % 60;
       return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
     
-    // Format to at most 2 decimal places for average scores
-    if (typeof score === 'number' && !Number.isInteger(score)) {
-      return score.toFixed(2);
+    // Format to at most 1 decimal place for average scores (only when sorting by average score)
+    if (sortBy === 'averageScore' && typeof score === 'number' && !Number.isInteger(score)) {
+      return score.toFixed(1);
     }
     
+    // Default: return score as a string
     return score.toString();
   };
   
-  // Get unit label for the game
+  // Get unit label for the game based on sort type and game
   const getUnitLabel = (): string => {
-    if (['wordle', 'quordle'].includes(selectedGame)) {
-      return 'tries';
-    } else if (selectedGame === 'mini-crossword') {
-      return '';  // No need for unit label since we're showing the time format MM:SS
+    // If sorting by total games, the unit is always "games"
+    if (sortBy === 'totalGames') {
+      return 'games';
+    }
+
+    // For other sort types (score, average, best), determine unit by game
+    if (['wordle', 'quordle', 'connections', 'framed', 'nerdle'].includes(selectedGame)) {
+      return 'tries'; // Or mistakes, guesses etc. - using 'tries' generally
+    } else if (selectedGame === 'mini-crossword' || selectedGame === 'minute-cryptic') {
+      return '';  // No unit for time-based scores (MM:SS format)
     } else {
-      return 'points';
+      // Default unit for other games (e.g., Betweenle points)
+      return 'pts'; 
     }
   };
-  
+
   // Generate the share text
   const generateShareText = () => {
     const topPlayers = getTopPlayers();
-    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle'].includes(selectedGame);
-    const unitLabel = getUnitLabel();
+    const unitLabel = getUnitLabel(); // Unit label depends on sortBy and timeFilter now
     
     let shareText = `🎮 ${gameTitle} Leaderboard`;
     
@@ -103,25 +151,44 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
       topPlayers.forEach((player, index) => {
         const position = index + 1;
         const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}.`;
-        const score = timeFilter === 'today' 
-          ? player.today_score
-          : (isLowerBetter ? player.best_score : player.average_score);
         
-        // Add context about what the score represents
-        const scoreContext = timeFilter === 'today' 
-          ? 'Today'
-          : (isLowerBetter ? 'Best' : 'Avg');
+        let score: number | null = null;
+        let scoreContext = '';
+
+        if (timeFilter === 'today') {
+          // Today view always shows today's score
+          score = player.today_score;
+          scoreContext = 'Today'; 
+        } else {
+          // All-time view shows score based on sortBy
+          switch (sortBy) {
+            case 'averageScore': // Correct case
+              score = player.average_score;
+              scoreContext = 'Avg';
+              break;
+            case 'bestScore':
+              score = player.best_score;
+              scoreContext = 'Best';
+              break;
+            case 'totalGames': // Correct case
+              score = player.total_games;
+              scoreContext = 'Games';
+              break;
+            default: // Should not happen with typed sortBy
+              score = player.average_score; 
+              scoreContext = 'Avg';
+          }
+        }
         
-        // Add unit label if it exists
         const formattedScore = formatScore(score);
+        // Only add unit label if it's not empty
         const scoreWithUnit = unitLabel ? `${formattedScore} ${unitLabel}` : formattedScore;
         
         shareText += `${medal} ${player.username}: ${scoreWithUnit} (${scoreContext})\n`;
       });
     }
     
-    // Add the promotional line only - URL will be added by ShareModal
-    shareText += `\nI'm keeping my stats on Trackle!`;
+    shareText += `\nTrack your game stats on Trackle!`; // Updated promo line
     
     return shareText;
   };
@@ -134,8 +201,8 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, className }: Lead
         className={className}
         onClick={() => setShowShareModal(true)}
       >
-        <Share2 className="w-4 h-4" />
-        <span>Share</span>
+        <Share2 className="w-4 h-4 mr-2" /> {/* Added margin */}
+        <span className="hidden sm:inline">Share</span> {/* Hide text on small screens */} 
       </Button>
       
       <ShareModal

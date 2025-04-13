@@ -90,6 +90,14 @@ const FriendListVirtualized = memo(({
   const formatScoreValue = useCallback((score: number | null | undefined, gameId: string) => {
     if (score === null || score === undefined) return '-';
     
+    // Specific formatting for time-based games (MM:SS)
+    if (gameId === 'mini-crossword') {
+        if (score <= 0) return '0:00';
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
     // For games with special formatting like Quordle
     if (gameId === 'quordle') {
       return score.toString();
@@ -246,6 +254,24 @@ const TodayScores = () => {
   // Get today's date in Eastern Time for consistency
   const today = getFormattedTodayInEasternTime();
   
+  // Format score utility function for TodayScores page
+  const formatScoreValue = useCallback((score: number | null | undefined, gameId: string | undefined) => {
+    if (score === null || score === undefined) return '-';
+    if (!gameId) return score.toString(); // Return raw score if gameId is missing
+
+    // Specific formatting for time-based games (MM:SS)
+    if (gameId === 'mini-crossword') {
+        if (score <= 0) return '0:00';
+        const minutes = Math.floor(score / 60);
+        const seconds = score % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Add other game-specific formatting here if needed
+    
+    return score.toString();
+  }, []);
+
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = useCallback((group: any) => {
     if (!group || !group.members || group.members.length === 0) return null;
@@ -420,20 +446,17 @@ const TodayScores = () => {
   // Memoize the all friends tab content
   const allFriendsTabContent = useMemo(() => (
     <TabsContent value="friends" className="space-y-6">
+      <GameDropdownSelector
+        selectedGame={selectedGame?.id || ''}
+        games={games}
+        onSelectGame={handleGameSelect}
+        className="mb-4"
+        showOnDesktop={true}
+      />
       <Card className="shadow-md">
-        <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+        <div className="p-4 bg-accent/40 rounded-t-lg border-b border-accent">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold leading-none">All Friends</h3>
-            <div className="flex space-x-1">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8"
-                onClick={handleManualRefresh}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
         
@@ -451,6 +474,7 @@ const TodayScores = () => {
                 <GroupScoresShare
                   groupName="All Friends"
                   gameName={selectedGame?.name || ""}
+                  gameId={selectedGame?.id}
                   gameColor={selectedGame?.color || ""}
                   members={getAllFriendsForScoreShare().members}
                   currentUserName={profile?.username || ""}
@@ -467,16 +491,6 @@ const TodayScores = () => {
                     <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
                   </Button>
                 </GroupScoresShare>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleManualRefresh}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span className={cn(isMobile ? "sr-only" : "")}>Refresh</span>
-                </Button>
               </div>
             </div>
             
@@ -493,11 +507,10 @@ const TodayScores = () => {
     </TabsContent>
   ), [
     selectedGame, 
-    handleManualRefresh, 
-    isMobile, 
     getAllFriendsForScoreShare, 
     profile?.username, 
-    getAllFriendsList
+    getAllFriendsList,
+    handleGameSelect
   ]);
 
   return (
@@ -534,17 +547,6 @@ const TodayScores = () => {
           />
         )}
         
-        {/* Game Dropdown for both mobile and desktop */}
-        <GameDropdownSelector
-          selectedGame={selectedGame?.id || ''}
-          games={games}
-          onSelectGame={handleGameSelect}
-          className="mb-4"
-          showOnDesktop={true}
-        />
-        
-        
-        
         {!selectedGame ? (
           <Card className="p-8 flex flex-col items-center justify-center text-center">
             <GamepadIcon className="w-12 h-12 text-muted-foreground mb-4" />
@@ -575,6 +577,13 @@ const TodayScores = () => {
               
               {/* By Group tab content */}
               <TabsContent value="groups" className="space-y-6">
+                <GameDropdownSelector
+                  selectedGame={selectedGame?.id || ''}
+                  games={games}
+                  onSelectGame={handleGameSelect}
+                  className="mb-4"
+                  showOnDesktop={true}
+                />
                 {groupPerformanceData && groupPerformanceData.length > 0 ? (
                   <div className="space-y-6">
                     {groupPerformanceData.map((group) => {
@@ -646,30 +655,9 @@ const TodayScores = () => {
                     
                       return (
                         <Card key={group.groupId} className="shadow-md">
-                          <div className="p-3 bg-accent/40 rounded-t-lg border-b border-accent">
+                          <div className="p-4 bg-accent/40 rounded-t-lg border-b border-accent">
                             <div className="flex items-center justify-between">
                               <h3 className="text-lg font-semibold leading-none">{group.groupName}</h3>
-                              <div className="flex space-x-1">
-                                {/* Chat button */}
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8"
-                                  onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                                
-                                {/* Share button */}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleOpenConnectionsModal('groups')}
-                                >
-                                  <Share2 className="h-4 w-4" />
-                                </Button>
-                              </div>
                             </div>
                           </div>
                           
@@ -709,6 +697,7 @@ const TodayScores = () => {
                                       <GroupScoresShare
                                         groupName={group.groupName}
                                         gameName={selectedGame?.name || ""}
+                                        gameId={selectedGame?.id}
                                         gameColor={selectedGame?.color || ""}
                                         members={groupMemberScores}
                                         currentUserName={profile?.username || ""}
@@ -777,7 +766,10 @@ const TodayScores = () => {
                                               )}
                                             </div>
                                             {member.hasPlayed ? (
-                                              <span className="font-semibold">{member.score}</span>
+                                              // Display formatted score directly
+                                              <span className="text-sm font-medium">
+                                                {formatScoreValue(member.score, selectedGame?.id)}
+                                              </span>
                                             ) : (
                                               <span className="text-sm text-muted-foreground">No score yet</span>
                                             )}
