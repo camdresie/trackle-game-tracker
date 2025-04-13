@@ -76,7 +76,6 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
   
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium">Score for 4 words (1-9 or X for fail)</label>
       <div className="grid grid-cols-4 gap-2">
         {[0, 1, 2, 3].map((index) => (
           <div key={index} className="space-y-1">
@@ -93,16 +92,13 @@ const QuordleScoreInput = ({ game, initialValues = [7, 7, 7, 7], onScoreChange }
         ))}
       </div>
       <div className="flex justify-between items-center pt-2 border-t">
-        <span className="text-sm font-medium">Total Score</span>
+        <span className="text-sm font-medium">Score</span>
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold">{totalScore}</span>
           <span className={`text-xs px-1.5 py-0.5 rounded-full ${getScoreColor(0, game, quordleValues)} bg-secondary`}>
             {getScoreLabel(0, game, quordleValues)}
           </span>
         </div>
-      </div>
-      <div className="text-xs text-muted-foreground mt-1">
-        <p>Lower numbers are better. Use X or 10 for failed words (worth 10 points).</p>
       </div>
     </div>
   );

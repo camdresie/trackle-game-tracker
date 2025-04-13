@@ -131,7 +131,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
         className="py-2"
       />
       
-      <div className="flex justify-between text-xs text-muted-foreground mt-1 relative">
+      <div className="flex justify-between text-xs text-muted-foreground mt-1 relative pb-4">
         {markers.map((markerValue, i) => (
           <div 
             key={i} 
