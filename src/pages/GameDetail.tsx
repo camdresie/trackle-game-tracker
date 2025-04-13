@@ -56,11 +56,25 @@ const GameDetail = () => {
     if (localBestScore === null && bestScore !== null) {
         setLocalBestScore(bestScore);
     }
-    // Only set initial friend scores if not set locally and hook data is available
-    if (Object.keys(localFriendScores).length === 0 && Object.keys(friendScores).length > 0) {
-        setLocalFriendScores(friendScores);
-    }
-  }, [scores, bestScore, friendScores]); // Keep dependencies to trigger initial load
+
+    // Merge incoming friendScores from hook with localFriendScores
+    setLocalFriendScores(prevLocalFriendScores => {
+        // Start with the existing local scores (which has optimistic updates for the user)
+        const mergedScores = { ...prevLocalFriendScores };
+        
+        // Iterate through the scores received from the hook
+        Object.keys(friendScores).forEach(friendId => {
+            // If it's not the current user OR if the local state for this friend is empty,
+            // update with the scores from the hook.
+            // This preserves the current user's optimistic updates while refreshing others.
+            if (friendId !== user?.id || !mergedScores[friendId]) { 
+                mergedScores[friendId] = friendScores[friendId];
+            }
+        });
+        return mergedScores;
+    });
+
+  }, [scores, bestScore, friendScores, user?.id]); // Added user.id dependency
   
   const handleAddScore = useCallback((newScore: Score) => {
     // Update local state for "Your Scores"
