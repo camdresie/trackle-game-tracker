@@ -1,6 +1,7 @@
 import { Player } from '@/utils/types';
 import { LeaderboardPlayer, GameStatsWithProfile } from '@/types/leaderboard';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
+import { isLowerScoreBetter } from '@/utils/gameData';
 
 /**
  * Transforms game stats and scores data into leaderboard players format with performance optimizations
@@ -119,7 +120,8 @@ export const processLeaderboardData = (
     let totalScore = 0;
     let todayScore = null;
     let latestPlay = null;
-    let bestScore = 0;
+    let bestScore: number | null = null;
+    const lowerIsBetter = isLowerScoreBetter(selectedGame);
     
     // Process scores using for...of instead of creating additional arrays
     for (const score of datesMap.values()) {
@@ -131,12 +133,16 @@ export const processLeaderboardData = (
       }
       
       // Update best score
-      if (['wordle', 'mini-crossword'].includes(selectedGame)) {
-        // For games where lower is better
-        bestScore = bestScore === 0 ? score.value : Math.min(bestScore, score.value);
+      if (lowerIsBetter) {
+        // Lower is better: Update if current best is null or score is lower
+        if (bestScore === null || score.value < bestScore) {
+          bestScore = score.value;
+        }
       } else {
-        // For games where higher is better (including betweenle)
-        bestScore = Math.max(bestScore, score.value);
+        // Higher is better: Update if current best is null or score is higher
+        if (bestScore === null || score.value > bestScore) {
+          bestScore = score.value;
+        }
       }
       
       // Update latest play date
@@ -149,7 +155,7 @@ export const processLeaderboardData = (
     // Update the user's stats
     userStats.total_score = totalScore;
     userStats.average_score = datesMap.size > 0 ? totalScore / datesMap.size : 0;
-    userStats.best_score = bestScore;
+    userStats.best_score = bestScore ?? 0;
     userStats.today_score = todayScore;
     userStats.latest_play = latestPlay;
   });
@@ -174,8 +180,8 @@ export const processLeaderboardData = (
           username: profile.username || "Unknown", 
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
-          total_score: stat.average_score * stat.total_plays,
-          best_score: stat.best_score || 0,
+          total_score: (stat.average_score || 0) * stat.total_plays,
+          best_score: stat.best_score !== null && stat.best_score !== undefined ? stat.best_score : 0,
           average_score: stat.average_score || 0,
           total_games: stat.total_plays,
           today_score: null,
@@ -186,9 +192,9 @@ export const processLeaderboardData = (
         const userStats = userStatsMap.get(userId)!;
         if (userStats.total_games === 0) {
           userStats.total_games = stat.total_plays;
-          userStats.best_score = stat.best_score || 0;
+          userStats.best_score = stat.best_score !== null && stat.best_score !== undefined ? stat.best_score : 0;
           userStats.average_score = stat.average_score || 0;
-          userStats.total_score = stat.average_score * stat.total_plays;
+          userStats.total_score = (stat.average_score || 0) * stat.total_plays;
         }
       }
     }

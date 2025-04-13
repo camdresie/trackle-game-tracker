@@ -114,14 +114,22 @@ export const calculateBestScore = (scores: any[], game: any) => {
   
   // For these games, lower scores are better
   if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle'].includes(game.id)) {
-    // Filter out zeros for games where 0 is not a valid score
-    // For Wordle and Framed, also filter out 7 (loss) when calculating best score
-    // For Quordle, filter out 40 (loss) when calculating best score
-    const validScores = scores.filter(score => 
-      score.value > 0 && 
-      ((['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true) &&
-      ((game.id === 'quordle') ? score.value < 40 : true)
-    );
+    // Filter out invalid scores:
+    // - Zeros/negatives for games where 0 is not valid (all except minute-cryptic).
+    // - Specific loss scores (e.g., 7 for Wordle/Framed).
+    const validScores = scores.filter(score => {
+      if (typeof score.value !== 'number') return false; // Ensure it's a number
+
+      // Base validity: Allow non-positive for minute-cryptic, require > 0 otherwise
+      const baseCheck = (game.id === 'minute-cryptic') ? true : score.value > 0;
+
+      // Exclude specific loss scores
+      const wordleFramedLossCheck = (['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true;
+      const quordleLossCheck = (game.id === 'quordle') ? score.value < 40 : true;
+
+      return baseCheck && wordleFramedLossCheck && quordleLossCheck;
+    });
+
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
   } else {
