@@ -20,7 +20,7 @@ import StandardScoreInput from './scores/StandardScoreInput';
 import { getDefaultValue, calculateQuordleScore } from '@/utils/scoreUtils';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface AddScoreModalProps {
   open: boolean;
@@ -41,11 +41,9 @@ const AddScoreModal = ({
   const queryClient = useQueryClient();
   const [value, setValue] = useState(getDefaultValue(game));
   const [date, setDate] = useState('');
-  const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [existingScoreId, setExistingScoreId] = useState<string | null>(null);
-  const [showNotes, setShowNotes] = useState(false);
   
   // For Quordle, we use separate inputs for each word
   const [quordleValues, setQuordleValues] = useState([7, 7, 7, 7]);
@@ -67,10 +65,6 @@ const AddScoreModal = ({
         setIsEditMode(true);
         setExistingScoreId(todayScore.id);
         setValue(todayScore.value);
-        setNotes(todayScore.notes || '');
-        
-        // Show notes section if there are existing notes
-        setShowNotes(!!todayScore.notes);
         
         // For Quordle, we need to reverse engineer the individual values
         if (game.id === 'quordle') {
@@ -84,8 +78,6 @@ const AddScoreModal = ({
         setExistingScoreId(null);
         setValue(getDefaultValue(game));
         setQuordleValues([7, 7, 7, 7]);
-        setNotes('');
-        setShowNotes(false);
       }
     }
   }, [open, existingScores, game]);
@@ -110,7 +102,6 @@ const AddScoreModal = ({
         playerId: user.id,
         value: scoreValue,
         date,
-        notes: notes || undefined,
         createdAt: new Date().toISOString(), 
         id: existingScoreId || undefined // Include ID if editing
       };
@@ -127,7 +118,6 @@ const AddScoreModal = ({
         playerId: score.playerId,
         value: score.value,
         date: score.date,
-        notes: score.notes || '',
         createdAt: score.createdAt
       });
       
@@ -141,7 +131,6 @@ const AddScoreModal = ({
       // Reset form and close modal
       setValue(getDefaultValue(game));
       setQuordleValues([7, 7, 7, 7]);
-      setNotes('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error adding score:', error);
@@ -162,8 +151,34 @@ const AddScoreModal = ({
     setQuordleValues(newValues);
   };
 
-  const toggleNotes = () => {
-    setShowNotes(!showNotes);
+  // Helper function to get scoring description based on game ID
+  const getScoringDescription = (gameId: string): string => {
+    switch (gameId) {
+      case 'wordle':
+        return 'Score is the number of guesses (1-6). Use 7 for a missed word. Lower is better.';
+      case 'connections':
+        return 'Score is the number of guesses to get all 4 categories. Use 8 if you failed to get all categories. Lower is better.';
+      case 'mini-crossword':
+        return 'Score is the time taken in seconds. Lower is better.';
+      case 'framed':
+        return 'Score is the number of guesses (1-6). Use 7 to indicate if you were unable to get the movie. Lower is better.';
+      case 'quordle':
+        return 'Total score is the sum of guesses (1-9) it took to guess each word. Use 10/X for a failed word. Lower is better.';
+      case 'betweenle':
+        return 'Score is points earned (0-5) as displayed in the top right of Betweenle after guessing the word. Use 0 if you were unable to get the word. Higher is better.';
+      case 'spelling-bee':
+        return 'Score is points earned. Higher is better.';
+      case 'tightrope':
+        return 'Score is points earned. Higher is better.';
+      case 'nerdle':
+        return 'Score is the number of guesses (1-6). Use 7 to indicate a loss. Lower is better.';
+      case 'squardle':
+        return 'Score is the number of guesses remaining (0-10). Use 0 if you were unable to solve the puzzle. Higher is better.';
+      case 'minute-cryptic':
+        return 'Score reflects hints needed (-3 to +10). Use 0 for par. Lower (par or under) is better.';
+      default:
+        return ''; // Or a default message
+    }
   };
 
   return (
@@ -206,29 +221,10 @@ const AddScoreModal = ({
             />
           )}
           
-          <div>
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center justify-between w-full p-2 text-sm font-medium text-left" 
-              onClick={toggleNotes}
-            >
-              <span>Notes {notes && !showNotes ? "(Added)" : "(optional)"}</span>
-              {showNotes ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-            
-            {showNotes && (
-              <div className="mt-2">
-                <Textarea
-                  placeholder="Add any notes about your game..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="resize-none"
-                  rows={2}
-                />
-              </div>
-            )}
+          {/* Scoring Description */}
+          <div className="flex items-start space-x-2 text-xs text-muted-foreground pt-2">
+            <Info className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <span>{getScoringDescription(game.id)}</span>
           </div>
         </div>
 
