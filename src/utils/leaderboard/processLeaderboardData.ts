@@ -203,6 +203,9 @@ export const processLeaderboardData = (
   // Convert map to array
   const leaderboardPlayers = Array.from(userStatsMap.values());
   
+  // Filter out players who have never played any games
+  const activePlayers = leaderboardPlayers.filter(player => player.total_games > 0);
+  
   console.timeEnd('processLeaderboardData');
-  return leaderboardPlayers;
+  return activePlayers;
 };

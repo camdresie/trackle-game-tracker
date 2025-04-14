@@ -179,8 +179,11 @@ const LeaderboardStats = ({
     
     // Format time-based scores for Mini Crossword
     if (selectedGame === 'mini-crossword') {
-        const minutes = Math.floor(score / 60);
-        const seconds = score % 60;
+        // Round the score to the nearest whole number
+        const roundedScore = Math.round(score);
+        if (roundedScore <= 0) return '0:00'; // Check rounded score
+        const minutes = Math.floor(roundedScore / 60);
+        const seconds = roundedScore % 60;
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 

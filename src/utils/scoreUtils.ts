@@ -10,6 +10,9 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
   } else if (game.id === 'framed') {
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+  } else if (game.id === 'worldle') {
+    if (value === 7) return 'Loss';
+    return value <= 2 ? 'Excellent' : value <= 4 ? 'Good' : 'Fair';
   } else if (game.id === 'connections') {
     if (value === 8) return 'Loss';
     return value <= 5 ? 'Excellent' : value <= 7 ? 'Good' : 'Fair';
@@ -44,6 +47,9 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
     if (value <= 0) return 'Good';
     if (value <= 2) return 'Fair';
     return 'Poor';
+  } else if (game.id === 'waffle') {
+    if (value === 0) return 'Loss';
+    return value >= 10 ? 'Excellent' : value >= 5 ? 'Good' : 'Fair';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -60,6 +66,9 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
   } else if (game.id === 'framed') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+  } else if (game.id === 'worldle') {
+    if (value === 7) return 'text-gray-500';
+    return value <= 2 ? 'text-emerald-500' : value <= 4 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'connections') {
     if (value === 8) return 'text-gray-500';
     return value <= 5 ? 'text-emerald-500' : value <= 7 ? 'text-amber-500' : 'text-rose-500';
@@ -92,6 +101,9 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     if (value <= 0) return 'text-emerald-500';
     if (value <= 2) return 'text-emerald-500';
     return 'text-rose-500';
+  } else if (game.id === 'waffle') {
+    if (value === 0) return 'text-gray-500';
+    return value >= 10 ? 'text-emerald-500' : value >= 5 ? 'text-amber-500' : 'text-rose-500';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
@@ -102,6 +114,9 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
 export const getSliderMarkers = (game: Game) => {
   if (game.id === 'wordle' || game.id === 'framed') {
     // For Wordle and Framed with fixed positions (1-7, where 7 is a loss)
+    return [1, 2, 3, 4, 5, 6, 7];
+  } else if (game.id === 'worldle') {
+    // For Worldle with range 1-7
     return [1, 2, 3, 4, 5, 6, 7];
   } else if (game.id === 'connections') {
     // For Connections with range 4-8
@@ -127,6 +142,8 @@ export const getSliderMarkers = (game: Game) => {
   } else if (game.id === 'minute-cryptic') {
     // For Minute Cryptic with range -3 to +10
     return [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  } else if (game.id === 'waffle') {
+    return [0, 3, 6, 9, 12, 15];
   } else {
     // For other games, calculate evenly spaced values
     const maxScore = game.maxScore || 100;
@@ -158,5 +175,6 @@ export const getDefaultValue = (game: Game) => {
          game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
          game.id === 'squardle' ? 5 : // Default to middle value for Squardle (0-10)
          game.id === 'minute-cryptic' ? 0 : // Default to par (0) for Minute Cryptic
+         game.id === 'waffle' ? 8 : // Default to middle value for Waffle (0-15)
          Math.floor((game.maxScore || 100) / 2);
 };

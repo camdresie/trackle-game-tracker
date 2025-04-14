@@ -122,10 +122,12 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, sortBy, className
     }
 
     // For other sort types (score, average, best), determine unit by game
-    if (['wordle', 'quordle', 'connections', 'framed', 'nerdle'].includes(selectedGame)) {
+    if (['wordle', 'quordle', 'connections', 'framed', 'nerdle', 'worldle'].includes(selectedGame)) {
       return 'tries'; // Or mistakes, guesses etc. - using 'tries' generally
     } else if (selectedGame === 'mini-crossword' || selectedGame === 'minute-cryptic') {
       return '';  // No unit for time-based scores (MM:SS format)
+    } else if (selectedGame === 'waffle') {
+      return 'swaps';
     } else {
       // Default unit for other games (e.g., Betweenle points)
       return 'pts'; 

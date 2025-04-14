@@ -99,7 +99,28 @@ export const games = [
     icon: 'timer',
     color: 'bg-indigo-500',
     maxScore: 13, // Range from -3 to +10, so total range is 13
-    externalUrl: 'https://www.minutecryptic.com/'
+    externalUrl: 'https://www.minutecryptic.com/',
+    isNew: true
+  },
+  {
+    id: 'worldle',
+    name: 'Worldle',
+    description: 'Guess the country based on its shape in 6 tries or less.',
+    icon: 'map', // Using 'map' icon for now
+    color: 'bg-sky-500', 
+    maxScore: 7, // 1-6 is a win, 7 is a loss
+    externalUrl: 'https://worldle.teuteuf.fr/',
+    isNew: true
+  },
+  {
+    id: 'waffle',
+    name: 'Waffle',
+    description: 'Rearrange letters into correct words in 15 moves or fewer.',
+    icon: 'grip-vertical', // Using 'grip-vertical' icon for now
+    color: 'bg-orange-400', 
+    maxScore: 15, // Max swaps remaining
+    externalUrl: 'https://wafflegame.net/daily',
+    isNew: true
   }
 ];
 
@@ -113,10 +134,10 @@ export const calculateBestScore = (scores: any[], game: any) => {
   if (!scores || scores.length === 0) return null;
   
   // For these games, lower scores are better
-  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle'].includes(game.id)) {
+  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle'].includes(game.id)) {
     // Filter out invalid scores:
     // - Zeros/negatives for games where 0 is not valid (all except minute-cryptic).
-    // - Specific loss scores (e.g., 7 for Wordle/Framed).
+    // - Specific loss scores (e.g., 7 for Wordle/Framed/Worldle).
     const validScores = scores.filter(score => {
       if (typeof score.value !== 'number') return false; // Ensure it's a number
 
@@ -124,7 +145,7 @@ export const calculateBestScore = (scores: any[], game: any) => {
       const baseCheck = (game.id === 'minute-cryptic') ? true : score.value > 0;
 
       // Exclude specific loss scores
-      const wordleFramedLossCheck = (['wordle', 'framed'].includes(game.id)) ? score.value < 7 : true;
+      const wordleFramedLossCheck = (['wordle', 'framed', 'worldle'].includes(game.id)) ? score.value < 7 : true;
       const quordleLossCheck = (game.id === 'quordle') ? score.value < 40 : true;
 
       return baseCheck && wordleFramedLossCheck && quordleLossCheck;
@@ -154,6 +175,7 @@ export const getLabelByGame = (gameId: string): string => {
     case 'connections':
     case 'nerdle':
     case 'quordle':
+    case 'worldle':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';
@@ -164,6 +186,8 @@ export const getLabelByGame = (gameId: string): string => {
       return 'points';
     case 'minute-cryptic':
       return 'hints';
+    case 'waffle':
+      return 'swaps';
     default:
       return 'points';
   }
@@ -171,5 +195,5 @@ export const getLabelByGame = (gameId: string): string => {
 
 // Determine if a game treats lower scores as better
 export const isLowerScoreBetter = (gameId: string): boolean => {
-  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle'].includes(gameId);
+  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle'].includes(gameId);
 };

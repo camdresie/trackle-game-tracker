@@ -9,6 +9,7 @@ export interface Game {
   color: string;
   maxScore?: number;
   externalUrl?: string;
+  isNew?: boolean;
 }
 
 // Score

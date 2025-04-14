@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import NavBar from '@/components/NavBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboardData } from '@/hooks/leaderboard/useLeaderboardData';
@@ -35,6 +35,11 @@ const Leaderboard = () => {
     friends,
     friendGroups
   } = useLeaderboardData(user?.id);
+
+  // Sort the games list alphabetically for the dropdown
+  const sortedGames = useMemo(() => 
+    [...games].sort((a, b) => a.name.localeCompare(b.name)), 
+  []);
 
   // Set default game to the first game in the list if none is selected
   useEffect(() => {
@@ -85,7 +90,7 @@ const Leaderboard = () => {
         <div className="mb-4 flex justify-start">
           <GameDropdownSelector
             selectedGame={selectedGame}
-            games={games}
+            games={sortedGames}
             onSelectGame={setSelectedGame}
             showOnDesktop={true}
           />

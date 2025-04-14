@@ -206,6 +206,11 @@ const TodayScores = () => {
     setSelectedGame,
   } = useHomeData();
   
+  // Sort the games list alphabetically for the dropdown
+  const sortedGames = useMemo(() => 
+    [...gamesList].sort((a, b) => a.name.localeCompare(b.name)), 
+  [gamesList]);
+  
   // Get friends list using the appropriate hook
   const { friends } = useFriendsList();
   
@@ -240,9 +245,9 @@ const TodayScores = () => {
   
   // Handler for game selection 
   const handleGameSelect = useCallback((gameId: string) => {
-    const game = gamesList.find(g => g.id === gameId) || null;
+    const game = sortedGames.find(g => g.id === gameId) || null;
     setSelectedGame(game);
-  }, [gamesList, setSelectedGame]);
+  }, [sortedGames, setSelectedGame]);
 
   // Functions to handle opening modals with useCallback
   const handleOpenMessages = useCallback((groupId: string, groupName: string) => {
@@ -448,7 +453,7 @@ const TodayScores = () => {
     <TabsContent value="friends" className="space-y-6">
       <GameDropdownSelector
         selectedGame={selectedGame?.id || ''}
-        games={games}
+        games={sortedGames}
         onSelectGame={handleGameSelect}
         className="mb-4"
         showOnDesktop={true}
@@ -510,7 +515,8 @@ const TodayScores = () => {
     getAllFriendsForScoreShare, 
     profile?.username, 
     getAllFriendsList,
-    handleGameSelect
+    handleGameSelect,
+    sortedGames
   ]);
 
   return (
@@ -579,7 +585,7 @@ const TodayScores = () => {
               <TabsContent value="groups" className="space-y-6">
                 <GameDropdownSelector
                   selectedGame={selectedGame?.id || ''}
-                  games={games}
+                  games={sortedGames}
                   onSelectGame={handleGameSelect}
                   className="mb-4"
                   showOnDesktop={true}

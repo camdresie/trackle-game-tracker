@@ -13,6 +13,7 @@ import GamesGrid from '@/components/home/GamesGrid';
 import MyGamesGrid from '@/components/home/MyGamesGrid';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Game } from '@/utils/types';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -34,6 +35,9 @@ const Index = () => {
     handleAddScore,
     handleDeleteScore
   } = useHomeData();
+  
+  // Check if there are any new games
+  const hasNewGames = gamesList.some(game => game.isNew);
   
   // Filter scores for the currently selected game (for edit mode in modal)
   const selectedGameScores = selectedGame 
@@ -70,6 +74,7 @@ const Index = () => {
               <TabsTrigger value="all-games" className="inline-flex items-center justify-center gap-2">
                 <GamepadIcon className="h-4 w-4" />
                 All Games
+                {hasNewGames && <span className="ml-1 h-2 w-2 rounded-full bg-blue-500"></span>}
               </TabsTrigger>
             </TabsList>
           </Tabs>

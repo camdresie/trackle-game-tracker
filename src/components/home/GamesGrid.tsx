@@ -30,14 +30,21 @@ const GamesGrid = ({ isLoading, gamesList, scores }: GamesGridProps) => {
     return scores.some(score => score.gameId === gameId && isToday(score.date));
   };
   
-  // Sort games - games played today go to the end of the list
+  // Sort games: New games first, then games not played today, then games played today
   const sortedGames = [...gamesList].sort((a, b) => {
+    // Prioritize new games
+    if (a.isNew && !b.isNew) return -1; // a (new) comes before b (not new)
+    if (!a.isNew && b.isNew) return 1;  // b (new) comes before a (not new)
+
+    // If both are new or both are not new, sort by played today status
     const aPlayedToday = wasPlayedToday(a.id);
     const bPlayedToday = wasPlayedToday(b.id);
     
-    if (aPlayedToday && !bPlayedToday) return 1;
-    if (!aPlayedToday && bPlayedToday) return -1;
-    return 0;
+    if (aPlayedToday && !bPlayedToday) return 1; // a (played today) comes after b (not played today)
+    if (!aPlayedToday && bPlayedToday) return -1; // b (played today) comes after a (not played today)
+
+    // If status is the same (both new/not new AND both played/not played today), keep original order
+    return 0; 
   });
   
   // Handle adding a game to My Games
