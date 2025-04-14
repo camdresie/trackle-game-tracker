@@ -121,6 +121,36 @@ export const games = [
     maxScore: 15, // Max swaps remaining
     externalUrl: 'https://wafflegame.net/daily',
     isNew: true
+  },
+  {
+    id: 'sqnces-6',
+    name: 'SQNCES (6-Letter)',
+    description: 'Use a 3-letter sequence to find the 6-letter word.',
+    icon: 'align-horizontal-justify-center', 
+    color: 'bg-purple-600',
+    maxScore: 7,
+    externalUrl: 'https://sqnces.com/',
+    isNew: true
+  },
+  {
+    id: 'sqnces-7',
+    name: 'SQNCES (7-Letter)',
+    description: 'Use a 3-letter sequence to find the 7-letter word.',
+    icon: 'align-horizontal-justify-center',
+    color: 'bg-purple-700', // Slightly different color
+    maxScore: 7,
+    externalUrl: 'https://sqnces.com/',
+    isNew: true
+  },
+  {
+    id: 'sqnces-8',
+    name: 'SQNCES (8-Letter)',
+    description: 'Use a 3-letter sequence to find the 8-letter word.',
+    icon: 'align-horizontal-justify-center',
+    color: 'bg-purple-800', // Slightly different color
+    maxScore: 7,
+    externalUrl: 'https://sqnces.com/',
+    isNew: true
   }
 ];
 
@@ -134,10 +164,10 @@ export const calculateBestScore = (scores: any[], game: any) => {
   if (!scores || scores.length === 0) return null;
   
   // For these games, lower scores are better
-  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle'].includes(game.id)) {
+  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) {
     // Filter out invalid scores:
     // - Zeros/negatives for games where 0 is not valid (all except minute-cryptic).
-    // - Specific loss scores (e.g., 7 for Wordle/Framed/Worldle).
+    // - Specific loss scores (e.g., 7 for Wordle/Framed/Worldle/SQNCES).
     const validScores = scores.filter(score => {
       if (typeof score.value !== 'number') return false; // Ensure it's a number
 
@@ -145,7 +175,7 @@ export const calculateBestScore = (scores: any[], game: any) => {
       const baseCheck = (game.id === 'minute-cryptic') ? true : score.value > 0;
 
       // Exclude specific loss scores
-      const wordleFramedLossCheck = (['wordle', 'framed', 'worldle'].includes(game.id)) ? score.value < 7 : true;
+      const wordleFramedLossCheck = (['wordle', 'framed', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) ? score.value < 7 : true;
       const quordleLossCheck = (game.id === 'quordle') ? score.value < 40 : true;
 
       return baseCheck && wordleFramedLossCheck && quordleLossCheck;
@@ -176,6 +206,9 @@ export const getLabelByGame = (gameId: string): string => {
     case 'nerdle':
     case 'quordle':
     case 'worldle':
+    case 'sqnces-6':
+    case 'sqnces-7':
+    case 'sqnces-8':
       return 'tries';
     case 'mini-crossword':
       return 'seconds';
@@ -195,5 +228,5 @@ export const getLabelByGame = (gameId: string): string => {
 
 // Determine if a game treats lower scores as better
 export const isLowerScoreBetter = (gameId: string): boolean => {
-  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle'].includes(gameId);
+  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(gameId);
 };
