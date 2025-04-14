@@ -17,7 +17,7 @@ export const games = [
     description: 'Solve the crossword puzzle as quickly as possible.',
     icon: 'grid',
     color: 'bg-rose-500',
-    maxScore: 300,
+    maxScore: 600,
     externalUrl: 'https://www.nytimes.com/crosswords/game/mini'
   },
   {

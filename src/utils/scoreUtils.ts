@@ -134,8 +134,8 @@ export const getSliderMarkers = (game: Game) => {
     // For Spelling Bee with range 0-137
     return [0, 35, 70, 105, 137];
   } else if (game.id === 'mini-crossword') {
-    // For Mini Crossword with range 0-300
-    return [0, 60, 120, 180, 240, 300];
+    // For Mini Crossword with updated range 0-600
+    return [0, 100, 200, 300, 400, 500, 600]; // Adjust markers for new range
   } else if (game.id === 'tightrope') {
     // For Tightrope with range 0-2340
     return [0, 585, 1170, 1755, 2340];
