@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer, Map } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer, Map, GripVertical } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
@@ -59,6 +59,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         return <Timer className="w-5 h-5" />;
       case 'map':
         return <Map className="w-5 h-5" />;
+      case 'grip-vertical':
+        return <GripVertical className="w-5 h-5" />;
       default:
         return <Dices className="w-5 h-5" />;
     }

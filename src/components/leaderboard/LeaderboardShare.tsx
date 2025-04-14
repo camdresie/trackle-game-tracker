@@ -126,6 +126,8 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, sortBy, className
       return 'tries'; // Or mistakes, guesses etc. - using 'tries' generally
     } else if (selectedGame === 'mini-crossword' || selectedGame === 'minute-cryptic') {
       return '';  // No unit for time-based scores (MM:SS format)
+    } else if (selectedGame === 'waffle') {
+      return 'swaps';
     } else {
       // Default unit for other games (e.g., Betweenle points)
       return 'pts'; 

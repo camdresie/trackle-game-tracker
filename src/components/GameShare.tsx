@@ -49,8 +49,14 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
       baseUnit = 'mistakes'; // Using 'mistakes' for connections
       singularUnit = 'mistake';
     } else {
-      baseUnit = 'points'; // Default for points-based games like Betweenle, Spelling Bee
-      singularUnit = 'point';
+      // Use specific units for games like Waffle or Spelling Bee
+      if (game.id === 'waffle') {
+        baseUnit = 'swaps';
+        singularUnit = 'swap';
+      } else { // Default case
+        baseUnit = 'points';
+        singularUnit = 'point';
+      }
     }
 
     // Handle average scores (non-integers) or scores != 1 by returning plural

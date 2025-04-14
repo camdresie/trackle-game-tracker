@@ -197,6 +197,8 @@ const AddScoreModal = ({
         return 'Score is the number of guesses remaining (0-10). Use 0 if you were unable to solve the puzzle. Higher is better.';
       case 'minute-cryptic':
         return 'Score reflects hints needed (-3 to +10). Use 0 for par. Lower (par or under) is better.';
+      case 'waffle':
+        return 'Score is the number of swaps remaining (0-15). Use 0 if you failed to solve. Higher is better.';
       default:
         return ''; // Or a default message
     }

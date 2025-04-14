@@ -111,6 +111,16 @@ export const games = [
     maxScore: 7, // 1-6 is a win, 7 is a loss
     externalUrl: 'https://worldle.teuteuf.fr/',
     isNew: true
+  },
+  {
+    id: 'waffle',
+    name: 'Waffle',
+    description: 'Rearrange letters into correct words in 15 moves or fewer.',
+    icon: 'grip-vertical', // Using 'grip-vertical' icon for now
+    color: 'bg-orange-400', 
+    maxScore: 15, // Max swaps remaining
+    externalUrl: 'https://wafflegame.net/daily',
+    isNew: true
   }
 ];
 
@@ -176,6 +186,8 @@ export const getLabelByGame = (gameId: string): string => {
       return 'points';
     case 'minute-cryptic':
       return 'hints';
+    case 'waffle':
+      return 'swaps';
     default:
       return 'points';
   }
