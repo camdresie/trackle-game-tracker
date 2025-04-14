@@ -191,6 +191,8 @@ const AddScoreModal = ({
         return 'Score is points earned. Higher is better.';
       case 'nerdle':
         return 'Score is the number of guesses (1-6). Use 7 to indicate a loss. Lower is better.';
+      case 'worldle':
+        return 'Score is the number of guesses (1-6). Use 7 for a missed country. Lower is better.';
       case 'squardle':
         return 'Score is the number of guesses remaining (0-10). Use 0 if you were unable to solve the puzzle. Higher is better.';
       case 'minute-cryptic':

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer, Map } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
@@ -57,6 +57,8 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         return <Square className="w-5 h-5" />;
       case 'timer':
         return <Timer className="w-5 h-5" />;
+      case 'map':
+        return <Map className="w-5 h-5" />;
       default:
         return <Dices className="w-5 h-5" />;
     }
@@ -110,8 +112,13 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         </div>
       </div>
       
-      <div className="mb-1">
+      <div className="mb-1 flex items-center gap-2"> 
         <h3 className="text-lg font-semibold">{game.name}</h3>
+        {game.isNew && (
+          <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+            New
+          </span>
+        )}
       </div>
       <p className="text-sm text-muted-foreground mb-4">{game.description}</p>
       
