@@ -686,9 +686,9 @@ const TodayScores = () => {
                               <>
                                   <div className="mb-3">
                                     <div className="flex items-center justify-between">
-                                      <h3 className="font-semibold text-xl flex items-center gap-2">
+                                      <h3 className="font-semibold text-xl flex items-center gap-2 min-w-0">
                                         <Users className="w-5 h-5 text-accent flex-shrink-0" />
-                                        <span className="truncate">{group.groupName} {selectedGame?.name || ''} Scores</span>
+                                        <span className="break-words">{group.groupName} {selectedGame?.name || ''} Scores</span>
                                       </h3>
                                       {/* Only show Leading badge here on mobile, not in the score section below */}
                                       {leadingPlayer?.leaders.some(p => p.isCurrentUser) && (
@@ -772,7 +772,6 @@ const TodayScores = () => {
                                               )}
                                             </div>
                                             {member.hasPlayed ? (
-                                              // Display formatted score directly
                                               <span className="text-sm font-medium">
                                                 {formatScoreValue(member.score, selectedGame?.id)}
                                               </span>
