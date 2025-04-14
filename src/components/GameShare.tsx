@@ -39,7 +39,7 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
     let baseUnit: string;
     let singularUnit: string;
 
-    if (['wordle', 'quordle', 'framed', 'nerdle', 'worldle'].includes(game.id)) { // Add worldle
+    if (['wordle', 'quordle', 'framed', 'nerdle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) { // Update for SQNCES variations
       baseUnit = 'tries';
       singularUnit = 'try';
     } else if (['mini-crossword', 'minute-cryptic'].includes(game.id)) { // Added minute-cryptic

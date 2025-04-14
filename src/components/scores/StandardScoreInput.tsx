@@ -50,6 +50,8 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       newValue = Math.max(-3, Math.min(10, inputValue));
     } else if (game.id === 'waffle') {
       newValue = Math.max(0, Math.min(game.maxScore || 15, inputValue));
+    } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
+      newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
     } else {
       newValue = Math.max(0, Math.min(game.maxScore || 100, inputValue));
     }
@@ -70,7 +72,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
   // Get min value based on game
   const getMinValue = () => {
     if (game.id === 'connections') return 4;
-    if (['wordle', 'framed', 'nerdle', 'worldle'].includes(game.id)) return 1;
+    if (['wordle', 'framed', 'nerdle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) return 1;
     if (game.id === 'minute-cryptic') return -3;
     return 0;
   };
