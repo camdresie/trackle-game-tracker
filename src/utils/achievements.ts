@@ -333,8 +333,6 @@ export const getPlayerAchievements = async (playerId: string): Promise<Achieveme
     }));
   }
 
-  console.log('Fetched scores for achievements:', scores);
-
   return allAchievements.map(achievement => {
     const achievementScores = achievement.gameId
       ? scores.filter(score => score.game_id === achievement.gameId)
@@ -350,8 +348,6 @@ export const getPlayerAchievements = async (playerId: string): Promise<Achieveme
       notes: score.notes,
       createdAt: score.created_at || new Date().toISOString() // Add createdAt
     }))) : false;
-
-    console.log(`Achievement ${achievement.id} unlocked:`, unlocked);
 
     return {
       ...achievement,

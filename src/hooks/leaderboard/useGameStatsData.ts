@@ -16,7 +16,6 @@ export const useGameStatsData = (
     queryKey: ['game_stats', selectedGame],
     queryFn: async () => {
       try {
-        console.log('Fetching game stats data for game:', selectedGame);
         
         let query = supabase
           .from('game_stats')
@@ -31,7 +30,6 @@ export const useGameStatsData = (
             
         if (error) throw error;
         
-        console.log('Game stats data retrieved:', data?.length || 0, 'records');
         
         // Transform the data to match our expected format
         const transformedData = data?.map(item => {
@@ -56,7 +54,6 @@ export const useGameStatsData = (
           };
         });
         
-        console.log('Transformed game stats with profiles:', transformedData?.length || 0);
         return transformedData as GameStatsWithProfile[];
       } catch (error) {
         console.error('Error fetching game stats data:', error);

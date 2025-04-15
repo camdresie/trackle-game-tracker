@@ -178,7 +178,6 @@ const Profile = () => {
   
   // Handle friend removal from the connections modal
   const handleFriendRemoved = async () => {
-    console.log("Friend removed, refreshing friends data...");
     await refreshFriends();
   };
 

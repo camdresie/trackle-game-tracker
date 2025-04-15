@@ -9,12 +9,6 @@ import { GroupMessage } from '@/utils/types';
 // Disable detailed logging for production
 const DEBUG = false;
 
-const log = (...args: any[]) => {
-  if (DEBUG) {
-    console.log(...args);
-  }
-};
-
 // Number of messages to fetch initially and per page
 const MESSAGES_PER_PAGE = 25;
 // Poll for new messages every 10 seconds
@@ -34,7 +28,6 @@ class PollingManager {
   private constructor() {
     // Start the cleanup interval
     this.cleanupIntervalId = window.setInterval(() => this.cleanupIntervals(), 30000);
-    log('[PollingManager] Initialized');
   }
 
   public static getInstance(): PollingManager {
@@ -45,7 +38,6 @@ class PollingManager {
   }
 
   public registerInterval(groupId: string, callback: () => void): void {
-    log(`[PollingManager] Attempting to register interval for ${groupId}`);
     // Get existing or create new interval data
     const existingInterval = this.intervals.get(groupId);
     
@@ -53,7 +45,6 @@ class PollingManager {
       existingInterval.refCount += 1;
       existingInterval.lastUsed = Date.now();
       existingInterval.cleanup = false;
-      log(`[PollingManager] Using existing interval for ${groupId}, refCount: ${existingInterval.refCount}`);
     } else {
       // Create new interval
       const intervalId = window.setInterval(() => {
@@ -68,15 +59,12 @@ class PollingManager {
         lastUsed: Date.now(),
         cleanup: false
       });
-      log(`[PollingManager] Created new interval for ${groupId}, refCount: 1`);
     }
   }
 
   public unregisterInterval(groupId: string): void {
-    log(`[PollingManager] Attempting to unregister interval for ${groupId}`);
     const interval = this.intervals.get(groupId);
     if (!interval) {
-      log(`[PollingManager] No interval found for ${groupId}`);
       return;
     }
     
@@ -87,18 +75,14 @@ class PollingManager {
     interval.refCount -= 1;
     interval.lastUsed = Date.now();
     
-    log(`[PollingManager] Decremented refCount for ${groupId}, new refCount: ${interval.refCount}`);
-    
     // If refCount reaches 0, clear the interval immediately
     if (interval.refCount <= 0) {
       window.clearInterval(interval.intervalId);
       this.intervals.delete(groupId);
-      log(`[PollingManager] Deleted interval for ${groupId} due to refCount <= 0`);
     }
   }
 
   private cleanupIntervals(): void {
-    log('[PollingManager] Running cleanup check');
     const now = Date.now();
     const twoMinutes = 2 * 60 * 1000;
     
@@ -107,13 +91,11 @@ class PollingManager {
       if (now - interval.lastUsed > twoMinutes && interval.refCount <= 0) {
         window.clearInterval(interval.intervalId);
         this.intervals.delete(groupId);
-        log(`[PollingManager] Cleaned up unused interval for ${groupId}`);
       }
     }
   }
 
   public dispose(): void {
-    log('[PollingManager] Disposing all intervals');
     // Clear all intervals
     for (const interval of this.intervals.values()) {
       window.clearInterval(interval.intervalId);
@@ -140,8 +122,6 @@ export const useGroupMessages = (groupId: string | null) => {
   const thisRenderCount = ++renderCount;
   const hookId = useRef(`hook-${Math.random().toString(36).substr(2, 9)}`).current;
   
-  log(`[Hook:${hookId}] RENDER #${thisRenderCount} with groupId=${groupId}`);
-  
   // Track current page and hasMore state
   const [page, setPage] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -166,16 +146,13 @@ export const useGroupMessages = (groupId: string | null) => {
   
   // Cleanup on unmount
   useEffect(() => {
-    log(`[Hook:${hookId}] Mount effect running with groupId=${groupId}`);
     mountedRef.current = true;
     
     return () => {
-      log(`[Hook:${hookId}] Unmounting with groupId=${currentGroupRef.current}`);
       mountedRef.current = false;
       
       // Cleanup the polling on unmount if we had a group
       if (currentGroupRef.current) {
-        log(`[Hook:${hookId}] Cleaning up polling for ${currentGroupRef.current}`);
         pollingManager.unregisterInterval(currentGroupRef.current);
         currentGroupRef.current = null;
       }
@@ -184,19 +161,15 @@ export const useGroupMessages = (groupId: string | null) => {
   
   // Setup polling for messages
   useEffect(() => {
-    log(`[Hook:${hookId}] Polling setup effect running with groupId=${groupId}, isValid=${isValidGroupId}, user=${!!user}`);
-    
+
     // Skip if no valid group or user
     if (!isValidGroupId || !groupId || !user) {
-      log(`[Hook:${hookId}] Skipping polling setup - invalid conditions`);
       return;
     }
     
-    log(`[Hook:${hookId}] Continuing polling setup for ${groupId}`);
     
     // Handle group change
     if (currentGroupRef.current && currentGroupRef.current !== groupId) {
-      log(`[Hook:${hookId}] Group changed from ${currentGroupRef.current} to ${groupId}`);
       pollingManager.unregisterInterval(currentGroupRef.current);
     }
     
@@ -206,11 +179,9 @@ export const useGroupMessages = (groupId: string | null) => {
     // Function to poll for messages
     const pollForMessages = () => {
       if (!mountedRef.current) {
-        log(`[Hook:${hookId}] Skipping poll - component unmounted`);
         return;
       }
       
-      log(`[Hook:${hookId}] Polling for group: ${groupId}`);
       queryClient.invalidateQueries({ queryKey: ['group-messages', groupId, 0] });
     };
     
@@ -218,7 +189,6 @@ export const useGroupMessages = (groupId: string | null) => {
     pollingManager.registerInterval(groupId, pollForMessages);
     
     // Reset page and other state when group changes
-    log(`[Hook:${hookId}] Resetting state for group change to ${groupId}`);
     setPage(0);
     setAllMessages([]);
     setHasMoreMessages(true);
@@ -226,10 +196,8 @@ export const useGroupMessages = (groupId: string | null) => {
     
     // Cleanup function
     return () => {
-      log(`[Hook:${hookId}] Polling effect cleanup for ${groupId}`);
       // Explicitly unregister when effect is cleaned up
       if (currentGroupRef.current === groupId) {
-        log(`[Hook:${hookId}] Unregistering polling for ${groupId} in effect cleanup`);
         pollingManager.unregisterInterval(groupId);
       }
     };
@@ -251,15 +219,12 @@ export const useGroupMessages = (groupId: string | null) => {
   } = useQuery({
     queryKey: ['group-messages', groupId, page],
     queryFn: async () => {
-      log(`[Hook:${hookId}] Query function executing for ${groupId}, page ${page}`);
       if (!isValidGroupId || !groupId || !user || !mountedRef.current) {
-        log(`[Hook:${hookId}] Query skipped - invalid conditions`);
         return [];
       }
       
       try {
         // First check if user has access to this group (as owner or member)
-        log(`[Hook:${hookId}] Checking group access for ${groupId}`);
         const { data: accessCheck, error: accessError } = await supabase.rpc('can_user_access_group', {
           p_group_id: groupId,
           p_user_id: user.id
@@ -281,7 +246,6 @@ export const useGroupMessages = (groupId: string | null) => {
         const to = from + MESSAGES_PER_PAGE - 1;
         
         // First get count of total messages to determine if there are more
-        log(`[Hook:${hookId}] Fetching message count for ${groupId}`);
         const { count, error: countError } = await supabase
           .from('group_messages')
           .select('id', { count: 'exact', head: true })
@@ -292,11 +256,9 @@ export const useGroupMessages = (groupId: string | null) => {
         } else if (count !== null && count !== undefined) {
           // Store the total count for future reference
           totalMessageCountRef.current = count;
-          log(`[Hook:${hookId}] Total message count for ${groupId}: ${count}`);
         }
         
         // Fetch paginated messages with the newest first
-        log(`[Hook:${hookId}] Fetching messages for ${groupId}, range ${from}-${to}`);
         const { data: messagesData, error } = await supabase
           .from('group_messages')
           .select('id, group_id, user_id, content, created_at')
@@ -312,7 +274,6 @@ export const useGroupMessages = (groupId: string | null) => {
           return [];
         }
         
-        log(`[Hook:${hookId}] Fetched ${messagesData?.length || 0} messages for ${groupId}`);
         
         // Mark this page as loaded
         loadedPagesRef.current.add(page);
@@ -326,7 +287,6 @@ export const useGroupMessages = (groupId: string | null) => {
               page > 0 && 
               from < totalMessageCountRef.current && 
               messagesData?.length === 0) {
-            log(`[Hook:${hookId}] Setting hasMoreMessages=false because page ${page} returned 0 messages`);
             setHasMoreMessages(false);
           }
           return [];
@@ -340,7 +300,6 @@ export const useGroupMessages = (groupId: string | null) => {
                               
           const hasMore = totalFetched < totalMessageCountRef.current;
           
-          log(`[Hook:${hookId}] Evaluating hasMoreMessages: totalInDB=${totalMessageCountRef.current}, totalFetched=${totalFetched}, hasMore=${hasMore}`);
           
           // Only set hasMoreMessages=false if we've definitely got all messages
           // If we're uncertain, keep it true to allow the user to try loading more
@@ -350,14 +309,12 @@ export const useGroupMessages = (groupId: string | null) => {
         } 
         // If we got fewer than requested messages for a non-initial page, we've reached the end
         else if (mountedRef.current && page > 0 && messagesData.length < MESSAGES_PER_PAGE) {
-          log(`[Hook:${hookId}] Setting hasMoreMessages=false because received ${messagesData.length} < ${MESSAGES_PER_PAGE}`);
           setHasMoreMessages(false);
         }
         // Don't update hasMoreMessages here if uncertain - keep the existing value
         
         // Set initial load complete if this is page 0
         if (page === 0 && mountedRef.current) {
-          log(`[Hook:${hookId}] Setting initial load complete for ${groupId}`);
           setIsInitialLoadComplete(true);
         }
         
@@ -365,7 +322,6 @@ export const useGroupMessages = (groupId: string | null) => {
         const userIds = [...new Set(messagesData.map(message => message.user_id))];
         
         // Fetch profiles for all message senders in one query
-        log(`[Hook:${hookId}] Fetching profiles for message senders`);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -409,10 +365,7 @@ export const useGroupMessages = (groupId: string | null) => {
   useEffect(() => {
     if (!mountedRef.current) return;
     
-    log(`[Hook:${hookId}] Page messages updated for ${groupId}, page ${page}, count=${pageMessages.length}`);
-    
     if (pageMessages.length > 0) {
-      log(`[Hook:${hookId}] Updating allMessages with ${pageMessages.length} new messages`);
       setAllMessages(prev => {
         // Create a map of existing messages by ID for quick lookup
         const existingMap = new Map(prev.map(msg => [msg.id, msg]));
@@ -434,24 +387,20 @@ export const useGroupMessages = (groupId: string | null) => {
       // Special case: we received fewer than MESSAGES_PER_PAGE messages
       // AND this is not the first page, which is a reliable indicator we've reached the end
       if (page > 0 && pageMessages.length < MESSAGES_PER_PAGE) {
-        log(`[Hook:${hookId}] End detected: Page ${page} returned ${pageMessages.length} < ${MESSAGES_PER_PAGE}`);
         setHasMoreMessages(false);
       }
       // Special case: we know the total count and have loaded that many messages
       else if (totalMessageCountRef.current !== null && 
               allMessages.length + pageMessages.length >= totalMessageCountRef.current) {
-        log(`[Hook:${hookId}] End detected: Loaded all ${totalMessageCountRef.current} messages`);
         setHasMoreMessages(false);
       }
       
       // Always reset loading flag when new messages arrive
       if (isLoadingMoreRef.current) {
-        log(`[Hook:${hookId}] Resetting loading flag after receiving page ${page} data`);
         isLoadingMoreRef.current = false;
       }
     } else if (page > 0) {
       // Empty results for non-initial page - a good sign we've reached the end
-      log(`[Hook:${hookId}] Received empty results for page ${page}, setting hasMoreMessages=false`);
       setHasMoreMessages(false);
       isLoadingMoreRef.current = false;
     }
@@ -465,7 +414,6 @@ export const useGroupMessages = (groupId: string | null) => {
   // Mutation for sending a new message
   const { mutateAsync, isPending: isSending } = useMutation({
     mutationFn: async (content: string) => {
-      log(`[Hook:${hookId}] Sending message to ${groupId}`);
       if (!isValidGroupId || !groupId || !user) {
         throw new Error('Invalid group or user');
       }
@@ -491,7 +439,6 @@ export const useGroupMessages = (groupId: string | null) => {
     onSuccess: () => {
       // Invalidate the latest messages to refresh
       if (groupId) {
-        log(`[Hook:${hookId}] Message sent successfully, invalidating queries`);
         queryClient.invalidateQueries({ 
           queryKey: ['group-messages', groupId, 0] 
         });
@@ -506,13 +453,11 @@ export const useGroupMessages = (groupId: string | null) => {
   // Function to load more messages (previous page)
   const loadMoreMessages = useCallback(() => {
     if (isLoadingMoreRef.current) {
-      log(`[Hook:${hookId}] Ignoring loadMoreMessages call - already loading`);
       return;
     }
     
     // Track this request specifically 
     const requestPage = page + 1;
-    log(`[Hook:${hookId}] Loading more messages for ${groupId}, current page: ${page}, next page: ${requestPage}`);
     
     // Start loading
     isLoadingMoreRef.current = true;
@@ -527,27 +472,22 @@ export const useGroupMessages = (groupId: string | null) => {
     // This ensures the UI doesn't get stuck in a loading state
     setTimeout(() => {
       if (mountedRef.current && isLoadingMoreRef.current) {
-        log(`[Hook:${hookId}] Reset loading state after timeout for page ${requestPage}`);
         isLoadingMoreRef.current = false;
         
         // If we're still loading after timeout, we might have encountered an issue
         // Let's set hasMoreMessages back to true to allow trying again
         if (!pageMessages || pageMessages.length === 0) {
-          log(`[Hook:${hookId}] No messages received after timeout. Setting hasMoreMessages=true to allow retrying`);
           setHasMoreMessages(true);
         }
       }
     }, 3000);
     
-    // For debugging - log what messages we've loaded so far
-    log(`[Hook:${hookId}] Current message count: ${allMessages.length}`);
   }, [groupId, hookId, page, allMessages.length, pageMessages]);
 
   // Function to send a message
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || !isValidGroupId) return;
     
-    log(`[Hook:${hookId}] Sending message: ${content.substring(0, 20)}...`);
     try {
       await mutateAsync(content.trim());
     } catch (error) {
@@ -556,7 +496,6 @@ export const useGroupMessages = (groupId: string | null) => {
     }
   }, [mutateAsync, isValidGroupId, hookId]);
 
-  log(`[Hook:${hookId}] Returning data for ${groupId}, message count=${allMessages.length}`);
   
   return {
     messages: allMessages,

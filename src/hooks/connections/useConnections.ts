@@ -15,7 +15,6 @@ export const useConnections = (userId: string, enabled: boolean) => {
     queryFn: async () => {
       if (!userId) return [];
       
-      console.log(`Fetching connections for user ${userId}`);
       
       // Get all connections where the user is either the requester or the receiver
       const { data: connections, error: connectionsError } = await supabase
@@ -29,7 +28,6 @@ export const useConnections = (userId: string, enabled: boolean) => {
         throw connectionsError;
       }
       
-      console.log(`Found ${connections?.length || 0} connections for user ${userId}`);
       
       if (!connections || connections.length === 0) {
         return [];
@@ -40,7 +38,6 @@ export const useConnections = (userId: string, enabled: boolean) => {
         conn.user_id === userId ? conn.friend_id : conn.user_id
       );
       
-      console.log(`Extracted ${friendIds.length} unique friend IDs:`, friendIds);
       
       // Fetch friend profiles
       const { data: profiles, error: profilesError } = await supabase
@@ -53,7 +50,6 @@ export const useConnections = (userId: string, enabled: boolean) => {
         throw profilesError;
       }
       
-      console.log(`Found ${profiles?.length || 0} profiles for friends`);
       
       // Transform profiles into Player objects with proper null checks
       const friends: Player[] = (profiles || []).map(profile => {
@@ -74,7 +70,6 @@ export const useConnections = (userId: string, enabled: boolean) => {
         };
       });
       
-      console.log(`Transformed ${friends.length} friends:`, friends);
       
       return friends;
     },

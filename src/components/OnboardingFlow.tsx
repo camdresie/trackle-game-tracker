@@ -21,7 +21,6 @@ const OnboardingFlow = () => {
   // Initialize form with profile data when available
   useEffect(() => {
     if (profile) {
-      console.log('Initializing form with profile data:', profile);
       // Always start with blank username
       setUsername('');
       setFullName(profile.full_name || '');
@@ -52,7 +51,6 @@ const OnboardingFlow = () => {
 
     try {
       setIsSubmitting(true);
-      console.log('Updating profile with:', { username, full_name: fullName });
       
       await updateProfile({
         username,

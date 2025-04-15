@@ -4,7 +4,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FriendGroup, Player } from '@/utils/types';
 import { toast } from 'sonner';
-import { isDevelopment } from '@/utils/environment';
 
 // Interface for the hook props
 interface UseFriendGroupsProps {
@@ -50,9 +49,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
       if (!user) return [];
       
       try {
-        if (isDevelopment()) {
-          console.log('Fetching friend groups for user:', user.id);
-        }
         
         // Query for groups that the current user owns
         const { data: ownedGroups, error: ownedError } = await supabase
@@ -64,14 +60,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           throw ownedError;
         }
         
-        if (isDevelopment()) {
-          console.log('Owned groups:', ownedGroups);
-        }
-        
-        // Query for groups where user is a member (not owner)
-        if (isDevelopment()) {
-          console.log('Querying member groups for user:', user.id);
-        }
         
         // First get the group IDs where the user is a member or invited
         const { data: memberGroups, error: memberError } = await supabase
@@ -84,17 +72,9 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           throw memberError;
         }
         
-        if (isDevelopment()) {
-          console.log('Member group IDs with status:', memberGroups?.map(m => 
-            `${m.group_id} (${m.status})`
-          ));
-        }
         
         // If no member groups found, try a direct SQL query to debug
         if (!memberGroups || memberGroups.length === 0) {
-          if (isDevelopment()) {
-            console.log('No member groups found with standard query, trying direct SQL query');
-          }
           
           // Use direct SQL query to check if there are any accepted memberships
           const directQuery = `
@@ -112,9 +92,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           if (directQueryError) {
             console.error('Error with direct SQL query:', directQueryError);
           } else if (directResults && Array.isArray(directResults) && directResults.length > 0) {
-            if (isDevelopment()) {
-              console.log('Direct SQL query found member groups:', directResults);
-            }
             
             // The direct query now returns the full group data, so we can use it directly
             const memberGroupData = directResults.map((group: any) => ({
@@ -126,9 +103,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
               description: group.description || ''
             }));
             
-            if (isDevelopment()) {
-              console.log('Member group details from direct query:', memberGroupData);
-            }
             
             // Combine owned groups and groups the user is a member of
             const allGroups = [...(ownedGroups || []), ...memberGroupData];
@@ -138,16 +112,8 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
               new Map(allGroups.map(group => [group.id, group])).values()
             );
             
-            if (isDevelopment()) {
-              console.log('Final unique groups from direct query:', uniqueGroups);
-            }
-            
             return uniqueGroups;
-          } else {
-            if (isDevelopment()) {
-              console.log('Direct SQL query also found no member groups');
-            }
-          }
+          } 
         }
         
         if (memberGroups && memberGroups.length > 0) {
@@ -171,10 +137,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
             throw groupError;
           }
           
-          if (isDevelopment()) {
-            console.log('Member group details:', memberGroupData);
-          }
-          
           // Add status to each group
           const memberGroupsWithStatus = memberGroupData?.map(group => ({
             ...group,
@@ -188,10 +150,6 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           const uniqueGroups = Array.from(
             new Map(allGroups.map(group => [group.id, group])).values()
           );
-          
-          if (isDevelopment()) {
-            console.log('Final unique groups:', uniqueGroups);
-          }
           
           return uniqueGroups;
         }

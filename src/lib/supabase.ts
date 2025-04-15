@@ -18,8 +18,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Log which environment we're using (for debugging)
 const appEnv = getEnvironment();
 const dbEnv = getDatabaseEnvironment();
-console.log(`App Environment: ${appEnv}`);
-console.log(`Database Environment: ${dbEnv} (URL: ${supabaseUrl})`);
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -52,7 +50,6 @@ try {
   // @ts-ignore - Access internal method to disable realtime completely
   if (supabase?.realtime?.disconnect) {
     // This will immediately disconnect any realtime connections
-    console.log('Explicitly disconnecting realtime connections');
     supabase.realtime.disconnect();
   }
 } catch (error) {
@@ -69,7 +66,6 @@ export const ensureAvatarBucketExists = async () => {
       await supabase.storage.createBucket('avatars', {
         public: true,
       });
-      console.log('Created avatars bucket');
     }
     return true;
   } catch (error) {

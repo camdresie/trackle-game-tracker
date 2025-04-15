@@ -57,7 +57,6 @@ const AddScoreModal = ({
       const todayScore = existingScores.find(score => score.date === todayInET && score.gameId === game.id);
       
       if (todayScore) {
-        console.log('Found existing score for today:', todayScore);
         setIsEditMode(true);
         setExistingScoreId(todayScore.id);
         setValue(todayScore.value);
@@ -107,9 +106,7 @@ const AddScoreModal = ({
     // --- End Optimistic Update ---
 
     try {
-      console.log(`Submitting score: ${scoreValue} for game ${game.id}, Notes: ${finalNotes}`);
       const { stats, score: savedScore } = await addGameScore(scorePayload, isEditMode);
-      console.log('Received response from addGameScore:', savedScore);
       queryClient.invalidateQueries({ queryKey: ['game-data', 'scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
@@ -129,12 +126,10 @@ const AddScoreModal = ({
 
   // Handle score changes from child components
   const handleStandardScoreChange = (newValue: number) => {
-    console.log(`Standard score changed to: ${newValue}`);
     setValue(newValue);
   };
   
   const handleQuordleScoreChange = (newValues: number[]) => {
-    console.log(`Quordle score changed to: ${newValues.join(', ')}`);
     setQuordleValues(newValues);
   };
 

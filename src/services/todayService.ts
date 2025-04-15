@@ -71,11 +71,9 @@ export const getTodaysGamesForAllUsers = async (gameId: string | null, forceRefr
     // Check if we have valid cached data and aren't forcing a refresh
     const cachedData = scoreCache.get(cacheKey);
     if (!forceRefresh && cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
-      console.log(`Using cached data for game ${gameId} (${cachedData.scores.length} scores)`);
       return cachedData.scores;
     }
     
-    console.log(`Fetching today's scores for all users for game: ${gameId}, date: ${today}`);
     
     // Modified query to fetch ALL scores for today for the specified game
     // This ensures we get scores from users who become friends after they played
@@ -89,8 +87,6 @@ export const getTodaysGamesForAllUsers = async (gameId: string | null, forceRefr
       console.error('Error fetching today\'s games for all users:', error);
       throw error;
     }
-    
-    console.log(`Found ${data?.length || 0} today's scores for all users`);
     
     // Transform the data to match our Score type
     const scores = data.map(score => ({
