@@ -17,7 +17,6 @@ export const useProfilesData = (userId: string | undefined) => {
             
         if (error) throw error;
         
-        console.log('Profiles retrieved:', data?.length || 0);
         return data || [];
       } catch (error) {
         console.error('Error fetching profiles:', error);

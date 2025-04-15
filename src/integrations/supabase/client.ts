@@ -20,7 +20,6 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 // Log environment information
 const appEnv = getEnvironment();
 const dbEnv = getDatabaseEnvironment();
-console.log(`[Integration] Using Database Environment: ${dbEnv}`);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

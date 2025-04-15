@@ -30,7 +30,6 @@ export const filterAndSortPlayers = (
   maxPlayers: number = 25, // Default to 25 players maximum
   includeAllFriends: boolean = false // Parameter to include all friends regardless of group
 ): LeaderboardPlayer[] => {
-  console.time('filterAndSortPlayers');
   if (!leaderboardPlayers.length) return [];
   
   // Performance optimization for today filter - filter early before other operations
@@ -159,6 +158,5 @@ export const filterAndSortPlayers = (
   // Limit to maximum number of players (default 25)
   const result = filteredPlayers.slice(0, maxPlayers);
   
-  console.timeEnd('filterAndSortPlayers');
   return result;
 };

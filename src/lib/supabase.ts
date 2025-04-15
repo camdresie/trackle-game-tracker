@@ -66,7 +66,6 @@ export const ensureAvatarBucketExists = async () => {
       await supabase.storage.createBucket('avatars', {
         public: true,
       });
-      console.log('Created avatars bucket');
     }
     return true;
   } catch (error) {

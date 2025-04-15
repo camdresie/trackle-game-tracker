@@ -16,7 +16,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
     queryKey: ['all-scores', selectedGame],
     queryFn: async () => {
       try {
-        console.log('Fetching scores data with pagination for game:', selectedGame);
         
         // Create base query
         let query = supabase.from('scores').select('*');
@@ -57,12 +56,10 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           // Break if we've reached the maximum allowed records
           if (allScores.length >= MAX_RECORDS) {
-            console.log(`Reached maximum record limit (${MAX_RECORDS}), stopping pagination`);
             hasMore = false;
           }
         }
         
-        console.log('Retrieved scores data:', allScores.length, 'records');
         
         // If we have scores, fetch the matching profiles
         if (allScores.length > 0) {
@@ -92,11 +89,9 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
             });
           }
           
-          console.log('Retrieved profiles data for scores:', profilesMap.size);
           
           // Get today's date in Eastern Time for consistent comparison
           const today = getTodayInEasternTime();
-          console.log('Today\'s date (ET/YYYY-MM-DD) for comparison:', today);
           
           // Process each score, removing duplicates by user/game/date
           // This ensures modified scores don't appear as duplicates
@@ -114,7 +109,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           // Convert map back to array of unique scores
           const uniqueScores = Array.from(uniqueScoreMap.values());
-          console.log('Unique scores after deduplication:', uniqueScores.length);
           
           // Transform and combine the data - using for loop instead of map for better performance
           const transformedData = [];
@@ -136,7 +130,6 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
           
           // Count and log today's scores
           const todayScoresCount = transformedData.filter(item => item.isToday).length;
-          console.log(`Total scores marked as today: ${todayScoresCount}`);
           
           return transformedData;
         }

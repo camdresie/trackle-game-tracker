@@ -61,7 +61,6 @@ const FriendsTabContent = ({ currentPlayerId, open, onFriendRemoved }: FriendsTa
   );
 
   const handleRemoveFriend = (connectionId: string) => {
-    console.log('Handling remove friend for connection ID:', connectionId);
     
     if (!connectionId) {
       console.error("Cannot remove friend: missing connection information");

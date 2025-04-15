@@ -229,7 +229,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     
     const fetchAllGroupMembers = async () => {
       try {
-        console.log('Fetching all group members for groups:', memoizedFriendGroups.map(g => g.id).join(', '));
         
         // Get all group IDs the user is part of
         const groupIds = memoizedFriendGroups.map(g => g.id);
@@ -247,10 +246,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           return;
         }
         
-        // Log all members with their status for debugging
-        console.log('All group members with status:', groupMembers?.map(m => 
-          `${m.friend_id} (${m.status}) in group ${m.group_id}`
-        ));
         
         // 2. Then get all group creators (from groups table)
         const { data: groups, error: groupsError } = await supabase
@@ -355,8 +350,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           });
         }
         
-        console.log('Processed group members:', Array.from(membersByGroup.entries()));
-        
         // 6. Store the results
         setMemberProfilesData(prev => ({
           ...prev,
@@ -416,10 +409,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         membersByGroupMap.set(item.groupId, item.members || []);
       });
       
-      // Debug logs to check what we're working with
-      console.log('Found groups:', memoizedFriendGroups.map(g => `${g.name} (${g.id})`));
-      console.log('Fetched members by group:', fetchedMembersByGroup);
-      
       // Simple approach to process groups
       const processedGroups = memoizedFriendGroups.map(group => {
         // Create a members array with just the current user for now
@@ -465,7 +454,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         // Add any additional members we fetched from database (including non-friends)
         const fetchedGroupMembers = membersByGroupMap.get(group.id) || [];
         if (fetchedGroupMembers.length > 0) {
-          console.log(`Group ${group.name} has ${fetchedGroupMembers.length} fetched members`);
           
           fetchedGroupMembers.forEach(member => {
             // Skip if already added (don't add duplicates)
@@ -474,7 +462,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
             // Skip if member is not accepted and not the owner
             // This ensures we don't show pending members in the scores list
             if (member.role !== 'creator' && member.status && member.status !== 'accepted') {
-              console.log(`Skipping non-accepted member ${member.id} with status ${member.status}`);
               return;
             }
             
@@ -497,10 +484,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           });
         }
         
-        // Log the final members list for debugging
-        console.log(`Group ${group.name} final members (${members.length}):`, 
-          members.map(m => m.playerName));
-        
         return {
           groupId: group.id,
           groupName: group.name,
@@ -518,48 +501,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       setIsLoading(false);
     }
   }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriendGroups, memberProfilesData]);
-  
-  // Process all membership data when the hook is used
-  /*
-  useEffect(() => {
-    // Force a refresh of group data
-    const fetchData = async () => {
-      if (!user || !memoizedFriendGroups.length) return;
-      
-      try {
-        // Get all the group IDs
-        const groupIds = memoizedFriendGroups.map(group => group.id);
-        
-        if (groupIds.length === 0) return;
-        
-        // Get all accepted members of these groups
-        const { data: members, error } = await supabase
-          .from('friend_group_members')
-          .select('group_id, friend_id')
-          .in('group_id', groupIds)
-          .eq('status', 'accepted');
-          
-        if (error) {
-          throw error;
-        }
-        
-        console.log(`Found ${members?.length || 0} members across all groups`);
-        
-        // Force a refresh of data if needed
-        if (firstLoadDone.current && memberProfilesData.profiles.length === 0) {
-          // Force a re-fetch of today's scores
-          if (fetchAllTodaysScoresRef.current) {
-            await fetchAllTodaysScoresRef.current(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching group membership:', error);
-      }
-    };
-    
-    fetchData();
-  }, [user, memoizedFriendGroups]);
-  */
   
   const handleRefreshFriends = useCallback(async () => {
     try {

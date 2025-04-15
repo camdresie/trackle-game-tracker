@@ -90,9 +90,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   // Ensure we fetch the latest groups and invitations when the modal opens
   useEffect(() => {
     if (open && !hasFetchedRef.current) {
-      if (isDevelopment()) {
-        console.log('Groups manager opened, fetching invitations and groups');
-      }
       
       // Set cleanup flag to false when effect starts
       cleanupRef.current = false;

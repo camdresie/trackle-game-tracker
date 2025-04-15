@@ -51,31 +51,6 @@ const LeaderboardStats = ({
   const todayPlayersCount = uniqueUserIds.length;
   const todayGamesCount = todayScores.length;
   
-  // Debug logging for today's data
-  useEffect(() => {
-    console.log(`LeaderboardStats - Today's date (YYYY-MM-DD): ${today}`);
-    console.log(`LeaderboardStats - Total raw scores: ${rawScoresData?.length || 0}`);
-    
-    if (timeFilter === 'today') {
-      console.log(`LeaderboardStats - Scores marked as today: ${todayScores.length}`);
-      
-      if (todayScores.length > 0) {
-        console.log('Today\'s scores details:', todayScores.map(s => ({
-          id: s.id,
-          user_id: s.user_id,
-          date: s.date,
-          isToday: s.isToday,
-          value: s.value
-        })));
-      }
-      
-      console.log(`LeaderboardStats - Unique users with today's scores: ${uniqueUserIds.length}`);
-      if (uniqueUserIds.length > 0) {
-        console.log('Unique user IDs with today\'s scores:', uniqueUserIds);
-      }
-    }
-  }, [rawScoresData, timeFilter, today, todayScores, uniqueUserIds]);
-  
   // Calculate players count based on time filter
   const playersCount = timeFilter === 'today' 
     ? todayPlayersCount 

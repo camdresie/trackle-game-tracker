@@ -123,7 +123,6 @@ const AddFriendsToGroupModal = ({
     // Don't automatically close the modal for group owners, even if there are pending invites
     // Only close for non-owners who are members
     if (group?.pendingMembers && group.pendingMembers.length > 0 && !group.isOwner) {
-      console.log('INVITATION FLOW - Group has pending invites and user is not owner, closing modal');
       if (!cleanupRef2.current) {
         onOpenChange(false);
       }

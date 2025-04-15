@@ -36,10 +36,6 @@ const GroupDropdownSelector = memo(({
   const thisRenderCount = ++renderCount;
   const componentId = useRef(`group-selector-${Math.random().toString(36).substr(2, 9)}`).current;
   
-  // Log for debugging
-  if (isDevelopment()) {
-    console.log(`[GroupSelector:${componentId}] RENDER #${thisRenderCount} with selectedGroupId=${selectedGroupId}`);
-  }
   
   const isMobile = useIsMobile();
   
@@ -69,9 +65,6 @@ const GroupDropdownSelector = memo(({
   
   // Log state changes
   useEffect(() => {
-    if (isDevelopment()) {
-      console.log(`[GroupSelector:${componentId}] Selected group updated: ${selectedGroup?.name}`);
-    }
   }, [selectedGroup, componentId]);
   
   const handleSelectGroup = (groupId: string) => {

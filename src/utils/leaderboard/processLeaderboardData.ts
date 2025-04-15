@@ -14,7 +14,6 @@ export const processLeaderboardData = (
   userId: string | undefined,
   profilesData: any[] | undefined
 ): LeaderboardPlayer[] => {
-  console.time('processLeaderboardData');
   if (!profilesData) return [];
   
   // Get today's date in Eastern Time for filtering
@@ -51,7 +50,6 @@ export const processLeaderboardData = (
   
   // Optimization: Early exit if no scores
   if (gameScores.length === 0) {
-    console.timeEnd('processLeaderboardData');
     return Array.from(userStatsMap.values());
   }
   
@@ -206,6 +204,5 @@ export const processLeaderboardData = (
   // Filter out players who have never played any games
   const activePlayers = leaderboardPlayers.filter(player => player.total_games > 0);
   
-  console.timeEnd('processLeaderboardData');
   return activePlayers;
 };
