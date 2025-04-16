@@ -46,8 +46,8 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
       baseUnit = 'seconds';
       singularUnit = 'second';
     } else if (['connections'].includes(game.id)) { // Added connections
-      baseUnit = 'mistakes'; // Using 'mistakes' for connections
-      singularUnit = 'mistake';
+      baseUnit = 'tries'; // Change 'mistakes' to 'tries' for connections
+      singularUnit = 'try'; // Change 'mistake' to 'try'
     } else {
       // Use specific units for games like Waffle or Spelling Bee
       if (game.id === 'waffle') {
@@ -101,9 +101,6 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
       // Let getUnitLabel handle non-integer averages (it will return plural)
       shareText += `⭐ Average: ${formatScore(averageScore)} ${getUnitLabel(averageScore)}\n`;
     }
-    
-    // Add promotional text but no URL - the URL will be added by the ShareModal
-    shareText += `\nI'm tracking game scores on Trackle!`;
     
     return shareText;
   };
