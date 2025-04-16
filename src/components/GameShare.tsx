@@ -102,9 +102,6 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
       shareText += `⭐ Average: ${formatScore(averageScore)} ${getUnitLabel(averageScore)}\n`;
     }
     
-    // Add promotional text but no URL - the URL will be added by the ShareModal
-    shareText += `\nI'm tracking game scores on Trackle!`;
-    
     return shareText;
   };
   
