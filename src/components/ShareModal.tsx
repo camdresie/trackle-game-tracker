@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import GroupDropdownSelector from './messages/GroupDropdownSelector';
 import GroupMessagesModal from './messages/GroupMessagesModal';
 import { useGroupMessages } from '@/hooks/useGroupMessages';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
 
 interface ShareModalProps {
   open: boolean;
@@ -27,6 +28,9 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   const [showGroupMessagesModal, setShowGroupMessagesModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  // Fetch user's friend groups
+  const { friendGroups } = useFriendGroups([]);
   
   // Use the group messages hook for sending messages
   const { sendMessage } = useGroupMessages(selectedGroupId);
@@ -138,6 +142,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
                     selectedGroupId={selectedGroupId} 
                     onSelectGroup={handleGroupSelected}
                     className="w-full"
+                    groups={friendGroups}
                   />
                   <Button 
                     variant="outline" 
