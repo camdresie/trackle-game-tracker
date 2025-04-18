@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import GroupScoresShare from '@/components/groups/GroupScoresShare';
+import { isLowerScoreBetter } from '@/utils/gameData';
 import { isDevelopment } from '@/utils/environment';
 
 interface GroupPerformanceProps {
@@ -53,11 +54,11 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
   
   // Helper function to determine the leading player in a group
   const getLeadingPlayerInGroup = (group: typeof groupPerformanceData[0]) => {
-    // For games like Wordle and Mini Crossword, lower scores are better
-    const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(selectedGame?.id || '');
+    // Use the central utility function to determine scoring direction
+    const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
     
     if (isDevelopment()) {
-      console.log(`Group ${group.groupName}: Processing leading player determination`);
+      console.log(`Group ${group.groupName}: Processing leading player determination (Lower is better: ${isLowerBetter})`);
     }
     
     // Combine current user and members into one array to find the leading player
@@ -264,14 +265,28 @@ const GroupPerformance = ({ selectedGame, todaysGames, className = '' }: GroupPe
               }
               
               // Sort members: first by played status, then by score
-              const isLowerBetter = ['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'minute-cryptic'].includes(selectedGame?.id || '');
+              const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
               const sortedMembers = [...allMembers]
                 .filter(m => m.hasPlayed && m.score !== null && m.score !== undefined)
                 .sort((a, b) => {
+                  // Ensure scores are treated as numbers, default to handling nulls/undefined
+                  const scoreA = a.score === null || a.score === undefined ? null : Number(a.score);
+                  const scoreB = b.score === null || b.score === undefined ? null : Number(b.score);
+
+                  // Handle cases where conversion might result in NaN (though unlikely after filter)
+                  const numA = isNaN(scoreA as number) ? null : scoreA;
+                  const numB = isNaN(scoreB as number) ? null : scoreB;
+
                   if (isLowerBetter) {
-                    return (a.score || 999) - (b.score || 999);
+                    // Ascending sort: Lower scores first, nulls/NaN last
+                    const valA = numA === null ? Infinity : numA;
+                    const valB = numB === null ? Infinity : numB;
+                    return valA - valB;
                   } else {
-                    return (b.score || 0) - (a.score || 0);
+                    // Descending sort: Higher scores first, nulls/NaN last
+                    const valA = numA === null ? -Infinity : numA;
+                    const valB = numB === null ? -Infinity : numB;
+                    return valB - valA;
                   }
                 });
               const notPlayedMembers = allMembers.filter(m => !m.hasPlayed || m.score === null || m.score === undefined);

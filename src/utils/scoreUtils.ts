@@ -53,6 +53,12 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
   } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
+  } else if (game.id === 'strands') {
+    // Lower is better: 0-2 Excellent, 3-5 Good, 6-8 Fair, 9-10 Poor
+    if (value <= 2) return 'Excellent';
+    if (value <= 5) return 'Good';
+    if (value <= 8) return 'Fair';
+    return 'Poor';
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'Excellent' : percentage >= 60 ? 'Good' : 'Fair';
@@ -110,6 +116,11 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
   } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
+  } else if (game.id === 'strands') {
+    // Lower is better: 0-2 Green, 3-5 Amber, 6+ Rose
+    if (value <= 2) return 'text-emerald-500';
+    if (value <= 5) return 'text-amber-500';
+    return 'text-rose-500'; // Covers Fair and Poor
   } else {
     const percentage = (value / (game.maxScore || 100)) * 100;
     return percentage >= 80 ? 'text-emerald-500' : percentage >= 60 ? 'text-amber-500' : 'text-rose-500';
@@ -147,6 +158,8 @@ export const getSliderMarkers = (game: Game) => {
     return [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   } else if (game.id === 'waffle') {
     return [0, 3, 6, 9, 12, 15];
+  } else if (game.id === 'strands') { // Add specific markers for Strands
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   } else {
     // For other games, calculate evenly spaced values
     const maxScore = game.maxScore || 100;

@@ -104,13 +104,21 @@ const GroupScoresShare = ({
         
         let scoreString = '-'; // Default if score is missing
         if (formattedScore !== null && formattedScore !== undefined) {
-            const unitLabel = gameId ? getLabelByGame(gameId) : '';
+            const unitLabel = gameId ? getLabelByGame(gameId) : ''; // Get base unit (e.g., 'hints')
             let finalUnitLabel = unitLabel;
+
+            // Handle singularization based on the unit label
             if (unitLabel === 'tries' && formattedScore === 1) {
                 finalUnitLabel = 'try';
             } else if (unitLabel === 'seconds' && formattedScore === 1) {
                 finalUnitLabel = 'second';
+            } else if (unitLabel === 'hints' && formattedScore === 1) { // Add check for hints
+                finalUnitLabel = 'hint';
+            } else if (unitLabel === 'swaps' && formattedScore === 1) { // Add check for swaps (if needed)
+                finalUnitLabel = 'swap';
             }
+            // Add more singularization rules if needed
+
             scoreString = `${formattedScore}${finalUnitLabel ? ' ' + finalUnitLabel : ''}`;
         }
 

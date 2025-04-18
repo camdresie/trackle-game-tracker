@@ -151,6 +151,18 @@ export const games = [
     maxScore: 7,
     externalUrl: 'https://sqnces.com/',
     isNew: true
+  },
+  {
+    id: 'strands',
+    name: 'Strands',
+    description: 'Find themed words in a grid. Score is the number of hints used.',
+    icon: 'search', // Placeholder icon, update if needed
+    color: 'bg-teal-500', // Placeholder color
+    maxScore: 10, // 0 is best, 10 is worst (most hints)
+    externalUrl: 'https://www.nytimes.com/games/strands', // Confirm URL if different
+    isNew: true,
+    lowerIsBetter: true, // Explicitly define this property
+    scoreUnit: 'hints' // Explicitly define the score unit
   }
 ];
 
@@ -163,23 +175,12 @@ export const getGameById = (gameId: string, gamesList = games) => {
 export const calculateBestScore = (scores: any[], game: any) => {
   if (!scores || scores.length === 0) return null;
   
-  // For these games, lower scores are better
-  if (['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) {
-    // Filter out invalid scores:
-    // - Zeros/negatives for games where 0 is not valid (all except minute-cryptic).
-    // - Specific loss scores (e.g., 7 for Wordle/Framed/Worldle/SQNCES).
-    const validScores = scores.filter(score => {
-      if (typeof score.value !== 'number') return false; // Ensure it's a number
-
-      // Base validity: Allow non-positive for minute-cryptic, require > 0 otherwise
-      const baseCheck = (game.id === 'minute-cryptic') ? true : score.value > 0;
-
-      // Exclude specific loss scores
-      const wordleFramedLossCheck = (['wordle', 'framed', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) ? score.value < 7 : true;
-      const quordleLossCheck = (game.id === 'quordle') ? score.value < 40 : true;
-
-      return baseCheck && wordleFramedLossCheck && quordleLossCheck;
-    });
+  // Use the lowerIsBetter flag from the game definition
+  if (game.lowerIsBetter) {
+    // Filter out invalid scores based on game rules if necessary
+    // For Strands, 0-10 are all valid, so we might not need complex filtering initially
+    // We still might want to exclude non-numeric or null values
+    const validScores = scores.filter(score => typeof score.value === 'number');
 
     if (validScores.length === 0) return null;
     return Math.min(...validScores.map(score => score.value));
@@ -199,6 +200,14 @@ export const calculateAverageScore = (scores: any[]) => {
 
 // Update getLabelByGame to handle game-specific labels correctly
 export const getLabelByGame = (gameId: string): string => {
+  // Get the game object first
+  const game = getGameById(gameId);
+  
+  // Use the scoreUnit if defined, otherwise fallback to switch statement
+  if (game?.scoreUnit) {
+    return game.scoreUnit;
+  }
+
   switch (gameId) {
     case 'wordle':
     case 'framed':
@@ -222,11 +231,14 @@ export const getLabelByGame = (gameId: string): string => {
     case 'waffle':
       return 'swaps';
     default:
-      return 'points';
+      return 'points'; // Default label
   }
 };
 
 // Determine if a game treats lower scores as better
 export const isLowerScoreBetter = (gameId: string): boolean => {
-  return ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(gameId);
+  // Get the game object first
+  const game = getGameById(gameId);
+  // Return the lowerIsBetter flag if defined, otherwise fallback to list check
+  return game?.lowerIsBetter ?? ['wordle', 'framed', 'mini-crossword', 'nerdle', 'connections', 'minute-cryptic', 'quordle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(gameId);
 };

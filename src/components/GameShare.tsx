@@ -36,28 +36,21 @@ const GameShare = ({ game, latestScore, averageScore, bestScore, className, size
   
   // Get unit label for the game, potentially pluralized
   const getUnitLabel = (scoreValue?: number | null): string => {
-    let baseUnit: string;
-    let singularUnit: string;
+    // Use the scoreUnit from the game definition if available
+    const baseUnit = game.scoreUnit || 'points'; // Fallback to 'points'
+    let singularUnit = baseUnit;
 
-    if (['wordle', 'quordle', 'framed', 'nerdle', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8'].includes(game.id)) { // Update for SQNCES variations
-      baseUnit = 'tries';
+    // Define singular forms if different from plural
+    if (baseUnit === 'tries') {
       singularUnit = 'try';
-    } else if (['mini-crossword', 'minute-cryptic'].includes(game.id)) { // Added minute-cryptic
-      baseUnit = 'seconds';
+    } else if (baseUnit === 'seconds') {
       singularUnit = 'second';
-    } else if (['connections'].includes(game.id)) { // Added connections
-      baseUnit = 'tries'; // Change 'mistakes' to 'tries' for connections
-      singularUnit = 'try'; // Change 'mistake' to 'try'
-    } else {
-      // Use specific units for games like Waffle or Spelling Bee
-      if (game.id === 'waffle') {
-        baseUnit = 'swaps';
-        singularUnit = 'swap';
-      } else { // Default case
-        baseUnit = 'points';
-        singularUnit = 'point';
-      }
+    } else if (baseUnit === 'swaps') {
+      singularUnit = 'swap';
+    } else if (baseUnit === 'hints') {
+      singularUnit = 'hint';
     }
+    // Add other singular forms here if needed for future games
 
     // Handle average scores (non-integers) or scores != 1 by returning plural
     // Use Math.abs just in case, though scores should be positive
