@@ -164,6 +164,8 @@ const AddScoreModal = ({
         return 'Score is the number of swaps remaining (0-15). Use 0 if you failed to solve. Higher is better.';
       case 'sqnces':
         return 'Score is the number of guesses (1-6). Use 7 for a missed word. Lower is better.';
+      case 'strands':
+        return 'Score is the number of hints used. 0 is the best possible score, lower is better.';
       default:
         return ''; // Or a default message
     }

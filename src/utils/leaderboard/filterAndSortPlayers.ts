@@ -113,15 +113,19 @@ export const filterAndSortPlayers = (
     switch (sortBy) {
       case 'bestScore':
         if (isLowerBetter) {
-          // For games where lower is better, handle 0 scores
+          // For games where lower is better, sort ascending. Handle nulls appropriately.
           filteredPlayers.sort((a, b) => {
-            if (a.best_score === 0 && b.best_score === 0) return 0;
-            if (a.best_score === 0) return 1;
-            if (b.best_score === 0) return -1;
-            return a.best_score - b.best_score;
+            const scoreA = a.best_score === null ? Infinity : a.best_score;
+            const scoreB = b.best_score === null ? Infinity : b.best_score;
+            return scoreA - scoreB;
           });
         } else {
-          filteredPlayers.sort((a, b) => b.best_score - a.best_score);
+          // For games where higher is better, sort descending. Handle nulls appropriately.
+          filteredPlayers.sort((a, b) => {
+            const scoreA = a.best_score === null ? -Infinity : a.best_score;
+            const scoreB = b.best_score === null ? -Infinity : b.best_score;
+            return scoreB - scoreA;
+          });
         }
         break;
       case 'totalGames':
@@ -129,28 +133,35 @@ export const filterAndSortPlayers = (
         break;
       case 'averageScore':
         if (isLowerBetter) {
-          // For games where lower is better, handle 0 scores
+          // For games where lower is better, sort ascending. Handle nulls appropriately.
           filteredPlayers.sort((a, b) => {
-            if (a.average_score === 0 && b.average_score === 0) return 0;
-            if (a.average_score === 0) return 1;
-            if (b.average_score === 0) return -1;
-            return a.average_score - b.average_score;
+            const scoreA = a.average_score === null ? Infinity : a.average_score;
+            const scoreB = b.average_score === null ? Infinity : b.average_score;
+            return scoreA - scoreB;
           });
         } else {
-          filteredPlayers.sort((a, b) => b.average_score - a.average_score);
+          // For games where higher is better, sort descending. Handle nulls appropriately.
+          filteredPlayers.sort((a, b) => {
+            const scoreA = a.average_score === null ? -Infinity : a.average_score;
+            const scoreB = b.average_score === null ? -Infinity : b.average_score;
+            return scoreB - scoreA;
+          });
         }
         break;
       default:
         // Default sorting for all-time view is average score
         if (isLowerBetter) {
           filteredPlayers.sort((a, b) => {
-            if (a.average_score === 0 && b.average_score === 0) return 0;
-            if (a.average_score === 0) return 1;
-            if (b.average_score === 0) return -1;
-            return a.average_score - b.average_score;
+            const scoreA = a.average_score === null ? Infinity : a.average_score;
+            const scoreB = b.average_score === null ? Infinity : b.average_score;
+            return scoreA - scoreB;
           });
         } else {
-          filteredPlayers.sort((a, b) => b.average_score - a.average_score);
+          filteredPlayers.sort((a, b) => {
+            const scoreA = a.average_score === null ? -Infinity : a.average_score;
+            const scoreB = b.average_score === null ? -Infinity : b.average_score;
+            return scoreB - scoreA;
+          });
         }
     }
   }

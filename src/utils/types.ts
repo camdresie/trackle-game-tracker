@@ -10,6 +10,8 @@ export interface Game {
   maxScore?: number;
   externalUrl?: string;
   isNew?: boolean;
+  lowerIsBetter?: boolean;
+  scoreUnit?: string;
 }
 
 // Score

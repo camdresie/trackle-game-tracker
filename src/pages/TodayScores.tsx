@@ -594,13 +594,7 @@ const TodayScores = () => {
                   <div className="space-y-6">
                     {groupPerformanceData.map((group) => {
                       const leadingPlayer = getLeadingPlayerInGroup(group);
-                      const isLowerBetter = selectedGame?.id === 'wordle' || 
-                       selectedGame?.id === 'mini-crossword' || 
-                       selectedGame?.id === 'connections' ||
-                       selectedGame?.id === 'framed' ||
-                       selectedGame?.id === 'nerdle' ||
-                       selectedGame?.id === 'minute-cryptic' ||
-                       selectedGame?.id === 'quordle';
+                      const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
                       
                       // Check if the current group has a pending status by finding the group in friendGroups
                       const pendingGroup = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
@@ -650,9 +644,14 @@ const TodayScores = () => {
                       // Sort by who has played, then by score (if lower is better, lower scores first)
                       const playedMembers = allMembers.filter(m => m.hasPlayed && m.score !== null && m.score !== undefined).sort((a, b) => {
                         // Use the memoized isLowerBetter flag
+                        // Scores are guaranteed non-null here due to the filter
+                        // Adding type assertion for clarity after filter
+                        const scoreA = a.score as number;
+                        const scoreB = b.score as number;
+
                         return isLowerBetter 
-                          ? (a.score || 999) - (b.score || 999) 
-                          : (b.score || 0) - (a.score || 0);
+                          ? scoreA - scoreB // Simple ascending sort
+                          : scoreB - scoreA; // Simple descending sort
                       });
                       
                       const notPlayedMembers = allMembers.filter(m => !m.hasPlayed || m.score === null || m.score === undefined);
