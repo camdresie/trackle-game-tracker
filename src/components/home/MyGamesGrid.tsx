@@ -1,4 +1,4 @@
-import { Trophy, X } from 'lucide-react';
+import { Trophy, X, Search } from 'lucide-react';
 import GameCard from '@/components/GameCard';
 import { Game, Score } from '@/utils/types';
 import { calculateAverageScore, calculateBestScore } from '@/utils/gameData';
@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { isToday } from '@/utils/dateUtils';
+import { useState, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
 
 interface MyGamesGridProps {
   isLoading: boolean;
@@ -15,6 +17,7 @@ interface MyGamesGridProps {
 
 const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
   const { profile, updateProfile } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Filter games to only show ones that are in the selected_games array
   const selectedGames = profile?.selected_games || [];
@@ -25,15 +28,37 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
     return scores.some(score => score.gameId === gameId && isToday(score.date));
   };
   
-  // Sort games - games played today go to the end of the list
-  const sortedGames = [...playedGames].sort((a, b) => {
+  // Sort games - Not Played Today (alpha) -> Played Today (alpha)
+  const sortedGames = useMemo(() => [...playedGames].sort((a, b) => {
     const aPlayedToday = wasPlayedToday(a.id);
     const bPlayedToday = wasPlayedToday(b.id);
-    
-    if (aPlayedToday && !bPlayedToday) return 1;
-    if (!aPlayedToday && bPlayedToday) return -1;
-    return 0;
-  });
+
+    // Grouping logic: Normal > Played Today
+    const getGroup = (playedToday: boolean): number => {
+      if (playedToday) return 2; // Played today last
+      return 1; // Normal games first
+    };
+
+    const groupA = getGroup(aPlayedToday);
+    const groupB = getGroup(bPlayedToday);
+
+    if (groupA !== groupB) {
+      return groupA - groupB; // Sort by group (1 comes before 2)
+    }
+
+    // Within the same group, sort alphabetically by name
+    return a.name.localeCompare(b.name);
+  }), [playedGames, scores]);
+
+  // Filter games based on search term
+  const filteredGames = useMemo(() => {
+    if (!searchTerm) {
+      return sortedGames;
+    }
+    return sortedGames.filter(game => 
+      game.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [sortedGames, searchTerm]);
 
   // Handle removing a game
   const handleRemoveGame = async (gameId: string) => {
@@ -57,11 +82,16 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
 
   return (
     <section className="mb-8 animate-slide-up" style={{animationDelay: '100ms'}}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-500" />
-          My Games
-        </h2>
+      {/* Search Input */}
+      <div className="mb-4 relative">
+        <Input
+          type="text"
+          placeholder="Search my games..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 h-10 w-full sm:w-64"
+        />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       </div>
       
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -69,13 +99,17 @@ const MyGamesGrid = ({ isLoading, gamesList, scores }: MyGamesGridProps) => {
           Array(4).fill(0).map((_, index) => (
             <div key={index} className="animate-pulse h-[320px] bg-muted rounded-xl w-full"></div>
           ))
-        ) : sortedGames.length === 0 ? (
+        ) : filteredGames.length === 0 && searchTerm === '' ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
             You haven't added any games to your collection yet.
             <p className="mt-2">Find all available games in the <strong>All Games</strong> tab and add the ones you play regularly to <strong>My Games</strong>.</p>
           </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="col-span-full text-center text-muted-foreground py-8">
+            No games found matching "{searchTerm}".
+          </div>
         ) : (
-          sortedGames.map(game => {
+          filteredGames.map(game => {
             const gameScores = scores.filter(score => score.gameId === game.id);
             const latestScore = gameScores.length > 0 
               ? gameScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
