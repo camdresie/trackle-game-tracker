@@ -6,7 +6,7 @@ import { getTodayInEasternTime, isToday } from '@/utils/dateUtils';
 // Constants to control pagination and memory usage
 const PAGE_SIZE = 50; // Reduced from 100 to 50 for faster initial load
 const MAX_RECORDS = 500; // Reduced from 1000 to 500 for better performance
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes cache expiry
+const CACHE_EXPIRY = 60 * 1000; // 1 minute cache expiry (was 5 minutes)
 
 /**
  * Hook for fetching ALL scores data across users with pagination to reduce memory usage
@@ -141,7 +141,7 @@ export const useScoresData = (userId: string | undefined, selectedGame: string) 
         return [];
       }
     },
-    staleTime: CACHE_EXPIRY, // Cache data for 5 minutes to reduce API calls
+    staleTime: CACHE_EXPIRY, // Cache data for 1 minute to reduce API calls
     enabled: true // Always fetch all scores data regardless of user ID
   });
 
