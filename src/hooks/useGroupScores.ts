@@ -125,31 +125,29 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     const controller = new AbortController();
     
     const fetchAllTodaysScores = async (forceRefresh = false) => {
-      // Throttle API calls to reduce memory usage - only fetch every 30 seconds
-      const now = Date.now();
-      const FETCH_THROTTLE = 30000; // 30 seconds
-      
-      // Always fetch on first load, when gameId changes, or when force refresh is requested
-      if (!forceRefresh && now - lastFetchTime < FETCH_THROTTLE && allTodaysScores.length > 0 && firstLoadDone.current && memoizedGameId === prevGameId.current) {
+      // Cache check is now handled by getTodaysGamesForAllUsers
+      // We only need to prevent fetching if gameId hasn't changed and it's not a force refresh
+      if (!forceRefresh && memoizedGameId === prevGameId.current && firstLoadDone.current) {
         return;
       }
       
       try {
         setIsLoading(true);
         
+        // Call the service function, which handles its own caching
         const scores = await getTodaysGamesForAllUsers(memoizedGameId, forceRefresh);
         
-        // Skip update if data is the same and not forcing a refresh
-        if (!forceRefresh && JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current && memoizedGameId === prevGameId.current) {
-          setIsLoading(false);
-          return;
+        // Simple check to avoid state update if data is identical (optional, but can prevent re-renders)
+        if (JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && !forceRefresh) {
+           if (isMounted) setIsLoading(false);
+           return;
         }
         
         // Only update state if component is still mounted
         if (isMounted) {
           prevAllTodaysScores.current = scores;
           setAllTodaysScores(scores);
-          setLastFetchTime(now);
+          // No need to set lastFetchTime anymore
           firstLoadDone.current = true;
         }
       } catch (error) {
@@ -169,7 +167,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       isMounted = false;
       controller.abort();
     };
-  }, [memoizedGameId, lastFetchTime]); // Keep minimal dependencies
+  }, [memoizedGameId, firstLoadDone]); // Keep minimal dependencies
   
   // Process friend data when related data changes
   const processedFriendData = useMemo(() => {
