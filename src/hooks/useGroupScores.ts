@@ -5,6 +5,7 @@ import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { Score } from '@/utils/types';
 import { getTodaysGamesForAllUsers } from '@/services/todayService';
 import { supabase } from '@/lib/supabase';
+import { isDevelopment } from '@/utils/environment';
 
 // Define a type for group member performance data
 interface GroupMemberPerformance {
@@ -60,6 +61,7 @@ interface MemberProfilesData {
 }
 
 export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => {
+  // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Hook rendered. gameId: ${gameId}`);
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
   const { friendGroups } = useFriendGroups(friends);
@@ -138,6 +140,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         setIsLoading(true);
         
         const scores = await getTodaysGamesForAllUsers(memoizedGameId, forceRefresh);
+        // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Fetched scores for gameId ${memoizedGameId}:`, JSON.stringify(scores));
         
         // Skip update if data is the same and not forcing a refresh
         if (!forceRefresh && JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current && memoizedGameId === prevGameId.current) {
@@ -390,12 +393,15 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         });
 
         // 6. Store the results
-        setMemberProfilesData(prev => ({
-          ...prev,
-          membersByGroup: Array.from(membersByGroup.entries()).map(([groupId, members]) => ({
+        const finalMembersByGroup = Array.from(membersByGroup.entries()).map(([groupId, members]) => ({
             groupId,
             members
-          })),
+          }));
+        // REMOVE Log: if (isDevelopment()) console.log('[useGroupScores] Fetched Member Profiles (membersByGroup):', JSON.stringify(finalMembersByGroup));
+
+        setMemberProfilesData(prev => ({
+          ...prev,
+          membersByGroup: finalMembersByGroup,
           lastUpdated: Date.now()
         }));
         
@@ -409,22 +415,20 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   
   // Process group data more efficiently with the simplified approach
   const processedGroupData = useMemo(() => {
-    // --- DEBUGGING LOGS START ---
-    // console.log("[useGroupScores] Calculating processedGroupData...");
-    // console.log("[useGroupScores] Game ID:", memoizedGameId);
-    // console.log("[useGroupScores] All Today's Scores (raw):", allTodaysScores);
-    // console.log("[useGroupScores] Member Profiles Data (raw):", JSON.stringify(memberProfilesData, null, 2)); 
-    // --- DEBUGGING LOGS END ---
-    
-    if (!user || !memoizedGameId || !allTodaysScores) {
-        // console.log("[useGroupScores] Bailing early due to missing data.");
-        return [];
+    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Calculating processedGroupData for gameId: ${memoizedGameId}`);
+    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Using allTodaysScores:`, JSON.stringify(allTodaysScores));
+    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Using memberProfilesData:`, JSON.stringify(memberProfilesData));
+
+    // Use simpler initial check
+    if (!user || !memoizedGameId || !allTodaysScores) { 
+        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Bailing early from processedGroupData due to missing user, gameId, or initial allTodaysScores.");
+        return []; // Return empty if essential data is missing
     }
 
     try {
-        // console.log("[useGroupScores] Starting group mapping...");
+        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Starting group mapping...");
         const result = memoizedFriendGroups.map(group => {
-            // console.log(`[useGroupScores] Processing group: ${group.name} (${group.id})`);
+            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Processing group: ${group.name} (${group.id})`);
             // Find today's score for the current user
             const userTodayScore = allTodaysScores.find(score => 
                 score.playerId === user.id && score.gameId === memoizedGameId
@@ -436,22 +440,20 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
             const groupMembersData = memberProfilesData.membersByGroup.find(gmd => gmd.groupId === group.id);
             const actualMembers = groupMembersData ? groupMembersData.members : []; // Use fetched members
             
-            // console.log(`[useGroupScores] Group ${group.id} - Actual Members:`, actualMembers);
+            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Group ${group.id} - Actual Members:`, JSON.stringify(actualMembers));
 
             // Map over the actual members fetched from the database
             const membersPerformance: GroupMemberPerformance[] = actualMembers.map(member => {
-                // console.log(`[useGroupScores]   Mapping score for member: ${member.full_name || member.username} (${member.id})`);
+                // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores]   Mapping score for member: ${member.full_name || member.username} (${member.id})`);
                 // Look for this member's score in allTodaysScores
                 const friendScore = allTodaysScores.find(score => 
                     score.playerId === member.id && score.gameId === memoizedGameId
                 );
                 
-                // console.log(`[useGroupScores]     - Found score record:`, friendScore ? { value: friendScore.value, date: friendScore.date } : null);
+                // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores]     - Found score for ${member.id} & game ${memoizedGameId}:`, friendScore ? JSON.stringify({ value: friendScore.value, date: friendScore.date }) : 'null');
                 
                 const hasPlayed = !!friendScore;
                 const score = hasPlayed ? friendScore.value : null;
-                
-                // console.log(`[useGroupScores]     - Result: hasPlayed=${hasPlayed}, score=${score}`);
                 
                 // Use profile data for name consistency
                 const playerName = member.full_name || member.username || "Unknown Member";
@@ -463,7 +465,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                     score: score
                 };
             });
-            // console.log(`[useGroupScores] Group ${group.id} - Final Members Performance:`, membersPerformance);
+            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Group ${group.id} - Final Members Performance:`, membersPerformance);
             return {
                 groupId: group.id,
                 groupName: group.name,
@@ -472,10 +474,10 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                 members: membersPerformance // Use the processed list based on actual members
             };
         });
-        // console.log("[useGroupScores] Finished group mapping. Final Result:", result);
+        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Finished group mapping. Final processedGroupData:", JSON.stringify(result));
         return result;
     } catch (error) {
-        // console.error('[useGroupScores] Error processing group data:', error);
+        console.error('[useGroupScores] Error processing group data:', error);
         return [];
     }
   }, [
@@ -489,6 +491,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   // Update group performance data only when processed data actually changes
   useEffect(() => {
     if (processedGroupData && JSON.stringify(processedGroupData) !== JSON.stringify(groupPerformanceData)) {
+      // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Updating groupPerformanceData state...`);
       setGroupPerformanceData(processedGroupData);
     }
   }, [processedGroupData]);
