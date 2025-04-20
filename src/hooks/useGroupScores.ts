@@ -125,29 +125,31 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     const controller = new AbortController();
     
     const fetchAllTodaysScores = async (forceRefresh = false) => {
-      // Cache check is now handled by getTodaysGamesForAllUsers
-      // We only need to prevent fetching if gameId hasn't changed and it's not a force refresh
-      if (!forceRefresh && memoizedGameId === prevGameId.current && firstLoadDone.current) {
+      // Throttle API calls to reduce memory usage - only fetch every 30 seconds
+      const now = Date.now();
+      const FETCH_THROTTLE = 30000; // 30 seconds
+      
+      // Always fetch on first load, when gameId changes, or when force refresh is requested
+      if (!forceRefresh && now - lastFetchTime < FETCH_THROTTLE && allTodaysScores.length > 0 && firstLoadDone.current && memoizedGameId === prevGameId.current) {
         return;
       }
       
       try {
         setIsLoading(true);
         
-        // Call the service function, which handles its own caching
         const scores = await getTodaysGamesForAllUsers(memoizedGameId, forceRefresh);
         
-        // Simple check to avoid state update if data is identical (optional, but can prevent re-renders)
-        if (JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && !forceRefresh) {
-           if (isMounted) setIsLoading(false);
-           return;
+        // Skip update if data is the same and not forcing a refresh
+        if (!forceRefresh && JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current && memoizedGameId === prevGameId.current) {
+          setIsLoading(false);
+          return;
         }
         
         // Only update state if component is still mounted
         if (isMounted) {
           prevAllTodaysScores.current = scores;
           setAllTodaysScores(scores);
-          // No need to set lastFetchTime anymore
+          setLastFetchTime(now);
           firstLoadDone.current = true;
         }
       } catch (error) {
@@ -167,7 +169,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       isMounted = false;
       controller.abort();
     };
-  }, [memoizedGameId, firstLoadDone]); // Keep minimal dependencies
+  }, [memoizedGameId, lastFetchTime]); // Keep minimal dependencies
   
   // Process friend data when related data changes
   const processedFriendData = useMemo(() => {
@@ -287,7 +289,7 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
         
         if (userIdsArray.length === 0) return;
         
-        // 4. Fetch profiles for all these user IDs
+        // 4. Fetch profiles for all these user IDs (excluding current user initially)
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url')
@@ -348,6 +350,37 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           });
         }
         
+        // Add the current user to the groups they belong to
+        const currentUserProfile = {
+          id: user.id,
+          username: user.user_metadata?.username || user.email,
+          full_name: user.user_metadata?.full_name || null,
+          avatar_url: user.user_metadata?.avatar_url || null,
+        };
+
+        groupIds.forEach(groupId => {
+          const group = memoizedFriendGroups.find(g => g.id === groupId);
+          if (!group) return;
+          
+          const membersList = membersByGroup.get(groupId) || [];
+          
+          // Check if current user is the creator or an accepted member
+          const isCreator = group.user_id === user.id;
+          // Need to check the original groupMembers fetch for current user's status
+          const currentUserMembership = groupMembers?.find(gm => gm.group_id === groupId && gm.friend_id === user.id);
+          const isAcceptedMember = currentUserMembership?.status === 'accepted';
+
+          // Add current user if they are creator or accepted member and not already added
+          if ((isCreator || isAcceptedMember) && !membersList.some(m => m.id === user.id)) {
+            membersList.push({
+              ...currentUserProfile,
+              role: isCreator ? 'creator' : 'member',
+              status: 'accepted' // Assume accepted if creator or accepted member
+            });
+            membersByGroup.set(groupId, membersList); // Update the map
+          }
+        });
+
         // 6. Store the results
         setMemberProfilesData(prev => ({
           ...prev,
@@ -367,138 +400,90 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   }, [user, memoizedFriendGroups]);
   
   // Process group data more efficiently with the simplified approach
-  useEffect(() => {
-    if (!user || !memoizedGameId) {
-      setGroupPerformanceData([]);
-      setIsLoading(false);
-      return;
-    }
+  const processedGroupData = useMemo(() => {
+    // --- DEBUGGING LOGS START ---
+    // console.log("[useGroupScores] Calculating processedGroupData...");
+    // console.log("[useGroupScores] Game ID:", memoizedGameId);
+    // console.log("[useGroupScores] All Today's Scores (raw):", allTodaysScores);
+    // console.log("[useGroupScores] Member Profiles Data (raw):", JSON.stringify(memberProfilesData, null, 2)); 
+    // --- DEBUGGING LOGS END ---
     
-    try {
-      // Get today's score for the current user from their own scores
-      const userTodayScore = memoizedTodaysScores.find(score => 
-        score.gameId === memoizedGameId && score.playerId === user.id
-      );
-      
-      const userHasPlayed = !!userTodayScore;
-      const userScore = userHasPlayed ? userTodayScore.value : null;
-      
-      // Even if the user has no groups/friends, we should return an empty array
-      // but with the current user's data for the "All Friends" view
-      if (memoizedFriendGroups.length === 0) {
-        // If no groups exist, still include user data
-        setGroupPerformanceData([{
-          groupId: 'default',
-          groupName: 'All Friends',
-          currentUserHasPlayed: userHasPlayed,
-          currentUserScore: userScore,
-          members: [] // No friends yet
-        }]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Get the membersByGroup data from our database query results
-      const fetchedMembersByGroup = memberProfilesData.membersByGroup || [];
-      
-      // Create a lookup map for the fetched members
-      const membersByGroupMap = new Map();
-      fetchedMembersByGroup.forEach(item => {
-        membersByGroupMap.set(item.groupId, item.members || []);
-      });
-      
-      // Simple approach to process groups
-      const processedGroups = memoizedFriendGroups.map(group => {
-        // Create a members array with just the current user for now
-        const members: GroupMemberPerformance[] = [];
-        const seenMemberIds = new Set<string>();
-        
-        // Always add the current user to their groups
-        if (group.isJoinedGroup || group.user_id === user.id) {
-          members.push({
-            playerId: user.id,
-            playerName: 'You',
-            hasPlayed: userHasPlayed,
-            score: userScore
-          });
-          
-          seenMemberIds.add(user.id);
-        }
-        
-        // Add known group members from the group object (these are friends)
-        if (group.members && Array.isArray(group.members)) {
-          group.members.forEach(member => {
-            if (member.id === user.id || seenMemberIds.has(member.id)) return; // Skip duplicates
-            
-            // Find the member's score
-            const memberScore = allTodaysScores.find(score => 
-              score.gameId === memoizedGameId && score.playerId === member.id
-            );
-            
-            const hasPlayed = !!memberScore;
-            const score = hasPlayed ? memberScore.value : null;
-            
-            members.push({
-              playerId: member.id,
-              playerName: member.name,
-              hasPlayed,
-              score
-            });
-            
-            seenMemberIds.add(member.id);
-          });
-        }
-        
-        // Add any additional members we fetched from database (including non-friends)
-        const fetchedGroupMembers = membersByGroupMap.get(group.id) || [];
-        if (fetchedGroupMembers.length > 0) {
-          
-          fetchedGroupMembers.forEach(member => {
-            // Skip if already added (don't add duplicates)
-            if (seenMemberIds.has(member.id)) return;
-            
-            // Skip if member is not accepted and not the owner
-            // This ensures we don't show pending members in the scores list
-            if (member.role !== 'creator' && member.status && member.status !== 'accepted') {
-              return;
-            }
-            
-            // Find the member's score
-            const memberScore = allTodaysScores.find(score => 
-              score.gameId === memoizedGameId && score.playerId === member.id
-            );
-            
-            const hasPlayed = !!memberScore;
-            const score = hasPlayed ? memberScore.value : null;
-            
-            members.push({
-              playerId: member.id,
-              playerName: member.full_name || member.username || 'Group Member',
-              hasPlayed,
-              score
-            });
-            
-            seenMemberIds.add(member.id);
-          });
-        }
-        
-        return {
-          groupId: group.id,
-          groupName: group.name,
-          currentUserHasPlayed: userHasPlayed,
-          currentUserScore: userScore,
-          members
-        };
-      });
-      
-      // Update state
-      setGroupPerformanceData(processedGroups);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error processing group data:', error);
-      setIsLoading(false);
+    if (!user || !memoizedGameId || !allTodaysScores) {
+        // console.log("[useGroupScores] Bailing early due to missing data.");
+        return [];
     }
-  }, [user?.id, memoizedGameId, allTodaysScores, memoizedTodaysScores, memoizedFriendGroups, memberProfilesData]);
+
+    try {
+        // console.log("[useGroupScores] Starting group mapping...");
+        const result = memoizedFriendGroups.map(group => {
+            // console.log(`[useGroupScores] Processing group: ${group.name} (${group.id})`);
+            // Find today's score for the current user
+            const userTodayScore = allTodaysScores.find(score => 
+                score.playerId === user.id && score.gameId === memoizedGameId
+            );
+            const userHasPlayed = !!userTodayScore;
+            const userScore = userHasPlayed ? userTodayScore.value : null;
+
+            // Find the definitive list of members for this group from memberProfilesData
+            const groupMembersData = memberProfilesData.membersByGroup.find(gmd => gmd.groupId === group.id);
+            const actualMembers = groupMembersData ? groupMembersData.members : []; // Use fetched members
+            
+            // console.log(`[useGroupScores] Group ${group.id} - Actual Members:`, actualMembers);
+
+            // Map over the actual members fetched from the database
+            const membersPerformance: GroupMemberPerformance[] = actualMembers.map(member => {
+                // console.log(`[useGroupScores]   Mapping score for member: ${member.full_name || member.username} (${member.id})`);
+                // Look for this member's score in allTodaysScores
+                const friendScore = allTodaysScores.find(score => 
+                    score.playerId === member.id && score.gameId === memoizedGameId
+                );
+                
+                // console.log(`[useGroupScores]     - Found score record:`, friendScore ? { value: friendScore.value, date: friendScore.date } : null);
+                
+                const hasPlayed = !!friendScore;
+                const score = hasPlayed ? friendScore.value : null;
+                
+                // console.log(`[useGroupScores]     - Result: hasPlayed=${hasPlayed}, score=${score}`);
+                
+                // Use profile data for name consistency
+                const playerName = member.full_name || member.username || "Unknown Member";
+                
+                return {
+                    playerId: member.id,
+                    playerName: playerName,
+                    hasPlayed: hasPlayed,
+                    score: score
+                };
+            });
+            // console.log(`[useGroupScores] Group ${group.id} - Final Members Performance:`, membersPerformance);
+            return {
+                groupId: group.id,
+                groupName: group.name,
+                currentUserHasPlayed: userHasPlayed,
+                currentUserScore: userScore,
+                members: membersPerformance // Use the processed list based on actual members
+            };
+        });
+        // console.log("[useGroupScores] Finished group mapping. Final Result:", result);
+        return result;
+    } catch (error) {
+        // console.error('[useGroupScores] Error processing group data:', error);
+        return [];
+    }
+  }, [
+    user?.id, 
+    memoizedGameId, 
+    allTodaysScores, 
+    memoizedFriendGroups, 
+    memberProfilesData // Add dependency on the fetched member/profile data
+  ]);
+  
+  // Update group performance data only when processed data actually changes
+  useEffect(() => {
+    if (processedGroupData && JSON.stringify(processedGroupData) !== JSON.stringify(groupPerformanceData)) {
+      setGroupPerformanceData(processedGroupData);
+    }
+  }, [processedGroupData]);
   
   const handleRefreshFriends = useCallback(async () => {
     try {
