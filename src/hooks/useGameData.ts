@@ -53,8 +53,12 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
           filter: `game_id=eq.${gameId}`
         },
         (payload) => {
-          // Invalidate relevant queries to refresh the data
-          queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+          // Invalidate the specific query used in useGameDetails
+          const currentUserId = queryClient.getQueryData<any>(['user'])?.id; // Attempt to get user id if needed
+          if (gameId && currentUserId) {
+             queryClient.invalidateQueries({ queryKey: ['game-scores', gameId, currentUserId] });
+          }
+          // Invalidate other relevant general queries
           queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
           queryClient.invalidateQueries({ queryKey: ['game-stats'] });
         }

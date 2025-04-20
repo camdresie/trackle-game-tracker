@@ -195,7 +195,7 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
       }
     },
     enabled: !!user && rawGroupsData.length > 0 && enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 1 minute
     refetchOnWindowFocus: false
   });
   
@@ -226,7 +226,7 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
       }
     },
     enabled: groupMembersData.length > 0 && enabled,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 1 minute
     refetchOnWindowFocus: false
   });
   

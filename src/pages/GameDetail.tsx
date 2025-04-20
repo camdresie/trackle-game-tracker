@@ -120,7 +120,12 @@ const GameDetail = () => {
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-  }, [localScores, user, queryClient, gameId]);
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    
+    // Trigger refresh for useGroupScores data (Today page)
+    if (refreshFriends) refreshFriends();
+    
+  }, [localScores, user, queryClient, gameId, refreshFriends]);
   
   const handleScoreDeleted = useCallback((scoreId: string) => {
     // Create the updated array first
@@ -143,7 +148,12 @@ const GameDetail = () => {
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-  }, [localScores, user, queryClient]);
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    
+    // Trigger refresh for useGroupScores data (Today page)
+    if (refreshFriends) refreshFriends();
+    
+  }, [localScores, user, queryClient, refreshFriends]);
   
   // Calculate display values using useMemo for stability
   const displayScores = useMemo(() => localScores.length > 0 ? localScores : scores, [localScores, scores]);
