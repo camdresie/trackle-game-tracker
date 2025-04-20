@@ -6,6 +6,7 @@ import ShareModal from '@/components/ShareModal';
 import { isLowerScoreBetter, getLabelByGame } from '@/utils/gameData'; // Import the helper
 
 interface GroupMemberScore {
+  playerId: string;
   playerName: string;
   score: number | null;
   hasPlayed: boolean;
@@ -24,6 +25,7 @@ interface GroupScoresShareProps {
   gameColor: string;
   members: GroupMemberScore[];
   currentUserName?: string;
+  currentUserId?: string; // Add currentUserId
   currentUserScore?: number | null;
   currentUserHasPlayed?: boolean;
   className?: string;
@@ -38,6 +40,7 @@ const GroupScoresShare = ({
   gameColor, 
   members, 
   currentUserName = 'You',
+  currentUserId, // Add currentUserId
   currentUserScore,
   currentUserHasPlayed = false,
   className,
@@ -54,121 +57,103 @@ const GroupScoresShare = ({
   // Generate the core share text content with ranking
   const generateShareContent = () => {
     let shareText = `🎮 ${groupName} - ${gameName} Scores for ${getTodayFormatted()}\n\n`;
-    
-    const playedPlayers: PlayerScore[] = [];
-    const addedPlayerNames = new Set<string>(); // Tracks added PLAYER NAMES to avoid duplicates
     const lowerBetter = gameId ? isLowerScoreBetter(gameId) : false;
 
-    // Determine the display name for the current user
-    const currentUserDisplayName = useActualUsername ? currentUserName : 'You';
+    // --- Refactored Player Processing --- 
 
-    // Add current user if they played
-    if (currentUserHasPlayed && currentUserScore !== null && currentUserScore !== undefined) {
-      playedPlayers.push({ name: currentUserDisplayName, score: currentUserScore });
-      addedPlayerNames.add(currentUserDisplayName); // Add the name we actually used
-      // If we used the actual username, also block "You" in case it appears in the members list
-      if (useActualUsername) {
-          addedPlayerNames.add('You'); 
+    // 1. Create a map to store unique players by ID, prioritizing best name
+    const allPlayersById = new Map<string, { id: string, name: string, score: number | null, hasPlayed: boolean }>();
+
+    const addOrUpdatePlayer = (player: { id: string, name: string, score: number | null, hasPlayed: boolean }) => {
+      if (!player.id) {
+        console.warn("Attempted to add player without ID:", player);
+        return; // Cannot process without an ID
       }
+      const existing = allPlayersById.get(player.id);
+      const isBetterName = (name: string) => name && !name.includes('@') && name !== 'Unknown' && name !== 'Unknown Player' && name !== 'You';
+      
+      // Decide whether to add/update based on existence and name quality
+      if (!existing || (player.name && isBetterName(player.name) && (!existing.name || !isBetterName(existing.name)))) {
+        // Add if new, or if new name is better than existing name
+        allPlayersById.set(player.id, { ...player });
+      } else if (existing && player.name && !isBetterName(player.name) && existing.name && isBetterName(existing.name)) {
+        // Keep existing entry if its name is better, but update score/played status
+        allPlayersById.set(player.id, { ...existing, score: player.score, hasPlayed: player.hasPlayed }); 
+      } else if (existing) {
+        // Existing name is better or equal quality, just update score/played status
+         allPlayersById.set(player.id, { ...existing, score: player.score, hasPlayed: player.hasPlayed }); 
+      }
+      // If existing and new name is missing or not better, do nothing (keep existing)
+    };
+
+    // Add current user - use currentUserId prop if available
+    if (currentUserId) {
+      addOrUpdatePlayer({
+        id: currentUserId,
+        name: useActualUsername ? currentUserName : 'You', // Use the passed username or 'You'
+        score: currentUserScore !== undefined ? currentUserScore : null,
+        hasPlayed: currentUserHasPlayed
+      });
     }
 
-    // Add other members if they played and haven't been added already
+    // Add members - use member.playerId
     members.forEach(member => {
-      // Skip if this player name has already been added (either as display name or explicitly blocked "You")
-      if (addedPlayerNames.has(member.playerName)) {
-        return;
-      }
-      
-      // Add the member if they played
-      if (member.hasPlayed && member.score !== null && member.score !== undefined) {
-        playedPlayers.push({ name: member.playerName, score: member.score });
-        addedPlayerNames.add(member.playerName); // Mark this name as added
-      }
+      addOrUpdatePlayer({
+        id: member.playerId,
+        name: member.playerName,
+        score: member.score,
+        hasPlayed: member.hasPlayed
+      });
     });
 
-    // Sort the played players
-    playedPlayers.sort((a, b) => {
-      // Handle potential non-numeric scores defensively, although they should be numbers
-      const scoreA = typeof a.score === 'number' ? a.score : (lowerBetter ? Infinity : -Infinity);
-      const scoreB = typeof b.score === 'number' ? b.score : (lowerBetter ? Infinity : -Infinity);
-      return lowerBetter ? scoreA - scoreB : scoreB - scoreA;
-    });
+    // 2. Generate Played List (filter, sort)
+    const playedPlayers = Array.from(allPlayersById.values())
+      .filter(p => p.hasPlayed && p.score !== null && p.score !== undefined)
+      .sort((a, b) => {
+        const scoreA = typeof a.score === 'number' ? a.score : (lowerBetter ? Infinity : -Infinity);
+        const scoreB = typeof b.score === 'number' ? b.score : (lowerBetter ? Infinity : -Infinity);
+        return lowerBetter ? scoreA - scoreB : scoreB - scoreA;
+      });
 
     // Add ranked scores to share text
     if (playedPlayers.length > 0) {
       playedPlayers.forEach((player, index) => {
         const rank = index + 1;
         const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-        // Format score (you might want a more sophisticated formatter here)
-        const formattedScore = player.score; // Basic formatting for now
-        
-        let scoreString = '-'; // Default if score is missing
+        const formattedScore = player.score; 
+        let scoreString = '-';
         if (formattedScore !== null && formattedScore !== undefined) {
-            const unitLabel = gameId ? getLabelByGame(gameId) : ''; // Get base unit (e.g., 'hints')
+            const unitLabel = gameId ? getLabelByGame(gameId) : '';
             let finalUnitLabel = unitLabel;
-
-            // Handle singularization based on the unit label
-            if (unitLabel === 'tries' && formattedScore === 1) {
-                finalUnitLabel = 'try';
-            } else if (unitLabel === 'seconds' && formattedScore === 1) {
-                finalUnitLabel = 'second';
-            } else if (unitLabel === 'hints' && formattedScore === 1) { // Add check for hints
-                finalUnitLabel = 'hint';
-            } else if (unitLabel === 'swaps' && formattedScore === 1) { // Add check for swaps (if needed)
-                finalUnitLabel = 'swap';
-            }
-            // Add more singularization rules if needed
-
+            // Singularization logic (keep as before)
+            if (unitLabel === 'tries' && formattedScore === 1) finalUnitLabel = 'try';
+            else if (unitLabel === 'seconds' && formattedScore === 1) finalUnitLabel = 'second';
+            else if (unitLabel === 'hints' && formattedScore === 1) finalUnitLabel = 'hint';
+            else if (unitLabel === 'swaps' && formattedScore === 1) finalUnitLabel = 'swap';
             scoreString = `${formattedScore}${finalUnitLabel ? ' ' + finalUnitLabel : ''}`;
         }
-
+        // Use player.name which is the deduplicated, best available name
         shareText += `${medal} ${player.name}: ${scoreString}\n`;
       });
     } else {
       shareText += 'No scores recorded yet today.\n';
     }
 
-    // --- Determine "Not played yet" list using only actual usernames --- 
-
-    // 1. Combine ALL potential actual usernames (excluding literal "You")
-    const allActualNames = new Set<string>();
-    if (currentUserName && currentUserName !== 'You') {
-        allActualNames.add(currentUserName);
-    }
-    members.forEach(member => {
-        if (member.playerName && member.playerName !== 'You') {
-            allActualNames.add(member.playerName);
-        }
-    });
-
-    // 2. Identify ACTUAL usernames of those who DID play
-    const playedActualNames = new Set<string>();
-    if (currentUserHasPlayed && currentUserName && currentUserName !== 'You') {
-        playedActualNames.add(currentUserName);
-    }
-    members.forEach(member => {
-        if (member.hasPlayed && member.playerName && member.playerName !== 'You') {
-            playedActualNames.add(member.playerName);
-        }
-    });
-
-    // 3. Determine who hasn't played by finding the difference
-    const notPlayedYetInitial: string[] = [];
-    allActualNames.forEach(name => {
-        if (!playedActualNames.has(name)) {
-            notPlayedYetInitial.push(name);
-        }
-    });
-
-    // 4. Explicitly filter out "You" and sort the final list alphabetically
-    const notPlayedYet = notPlayedYetInitial.filter(name => name !== 'You').sort();
+    // 3. Generate Not Played Yet List (filter by played status, sort by name)
+    const notPlayedYet = Array.from(allPlayersById.values())
+      .filter(p => !p.hasPlayed && p.id !== currentUserId) // Filter out non-players AND the current user ID
+      .map(p => p.name) // Get the best name
+      .filter(name => name && name !== 'You') // Filter out null/empty names and the literal 'You'
+      .sort(); // Sort names alphabetically
 
     if (notPlayedYet.length > 0) {
         shareText += "\nNot played yet:\n";
         notPlayedYet.forEach(name => {
-            shareText += `- ${name}\n`; // Only actual usernames here
+            shareText += `- ${name}\n`;
         });
     }
+
+    // --- End Refactored Processing ---
 
     return shareText;
   };
@@ -177,7 +162,8 @@ const GroupScoresShare = ({
   const generateShareText = () => {
     const shareContent = generateShareContent();
     // Add the promotional line only - URL will be added by ShareModal
-    return `${shareContent}\nTrack your game stats on Trackle!`; // Updated promo line
+    // return `${shareContent}\nTrack your game stats on Trackle!`; // Removed promo line
+    return shareContent; // Return only the main content
   };
   
   // Handle opening the share modal

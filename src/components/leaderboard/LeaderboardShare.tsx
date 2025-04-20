@@ -190,8 +190,6 @@ const LeaderboardShare = ({ players, selectedGame, timeFilter, sortBy, className
       });
     }
     
-    shareText += `\nTrack your game stats on Trackle!`; // Updated promo line
-    
     return shareText;
   };
   
