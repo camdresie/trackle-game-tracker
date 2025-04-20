@@ -314,15 +314,20 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
             if (!member.friend_id || !member.group_id) return;
             
             const profile = profiles.find(p => p.id === member.friend_id);
+            // Ensure member exists in the map before adding
             if (profile && membersByGroup.has(member.group_id)) {
-              membersByGroup.get(member.group_id).push({
-                id: profile.id,
-                username: profile.username,
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                role: 'member',
-                status: member.status || 'unknown'
-              });
+              // Check if this member ID is already added to this group to prevent duplicates
+              const existingMembers = membersByGroup.get(member.group_id) || [];
+              if (!existingMembers.some(m => m.id === profile.id)) { 
+                membersByGroup.get(member.group_id).push({
+                  id: profile.id,
+                  username: profile.username,
+                  full_name: profile.full_name,
+                  avatar_url: profile.avatar_url,
+                  role: 'member',
+                  status: member.status || 'unknown'
+                });
+              }
             }
           });
         }
@@ -332,11 +337,12 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           groups.forEach(group => {
             if (!group.user_id || !group.id) return;
             
-            // Don't add if already added as a member
+            // Check if creator ID is already added to this group (as a member or previously as creator)
             const existingMembers = membersByGroup.get(group.id) || [];
-            if (existingMembers.some(m => m.id === group.user_id)) return;
+            if (existingMembers.some(m => m.id === group.user_id)) return; // Skip if already added
             
             const profile = profiles.find(p => p.id === group.user_id);
+            // Ensure group exists in map and profile was found
             if (profile && membersByGroup.has(group.id)) {
               membersByGroup.get(group.id).push({
                 id: profile.id,
@@ -344,13 +350,13 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                 full_name: profile.full_name,
                 avatar_url: profile.avatar_url,
                 role: 'creator',
-                status: 'accepted'
+                status: 'accepted' // Assume creator is always accepted
               });
             }
           });
         }
         
-        // Add the current user to the groups they belong to
+        // Add the current user to the groups they belong to (if not already added)
         const currentUserProfile = {
           id: user.id,
           username: user.user_metadata?.username || user.email,
@@ -364,14 +370,16 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
           
           const membersList = membersByGroup.get(groupId) || [];
           
+          // Check if current user is already in the list for this group
+          if (membersList.some(m => m.id === user.id)) return; 
+
           // Check if current user is the creator or an accepted member
           const isCreator = group.user_id === user.id;
-          // Need to check the original groupMembers fetch for current user's status
           const currentUserMembership = groupMembers?.find(gm => gm.group_id === groupId && gm.friend_id === user.id);
           const isAcceptedMember = currentUserMembership?.status === 'accepted';
 
-          // Add current user if they are creator or accepted member and not already added
-          if ((isCreator || isAcceptedMember) && !membersList.some(m => m.id === user.id)) {
+          // Add current user if they are creator or accepted member
+          if (isCreator || isAcceptedMember) {
             membersList.push({
               ...currentUserProfile,
               role: isCreator ? 'creator' : 'member',

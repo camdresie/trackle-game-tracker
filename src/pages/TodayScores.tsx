@@ -321,7 +321,13 @@ const TodayScores = () => {
   
   // Convert member data to GroupMemberScore format
   const convertToGroupMemberScores = useCallback((members: any[]) => {
+    // Ensure members is an array before mapping
+    if (!Array.isArray(members)) {
+        console.warn("convertToGroupMemberScores received non-array members:", members);
+        return [];
+    }
     return members.map(member => ({
+      playerId: member.playerId, // Include playerId
       playerName: member.playerName,
       score: member.score,
       hasPlayed: member.hasPlayed
@@ -420,6 +426,7 @@ const TodayScores = () => {
       return {
         groupName: "All Friends",
         members: allFriendsData.members.map(m => ({
+          playerId: m.playerId, // Include playerId
           playerName: m.playerName,
           score: m.score,
           hasPlayed: m.hasPlayed
@@ -436,6 +443,7 @@ const TodayScores = () => {
         members: getAllFriendsList
           .filter(f => !f.isCurrentUser)
           .map(m => ({
+            playerId: m.playerId, // Include playerId
             playerName: m.playerName,
             score: m.score,
             hasPlayed: m.hasPlayed
@@ -482,6 +490,7 @@ const TodayScores = () => {
                   gameId={selectedGame?.id}
                   gameColor={selectedGame?.color || ""}
                   members={getAllFriendsForScoreShare().members}
+                  currentUserId={user?.id}
                   currentUserName={profile?.username || ""}
                   currentUserScore={getAllFriendsForScoreShare().currentUserScore}
                   currentUserHasPlayed={getAllFriendsForScoreShare().currentUserHasPlayed}
@@ -708,6 +717,7 @@ const TodayScores = () => {
                                         gameId={selectedGame?.id}
                                         gameColor={selectedGame?.color || ""}
                                         members={groupMemberScores}
+                                        currentUserId={user?.id}
                                         currentUserName={profile?.username || ""}
                                         currentUserScore={group.currentUserScore}
                                         currentUserHasPlayed={group.currentUserHasPlayed}
