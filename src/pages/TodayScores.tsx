@@ -8,6 +8,7 @@ import { useFriendsList } from '@/hooks/useFriendsList';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   GamepadIcon, 
   Users, 
@@ -38,6 +39,24 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { isLowerScoreBetter } from '@/utils/gameData';
+import { isDevelopment } from '@/utils/environment';
+
+// --- Define necessary interfaces locally ---
+interface GroupMemberPerformance {
+  playerId: string;
+  playerName: string;
+  hasPlayed: boolean;
+  score: number | null;
+}
+
+interface GroupPerformance {
+  groupId: string;
+  groupName: string;
+  currentUserHasPlayed: boolean;
+  currentUserScore: number | null;
+  members: GroupMemberPerformance[];
+}
+// --- End interface definitions ---
 
 // Define a consistent interface for group members
 interface GroupMember {
@@ -195,6 +214,11 @@ const FriendListVirtualized = memo(({
     </div>
   );
 });
+
+// Define interfaces
+interface ProcessedGroupForRender extends GroupPerformance { // Extend original type
+  sortedMembers: GroupMember[];
+}
 
 const TodayScores = () => {
   const { user, profile } = useAuth();
@@ -456,6 +480,69 @@ const TodayScores = () => {
     }
   }, [allFriendsData, getAllFriendsList, profile?.full_name, profile?.username]);
 
+  // --- Pre-process group data for rendering --- 
+  const processedGroupsForRender = useMemo<ProcessedGroupForRender[]>(() => {
+    if (!groupPerformanceData) return [];
+
+    return groupPerformanceData.map((group) => {
+      const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
+
+      // Create allMembers array including current user and members
+      const allMembers: GroupMember[] = [];
+                    
+      // If the current user has played, add them to the list first
+      if (group.currentUserHasPlayed && group.currentUserScore !== null && group.currentUserScore !== undefined) {
+        allMembers.push({
+          playerId: 'currentUser',
+          playerName: profile?.full_name || profile?.username || 'You',
+          score: group.currentUserScore,
+          hasPlayed: true,
+          isCurrentUser: true
+        });
+      } else {
+        allMembers.push({
+          playerId: 'currentUser',
+          playerName: profile?.full_name || profile?.username || 'You',
+          score: null,
+          hasPlayed: false,
+          isCurrentUser: true
+        });
+      }
+                      
+      // Then add the other members
+      group.members.forEach(m => {
+        if (m.playerId === user?.id) return;
+        allMembers.push({
+          playerId: m.playerId,
+          playerName: m.playerName,
+          score: m.hasPlayed ? m.score : null, 
+          hasPlayed: m.hasPlayed, 
+          isCurrentUser: false
+        });
+      });
+                      
+      // Sort members directly: played first, then by score, then unplayed
+      const sortedMembers = [...allMembers].sort((a, b) => {
+        const aPlayed = a.hasPlayed;
+        const bPlayed = b.hasPlayed;
+        if (aPlayed && !bPlayed) return -1;
+        if (!aPlayed && bPlayed) return 1;
+        if (aPlayed && bPlayed) {
+          const scoreA = typeof a.score === 'number' ? a.score : (isLowerBetter ? Infinity : -Infinity);
+          const scoreB = typeof b.score === 'number' ? b.score : (isLowerBetter ? Infinity : -Infinity);
+          return isLowerBetter ? scoreA - scoreB : scoreB - scoreA;
+        }
+        return a.playerName.localeCompare(b.playerName); 
+      });
+
+      // Return the original group data spread, plus the sortedMembers
+      return {
+        ...group, // Include original group data (groupId, name, etc.)
+        sortedMembers: sortedMembers // Add the calculated sorted members
+      };
+    });
+  }, [groupPerformanceData, selectedGame, profile, user]); // Dependencies
+
   // Memoize the all friends tab content
   const allFriendsTabContent = useMemo(() => (
     <TabsContent value="friends" className="space-y-6">
@@ -599,77 +686,39 @@ const TodayScores = () => {
                   className="mb-4"
                   showOnDesktop={true}
                 />
-                {groupPerformanceData && groupPerformanceData.length > 0 ? (
+                {/* === Loading/Empty/Data Logic Start === */}
+                {isLoading ? (
+                  // Show Skeleton loaders while loading
                   <div className="space-y-6">
-                    {groupPerformanceData.map((group) => {
-                      const leadingPlayer = getLeadingPlayerInGroup(group);
-                      const isLowerBetter = isLowerScoreBetter(selectedGame?.id || '');
-                      
-                      // Check if the current group has a pending status by finding the group in friendGroups
-                      const pendingGroup = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
-                      const isPendingMember = !!pendingGroup;
-                      
-                      // Convert members array to the format expected by GroupScoresShare
+                    <Card className="shadow-md">
+                      <div className="p-4 bg-muted/40 rounded-t-lg border-b border-muted">
+                        <Skeleton className="h-6 w-3/5" />
+                      </div>
+                      <div className="px-3 py-2 space-y-3">
+                        <Skeleton className="h-5 w-4/5 mb-3" />
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-8 w-20" />
+                          <Skeleton className="h-8 w-20" />
+                        </div>
+                        <div className="space-y-2 mt-2">
+                          <Skeleton className="h-8 w-full" />
+                          <Skeleton className="h-8 w-full" />
+                          <Skeleton className="h-8 w-full" />
+                        </div>
+                      </div>
+                    </Card>
+                    {/* Add more skeletons if needed for multiple groups */}
+                  </div>
+                ) : processedGroupsForRender && processedGroupsForRender.length > 0 ? (
+                  // Render groups using the pre-processed memoized data
+                  <div className="space-y-6">
+                    {processedGroupsForRender.map((group) => { // Map over processed data
+                      const leadingPlayer = getLeadingPlayerInGroup(group); // Can still calculate this here
                       const groupMemberScores = convertToGroupMemberScores(group.members);
+                      const isPendingMember = invitations.find(inv => inv.groupId === group.groupId && inv.status === 'pending');
                     
-                      // Create allMembers array including current user and members
-                      const allMembers: GroupMember[] = [];
-                    
-                      // If the current user has played, add them to the list first
-                      if (group.currentUserHasPlayed && group.currentUserScore !== null && group.currentUserScore !== undefined) {
-                        allMembers.push({
-                          playerId: 'currentUser',
-                          playerName: profile?.full_name || profile?.username || 'You',
-                          score: group.currentUserScore,
-                          hasPlayed: true,
-                          isCurrentUser: true
-                        });
-                      } else {
-                        allMembers.push({
-                          playerId: 'currentUser',
-                          playerName: profile?.full_name || profile?.username || 'You',
-                          score: null,
-                          hasPlayed: false,
-                          isCurrentUser: true
-                        });
-                      }
-                      
-                      // Then add the other members
-                      group.members.forEach(m => {
-                        // Skip if this is already the current user (should never happen but just in case)
-                        if (m.playerId === user?.id) {
-                          return;
-                        }
-                        
-                        allMembers.push({
-                          playerId: m.playerId,
-                          playerName: m.playerName,
-                          // Keep the score value if played, otherwise null
-                          score: m.hasPlayed ? m.score : null, 
-                          // TRUST the hasPlayed flag from the hook
-                          hasPlayed: m.hasPlayed, 
-                          isCurrentUser: false
-                        });
-                      });
-                      
-                      // Sort by who has played, then by score (if lower is better, lower scores first)
-                      // Rely directly on the hasPlayed flag
-                      const playedMembers = allMembers.filter(m => m.hasPlayed).sort((a, b) => {
-                        // Use the memoized isLowerBetter flag
-                        // Scores might be null here if hasPlayed is true but score is 0/null - handle defensively
-                        const scoreA = (typeof a.score === 'number' ? a.score : (isLowerBetter ? Infinity : -Infinity));
-                        const scoreB = (typeof b.score === 'number' ? b.score : (isLowerBetter ? Infinity : -Infinity));
+                      // NOTE: No need to calculate allMembers/sortedMembers again here
 
-                        return isLowerBetter 
-                          ? scoreA - scoreB // Simple ascending sort
-                          : scoreB - scoreA; // Simple descending sort
-                      });
-                      
-                      // Rely directly on the hasPlayed flag
-                      const notPlayedMembers = allMembers.filter(m => !m.hasPlayed);
-                      
-                      const sortedMembers = [...playedMembers, ...notPlayedMembers];
-                    
                       return (
                         <Card key={group.groupId} className="shadow-md">
                           <div className="p-4 bg-accent/40 rounded-t-lg border-b border-accent">
@@ -747,41 +796,31 @@ const TodayScores = () => {
                                   
                                   {/* Group members with scores */}
                                   <div className="space-y-1 mt-2">
-                                    {sortedMembers.length > 0 ? (
-                                      sortedMembers.map((member, i) => {
-                                        // Determine leader status based on the original logic if needed, 
-                                        // but primarily focus on correcting the score display logic.
-                                        // Note: The 'leadingPlayer' logic might need separate verification, 
-                                        // but the goal here is to fix the score visibility.
+                                    {group.sortedMembers.length > 0 ? ( // Use pre-calculated list
+                                      group.sortedMembers.map((member, i) => { // Map over pre-calculated list
                                         const isCurrentUser = member.isCurrentUser;
-                                        
-                                        // Original structure restoration attempt:
                                         return (
                                           <div 
-                                            key={`${member.playerId}-${i}`} // Use index for key stability if needed
+                                            key={`${member.playerId}-${i}`}
                                             className={cn(
-                                              "flex items-center justify-between p-3 rounded-lg", // Keep original padding/rounding
+                                              "flex items-center justify-between p-3 rounded-lg",
                                               isCurrentUser ? "bg-secondary/50" : "hover:bg-muted/50",
-                                              // Style based on whether the member has played
                                               !member.hasPlayed ? "text-muted-foreground" : "" 
                                             )}
                                           >
                                             <div className="flex items-center gap-2 min-w-0 max-w-[70%]">
-                                              {/* Restore original badge/trophy logic if it was correct, or simplify */}
-                                              {/* Example: Simple display */}
                                               <span className="font-medium truncate">
                                                 {member.playerName}
                                               </span>
-                                              {/* Add badges back if needed based on original correct logic */}
                                             </div>
                                             
-                                            {/* Use hasPlayed flag directly for display */}
+                                            {/* Use hasPlayed flag directly from the 'member' object */}
                                             {member.hasPlayed ? (
-                                              <span className="font-semibold"> {/* Original class */}
+                                              <span className="font-semibold">
                                                 {formatScoreValue(member.score, selectedGame?.id)}
                                               </span>
                                             ) : (
-                                              <span className="text-sm text-muted-foreground"> {/* Original class */}
+                                              <span className="text-sm text-muted-foreground">
                                                 No score yet
                                               </span>
                                             )}
@@ -814,6 +853,7 @@ const TodayScores = () => {
                     </div>
                   </div>
                 ) : (
+                  // Render "No Groups Yet" ONLY if loading is done AND data is empty
                   <Card className="p-8 flex flex-col items-center justify-center text-center">
                     <Users className="w-12 h-12 text-muted-foreground mb-4" />
                     <h2 className="text-xl font-semibold mb-2">No Groups Yet</h2>
@@ -831,6 +871,7 @@ const TodayScores = () => {
                     </Button>
                   </Card>
                 )}
+                {/* === Loading/Empty/Data Logic End === */}
               </TabsContent>
               
               {/* All Friends tab content */}
