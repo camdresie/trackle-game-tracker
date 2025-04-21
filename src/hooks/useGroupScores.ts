@@ -61,7 +61,6 @@ interface MemberProfilesData {
 }
 
 export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => {
-  // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Hook rendered. gameId: ${gameId}`);
   const { user } = useAuth();
   const { friends, refreshFriends } = useFriendsList();
   const { friendGroups } = useFriendGroups(friends);
@@ -69,7 +68,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   const [groupPerformanceData, setGroupPerformanceData] = useState<GroupPerformance[]>([]);
   const [allTodaysScores, setAllTodaysScores] = useState<Score[]>([]);
   const [allFriendsData, setAllFriendsData] = useState<AllFriendsPerformance | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [memberProfilesData, setMemberProfilesData] = useState<MemberProfilesData>({ profiles: [], groupMembership: [], membersByGroup: [], lastUpdated: 0 });
   
   // Use ref to track if this is the first render
@@ -79,9 +77,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   // Store previous values to compare and avoid unnecessary updates
   const prevGameId = useRef<string | null>(null);
   const prevAllTodaysScores = useRef<Score[]>([]);
-  
-  // Create a fetchAllTodaysScores ref to use in callbacks
-  const fetchAllTodaysScoresRef = useRef<(forceRefresh?: boolean) => Promise<void>>();
   
   // Memoize the gameId to avoid triggering effects unnecessarily
   const memoizedGameId = useMemo(() => gameId, [gameId]);
@@ -101,59 +96,43 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
     JSON.stringify(todaysScores.map(s => s.id))
   ]);
   
-  // Fetch all today's scores for the selected game with improved memory handling
+  // Fetch all today's scores - Simplified Trigger
   useEffect(() => {
-    // Skip the first render to prevent double-fetching
+    // Skip the first render (handled by initial state)
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
     
-    // Skip if the gameId hasn't changed or is null
-    if (memoizedGameId === prevGameId.current && firstLoadDone.current) {
-      return;
-    }
-    
-    prevGameId.current = memoizedGameId;
-    
+    // Skip if gameId is null
     if (!memoizedGameId) {
-      setAllTodaysScores([]);
+      setAllTodaysScores([]); // Clear scores if no game selected
       setIsLoading(false);
       return;
     }
     
-    // Create a flag to track if the component is still mounted
     let isMounted = true;
-    const controller = new AbortController();
+    const controller = new AbortController(); // Keep abort controller
     
-    const fetchAllTodaysScores = async (forceRefresh = false) => {
-      // Throttle API calls to reduce memory usage - only fetch every 30 seconds
-      const now = Date.now();
-      const FETCH_THROTTLE = 30000; // 30 seconds
-      
-      // Always fetch on first load, when gameId changes, or when force refresh is requested
-      if (!forceRefresh && now - lastFetchTime < FETCH_THROTTLE && allTodaysScores.length > 0 && firstLoadDone.current && memoizedGameId === prevGameId.current) {
-        return;
-      }
+    const fetchAllTodaysScores = async () => {
+      // REMOVED: Throttling logic based on lastFetchTime
       
       try {
         setIsLoading(true);
         
-        const scores = await getTodaysGamesForAllUsers(memoizedGameId, forceRefresh);
-        // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Fetched scores for gameId ${memoizedGameId}:`, JSON.stringify(scores));
+        // Always fetch when effect runs (triggered by gameId or todaysScores prop change)
+        const scores = await getTodaysGamesForAllUsers(memoizedGameId);
         
-        // Skip update if data is the same and not forcing a refresh
-        if (!forceRefresh && JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current && memoizedGameId === prevGameId.current) {
-          setIsLoading(false);
-          return;
+        // Optimization: Skip state update only if data is identical (optional, can be removed if causing issues)
+        if (JSON.stringify(scores) === JSON.stringify(prevAllTodaysScores.current) && firstLoadDone.current) {
+           setIsLoading(false);
+           return;
         }
         
-        // Only update state if component is still mounted
         if (isMounted) {
-          prevAllTodaysScores.current = scores;
+          prevAllTodaysScores.current = scores; // Update previous scores ref
           setAllTodaysScores(scores);
-          setLastFetchTime(now);
-          firstLoadDone.current = true;
+          firstLoadDone.current = true; // Mark that first load for a game is done
         }
       } catch (error) {
         console.error('Error fetching all today\'s scores:', error);
@@ -162,17 +141,14 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
       }
     };
 
-    // Store the fetch function in the ref so it can be used in handleRefreshFriends
-    fetchAllTodaysScoresRef.current = fetchAllTodaysScores;
-    
     fetchAllTodaysScores();
     
-    // Return cleanup function
     return () => {
       isMounted = false;
       controller.abort();
     };
-  }, [memoizedGameId, lastFetchTime]); // Keep minimal dependencies
+    // Dependency array now includes memoizedTodaysScores
+  }, [memoizedGameId, memoizedTodaysScores]); 
   
   // Process friend data when related data changes
   const processedFriendData = useMemo(() => {
@@ -397,7 +373,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
             groupId,
             members
           }));
-        // REMOVE Log: if (isDevelopment()) console.log('[useGroupScores] Fetched Member Profiles (membersByGroup):', JSON.stringify(finalMembersByGroup));
 
         setMemberProfilesData(prev => ({
           ...prev,
@@ -415,20 +390,12 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   
   // Process group data more efficiently with the simplified approach
   const processedGroupData = useMemo(() => {
-    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Calculating processedGroupData for gameId: ${memoizedGameId}`);
-    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Using allTodaysScores:`, JSON.stringify(allTodaysScores));
-    // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Using memberProfilesData:`, JSON.stringify(memberProfilesData));
-
-    // Use simpler initial check
     if (!user || !memoizedGameId || !allTodaysScores) { 
-        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Bailing early from processedGroupData due to missing user, gameId, or initial allTodaysScores.");
-        return []; // Return empty if essential data is missing
+        return [];
     }
 
     try {
-        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Starting group mapping...");
         const result = memoizedFriendGroups.map(group => {
-            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Processing group: ${group.name} (${group.id})`);
             // Find today's score for the current user
             const userTodayScore = allTodaysScores.find(score => 
                 score.playerId === user.id && score.gameId === memoizedGameId
@@ -440,17 +407,12 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
             const groupMembersData = memberProfilesData.membersByGroup.find(gmd => gmd.groupId === group.id);
             const actualMembers = groupMembersData ? groupMembersData.members : []; // Use fetched members
             
-            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Group ${group.id} - Actual Members:`, JSON.stringify(actualMembers));
-
             // Map over the actual members fetched from the database
             const membersPerformance: GroupMemberPerformance[] = actualMembers.map(member => {
-                // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores]   Mapping score for member: ${member.full_name || member.username} (${member.id})`);
                 // Look for this member's score in allTodaysScores
                 const friendScore = allTodaysScores.find(score => 
                     score.playerId === member.id && score.gameId === memoizedGameId
                 );
-                
-                // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores]     - Found score for ${member.id} & game ${memoizedGameId}:`, friendScore ? JSON.stringify({ value: friendScore.value, date: friendScore.date }) : 'null');
                 
                 const hasPlayed = !!friendScore;
                 const score = hasPlayed ? friendScore.value : null;
@@ -465,7 +427,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                     score: score
                 };
             });
-            // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Group ${group.id} - Final Members Performance:`, membersPerformance);
             return {
                 groupId: group.id,
                 groupName: group.name,
@@ -474,7 +435,6 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
                 members: membersPerformance // Use the processed list based on actual members
             };
         });
-        // REMOVE Log: if (isDevelopment()) console.log("[useGroupScores] Finished group mapping. Final processedGroupData:", JSON.stringify(result));
         return result;
     } catch (error) {
         console.error('[useGroupScores] Error processing group data:', error);
@@ -491,40 +451,27 @@ export const useGroupScores = (gameId: string | null, todaysScores: Score[]) => 
   // Update group performance data only when processed data actually changes
   useEffect(() => {
     if (processedGroupData && JSON.stringify(processedGroupData) !== JSON.stringify(groupPerformanceData)) {
-      // REMOVE Log: if (isDevelopment()) console.log(`[useGroupScores] Updating groupPerformanceData state...`);
       setGroupPerformanceData(processedGroupData);
     }
   }, [processedGroupData]);
   
   const handleRefreshFriends = useCallback(async () => {
-    try {
-      await refreshFriends();
-      
-      // Force a re-fetch of today's scores with forceRefresh=true
-      if (fetchAllTodaysScoresRef.current) {
-        await fetchAllTodaysScoresRef.current(true);
-      }
-      
-      // Also reset the firstLoadDone flag to force a fresh load
-      firstLoadDone.current = false;
-      
-      return true;
-    } catch (error) {
-      console.error('Error refreshing friends:', error);
-      return false;
-    }
-  }, [refreshFriends]);
+    // If we need explicit refresh, trigger parent or rely on dependency changes
+    // REMOVE: fetchAllTodaysScoresRef.current?.(true);
+    // REMOVE: Consider adding refresh logic if needed, e.g., invalidating parent query
+  }, []);
   
-  // Memoize the return value to prevent unnecessary re-renders
-  return useMemo(() => ({ 
-    isLoading, 
-    groupPerformanceData, 
+  // Effect to handle refreshing when friends list changes externally
+  useEffect(() => {
+    // Potentially trigger a refresh if needed when friends change
+    // REMOVE: fetchAllTodaysScoresRef.current?.(true);
+  }, [friends]); // Assuming `friends` comes from a context/prop that updates
+  
+  // Return values from the hook
+  return {
+    isLoading,
+    groupPerformanceData,
     allFriendsData,
-    refreshFriends: handleRefreshFriends 
-  }), [
-    isLoading, 
-    groupPerformanceData, 
-    allFriendsData,
-    handleRefreshFriends
-  ]);
+    refreshFriends: handleRefreshFriends // Keep the callback if used elsewhere
+  };
 };
