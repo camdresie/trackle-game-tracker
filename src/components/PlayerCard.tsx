@@ -32,10 +32,30 @@ const PlayerCard = ({
   const bestScore = stats?.bestScore ?? (game ? calculateBestScore(scores, game) : null);
   const averageScore = stats?.averageScore ?? calculateAverageScore(scores);
   
-  // Get latest play date
-  const latestDate = scores.length > 0 
-    ? new Date(scores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date)
+  // Get the latest score entry after sorting by date string descending
+  const latestScoreEntry = scores.length > 0
+    ? scores.sort((a, b) => b.date.localeCompare(a.date))[0]
     : null;
+
+  // Function to format YYYY-MM-DD to locale date string (e.g., M/D/YYYY)
+  const formatDisplayDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    try {
+      // Split YYYY-MM-DD
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Create Date object using numbers to avoid timezone issues with YYYY-MM-DD strings
+      const dateObj = new Date(year, month - 1, day);
+      // Format using locale options
+      return dateObj.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      });
+    } catch (e) {
+      console.error("Error formatting date:", dateString, e);
+      return dateString; // Fallback to original string
+    }
+  };
   
   // Medal colors for top 3 ranks
   const rankColors: Record<number, string> = {
@@ -103,10 +123,10 @@ const PlayerCard = ({
           </div>
           <div>
             <h3 className="font-medium">{player.name}</h3>
-            {latestDate && (
+            {latestScoreEntry && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                Last played: {latestDate.toLocaleDateString()}
+                Last played: {formatDisplayDate(latestScoreEntry.date)}
               </p>
             )}
           </div>

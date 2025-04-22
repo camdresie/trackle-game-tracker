@@ -35,27 +35,33 @@ export const useFriendScores = ({
       }
       
       try {
-        // We always fetch all friends' scores since we need them for the list
-        // The includeCurrentUser flag only affects whether we show the current user in the list
-        const friendIds = friends.map(friend => friend.id);
-        
-        if (friendIds.length === 0 && !includeCurrentUser) {
+        // Determine the list of user IDs to fetch scores for
+        let userIdsToFetch = friends.map(friend => friend.id);
+        if (includeCurrentUser && user) {
+          // Add current user ID if not already present (e.g., if user is also in friends list)
+          if (!userIdsToFetch.includes(user.id)) {
+            userIdsToFetch.push(user.id);
+          }
+        }
+
+        // If no users to fetch for, return empty
+        if (userIdsToFetch.length === 0) {
           return {};
         }
-        
-        // Make the API call 
+
+        // Make the API call for all required users
         const { data: scoresData } = await supabase
           .from('scores')
           .select('*')
           .eq('game_id', gameId)
-          .in('user_id', friendIds);
+          .in('user_id', userIdsToFetch); // Fetch for friends AND current user if included
           
         // Initialize result object
         const newFriendScores: { [key: string]: Score[] } = {};
         
-        // Initialize with empty arrays for each friend
-        friendIds.forEach(friendId => {
-          newFriendScores[friendId] = [];
+        // Initialize with empty arrays for each required user
+        userIdsToFetch.forEach(userId => {
+          newFriendScores[userId] = [];
         });
         
         // Process all scores
@@ -75,8 +81,13 @@ export const useFriendScores = ({
             };
             
             // Add to the appropriate user's scores array
-            if (newFriendScores[userId]) {
-              newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
+            // Check if the key exists before trying to push
+            if (newFriendScores.hasOwnProperty(userId)) {
+              newFriendScores[userId].push(formattedScore);
+            } else {
+              // This case should technically not happen due to initialization above,
+              // but adding for safety.
+              newFriendScores[userId] = [formattedScore];
             }
           });
         }
@@ -91,17 +102,6 @@ export const useFriendScores = ({
     enabled: !!gameId && (friends.length > 0 || includeCurrentUser),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false,
-    // Add placeholder data for better UX
-    placeholderData: (oldData) => {
-      // If we have current user scores, include them in placeholder data
-      if (includeCurrentUser && user && currentUserScores.length > 0) {
-        return {
-          ...(oldData || {}),
-          [user.id]: currentUserScores
-        };
-      }
-      return oldData || {};
-    }
   });
 
   // Effect to refetch only when necessary
@@ -122,20 +122,8 @@ export const useFriendScores = ({
     }
   }, [gameId, refetch]);
 
-  // Combine friend scores with current user scores
-  const scoresWithCurrentUser = useMemo(() => {
-    if (!includeCurrentUser || !user || currentUserScores.length === 0) {
-      return friendScores;
-    }
-
-    return {
-      ...friendScores,
-      [user.id]: currentUserScores
-    };
-  }, [friendScores, includeCurrentUser, user, currentUserScores]);
-
   return {
-    friendScores: scoresWithCurrentUser,
+    friendScores: friendScores,
     fetchFriendScores,
     isLoading
   };

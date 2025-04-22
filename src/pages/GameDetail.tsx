@@ -45,7 +45,6 @@ const GameDetail = () => {
   
   const [localScores, setLocalScores] = useState<Score[]>([]);
   const [localBestScore, setLocalBestScore] = useState<number | null>(null);
-  const [localFriendScores, setLocalFriendScores] = useState<{ [key: string]: Score[] }>({});
   
   useEffect(() => {
     // Only set initial state if localScores is empty and hook data is available
@@ -57,24 +56,7 @@ const GameDetail = () => {
         setLocalBestScore(bestScore);
     }
 
-    // Merge incoming friendScores from hook with localFriendScores
-    setLocalFriendScores(prevLocalFriendScores => {
-        // Start with the existing local scores (which has optimistic updates for the user)
-        const mergedScores = { ...prevLocalFriendScores };
-        
-        // Iterate through the scores received from the hook
-        Object.keys(friendScores).forEach(friendId => {
-            // If it's not the current user OR if the local state for this friend is empty,
-            // update with the scores from the hook.
-            // This preserves the current user's optimistic updates while refreshing others.
-            if (friendId !== user?.id || !mergedScores[friendId]) { 
-                mergedScores[friendId] = friendScores[friendId];
-            }
-        });
-        return mergedScores;
-    });
-
-  }, [scores, bestScore, friendScores, user?.id]); // Added user.id dependency
+  }, [scores, bestScore, user?.id]);
   
   const handleAddScore = useCallback((newScore: Score) => {
     // Update local state for "Your Scores"
@@ -94,28 +76,6 @@ const GameDetail = () => {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
 
-    // Update local state for "Friend Scores" for the current user
-    if (user) {
-      setLocalFriendScores(prev => {
-        const currentUserExistingScores = prev[user.id] || [];
-        const existingIndex = currentUserExistingScores.findIndex(s => s.id === newScore.id);
-        let updatedUserScores = [...currentUserExistingScores];
-
-        if (existingIndex >= 0) {
-          updatedUserScores[existingIndex] = newScore;
-        } else {
-          // Add the new score and sort by date descending to match typical display order
-          updatedUserScores = [newScore, ...updatedUserScores].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        }
-
-        // Return a new object to trigger state update
-        return {
-          ...prev,
-          [user.id]: updatedUserScores
-        };
-      });
-    }
-
     // Invalidate queries to ensure server state is updated
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
@@ -131,18 +91,6 @@ const GameDetail = () => {
     // Create the updated array first
     const updatedScores = localScores.filter(score => score.id !== scoreId);
     setLocalScores(updatedScores);
-    
-    // Remove the deleted score from localFriendScores for the current user
-    if (user) {
-      setLocalFriendScores(prev => {
-        const currentUserScores = prev[user.id] || [];
-        const updatedUserScores = currentUserScores.filter(score => score.id !== scoreId);
-        return {
-          ...prev,
-          [user.id]: updatedUserScores
-        };
-      });
-    }
     
     // Invalidate relevant queries to refresh the data
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
@@ -254,7 +202,7 @@ const GameDetail = () => {
                 <FriendScoresList 
                   game={game}
                   friends={friends}
-                  friendScores={localFriendScores}
+                  friendScores={friendScores}
                   isLoading={friendScoresLoading}
                   onManageFriends={() => setShowConnectionsModal(true)}
                   onRefreshFriends={refreshFriends}
