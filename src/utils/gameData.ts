@@ -71,7 +71,7 @@ export const games = [
     description: 'Balance your path across the tightrope by answering trivia questions.',
     icon: 'link',
     color: 'bg-blue-400',
-    maxScore: 2340,
+    maxScore: 2600,
     externalUrl: 'https://www.britannica.com/quiz/tightrope'
   },
   {
@@ -118,7 +118,7 @@ export const games = [
     description: 'Rearrange letters into correct words in 15 moves or fewer.',
     icon: 'grip-vertical', // Using 'grip-vertical' icon for now
     color: 'bg-orange-400', 
-    maxScore: 15, // Max swaps remaining
+    maxScore: 6, // Max swaps remaining
     externalUrl: 'https://wafflegame.net/daily',
     isNew: true
   },

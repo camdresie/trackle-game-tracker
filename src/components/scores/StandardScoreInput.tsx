@@ -49,7 +49,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
       // For Minute Cryptic, allow scores from -3 to +10
       newValue = Math.max(-3, Math.min(10, inputValue));
     } else if (game.id === 'waffle') {
-      newValue = Math.max(0, Math.min(game.maxScore || 15, inputValue));
+      newValue = Math.max(0, Math.min(game.maxScore || 6, inputValue));
     } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
       newValue = Math.max(1, Math.min(game.maxScore || 7, inputValue));
     } else {
