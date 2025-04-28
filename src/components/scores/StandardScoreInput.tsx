@@ -85,6 +85,7 @@ const StandardScoreInput = ({ game, initialValue, onScoreChange }: StandardScore
 
   // Get step value based on game
   const getStepValue = () => {
+    if (game.id === 'tightrope') return 10;
     return 1;
   };
 
