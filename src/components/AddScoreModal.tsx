@@ -161,8 +161,9 @@ const AddScoreModal = ({
       case 'minute-cryptic':
         return 'Score reflects hints needed (-3 to +10). Use 0 for par. Lower (par or under) is better.';
       case 'waffle':
-        return 'Score is the number of swaps remaining (0-15). Use 0 if you failed to solve. Higher is better.';
-      case 'sqnces':
+        return 'Score is the number of swaps remaining (0-6). Use 0 if you failed to solve. Higher is better.';
+      case 'sqnces-6':
+      case 'sqnces-7':
         return 'Score is the number of guesses (1-6). Use 7 for a missed word. Lower is better.';
       case 'strands':
         return 'Score is the number of hints used. 0 is the best possible score, lower is better.';

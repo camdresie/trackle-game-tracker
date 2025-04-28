@@ -49,7 +49,8 @@ export const getScoreLabel = (value: number, game?: Game, quordleValues?: number
     return 'Poor';
   } else if (game.id === 'waffle') {
     if (value === 0) return 'Loss';
-    return value >= 10 ? 'Excellent' : value >= 5 ? 'Good' : 'Fair';
+    // Adjusted thresholds for max score of 6: Excellent >= 5, Good >= 4
+    return value >= 5 ? 'Excellent' : value >= 4 ? 'Good' : 'Fair';
   } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
     if (value === 7) return 'Loss';
     return value <= 3 ? 'Excellent' : value <= 5 ? 'Good' : 'Fair';
@@ -112,7 +113,8 @@ export const getScoreColor = (value: number, game?: Game, quordleValues?: number
     return 'text-rose-500';
   } else if (game.id === 'waffle') {
     if (value === 0) return 'text-gray-500';
-    return value >= 10 ? 'text-emerald-500' : value >= 5 ? 'text-amber-500' : 'text-rose-500';
+    // Adjusted thresholds for max score of 6
+    return value >= 5 ? 'text-emerald-500' : value >= 4 ? 'text-amber-500' : 'text-rose-500';
   } else if (game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8') {
     if (value === 7) return 'text-gray-500';
     return value <= 3 ? 'text-emerald-500' : value <= 5 ? 'text-amber-500' : 'text-rose-500';
@@ -148,8 +150,10 @@ export const getSliderMarkers = (game: Game) => {
     // For Mini Crossword with updated range 0-600
     return [0, 100, 200, 300, 400, 500, 600]; // Adjust markers for new range
   } else if (game.id === 'tightrope') {
-    // For Tightrope with range 0-2340
-    return [0, 585, 1170, 1755, 2340];
+    // For Tightrope with range 0-2600
+    const maxScore = game.maxScore || 2600; // Use game.maxScore, fallback to 2600
+    const step = maxScore / 4;
+    return [0, Math.round(step), Math.round(step * 2), Math.round(step * 3), maxScore];
   } else if (game.id === 'squardle') {
     // For Squardle with range 0-10
     return [0, 2, 4, 6, 8, 10];
@@ -157,7 +161,7 @@ export const getSliderMarkers = (game: Game) => {
     // For Minute Cryptic with range -3 to +10
     return [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   } else if (game.id === 'waffle') {
-    return [0, 3, 6, 9, 12, 15];
+    return [0, 2, 4, 6]; // Adjusted markers for 0-6 range
   } else if (game.id === 'strands') { // Add specific markers for Strands
     return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   } else {
@@ -188,10 +192,10 @@ export const getDefaultValue = (game: Game) => {
          game.id === 'nerdle' ? 4 : // Default to middle value for Nerdle
          game.id === 'spelling-bee' ? 68 : // Default to middle value for Spelling Bee (approx 137/2)
          game.id === 'mini-crossword' ? 120 : // Default to 2 minutes for Mini Crossword
-         game.id === 'tightrope' ? 1170 : // Default to middle value for Tightrope (2340/2)
+         game.id === 'tightrope' ? Math.round((game.maxScore || 2600) / 2) : // Default to middle value for Tightrope (2600/2)
          game.id === 'squardle' ? 5 : // Default to middle value for Squardle (0-10)
          game.id === 'minute-cryptic' ? 0 : // Default to par (0) for Minute Cryptic
-         game.id === 'waffle' ? 8 : // Default to middle value for Waffle (0-15)
+         game.id === 'waffle' ? 3 : // Default to middle value for Waffle (0-6)
          game.id === 'sqnces-6' || game.id === 'sqnces-7' || game.id === 'sqnces-8' ? 4 : // Default for SQNCES variations
          Math.floor((game.maxScore || 100) / 2);
 };
