@@ -60,6 +60,75 @@ describe('gameData utilities', () => {
       const bestScore = calculateBestScore(mixedScores, wordleGame);
       expect(bestScore).toBe(2);
     });
+
+    // Tests for the Mini Crossword scoring fix
+    describe('Mini Crossword scoring', () => {
+      it('should return the fastest time (lowest score) for Mini Crossword', () => {
+        const miniCrosswordGame = getGameById('mini-crossword');
+        const timeScores = [
+          { value: 120 }, // 2 minutes
+          { value: 90 },  // 1.5 minutes
+          { value: 150 }, // 2.5 minutes
+          { value: 75 }   // 1.25 minutes (best)
+        ];
+        
+        const bestScore = calculateBestScore(timeScores, miniCrosswordGame);
+        expect(bestScore).toBe(75); // Should be the fastest time
+      });
+
+      it('should have lowerIsBetter flag set to true for Mini Crossword', () => {
+        const miniCrosswordGame = getGameById('mini-crossword');
+        expect(miniCrosswordGame?.lowerIsBetter).toBe(true);
+      });
+    });
+
+    // Tests for other time-based games
+    describe('Time-based games scoring', () => {
+      const timeBasedGames = ['wordle', 'framed', 'connections', 'nerdle', 'quordle', 'minute-cryptic', 'worldle', 'sqnces-6', 'sqnces-7', 'sqnces-8', 'strands'];
+      
+      timeBasedGames.forEach(gameId => {
+        it(`should have lowerIsBetter flag set to true for ${gameId}`, () => {
+          const game = getGameById(gameId);
+          expect(game?.lowerIsBetter).toBe(true);
+        });
+      });
+
+      it('should return the lowest score for all time-based games', () => {
+        const attemptScores = [{ value: 6 }, { value: 3 }, { value: 4 }, { value: 2 }];
+        
+        timeBasedGames.forEach(gameId => {
+          const game = getGameById(gameId);
+          if (game) {
+            const bestScore = calculateBestScore(attemptScores, game);
+            expect(bestScore).toBe(2); // Should always be the lowest
+          }
+        });
+      });
+    });
+
+    // Tests for score-based games
+    describe('Score-based games scoring', () => {
+      const scoreBasedGames = ['betweenle', 'spelling-bee', 'tightrope', 'squardle', 'waffle'];
+      
+      scoreBasedGames.forEach(gameId => {
+        it(`should not have lowerIsBetter flag or have it set to false for ${gameId}`, () => {
+          const game = getGameById(gameId);
+          expect(game?.lowerIsBetter).toBeFalsy();
+        });
+      });
+
+      it('should return the highest score for score-based games', () => {
+        const pointScores = [{ value: 10 }, { value: 25 }, { value: 15 }, { value: 30 }];
+        
+        scoreBasedGames.forEach(gameId => {
+          const game = getGameById(gameId);
+          if (game) {
+            const bestScore = calculateBestScore(pointScores, game);
+            expect(bestScore).toBe(30); // Should always be the highest
+          }
+        });
+      });
+    });
   });
 
   describe('calculateAverageScore', () => {

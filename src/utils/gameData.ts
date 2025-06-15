@@ -9,7 +9,8 @@ export const games = [
     icon: 'puzzle',
     color: 'bg-emerald-500',
     maxScore: 7, // Updated to 7 to account for loss
-    externalUrl: 'https://www.nytimes.com/games/wordle/'
+    externalUrl: 'https://www.nytimes.com/games/wordle/',
+    lowerIsBetter: true
   },
   {
     id: 'mini-crossword',
@@ -18,7 +19,8 @@ export const games = [
     icon: 'grid',
     color: 'bg-rose-500',
     maxScore: 600,
-    externalUrl: 'https://www.nytimes.com/crosswords/game/mini'
+    externalUrl: 'https://www.nytimes.com/crosswords/game/mini',
+    lowerIsBetter: true
   },
   {
     id: 'connections',
@@ -27,7 +29,8 @@ export const games = [
     icon: 'layout-grid',
     color: 'bg-yellow-500',
     maxScore: 8,
-    externalUrl: 'https://www.nytimes.com/games/connections'
+    externalUrl: 'https://www.nytimes.com/games/connections',
+    lowerIsBetter: true
   },
   {
     id: 'framed',
@@ -36,7 +39,8 @@ export const games = [
     icon: 'film',
     color: 'bg-blue-500',
     maxScore: 7,
-    externalUrl: 'https://framed.wtf/'
+    externalUrl: 'https://framed.wtf/',
+    lowerIsBetter: true
   },
   {
     id: 'quordle',
@@ -45,7 +49,8 @@ export const games = [
     icon: 'grid',
     color: 'bg-purple-500',
     maxScore: 40,
-    externalUrl: 'https://www.merriam-webster.com/games/quordle/#/'
+    externalUrl: 'https://www.merriam-webster.com/games/quordle/#/',
+    lowerIsBetter: true
   },
   {
     id: 'betweenle',
@@ -81,7 +86,8 @@ export const games = [
     icon: 'calculator',
     color: 'bg-green-600',
     maxScore: 7,
-    externalUrl: 'https://nerdlegame.com/'
+    externalUrl: 'https://nerdlegame.com/',
+    lowerIsBetter: true
   },
   {
     id: 'squardle',
@@ -100,7 +106,8 @@ export const games = [
     color: 'bg-indigo-500',
     maxScore: 13, // Range from -3 to +10, so total range is 13
     externalUrl: 'https://www.minutecryptic.com/',
-    isNew: true
+    isNew: true,
+    lowerIsBetter: true
   },
   {
     id: 'worldle',
@@ -110,7 +117,8 @@ export const games = [
     color: 'bg-sky-500', 
     maxScore: 7, // 1-6 is a win, 7 is a loss
     externalUrl: 'https://worldle.teuteuf.fr/',
-    isNew: true
+    isNew: true,
+    lowerIsBetter: true
   },
   {
     id: 'waffle',
@@ -130,7 +138,8 @@ export const games = [
     color: 'bg-purple-600',
     maxScore: 7,
     externalUrl: 'https://sqnces.com/',
-    isNew: true
+    isNew: true,
+    lowerIsBetter: true
   },
   {
     id: 'sqnces-7',
@@ -140,7 +149,8 @@ export const games = [
     color: 'bg-purple-700', // Slightly different color
     maxScore: 7,
     externalUrl: 'https://sqnces.com/',
-    isNew: true
+    isNew: true,
+    lowerIsBetter: true
   },
   {
     id: 'sqnces-8',
@@ -150,7 +160,8 @@ export const games = [
     color: 'bg-purple-800', // Slightly different color
     maxScore: 7,
     externalUrl: 'https://sqnces.com/',
-    isNew: true
+    isNew: true,
+    lowerIsBetter: true
   },
   {
     id: 'strands',
