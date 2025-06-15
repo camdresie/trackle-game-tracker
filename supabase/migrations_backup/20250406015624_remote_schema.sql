@@ -551,7 +551,7 @@ CREATE POLICY "Allow users to view messages in their groups" ON "public"."group_
 
 
 
-CREATE POLICY "Game stats are viewable by everyone" ON "public"."game_stats" FOR SELECT USING (true);
+CREATE POLICY "Game stats are viewable by everyone" ON "public"."game_stats" FOR SELECT TO "authenticated" USING (true);
 
 
 
@@ -583,33 +583,15 @@ CREATE POLICY "Members can view messages" ON "public"."group_messages" FOR SELEC
 
 
 
-CREATE POLICY "Public profiles are viewable by everyone" ON "public"."profiles" FOR SELECT USING (true);
+CREATE POLICY "Public profiles are viewable by everyone" ON "public"."profiles" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Users can add members to their own friend groups" ON "public"."friend_group_members" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."friend_groups"
-  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"())))));
+CREATE POLICY "Users can create connection requests" ON "public"."connections" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Users can create connection requests" ON "public"."connections" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can create their own friend groups" ON "public"."friend_groups" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can delete their own friend groups" ON "public"."friend_groups" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can delete their own scores" ON "public"."scores" FOR DELETE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can insert messages in their groups" ON "public"."group_messages" FOR INSERT WITH CHECK ((("user_id" = "auth"."uid"()) AND ("group_id" IN ( SELECT "g"."id"
+CREATE POLICY "Users can insert messages in their groups" ON "public"."group_messages" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ("group_id" IN ( SELECT "g"."id"
    FROM "public"."friend_groups" "g"
   WHERE ("g"."user_id" = "auth"."uid"())
 UNION
@@ -620,47 +602,23 @@ UNION
 
 
 
-CREATE POLICY "Users can insert their own game stats" ON "public"."game_stats" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can insert their own game stats" ON "public"."game_stats" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Users can insert their own scores" ON "public"."scores" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can modify their own game stats" ON "public"."game_stats" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Users can modify their own game stats" ON "public"."game_stats" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "id"));
 
 
 
-CREATE POLICY "Users can remove members from their own friend groups" ON "public"."friend_group_members" FOR DELETE USING ((EXISTS ( SELECT 1
-   FROM "public"."friend_groups"
-  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"())))));
+CREATE POLICY "Users can update their received connection requests" ON "public"."connections" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "friend_id"));
 
 
 
-CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can update their own friend groups" ON "public"."friend_groups" FOR UPDATE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can update their own scores" ON "public"."scores" FOR UPDATE USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can update their received connection requests" ON "public"."connections" FOR UPDATE USING (("auth"."uid"() = "friend_id"));
-
-
-
-CREATE POLICY "Users can view members of their own friend groups" ON "public"."friend_group_members" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."friend_groups"
-  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"())))));
-
-
-
-CREATE POLICY "Users can view messages for their groups" ON "public"."group_messages" FOR SELECT USING ((("user_id" = "auth"."uid"()) OR ("group_id" IN ( SELECT "g"."id"
+CREATE POLICY "Users can view messages in their groups" ON "public"."group_messages" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ("group_id" IN ( SELECT "g"."id"
    FROM "public"."friend_groups" "g"
   WHERE ("g"."user_id" = "auth"."uid"())
 UNION
@@ -671,28 +629,21 @@ UNION
 
 
 
-CREATE POLICY "Users can view their friends' scores" ON "public"."scores" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (EXISTS ( SELECT 1
-   FROM "public"."connections"
-  WHERE (((("connections"."user_id" = "auth"."uid"()) AND ("connections"."friend_id" = "scores"."user_id")) OR (("connections"."friend_id" = "auth"."uid"()) AND ("connections"."user_id" = "scores"."user_id"))) AND ("connections"."status" = 'accepted'::"text"))))));
-
-
-
-CREATE POLICY "Users can view their own connections" ON "public"."connections" FOR SELECT USING ((("auth"."uid"() = "user_id") OR ("auth"."uid"() = "friend_id")));
-
-
-
-CREATE POLICY "Users can view their own friend groups" ON "public"."friend_groups" FOR SELECT USING (("auth"."uid"() = "user_id"));
-
-
-
-CREATE POLICY "Users can view their own scores" ON "public"."scores" FOR SELECT USING (("auth"."uid"() = "user_id"));
+CREATE POLICY "Users can view their own connections" ON "public"."connections" FOR SELECT TO "authenticated" USING ((("auth"."uid"() = "user_id") OR ("auth"."uid"() = "friend_id")));
 
 
 
 ALTER TABLE "public"."connections" ENABLE ROW LEVEL SECURITY;
 
 
-ALTER TABLE "public"."friend_group_members" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "delete_members_from_owned_groups" ON "public"."friend_group_members" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."friend_groups"
+  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "delete_own_groups" ON "public"."friend_groups" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
 
 
 ALTER TABLE "public"."friend_groups" ENABLE ROW LEVEL SECURITY;
@@ -704,10 +655,52 @@ ALTER TABLE "public"."game_stats" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."group_messages" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "insert_members_to_owned_groups" ON "public"."friend_group_members" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."friend_groups"
+  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "insert_own_groups" ON "public"."friend_groups" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."scores" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "update_group_policy" ON "public"."friend_groups" FOR UPDATE TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "update_own_groups" ON "public"."friend_groups" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "view_all_groups" ON "public"."friend_groups" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "view_group_members_for_participants" ON "public"."friend_group_members" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
+   FROM "public"."friend_group_members" "my_membership"
+  WHERE (("my_membership"."group_id" = "friend_group_members"."group_id") AND ("my_membership"."friend_id" = "auth"."uid"())))) OR (EXISTS ( SELECT 1
+   FROM "public"."friend_groups"
+  WHERE (("friend_groups"."id" = "friend_group_members"."group_id") AND ("friend_groups"."user_id" = "auth"."uid"()))))));
+
+
+
+CREATE POLICY "view_own_and_group_member_scores" ON "public"."scores" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM ("public"."friend_groups" "fg"
+     JOIN "public"."friend_group_members" "fgm" ON (("fg"."id" = "fgm"."group_id")))
+  WHERE (("fg"."user_id" = "auth"."uid"()) AND ("fgm"."friend_id" = "scores"."user_id") AND ("fgm"."status" = 'accepted'::"text")))) OR (EXISTS ( SELECT 1
+   FROM ("public"."friend_group_members" "my_membership"
+     JOIN "public"."friend_groups" "fg" ON (("my_membership"."group_id" = "fg"."id")))
+  WHERE (("my_membership"."friend_id" = "auth"."uid"()) AND ("my_membership"."status" = 'accepted'::"text") AND (("fg"."user_id" = "scores"."user_id") OR (EXISTS ( SELECT 1
+           FROM "public"."friend_group_members" "their_membership"
+          WHERE (("their_membership"."group_id" = "my_membership"."group_id") AND ("their_membership"."friend_id" = "scores"."user_id") AND ("their_membership"."status" = 'accepted'::"text"))))))))));
+
 
 
 

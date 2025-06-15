@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Score } from '@/utils/types';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
@@ -45,19 +44,19 @@ export const getTodaysGames = async (userId: string): Promise<Score[]> => {
  * 
  * This function now fetches ALL scores for today regardless of the user
  * so that we can still see scores from users who were added as friends after they played
+ * 
+ * Caching has been removed to ensure fresh data on the Today screen.
  */
-export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<Score[]> => {
+export const getTodaysGamesForAllUsers = async (gameId: string | null, forceRefresh = false): Promise<Score[]> => {
+  // forceRefresh parameter is no longer strictly necessary but kept for compatibility
   try {
-    // Get today's date in YYYY-MM-DD format using Eastern Time for consistency
-    const today = getTodayInEasternTime();
-    
     // Skip query if no gameId is provided
     if (!gameId) return [];
     
-    console.log(`Fetching today's scores for all users for game: ${gameId}, date: ${today}`);
+    // Get today's date in YYYY-MM-DD format using Eastern Time for consistency
+    const today = getTodayInEasternTime();
     
-    // Modified query to fetch ALL scores for today for the specified game
-    // This ensures we get scores from users who become friends after they played
+    // Fetch directly from Supabase
     const { data, error } = await supabase
       .from('scores')
       .select('*')
@@ -68,8 +67,6 @@ export const getTodaysGamesForAllUsers = async (gameId: string | null): Promise<
       console.error('Error fetching today\'s games for all users:', error);
       throw error;
     }
-    
-    console.log(`Found ${data?.length || 0} today's scores for all users`);
     
     // Transform the data to match our Score type
     const scores = data.map(score => ({

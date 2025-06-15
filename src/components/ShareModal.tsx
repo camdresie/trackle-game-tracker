@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import GroupDropdownSelector from './messages/GroupDropdownSelector';
 import GroupMessagesModal from './messages/GroupMessagesModal';
 import { useGroupMessages } from '@/hooks/useGroupMessages';
+import { useFriendGroups } from '@/hooks/useFriendGroups';
 
 interface ShareModalProps {
   open: boolean;
@@ -27,6 +28,9 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
   const [showGroupMessagesModal, setShowGroupMessagesModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  // Fetch user's friend groups
+  const { friendGroups } = useFriendGroups([]);
   
   // Use the group messages hook for sending messages
   const { sendMessage } = useGroupMessages(selectedGroupId);
@@ -62,8 +66,6 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
     try {
       // Split the text into content and URL
       let statsContent = shareText;
-      // Add UTM parameters to ensure consistent link preview generation
-      const urlLine = 'https://www.ontrackle.com/?utm_source=share&utm_medium=social';
       
       // Format the text to ensure iOS link preview detection
       // Ensure stats content doesn't have promotional text
@@ -71,8 +73,12 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
       
       // iOS requires the URL to be on its own line with no additional text
       // and the URL should be the last thing in the message
-      const textToCopy = `${statsContent.trim()}\n\nI'm tracking game scores on Trackle!\n${urlLine}`;
+      // Remove the line adding the promotional text and URL
+      // const textToCopy = `${statsContent.trim()}\n\nI'm tracking game scores on Trackle!\n${urlLine}`;
       
+      // Copy only the stats content
+      const textToCopy = statsContent.trim();
+
       await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
       toast.success('Copied to clipboard!');
@@ -136,6 +142,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
                     selectedGroupId={selectedGroupId} 
                     onSelectGroup={handleGroupSelected}
                     className="w-full"
+                    groups={friendGroups}
                   />
                   <Button 
                     variant="outline" 

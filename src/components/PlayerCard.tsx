@@ -1,4 +1,3 @@
-
 import { User, Trophy, Calendar, Award } from 'lucide-react';
 import { Player, Score, Game } from '@/utils/types';
 import { calculateBestScore, calculateAverageScore } from '@/utils/gameData';
@@ -29,14 +28,34 @@ const PlayerCard = ({
   showTodayOnly = false // Default to showing all stats
 }: PlayerCardProps) => {
   // Calculate statistics or use provided stats
-  const totalGames = stats?.totalGames || scores.length;
-  const bestScore = stats?.bestScore || (game ? calculateBestScore(scores, game) : 0);
-  const averageScore = stats?.averageScore || calculateAverageScore(scores);
+  const totalGames = stats?.totalGames ?? (scores.length || null);
+  const bestScore = stats?.bestScore ?? (game ? calculateBestScore(scores, game) : null);
+  const averageScore = stats?.averageScore ?? calculateAverageScore(scores);
   
-  // Get latest play date
-  const latestDate = scores.length > 0 
-    ? new Date(scores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date)
+  // Get the latest score entry after sorting by date string descending
+  const latestScoreEntry = scores.length > 0
+    ? scores.sort((a, b) => b.date.localeCompare(a.date))[0]
     : null;
+
+  // Function to format YYYY-MM-DD to locale date string (e.g., M/D/YYYY)
+  const formatDisplayDate = (dateString: string | null): string => {
+    if (!dateString) return '';
+    try {
+      // Split YYYY-MM-DD
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Create Date object using numbers to avoid timezone issues with YYYY-MM-DD strings
+      const dateObj = new Date(year, month - 1, day);
+      // Format using locale options
+      return dateObj.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric'
+      });
+    } catch (e) {
+      console.error("Error formatting date:", dateString, e);
+      return dateString; // Fallback to original string
+    }
+  };
   
   // Medal colors for top 3 ranks
   const rankColors: Record<number, string> = {
@@ -45,18 +64,32 @@ const PlayerCard = ({
     3: 'text-amber-700'
   };
 
-  // Format score display for Wordle (display "-" for 0 scores)
-  const formatScore = (score: number) => {
+  // Format score display
+  const formatScore = (score: number | null) => {
+    if (score === null || score === undefined) return '-';
+    
+    // Specific formatting for time-based games (MM:SS) - ONLY Mini Crossword
+    if (game && game.id === 'mini-crossword') {
+      if (score <= 0) return '0:00'; // Handle zero scores
+      const minutes = Math.floor(score / 60);
+      const seconds = score % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Handle Wordle zero scores
     if (game?.id === 'wordle' && score === 0) {
       return '-';
     }
     
-    // Format average score to two decimal places
+    // Format average score to two decimal places (only if it's not an integer)
     if (typeof score === 'number' && !Number.isInteger(score)) {
+      // Check if it's the average score being formatted (more robust check needed if formatScore is reused)
+      // For now, assume non-integer scores are averages that need formatting.
       return score.toFixed(2);
     }
     
-    return score;
+    // Default: return score as is
+    return score.toString();
   };
   
   return (
@@ -90,10 +123,10 @@ const PlayerCard = ({
           </div>
           <div>
             <h3 className="font-medium">{player.name}</h3>
-            {latestDate && (
+            {latestScoreEntry && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                Last played: {latestDate.toLocaleDateString()}
+                Last played: {formatDisplayDate(latestScoreEntry.date)}
               </p>
             )}
           </div>
@@ -107,7 +140,7 @@ const PlayerCard = ({
           <>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Games</p>
-              <p className="font-semibold">{totalGames}</p>
+              <p className="font-semibold">{totalGames ?? '-'}</p>
             </div>
             
             <div className="text-center">
@@ -120,7 +153,7 @@ const PlayerCard = ({
           <>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Games</p>
-              <p className="font-semibold">{totalGames}</p>
+              <p className="font-semibold">{totalGames ?? '-'}</p>
             </div>
             
             <div className="text-center">
@@ -130,7 +163,18 @@ const PlayerCard = ({
             
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Avg</p>
-              <p className="font-semibold">{formatScore(averageScore)}</p>
+              <p className="font-semibold">
+                {/* Special formatting for Mini Crossword Average */}
+                {(game?.id === 'mini-crossword' && averageScore !== null) ?
+                  (() => {
+                    if (averageScore <= 0) return '0:00';
+                    const minutes = Math.floor(averageScore / 60);
+                    const seconds = Math.round(averageScore % 60); // Round seconds for average
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                  })()
+                  : formatScore(averageScore) /* Use standard formatting otherwise */
+                }
+              </p>
             </div>
           </>
         )}

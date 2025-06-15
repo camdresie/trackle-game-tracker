@@ -1,10 +1,11 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Loader2, User, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PlayerCard from '@/components/PlayerCard';
 import { games } from '@/utils/gameData';
 import { LeaderboardPlayer } from '@/types/leaderboard';
+import { FixedSizeList as List } from 'react-window';
+import { useResizeObserver } from '@/hooks/useResizeObserver';
 
 interface LeaderboardPlayersListProps {
   players: LeaderboardPlayer[];
@@ -15,6 +16,12 @@ interface LeaderboardPlayersListProps {
   timeFilter: 'all' | 'today';
   setTimeFilter: (filter: 'all' | 'today') => void;
 }
+
+// Memoize the PlayerCard rendering for better performance
+const MemoizedPlayerCard = memo(PlayerCard);
+
+// Player row height - reduced for tighter UI
+const PLAYER_CARD_HEIGHT = 120;
 
 const LeaderboardPlayersList = ({
   players,
@@ -27,37 +34,14 @@ const LeaderboardPlayersList = ({
 }: LeaderboardPlayersListProps) => {
   // Find the selected game object
   const gameObj = games.find(game => game.id === selectedGame);
-  
-  // Debug logging
-  useEffect(() => {
-    console.log(`LeaderboardPlayersList: Players received: ${players.length}`);
-    console.log(`LeaderboardPlayersList: timeFilter = ${timeFilter}`);
-    
-    // Log players with today scores for debugging
-    if (timeFilter === 'today') {
-      const todayPlayers = players.filter(p => p.today_score !== null);
-      console.log(`LeaderboardPlayersList: Players with today scores: ${todayPlayers.length} out of ${players.length}`);
-      
-      if (todayPlayers.length > 0) {
-        console.log('Players with today scores:', 
-          todayPlayers.map(p => ({
-            username: p.username,
-            player_id: p.player_id,
-            today_score: p.today_score
-          }))
-        );
-      } else {
-        console.log('No players have today scores in LeaderboardPlayersList');
-      }
-    }
-  }, [players, timeFilter]);
+  const playerListRef = useRef<HTMLDivElement>(null);
+  const { width } = useResizeObserver(playerListRef);
   
   // For today view, only show players who have a today_score
   const playersToDisplay = timeFilter === 'today' 
     ? players.filter(player => player.today_score !== null)
     : players;
   
-  console.log(`LeaderboardPlayersList: filtered players to display: ${playersToDisplay.length}`);
   
   return (
     <div className="space-y-4">
@@ -87,9 +71,9 @@ const LeaderboardPlayersList = ({
           <p className="text-muted-foreground">Loading leaderboard data...</p>
         </div>
       ) : playersToDisplay.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-3" ref={playerListRef}>
           {playersToDisplay.map((player, index) => (
-            <PlayerCard 
+            <MemoizedPlayerCard 
               key={player.player_id}
               player={{
                 id: player.player_id,
@@ -113,7 +97,7 @@ const LeaderboardPlayersList = ({
                 // Always show total games played regardless of timeFilter
                 totalGames: player.total_games
               }}
-              className="hover:scale-[1.01] transition-transform duration-200"
+              className="hover:scale-[1.01] transition-transform duration-200 mb-2"
               showTodayOnly={timeFilter === 'today'} // Pass the timeFilter as a boolean
             />
           ))}
@@ -157,4 +141,5 @@ const LeaderboardPlayersList = ({
   );
 };
 
-export default LeaderboardPlayersList;
+// Memoize the entire component for better performance
+export default memo(LeaderboardPlayersList);

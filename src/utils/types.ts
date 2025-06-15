@@ -1,4 +1,3 @@
-
 import { Database } from '@/types/database.types';
 
 // Game 
@@ -10,6 +9,9 @@ export interface Game {
   color: string;
   maxScore?: number;
   externalUrl?: string;
+  isNew?: boolean;
+  lowerIsBetter?: boolean;
+  scoreUnit?: string;
 }
 
 // Score
@@ -91,6 +93,7 @@ export interface FriendGroup {
   pendingMembers?: Player[];
   pendingCount?: number;
   isJoinedGroup?: boolean;
+  isOwner?: boolean;
   status?: 'pending' | 'accepted' | 'rejected' | 'left';
 }
 

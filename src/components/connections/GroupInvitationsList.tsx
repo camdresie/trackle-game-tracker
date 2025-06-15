@@ -41,7 +41,6 @@ const GroupInvitationsList: React.FC<GroupInvitationsListProps> = ({
   
   // If no invitations and not set to always show, return null (don't render anything)
   if (!invitations || invitations.length === 0) {
-    console.log('GroupInvitationsList - No invitations to display');
     
     // If alwaysShow is true, show an empty state with fixed height
     if (alwaysShow) {

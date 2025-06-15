@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import { Game, Score } from '@/utils/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { isLowerScoreBetter } from '@/utils/gameData';
+
+interface Player {
+  id: string;
+  name: string;
+  avatar?: string;
+  isCurrentUser?: boolean;
+}
 
 interface FriendScoresListProps {
   game: Game;
-  friends: { id: string; name: string; avatar?: string }[];
+  friends: Player[];
   friendScores: { [key: string]: Score[] };
   isLoading: boolean;
   onManageFriends: () => void;
@@ -28,45 +36,14 @@ const FriendScoresList = ({
   const { user, profile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   
-  // Enhanced debug logging on every render
-  useEffect(() => {
-    console.log('FriendScoresList render - Game:', game?.id);
-    console.log('FriendScoresList render - Friends count:', friends.length);
-    console.log('FriendScoresList render - Friends:', friends.map(f => ({ id: f.id, name: f.name })));
-    console.log('FriendScoresList render - Friend scores keys:', Object.keys(friendScores));
-    
-    // Log each friend's scores individually
-    friends.forEach(friend => {
-      const scores = friendScores[friend.id] || [];
-      console.log(`Friend ${friend.name} (${friend.id}) has ${scores.length} scores:`, 
-        scores.length > 0 ? scores : 'No scores found');
-    });
-
-    // Log any friend scores that are missing from the friendScores object
-    friends.forEach(friend => {
-      if (!friendScores[friend.id]) {
-        console.warn(`Friend ${friend.name} (${friend.id}) has no entry in friendScores object`);
-      }
-    });
-
-    // Log any scores in friendScores that don't belong to a friend
-    Object.keys(friendScores).forEach(userId => {
-      const friend = friends.find(f => f.id === userId);
-      if (!friend && userId !== user?.id) {
-        console.warn(`Found scores for user ${userId} but they are not in the friends list`);
-      }
-    });
-  }, [friends, friendScores, game, user?.id]);
-  
-  // Check if there are any friend scores at all (with more detailed logging)
+  // Check if there are any friend scores at all
   const hasAnyScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
-  console.log('FriendScoresList - Has any scores:', hasAnyScores);
   
   // Calculate stats for each friend
   const getFriendStats = (friendId: string) => {
     const scores = friendScores[friendId] || [];
-    console.log(`Calculating stats for friend ${friendId}, scores:`, scores);
     
+    // If we have no scores, return zero stats
     if (scores.length === 0) {
       return { bestScore: 0, totalScore: 0, averageScore: 0, totalGames: 0 };
     }
@@ -76,23 +53,20 @@ const FriendScoresList = ({
     const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
     
     let bestScore = scores[0]?.value || 0;
-    if (game.id === 'wordle' || game.id === 'betweenle') {
-      // For Wordle and Betweenle, lower is better
+    if (isLowerScoreBetter(game.id)) {
+      // For these games, lower is better (including losses)
       bestScore = Math.min(...scores.map(s => s.value));
     } else {
       // For other games, higher is better
       bestScore = Math.max(...scores.map(s => s.value));
     }
     
-    const stats = { bestScore, totalScore, averageScore, totalGames };
-    console.log(`Stats for friend ${friendId}:`, stats);
-    return stats;
+    return { bestScore, totalScore, averageScore, totalGames };
   };
   
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      console.log('Refreshing friend scores...');
       await onRefreshFriends();
       toast.success("Friend scores refreshed");
     } catch (error) {
@@ -103,40 +77,38 @@ const FriendScoresList = ({
     }
   };
 
-  // Create a list with the current user first (if available), followed by friends
-  let allPlayers = user && profile 
-    ? [{ 
+  // Create list of players (current user first, then friends)
+  const players = useMemo(() => {
+    const allPlayers = [
+      ...(user ? [{ 
         id: user.id, 
-        name: profile.full_name || profile.username || 'You', 
-        avatar: profile.avatar_url, 
-        isCurrentUser: true 
-      }, ...friends]
-    : [...friends];
-    
-  // Sort players based on their scores
-  // Only sort when there are scores to sort by
-  const hasScores = Object.values(friendScores).some(scores => scores && scores.length > 0);
-  
-  if (hasScores) {
-    allPlayers = [...allPlayers].sort((a, b) => {
-      const statsA = getFriendStats(a.id);
-      const statsB = getFriendStats(b.id);
+        name: profile?.full_name || profile?.username || 'You',
+        avatar: profile?.avatar_url,
+        isCurrentUser: true
+      }] : []),
+      ...friends
+    ];
+
+    // Sort players based on their scores
+    return allPlayers.sort((a, b) => {
+      const aStats = getFriendStats(a.id);
+      const bStats = getFriendStats(b.id);
       
-      // If a player has no scores, they should be sorted to the bottom
-      if (statsA.totalGames === 0 && statsB.totalGames === 0) return 0;
-      if (statsA.totalGames === 0) return 1;
-      if (statsB.totalGames === 0) return -1;
+      // If either player has no scores, they go to the bottom
+      if (!aStats || !bStats) return 0;
+      if (aStats.totalGames === 0 && bStats.totalGames === 0) return 0;
+      if (aStats.totalGames === 0) return 1;
+      if (bStats.totalGames === 0) return -1;
       
-      // Sort by average score based on game type
-      if (['wordle', 'mini-crossword', 'connections', 'framed', 'nerdle', 'betweenle'].includes(game.id)) {
-        // For games where lower is better
-        return statsA.averageScore - statsB.averageScore;
-      } else {
-        // For games where higher is better
-        return statsB.averageScore - statsA.averageScore;
+      // For these games, lower average scores are better
+      if (isLowerScoreBetter(game.id)) {
+        return aStats.averageScore - bStats.averageScore;
       }
+      
+      // For other games, higher average scores are better
+      return bStats.averageScore - aStats.averageScore;
     });
-  }
+  }, [friends, user, profile, game.id, friendScores]);
 
   return (
     <div className="space-y-6">
@@ -167,9 +139,9 @@ const FriendScoresList = ({
           <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-2" />
           <p className="text-muted-foreground">Loading friend scores...</p>
         </div>
-      ) : allPlayers.length > 0 ? (
+      ) : players.length > 0 ? (
         <div className="space-y-4">
-          {allPlayers.map((player, index) => {
+          {players.map((player, index) => {
             const scores = friendScores[player.id] || [];
             const hasScores = scores.length > 0;
             const stats = getFriendStats(player.id);
@@ -179,14 +151,14 @@ const FriendScoresList = ({
                 <PlayerCard 
                   player={{
                     id: player.id,
-                    name: 'isCurrentUser' in player ? `${player.name} (You)` : player.name,
+                    name: player.isCurrentUser ? `${player.name} (You)` : player.name,
                     avatar: player.avatar
                   }}
                   scores={scores}
                   game={game}
                   stats={stats}
                   rank={index + 1}
-                  className={'isCurrentUser' in player ? "border-2 border-primary/30" : undefined}
+                  className={player.isCurrentUser ? "border-2 border-primary/30" : undefined}
                 />
               </div>
             );

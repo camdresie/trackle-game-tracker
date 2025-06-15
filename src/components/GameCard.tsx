@@ -1,6 +1,5 @@
-
 import { Link } from 'react-router-dom';
-import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square } from 'lucide-react';
+import { Puzzle, Grid, LayoutGrid, Sword, Trophy, Dices, Star, CalendarDays, CheckCircle, Film, Link as LinkIcon, GitMerge, Calculator, Square, Timer, Map, GripVertical, AlignHorizontalJustifyCenter } from 'lucide-react';
 import { Game, Score } from '@/utils/types';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/utils/dateUtils';
@@ -56,20 +55,40 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         );
       case 'square':
         return <Square className="w-5 h-5" />;
+      case 'timer':
+        return <Timer className="w-5 h-5" />;
+      case 'map':
+        return <Map className="w-5 h-5" />;
+      case 'grip-vertical':
+        return <GripVertical className="w-5 h-5" />;
+      case 'align-horizontal-justify-center':
+        return <AlignHorizontalJustifyCenter className="w-5 h-5" />;
       default:
         return <Dices className="w-5 h-5" />;
     }
   };
 
-  // Format the average score to show only up to 2 decimal places when needed
-  const formatAverageScore = (score?: number | null) => {
+  // Format score values based on game type
+  const formatScoreValue = (score?: number | null) => {
     if (score === undefined || score === null) return '-';
     
-    // If it's a whole number, return it as is
-    if (Number.isInteger(score)) return score.toString();
+    // Format MM:SS for Mini Crossword
+    if (game.id === 'mini-crossword') {
+        // Round the score to the nearest whole number (for average scores)
+        const roundedScore = Math.round(score); 
+        if (roundedScore <= 0) return '0:00';
+        const minutes = Math.floor(roundedScore / 60);
+        const seconds = roundedScore % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Format scores with decimals (like average) to 2 decimal places
+    if (typeof score === 'number' && !Number.isInteger(score)) {
+      return score.toFixed(2);
+    }
     
-    // Otherwise, truncate to 2 decimal places
-    return score.toFixed(2);
+    // Default: return score as string
+    return score.toString();
   };
 
   // Check if the game was played today using our utility function
@@ -81,7 +100,7 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
   return (
     <Link 
       to={`/game/${game.id}`}
-      className="card-hover rounded-xl glass-card p-5 w-full max-w-xs flex flex-col"
+      className="card-hover rounded-xl glass-card p-5 w-full flex flex-col min-h-[320px]"
     >
       <div className="flex justify-between items-start mb-4">
         <div className={cn("p-2.5 rounded-lg", game.color)}>
@@ -97,8 +116,13 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         </div>
       </div>
       
-      <div className="mb-1">
+      <div className="mb-1 flex items-center gap-2"> 
         <h3 className="text-lg font-semibold">{game.name}</h3>
+        {game.isNew && (
+          <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+            New
+          </span>
+        )}
       </div>
       <p className="text-sm text-muted-foreground mb-4">{game.description}</p>
       
@@ -106,19 +130,19 @@ const GameCard = ({ game, latestScore, averageScore, bestScore }: GameCardProps)
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <Trophy className="w-4 h-4 text-amber-500 mb-1" />
           <span className="text-xs text-muted-foreground">Best</span>
-          <span className="font-medium">{bestScore || '-'}</span>
+          <span className="font-medium">{formatScoreValue(bestScore)}</span>
         </div>
         
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <CalendarDays className="w-4 h-4 text-blue-500 mb-1" />
           <span className="text-xs text-muted-foreground">Last</span>
-          <span className="font-medium">{latestScore?.value || '-'}</span>
+          <span className="font-medium">{formatScoreValue(latestScore?.value)}</span>
         </div>
         
         <div className="flex flex-col items-center p-2 rounded-lg bg-secondary/50">
           <Star className="w-4 h-4 text-purple-500 mb-1" />
           <span className="text-xs text-muted-foreground">Avg</span>
-          <span className="font-medium">{formatAverageScore(averageScore)}</span>
+          <span className="font-medium">{formatScoreValue(averageScore)}</span>
         </div>
       </div>
       

@@ -1,8 +1,9 @@
-
 import { Button } from '@/components/ui/button';
 import { Plus, UsersRound } from 'lucide-react';
 import { Game } from '@/utils/types';
 import { useToast } from '@/hooks/use-toast';
+import { useNotificationCounts } from '@/hooks/useNotificationCounts';
+import { NotificationBadge } from '@/components/ui/notification-badge';
 
 interface HomeHeaderProps {
   onShowAddScore: () => void;
@@ -16,6 +17,7 @@ const HomeHeader = ({
   gamesList
 }: HomeHeaderProps) => {
   const { toast } = useToast();
+  const { data: notificationCounts } = useNotificationCounts();
 
   const handleAddScoreClick = () => {
     if (gamesList.length > 0) {
@@ -33,7 +35,7 @@ const HomeHeader = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
       <div>
         <div className="mb-1">
-          {/* Logo removed from HomeHeader as requested */}
+          <h1 className="text-3xl font-bold tracking-tight">Game Tracker</h1>
         </div>
         <p className="text-muted-foreground">Track your daily game scores and compare with friends</p>
       </div>
@@ -42,10 +44,11 @@ const HomeHeader = ({
         <Button 
           variant="outline"
           onClick={onShowConnections}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 relative"
         >
           <UsersRound className="w-4 h-4" />
           Friends
+          <NotificationBadge count={notificationCounts?.total || 0} />
         </Button>
         
         <Button 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Score } from '@/utils/types';
-import { Loader2, Trash2, Puzzle, Grid, LayoutGrid, Sword, Film, Link as LinkIcon, GitMerge, Calculator, Square, Dices } from 'lucide-react';
+import { Loader2, Trash2, Puzzle, Grid, LayoutGrid, Sword, Film, Link as LinkIcon, GitMerge, Calculator, Square, Dices, Timer, Map, GripVertical, AlignHorizontalJustifyCenter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getGameById } from '@/utils/gameData';
 import { getScoreColor, getScoreLabel } from '@/utils/scoreUtils';
@@ -57,9 +57,9 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
           onDeleteScore(scoreToDelete.id);
         } else {
           // If no callback provided, invalidate queries to refresh data
-          queryClient.invalidateQueries({ queryKey: ['all-scores'] });
-          queryClient.invalidateQueries({ queryKey: ['today-games'] });
-          queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+          queryClient.invalidateQueries({ 
+            queryKey: ['game-data', 'scores'] 
+          });
         }
       }
     } catch (error) {
@@ -118,6 +118,14 @@ const TodaysGames = ({ isLoading, todaysGames, gamesList, onDeleteScore }: Today
         );
       case 'square':
         return <Square className="w-5 h-5" />;
+      case 'timer':
+        return <Timer className="w-5 h-5" />;
+      case 'map':
+        return <Map className="w-5 h-5" />;
+      case 'grip-vertical':
+        return <GripVertical className="w-5 h-5" />;
+      case 'align-horizontal-justify-center':
+        return <AlignHorizontalJustifyCenter className="w-5 h-5" />;
       default:
         return <Dices className="w-5 h-5" />;
     }

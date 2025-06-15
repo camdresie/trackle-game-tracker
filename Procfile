@@ -1,1 +1,1 @@
-web: npm run build:staging && npm start
+web: npm run build && npm start

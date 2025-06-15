@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
  */
 export const getUserGameStats = async (userId: string): Promise<any[]> => {
   try {
-    console.log(`[getUserGameStats] Fetching game stats for user ${userId}`);
     
     const { data, error } = await supabase
       .rpc('get_user_game_stats', { user_id_param: userId });
@@ -16,7 +15,6 @@ export const getUserGameStats = async (userId: string): Promise<any[]> => {
       throw error;
     }
     
-    console.log(`[getUserGameStats] Found ${data?.length || 0} game stats for user ${userId}:`, data);
     
     return data || [];
   } catch (error) {
@@ -30,7 +28,6 @@ export const getUserGameStats = async (userId: string): Promise<any[]> => {
  */
 export const getPlayedGames = async (userId: string): Promise<string[]> => {
   try {
-    console.log(`[getPlayedGames] Fetching played games for user ${userId}`);
     
     const { data, error } = await supabase
       .from('scores')
@@ -47,7 +44,6 @@ export const getPlayedGames = async (userId: string): Promise<string[]> => {
     // Get unique game IDs
     const uniqueGameIds = [...new Set(data.map(item => item.game_id))];
     
-    console.log(`[getPlayedGames] Found ${uniqueGameIds.length} unique games played by user ${userId}:`, uniqueGameIds);
     
     return uniqueGameIds;
   } catch (error) {
@@ -61,7 +57,6 @@ export const getPlayedGames = async (userId: string): Promise<string[]> => {
  */
 export const getUserRankByTotalGamesPlayed = async (userId: string): Promise<{ rank: number, totalUsers: number }> => {
   try {
-    console.log(`[getUserRank] Calculating rank for user ${userId}`);
     
     // Get all users' total game counts
     const { data, error } = await supabase
@@ -94,8 +89,6 @@ export const getUserRankByTotalGamesPlayed = async (userId: string): Promise<{ r
     // Find the user's rank
     const userIndex = sortedUsers.findIndex(([id]) => id === userId);
     const rank = userIndex !== -1 ? userIndex + 1 : sortedUsers.length;
-    
-    console.log(`[getUserRank] User ${userId} is ranked ${rank} out of ${sortedUsers.length} by total games played`);
     
     return { rank, totalUsers: sortedUsers.length };
   } catch (error) {

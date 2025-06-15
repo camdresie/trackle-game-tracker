@@ -1,5 +1,4 @@
-
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Score } from '@/utils/types';
 import { toast } from 'sonner';
@@ -27,67 +26,43 @@ export const useFriendScores = ({
 }: UseFriendScoresProps): FriendScoresResult => {
   const { user } = useAuth();
   
-  // Create a stable array of friend IDs for query key
-  const friendIds = friends.map(f => f.id).sort().join(',');
-  
   // Use TanStack Query for better caching and fetch management
   const { data: friendScores = {}, isLoading, refetch } = useQuery({
-    queryKey: ['friend-scores', gameId, friendIds, includeCurrentUser],
+    queryKey: ['friend-scores', gameId, includeCurrentUser],
     queryFn: async () => {
       if (!gameId) {
         return {};
       }
       
-      // Get a list of all unique friend IDs
-      const friendsToFetch = [...new Set([...friends.map(f => f.id)])];
-      
-      // Add current user to friends list if includeCurrentUser is true
-      if (includeCurrentUser && user && !friendsToFetch.includes(user.id)) {
-        friendsToFetch.push(user.id);
-      }
-      
-      if (friendsToFetch.length === 0) {
-        console.log('No friends to fetch scores for.');
-        return {};
-      }
-      
-      console.log(`Fetching scores for game ${gameId} and ${friendsToFetch.length} friends:`, friendsToFetch);
-      
       try {
-        // Initialize empty scores for all friends
-        const newFriendScores: { [key: string]: Score[] } = {};
-        
-        // Initialize empty arrays for all friends
-        friendsToFetch.forEach(friendId => {
-          newFriendScores[friendId] = [];
-        });
-        
-        // Fetch all scores in a single query
-        const { data: scoresData, error } = await supabase
+        // Determine the list of user IDs to fetch scores for
+        let userIdsToFetch = friends.map(friend => friend.id);
+        if (includeCurrentUser && user) {
+          // Add current user ID if not already present (e.g., if user is also in friends list)
+          if (!userIdsToFetch.includes(user.id)) {
+            userIdsToFetch.push(user.id);
+          }
+        }
+
+        // If no users to fetch for, return empty
+        if (userIdsToFetch.length === 0) {
+          return {};
+        }
+
+        // Make the API call for all required users
+        const { data: scoresData } = await supabase
           .from('scores')
           .select('*')
           .eq('game_id', gameId)
-          .in('user_id', friendsToFetch);
+          .in('user_id', userIdsToFetch); // Fetch for friends AND current user if included
           
-        if (error) {
-          console.error('Error fetching friend scores:', error);
-          toast.error("Failed to load friend scores");
-          return newFriendScores;
-        }
+        // Initialize result object
+        const newFriendScores: { [key: string]: Score[] } = {};
         
-        // Debug logs to help track what scores are being found
-        console.log(`Found ${scoresData?.length || 0} scores for ${friendsToFetch.length} friends`);
-        if (scoresData && scoresData.length > 0) {
-          const scoresByUser = {};
-          friendsToFetch.forEach(id => { scoresByUser[id] = 0; });
-          
-          scoresData.forEach(score => {
-            const userId = score.user_id;
-            scoresByUser[userId] = (scoresByUser[userId] || 0) + 1;
-          });
-          
-          console.log('Scores breakdown by user:', scoresByUser);
-        }
+        // Initialize with empty arrays for each required user
+        userIdsToFetch.forEach(userId => {
+          newFriendScores[userId] = [];
+        });
         
         // Process all scores
         if (scoresData) {
@@ -106,17 +81,15 @@ export const useFriendScores = ({
             };
             
             // Add to the appropriate user's scores array
-            if (newFriendScores[userId]) {
-              newFriendScores[userId] = [...(newFriendScores[userId] || []), formattedScore];
+            // Check if the key exists before trying to push
+            if (newFriendScores.hasOwnProperty(userId)) {
+              newFriendScores[userId].push(formattedScore);
             } else {
-              console.warn(`Found scores for user ${userId} but they are not in the friends list.`);
+              // This case should technically not happen due to initialization above,
+              // but adding for safety.
+              newFriendScores[userId] = [formattedScore];
             }
           });
-        }
-        
-        // Include current user scores if provided
-        if (includeCurrentUser && user && currentUserScores.length > 0) {
-          newFriendScores[user.id] = currentUserScores;
         }
         
         return newFriendScores;
@@ -128,28 +101,29 @@ export const useFriendScores = ({
     },
     enabled: !!gameId && (friends.length > 0 || includeCurrentUser),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
-  // Effect to refetch when friends list changes
+  // Effect to refetch only when necessary
   useEffect(() => {
-    // If the friends list changes, automatically refetch data
-    if (gameId && friends.length > 0) {
-      console.log('Friends list changed, refreshing scores data.');
+    // Only refetch if:
+    // 1. We have a gameId
+    // 2. We have friends or includeCurrentUser is true
+    // 3. We don't have any data yet
+    if (gameId && (friends.length > 0 || includeCurrentUser) && Object.keys(friendScores).length === 0) {
       refetch();
     }
-  }, [friends, gameId, refetch]);
+  }, [friends, gameId, refetch, includeCurrentUser, friendScores]);
 
   // Function to manually trigger refetch
   const fetchFriendScores = useCallback(async () => {
     if (gameId) {
-      console.log('Manually refreshing friend scores.');
       await refetch();
     }
   }, [gameId, refetch]);
 
   return {
-    friendScores,
+    friendScores: friendScores,
     fetchFriendScores,
     isLoading
   };

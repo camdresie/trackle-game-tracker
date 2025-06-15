@@ -63,8 +63,8 @@ const ScoreChart = ({
     return colorMap[baseColor] || colorMap["blue-500"];
   };
   
-  // For Wordle and Mini Crossword, lower scores are better
-  const isAscending = ['wordle', 'mini-crossword'].includes(effectiveGameId || '');
+  // For Wordle, Mini Crossword, and Quordle, lower scores are better
+  const isAscending = ['wordle', 'mini-crossword', 'quordle'].includes(effectiveGameId || '');
   
   useEffect(() => {
     if (!scores.length) return;
@@ -83,9 +83,13 @@ const ScoreChart = ({
       // Format value based on game type
       let formattedValue: string | number = score.value;
       if (effectiveGameId === 'mini-crossword') {
-        const minutes = Math.floor(score.value / 60);
-        const seconds = score.value % 60;
-        formattedValue = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (score.value <= 0) {
+            formattedValue = '0:00';
+        } else {
+            const minutes = Math.floor(score.value / 60);
+            const seconds = score.value % 60;
+            formattedValue = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
       }
       
       return {
@@ -98,7 +102,6 @@ const ScoreChart = ({
       };
     });
     
-    console.log('Chart data prepared:', formattedScores);
     setChartData(formattedScores);
   }, [scores, effectiveGameId]);
   
@@ -116,8 +119,21 @@ const ScoreChart = ({
   const maxValue = Math.max(...values) + 1;
   
   // Calculate average for reference line
-  const averageValue = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const averageLabel = `Average Score: ${averageValue.toFixed(2)}`;
+  let averageValue = values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+  let averageLabel = 'Average Score: -';
+  if (values.length > 0) {
+    if (effectiveGameId === 'mini-crossword') {
+      if (averageValue <= 0) {
+        averageLabel = 'Average Score: 0:00';
+      } else {
+        const avgMinutes = Math.floor(averageValue / 60);
+        const avgSeconds = Math.round(averageValue % 60); // Round seconds for average
+        averageLabel = `Average Score: ${avgMinutes}:${avgSeconds.toString().padStart(2, '0')}`;
+      }
+    } else {
+      averageLabel = `Average Score: ${averageValue.toFixed(2)}`;
+    }
+  }
   
   return (
     <div className="w-full h-64 animate-fade-in">
@@ -204,6 +220,16 @@ const ScoreChart = ({
               tickLine={{ stroke: '#f0f0f0' }}
               axisLine={{ stroke: '#f0f0f0' }}
               width={40}
+              tickFormatter={(tick: number) => {
+                if (effectiveGameId === 'mini-crossword') {
+                  if (tick <= 0) return '0:00';
+                  const minutes = Math.floor(tick / 60);
+                  const seconds = tick % 60;
+                  // Only show MM:SS if seconds is 0, otherwise show seconds
+                  return seconds === 0 ? `${minutes}:00` : `${tick}s`;
+                }
+                return tick.toString();
+              }}
             >
               <Label 
                 value={yAxisLabel.charAt(0).toUpperCase() + yAxisLabel.slice(1)} 

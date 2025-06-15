@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -13,6 +12,16 @@ export interface GroupInvitation {
   status: string;
 }
 
+interface DirectQueryResult {
+  id: string;
+  group_id: string;
+  friend_id: string;
+  status: string;
+  group_name: string;
+  owner_id: string;
+  owner_username: string;
+}
+
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,7 +34,7 @@ export const useGroupInvitations = () => {
     refetch,
     isError
   } = useQuery({
-    queryKey: ['group-invitations', user?.id],
+    queryKey: ['social-data', 'group-invitations', user?.id],
     queryFn: async () => {
       if (!user) return [];
       
@@ -60,12 +69,12 @@ export const useGroupInvitations = () => {
           throw directQueryError;
         }
         
-        if (!directResults || directResults.length === 0) {
+        if (!directResults || !Array.isArray(directResults) || directResults.length === 0) {
           return [];
         }
         
         // Format the invitations from the direct query results
-        const invitationsData: GroupInvitation[] = directResults.map(item => ({
+        const invitationsData: GroupInvitation[] = (directResults as unknown as DirectQueryResult[]).map(item => ({
           id: item.id,
           groupId: item.group_id,
           groupName: item.group_name || 'Unknown Group',
@@ -85,7 +94,7 @@ export const useGroupInvitations = () => {
     refetchInterval: 30000, // Every 30 seconds
     staleTime: 15000, // Add a stale time of 15 seconds
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     retry: 1 // Limit retries to reduce database calls
   });
   
@@ -110,7 +119,7 @@ export const useGroupInvitations = () => {
         
         const groupId = invitation.groupId;
         
-        // Use RPC to ensure the update works reliably - Fix the SQL query syntax
+        // Use RPC to ensure the update works reliably
         const updateQuery = `
           UPDATE friend_group_members 
           SET status = 'accepted' 
@@ -127,7 +136,7 @@ export const useGroupInvitations = () => {
           throw updateError;
         }
         
-        if (!updateResult || updateResult.length === 0) {
+        if (!updateResult || !Array.isArray(updateResult) || updateResult.length === 0) {
           console.error('No rows updated - invitation may not exist');
           throw new Error('Failed to update invitation - record may have been deleted');
         }
@@ -138,17 +147,36 @@ export const useGroupInvitations = () => {
         throw error;
       }
     },
-    onSuccess: (data) => {
-      // Aggressive cache invalidation
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-groups'] });
-      queryClient.invalidateQueries({ queryKey: ['friend-group-members'] });
-      queryClient.removeQueries({ queryKey: ['group-invitations', user?.id] });
+    onSuccess: async (data) => {
+      // Clear all related caches
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
+      queryClient.removeQueries({ queryKey: ['group-members'] });
+      queryClient.removeQueries({ queryKey: ['member-profiles'] });
       
-      // Force refetch after a short delay to ensure DB has updated
-      setTimeout(() => {
-        refetch();
-      }, 500);
+      // Force refetch all related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['social-data'] }),
+        queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+        queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+        queryClient.refetchQueries({ queryKey: ['notification-counts'] }),
+        queryClient.refetchQueries({ queryKey: ['group-members'] }),
+        queryClient.refetchQueries({ queryKey: ['member-profiles'] })
+      ]);
+      
+      // Add a small delay and then refetch again to ensure everything is in sync
+      setTimeout(async () => {
+        await Promise.all([
+          queryClient.refetchQueries({ queryKey: ['social-data'] }),
+          queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+          queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+          queryClient.refetchQueries({ queryKey: ['notification-counts'] }),
+          queryClient.refetchQueries({ queryKey: ['group-members'] }),
+          queryClient.refetchQueries({ queryKey: ['member-profiles'] })
+        ]);
+      }, 1000);
       
       toast.success('You have joined the group!');
     },
@@ -174,8 +202,21 @@ export const useGroupInvitations = () => {
       
       return invitationId;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['group-invitations'] });
+    onSuccess: async () => {
+      // Clear all related caches
+      queryClient.removeQueries({ queryKey: ['social-data'] });
+      queryClient.removeQueries({ queryKey: ['friend-groups'] });
+      queryClient.removeQueries({ queryKey: ['group-invitations'] });
+      queryClient.removeQueries({ queryKey: ['notification-counts'] });
+      
+      // Force refetch all related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['social-data'] }),
+        queryClient.refetchQueries({ queryKey: ['friend-groups'] }),
+        queryClient.refetchQueries({ queryKey: ['group-invitations'] }),
+        queryClient.refetchQueries({ queryKey: ['notification-counts'] })
+      ]);
+      
       toast.success('Group invitation declined');
     },
     onError: (error) => {

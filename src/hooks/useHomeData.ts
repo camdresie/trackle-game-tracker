@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Game, Score } from '@/utils/types';
@@ -35,7 +34,7 @@ export const useHomeData = (): HomeDataResult => {
   const [showGameSelection, setShowGameSelection] = useState(false);
   const [showConnections, setShowConnections] = useState(false);
   const [scores, setScores] = useState<Score[]>([]);
-  const [gamesList, setGamesList] = useState<Game[]>(games);
+  const gamesList = useMemo(() => games, []);
   const [isLoading, setIsLoading] = useState(true);
   const [todaysGames, setTodaysGames] = useState<Score[]>([]);
   
@@ -74,44 +73,53 @@ export const useHomeData = (): HomeDataResult => {
     fetchUserData();
   }, [user, gamesList, toast]);
   
-  const handleAddScore = (newScore: Score) => {
+  const handleAddScore = useCallback((newScore: Score) => {
     // First, check if this is an update to an existing score
-    const isUpdating = scores.some(score => 
-      score.gameId === newScore.gameId && score.date === newScore.date
-    );
-    
-    if (isUpdating) {
-      // If updating, replace the old score
-      setScores(prevScores => prevScores.map(score => 
+    setScores(prevScores => {
+      const isUpdating = prevScores.some(score => 
         score.gameId === newScore.gameId && score.date === newScore.date
-          ? newScore
-          : score
-      ));
+      );
       
-      // Also update today's games if the score is from today
-      setTodaysGames(prevGames => prevGames.map(game => 
-        game.gameId === newScore.gameId && game.date === newScore.date
-          ? newScore
-          : game
-      ));
-    } else {
-      // Add as a new score
-      setScores(prevScores => [...prevScores, newScore]);
-      
-      // Also update today's games if the score is from today
-      const today = getTodayInEasternTime();
-      if (newScore.date === today) {
-        setTodaysGames(prevGames => [...prevGames, newScore]);
+      if (isUpdating) {
+        // If updating, replace the old score
+        return prevScores.map(score => 
+          score.gameId === newScore.gameId && score.date === newScore.date
+            ? newScore
+            : score
+        );
+      } else {
+        // Add as a new score
+        return [...prevScores, newScore];
       }
-    }
+    });
+    
+    // Also update today's games if the score is from today
+    const today = getTodayInEasternTime();
+    setTodaysGames(prevGames => {
+      const isUpdating = prevGames.some(game => 
+        game.gameId === newScore.gameId && game.date === newScore.date
+      );
+      
+      if (isUpdating) {
+        return prevGames.map(game => 
+          game.gameId === newScore.gameId && game.date === newScore.date
+            ? newScore
+            : game
+        );
+      } else if (newScore.date === today) {
+        return [...prevGames, newScore];
+      }
+      
+      return prevGames;
+    });
     
     // Invalidate relevant query cache to ensure data consistency
     queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     queryClient.invalidateQueries({ queryKey: ['today-games'] });
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
-  };
+  }, [queryClient]);
   
-  const handleDeleteScore = (scoreId: string) => {
+  const handleDeleteScore = useCallback((scoreId: string) => {
     // Remove the score from the scores array
     setScores(prevScores => prevScores.filter(score => score.id !== scoreId));
     
@@ -122,22 +130,56 @@ export const useHomeData = (): HomeDataResult => {
     queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     queryClient.invalidateQueries({ queryKey: ['today-games'] });
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
-  };
+  }, [queryClient]);
+  
+  // Memoize the setSelectedGame function to prevent unnecessary re-renders
+  const memoizedSetSelectedGame = useCallback((game: Game | null) => {
+    setSelectedGame(game);
+  }, []);
+  
+  // Memoize other state setters
+  const memoizedSetShowAddScore = useCallback((show: boolean) => {
+    setShowAddScore(show);
+  }, []);
+  
+  const memoizedSetShowGameSelection = useCallback((show: boolean) => {
+    setShowGameSelection(show);
+  }, []);
+  
+  const memoizedSetShowConnections = useCallback((show: boolean) => {
+    setShowConnections(show);
+  }, []);
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders
+  return useMemo(() => ({
     isLoading,
     gamesList,
     scores,
     todaysGames,
     selectedGame,
-    setSelectedGame,
+    setSelectedGame: memoizedSetSelectedGame,
     showAddScore,
-    setShowAddScore,
+    setShowAddScore: memoizedSetShowAddScore,
     showGameSelection,
-    setShowGameSelection,
+    setShowGameSelection: memoizedSetShowGameSelection,
     showConnections,
-    setShowConnections,
+    setShowConnections: memoizedSetShowConnections,
     handleAddScore,
     handleDeleteScore
-  };
+  }), [
+    isLoading,
+    gamesList,
+    scores,
+    todaysGames,
+    selectedGame,
+    memoizedSetSelectedGame,
+    showAddScore,
+    memoizedSetShowAddScore,
+    showGameSelection,
+    memoizedSetShowGameSelection,
+    showConnections,
+    memoizedSetShowConnections,
+    handleAddScore,
+    handleDeleteScore
+  ]);
 };

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +16,13 @@ import { Score } from '@/utils/types';
 import { Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Helper function to calculate average score
+const calculateAverage = (scores: Score[]): number | null => {
+  if (scores.length === 0) return null;
+  const total = scores.reduce((sum, score) => sum + score.value, 0);
+  return total / scores.length;
+};
+
 const GameDetail = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { user } = useAuth();
@@ -30,60 +36,86 @@ const GameDetail = () => {
     scores,
     isLoading,
     bestScore,
-    averageScore,
     friends,
     friendScores,
     friendScoresLoading,
-    refreshFriends
+    refreshFriends,
+    averageScore
   } = useGameData({ gameId });
   
   const [localScores, setLocalScores] = useState<Score[]>([]);
   const [localBestScore, setLocalBestScore] = useState<number | null>(null);
   
   useEffect(() => {
-    setLocalScores(scores);
-    setLocalBestScore(bestScore);
-  }, [scores, bestScore]);
+    // Only set initial state if localScores is empty and hook data is available
+    if (localScores.length === 0 && scores.length > 0) {
+      setLocalScores(scores);
+    }
+    // Only set initial best score if not set locally and hook data is available
+    if (localBestScore === null && bestScore !== null) {
+        setLocalBestScore(bestScore);
+    }
+
+  }, [scores, bestScore, user?.id]);
   
-  const handleAddScore = (newScore: Score) => {
-    // Check if we're updating an existing score
-    const existingScoreIndex = localScores.findIndex(s => s.id === newScore.id);
-    
+  const handleAddScore = useCallback((newScore: Score) => {
+    // Update local state for "Your Scores"
+    let updatedScores = [...localScores];
+    const existingScoreIndex = updatedScores.findIndex(s => s.id === newScore.id);
     if (existingScoreIndex >= 0) {
-      // Update existing score
-      const updatedScores = [...localScores];
       updatedScores[existingScoreIndex] = newScore;
-      setLocalScores(updatedScores);
     } else {
-      // Add new score
-      setLocalScores(prev => [newScore, ...prev]);
+      updatedScores = [newScore, ...updatedScores];
     }
+    setLocalScores(updatedScores);
     
-    // Update best score
+    // Update local best score
     if (newScore.gameId === 'wordle' || newScore.gameId === 'mini-crossword') {
-      setLocalBestScore(prev => prev === null ? newScore.value : Math.min(prev, newScore.value));
+      setLocalBestScore(prev => prev === null ? newScore.value : Math.min(prev ?? Infinity, newScore.value));
     } else {
-      setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev, newScore.value));
+      setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
-  };
+
+    // Invalidate queries to ensure server state is updated
+    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
+    
+    // Trigger refresh for useGroupScores data (Today page)
+    if (refreshFriends) refreshFriends();
+    
+  }, [localScores, user, queryClient, gameId, refreshFriends]);
   
-  const handleScoreDeleted = (scoreId: string) => {
-    // Remove the deleted score from local state
-    setLocalScores(prev => prev.filter(score => score.id !== scoreId));
+  const handleScoreDeleted = useCallback((scoreId: string) => {
+    // Create the updated array first
+    const updatedScores = localScores.filter(score => score.id !== scoreId);
+    setLocalScores(updatedScores);
     
     // Invalidate relevant queries to refresh the data
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
-    queryClient.invalidateQueries({ queryKey: ['today-games'] });
     queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
+    queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     
-    // Recalculate best score - we'll let the server handle this and it will be
-    // reflected in the UI after the queries are refreshed
-  };
+    // Trigger refresh for useGroupScores data (Today page)
+    if (refreshFriends) refreshFriends();
+    
+  }, [localScores, user, queryClient, refreshFriends]);
   
-  const displayScores = localScores.length > 0 ? localScores : scores;
-  const displayBestScore = localBestScore !== null ? localBestScore : bestScore;
+  // Calculate display values using useMemo for stability
+  const displayScores = useMemo(() => localScores.length > 0 ? localScores : scores, [localScores, scores]);
+  const displayBestScore = useMemo(() => localBestScore !== null ? localBestScore : bestScore, [localBestScore, bestScore]);
+  const displayAverageScore = useMemo(() => {
+      // Prioritize calculation from localScores once populated
+      if (localScores.length > 0) {
+          return calculateAverage(localScores);
+      }
+      // Fallback to hook's average only during initial load phase
+      return averageScore;
+  }, [localScores, averageScore]);
   
-  // Get latest score
+  // Get latest score from displayScores (which includes local updates)
   const latestScore = displayScores.length > 0 
     ? displayScores.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
     : undefined;
@@ -113,7 +145,7 @@ const GameDetail = () => {
           user={user}
           onAddScore={() => setShowAddScore(true)}
           latestScore={latestScore}
-          averageScore={averageScore}
+          averageScore={displayAverageScore}
           bestScore={displayBestScore}
         />
         
