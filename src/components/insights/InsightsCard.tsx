@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, BarChart3, Calendar, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, BarChart3, Calendar, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useInsights } from '@/hooks/useInsights';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 export const InsightsCard = () => {
   const {
@@ -11,14 +12,27 @@ export const InsightsCard = () => {
     analyticsData,
     isLoading,
     isGenerating,
-    generateInsights,
-    checkCanGenerate,
     hasEnoughData,
     totalScores,
-    usageStats,
     areInsightsStale,
-    shouldAutoGenerate,
   } = useInsights();
+  
+  const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
+
+  // Get last 7 days of insights, most recent first
+  const recentInsights = insights.slice(0, 7);
+  const currentInsight = recentInsights[currentInsightIndex];
+  
+  const canGoBack = currentInsightIndex < recentInsights.length - 1;
+  const canGoForward = currentInsightIndex > 0;
+  
+  const goToPrevious = () => {
+    if (canGoBack) setCurrentInsightIndex(prev => prev + 1);
+  };
+  
+  const goToNext = () => {
+    if (canGoForward) setCurrentInsightIndex(prev => prev - 1);
+  };
 
   // Early return if there's an authentication issue or no data to show
   if (!isLoading && !hasEnoughData && insights.length === 0 && totalScores === 0) {
@@ -31,7 +45,7 @@ export const InsightsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            AI Insights
+            Daily Insight
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -43,16 +57,6 @@ export const InsightsCard = () => {
     );
   }
 
-  const { canGenerate, reason } = checkCanGenerate();
-
-  const handleGenerateInsights = async () => {
-    if (!canGenerate) {
-      toast.error(reason);
-      return;
-    }
-    
-    await generateInsights();
-  };
 
   // Display when user doesn't have enough data
   if (!hasEnoughData) {
@@ -61,7 +65,7 @@ export const InsightsCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            AI Insights
+            Daily Insight
           </CardTitle>
           <CardDescription>
             Get personalized insights about your game performance
@@ -72,7 +76,7 @@ export const InsightsCard = () => {
             <div className="text-2xl">🎯</div>
             <div>
               <p className="text-sm text-muted-foreground mb-2">
-                You need at least 5 game scores to generate AI insights
+                You need at least 5 game scores to get daily insights
               </p>
               <Badge variant="secondary">
                 {totalScores} / 5 scores
@@ -89,69 +93,70 @@ export const InsightsCard = () => {
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            AI Insights
-          </CardTitle>
-          <CardDescription>
-            Personalized analysis of your game performance
-          </CardDescription>
-        </div>
-        <Button
-          onClick={handleGenerateInsights}
-          disabled={!canGenerate || isGenerating}
-          size="sm"
-          className="shrink-0"
-          variant={areInsightsStale ? "default" : "outline"}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {shouldAutoGenerate ? 'Auto-generating...' : 'Analyzing...'}
-            </>
-          ) : (
-            <>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              {areInsightsStale ? 'Refresh Insights' : 'New Insights'}
-            </>
-          )}
-        </Button>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-purple-500" />
+          Daily Insight
+        </CardTitle>
+        <CardDescription>
+          Personalized analysis of your game performance
+        </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Staleness indicator only */}
-        {areInsightsStale && insights.length > 0 && (
-          <div className="flex justify-center">
-            <Badge variant="secondary" className="text-xs">
-              Insights are 24h+ old
-            </Badge>
-          </div>
-        )}
-
-        {/* Recent Insights */}
-        {insights.length > 0 ? (
-          <div className="space-y-3">
-            {insights.slice(0, 3).map((insight, index) => (
-              <div
-                key={insight.id}
-                className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border"
+        {/* Current Insight Display */}
+        {recentInsights.length > 0 ? (
+          <div className="space-y-4">
+            {/* Navigation and Date */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToPrevious}
+                disabled={!canGoBack}
+                className="h-8 w-8 p-0"
               >
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {insight.content}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(insight.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-            
-            {insights.length > 3 && (
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
               <div className="text-center">
-                <Badge variant="outline" className="text-xs">
-                  +{insights.length - 3} more insights
-                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(currentInsight.created_at).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    weekday: 'short'
+                  })}
+                </p>
+                {recentInsights.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    {currentInsightIndex + 1} of {recentInsights.length}
+                  </p>
+                )}
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToNext}
+                disabled={!canGoForward}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Current Insight */}
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 text-center">
+                {currentInsight.content}
+              </p>
+            </div>
+
+            {/* Auto-generation status */}
+            {isGenerating && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Generating today's insight...
               </div>
             )}
           </div>
@@ -161,19 +166,22 @@ export const InsightsCard = () => {
             <div>
               <p className="text-sm font-medium mb-1">No insights yet</p>
               <p className="text-xs text-muted-foreground">
-                Generate your first AI-powered insights to see personalized analysis
+                {isGenerating ? "Generating your first daily insight..." : "Your first daily insight will appear here"}
               </p>
             </div>
+            {isGenerating && (
+              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+            )}
           </div>
         )}
 
-        {/* Quick Stats Preview */}
+        {/* Enhanced Stats Preview */}
         {analyticsData && (
           <div className="mt-4 pt-4 border-t">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-3 text-center">
               <div>
                 <BarChart3 className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Games</p>
+                <p className="text-xs text-muted-foreground">Total Games</p>
                 <p className="text-sm font-semibold">{analyticsData.overallStats.totalGames}</p>
               </div>
               <div>
@@ -186,16 +194,24 @@ export const InsightsCard = () => {
                 <p className="text-xs text-muted-foreground">This Week</p>
                 <p className="text-sm font-semibold">{analyticsData.overallStats.gamesThisWeek}</p>
               </div>
+              <div>
+                <Sparkles className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Current Streak</p>
+                <p className="text-sm font-semibold">{analyticsData.playingPatterns.currentOverallStreak}</p>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Rate Limit Warning */}
-        {!canGenerate && reason && (
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-            <p className="text-xs text-yellow-800 dark:text-yellow-200">
-              {reason}
-            </p>
+            
+            {/* Additional metrics row */}
+            <div className="grid grid-cols-2 gap-4 text-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div>
+                <p className="text-xs text-muted-foreground">Favorite Game</p>
+                <p className="text-sm font-medium">{analyticsData.overallStats.favoriteGame || 'None yet'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Best Day</p>
+                <p className="text-sm font-medium">{analyticsData.playingPatterns.bestDayOfWeek}</p>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

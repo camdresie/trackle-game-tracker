@@ -101,46 +101,61 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
   try {
     const openai = getOpenAIClient();
     
-    // Create optimized data for OpenAI (remove unnecessary details)
+    // Create comprehensive but streamlined data for OpenAI (all user data, minimal tokens)
     const optimizedData = {
-      gameStats: analyticsData.gameStats.map(game => ({
-        name: game.gameName,
-        totalPlays: game.totalPlays,
-        averageScore: game.averageScore,
-        bestScore: game.bestScore,
-        trend: game.trend,
-        improvementPercentage: game.improvementPercentage,
-        currentStreak: game.currentStreak,
+      games: analyticsData.gameStats.map(g => ({
+        name: g.gameName,
+        plays: g.totalPlays,
+        avg: g.averageScore,
+        best: g.bestScore,
+        recent: g.recentAverage,
+        trend: g.trend,
+        improvement: g.improvementPercentage,
+        streak: g.currentStreak,
+        longestStreak: g.longestStreak,
       })),
       patterns: {
         bestDay: analyticsData.playingPatterns.bestDayOfWeek,
+        worstDay: analyticsData.playingPatterns.worstDayOfWeek,
         bestTime: analyticsData.playingPatterns.bestTimeOfDay,
-        avgGamesPerDay: analyticsData.playingPatterns.averageGamesPerDay,
+        avgDaily: analyticsData.playingPatterns.averageGamesPerDay,
+        totalDays: analyticsData.playingPatterns.totalPlayingDays,
         currentStreak: analyticsData.playingPatterns.currentOverallStreak,
       },
-      overall: {
-        totalGames: analyticsData.overallStats.totalGames,
-        gamesThisWeek: analyticsData.overallStats.gamesThisWeek,
-        favoriteGame: analyticsData.overallStats.favoriteGame,
-        mostImprovedGame: analyticsData.overallStats.mostImprovedGame,
+      stats: {
+        total: analyticsData.overallStats.totalGames,
+        days: analyticsData.overallStats.totalDays,
+        thisWeek: analyticsData.overallStats.gamesThisWeek,
+        lastWeek: analyticsData.overallStats.gamesLastWeek,
+        favorite: analyticsData.overallStats.favoriteGame,
+        mostImproved: analyticsData.overallStats.mostImprovedGame,
+      },
+      flags: {
+        improving: analyticsData.insights.hasRecentImprovement,
+        streak: analyticsData.insights.hasActiveStreak,
+        consistent: analyticsData.insights.hasConsistentPlaying,
+        topDay: analyticsData.insights.topPerformanceDay,
       }
     };
     
     const dataString = JSON.stringify(optimizedData);
     console.log(`Sending ${dataString.length} characters to OpenAI (≈${Math.ceil(dataString.length / 4)} tokens)`);
     
-    const prompt = `Analyze this user's game performance data and generate 3 engaging, personalized insights. Be encouraging and specific with numbers. Use emojis and keep each insight to 1-2 sentences.
+    const prompt = `Analyze this user's comprehensive game performance data and generate 1 engaging, personalized daily insight. Be encouraging, specific with numbers, and mention actual game names. Use emojis and keep it to 1-2 sentences.
 
-Game Performance Data:
+User Performance Data:
 ${dataString}
 
-Generate insights about:
-1. Recent performance trends or improvements
-2. Playing patterns (time of day, day of week, streaks)
-3. Game-specific strengths or interesting statistics
+Data includes: per-game stats (plays, averages, bests, recent performance, trends, streaks), playing patterns (best/worst days, times, consistency), overall statistics (totals, weekly comparisons, favorites), and performance flags.
 
-Return ONLY a valid JSON array of 3 strings, no markdown formatting, no backticks, no explanations. Example format:
-["🎯 Your Wordle scores improved 15% this month!", "⏰ You perform best on Tuesday mornings!", "🔥 Amazing 7-day playing streak!"]`;
+Focus on the most interesting or encouraging aspect from:
+- Recent improvements or trends with exact percentages
+- Playing patterns with days/times and streak information  
+- Cross-game comparisons or notable achievements
+- Current streaks or consistency patterns
+
+Return ONLY a single insight string, no JSON array, no markdown formatting, no backticks, no explanations. Example format:
+🎯 Your Wordle average improved 15% to 3.2 tries this month!`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -180,16 +195,8 @@ Return ONLY a valid JSON array of 3 strings, no markdown formatting, no backtick
       cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
     
-    // Parse JSON response
-    try {
-      const insights = JSON.parse(cleanResponse);
-      return Array.isArray(insights) ? insights : [cleanResponse];
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      console.error('Response content:', response);
-      // Fallback: treat the response as a single insight
-      return [response];
-    }
+    // Return single insight (no JSON parsing needed)
+    return [cleanResponse];
   } catch (error) {
     console.error('Error generating insights:', error);
     throw error;

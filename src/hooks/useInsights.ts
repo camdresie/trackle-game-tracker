@@ -146,14 +146,13 @@ export const useInsights = () => {
   // Don't run effects if no user
   const shouldSkipEffects = !user;
 
-  // Auto-generate insights effect (TEMPORARILY DISABLED FOR TESTING)
+  // Auto-generate daily insights effect
   useEffect(() => {
-    // Temporarily disabled to prevent rate limit issues during testing
-    // if (shouldSkipEffects) return;
-    // if (!scoresLoading && !insightsLoading && !isGenerating && shouldAutoGenerate()) {
-    //   console.log('Auto-generating insights...');
-    //   generateInsightsMutation.mutate();
-    // }
+    if (shouldSkipEffects) return;
+    if (!scoresLoading && !insightsLoading && !isGenerating && shouldAutoGenerate()) {
+      console.log('Auto-generating daily insight...');
+      generateInsightsMutation.mutate();
+    }
   }, [shouldSkipEffects, scoresLoading, insightsLoading, isGenerating, shouldAutoGenerate, generateInsightsMutation]);
 
   // Generate insights with loading state (manual trigger)
