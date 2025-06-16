@@ -101,17 +101,46 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
   try {
     const openai = getOpenAIClient();
     
+    // Create optimized data for OpenAI (remove unnecessary details)
+    const optimizedData = {
+      gameStats: analyticsData.gameStats.map(game => ({
+        name: game.gameName,
+        totalPlays: game.totalPlays,
+        averageScore: game.averageScore,
+        bestScore: game.bestScore,
+        trend: game.trend,
+        improvementPercentage: game.improvementPercentage,
+        currentStreak: game.currentStreak,
+      })),
+      patterns: {
+        bestDay: analyticsData.playingPatterns.bestDayOfWeek,
+        bestTime: analyticsData.playingPatterns.bestTimeOfDay,
+        avgGamesPerDay: analyticsData.playingPatterns.averageGamesPerDay,
+        currentStreak: analyticsData.playingPatterns.currentOverallStreak,
+      },
+      overall: {
+        totalGames: analyticsData.overallStats.totalGames,
+        gamesThisWeek: analyticsData.overallStats.gamesThisWeek,
+        favoriteGame: analyticsData.overallStats.favoriteGame,
+        mostImprovedGame: analyticsData.overallStats.mostImprovedGame,
+      }
+    };
+    
+    const dataString = JSON.stringify(optimizedData);
+    console.log(`Sending ${dataString.length} characters to OpenAI (≈${Math.ceil(dataString.length / 4)} tokens)`);
+    
     const prompt = `Analyze this user's game performance data and generate 3 engaging, personalized insights. Be encouraging and specific with numbers. Use emojis and keep each insight to 1-2 sentences.
 
 Game Performance Data:
-${JSON.stringify(analyticsData, null, 2)}
+${dataString}
 
 Generate insights about:
 1. Recent performance trends or improvements
 2. Playing patterns (time of day, day of week, streaks)
 3. Game-specific strengths or interesting statistics
 
-Format as a JSON array of strings.`;
+Return ONLY a valid JSON array of 3 strings, no markdown formatting, no backticks, no explanations. Example format:
+["🎯 Your Wordle scores improved 15% this month!", "⏰ You perform best on Tuesday mornings!", "🔥 Amazing 7-day playing streak!"]`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -129,7 +158,7 @@ Format as a JSON array of strings.`;
       temperature: 0.7,
     });
 
-    // Estimate cost (rough calculation)
+    // Only update usage tracker on successful completion
     const inputTokens = prompt.length / 4; // Rough token estimation
     const outputTokens = completion.usage?.completion_tokens || 100;
     const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006); // GPT-4o-mini pricing
@@ -141,9 +170,26 @@ Format as a JSON array of strings.`;
       throw new Error('No response from OpenAI');
     }
 
+    // Clean up the response to handle markdown formatting
+    let cleanResponse = response.trim();
+    
+    // Remove markdown code blocks if present
+    if (cleanResponse.startsWith('```json')) {
+      cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanResponse.startsWith('```')) {
+      cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
     // Parse JSON response
-    const insights = JSON.parse(response);
-    return Array.isArray(insights) ? insights : [response];
+    try {
+      const insights = JSON.parse(cleanResponse);
+      return Array.isArray(insights) ? insights : [cleanResponse];
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Response content:', response);
+      // Fallback: treat the response as a single insight
+      return [response];
+    }
   } catch (error) {
     console.error('Error generating insights:', error);
     throw error;

@@ -121,15 +121,14 @@ export const InsightsCard = () => {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Usage Stats */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>This month: {usageStats.requestsThisMonth} insights generated</span>
-          {areInsightsStale && insights.length > 0 && (
+        {/* Staleness indicator only */}
+        {areInsightsStale && insights.length > 0 && (
+          <div className="flex justify-center">
             <Badge variant="secondary" className="text-xs">
               Insights are 24h+ old
             </Badge>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Recent Insights */}
         {insights.length > 0 ? (
