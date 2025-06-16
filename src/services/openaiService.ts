@@ -103,17 +103,45 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
     
     // Create comprehensive but streamlined data for OpenAI (all user data, minimal tokens)
     const optimizedData = {
-      games: analyticsData.gameStats.map(g => ({
-        name: g.gameName,
-        plays: g.totalPlays,
-        avg: g.averageScore,
-        best: g.bestScore,
-        recent: g.recentAverage,
-        trend: g.trend,
-        improvement: g.improvementPercentage,
-        streak: g.currentStreak,
-        longestStreak: g.longestStreak,
-      })),
+      games: analyticsData.gameStats.map(g => {
+        // Format scores based on game type
+        const formatScore = (score: number, gameName: string) => {
+          if (gameName === 'Mini Crossword') {
+            const minutes = Math.floor(score / 60);
+            const seconds = score % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+          // Round to 1 decimal place for averages, whole numbers for others
+          return score % 1 === 0 ? score.toString() : score.toFixed(1);
+        };
+
+        // Determine unit type for context
+        const getScoreUnit = (gameName: string) => {
+          switch (gameName) {
+            case 'Mini Crossword': return 'time';
+            case 'Spelling Bee':
+            case 'Tightrope':
+            case 'Squardle':
+            case 'Betweenle': return 'points';
+            case 'Minute Cryptic': return 'hints';
+            case 'Waffle': return 'swaps';
+            default: return 'tries';
+          }
+        };
+
+        return {
+          name: g.gameName,
+          plays: g.totalPlays,
+          avg: formatScore(g.averageScore, g.gameName),
+          best: formatScore(g.bestScore, g.gameName),
+          recent: formatScore(g.recentAverage, g.gameName),
+          trend: g.trend,
+          improvement: g.improvementPercentage,
+          streak: g.currentStreak,
+          longestStreak: g.longestStreak,
+          unit: getScoreUnit(g.gameName),
+        };
+      }),
       patterns: {
         bestDay: analyticsData.playingPatterns.bestDayOfWeek,
         worstDay: analyticsData.playingPatterns.worstDayOfWeek,
@@ -148,14 +176,19 @@ ${dataString}
 
 Data includes: per-game stats (plays, averages, bests, recent performance, trends, streaks), playing patterns (best/worst days, times, consistency), overall statistics (totals, weekly comparisons, favorites), and performance flags.
 
+IMPORTANT: Game score formats:
+- Mini Crossword: Times are in MM:SS format (e.g., "3:45" means 3 minutes 45 seconds)
+- Other games: Numbers are tries/attempts (e.g., "4" means 4 tries)
+
 Focus on the most interesting or encouraging aspect from:
 - Recent improvements or trends with exact percentages
 - Playing patterns with days/times and streak information  
 - Cross-game comparisons or notable achievements
 - Current streaks or consistency patterns
 
-Return ONLY a single insight string, no JSON array, no markdown formatting, no backticks, no explanations. Example format:
-🎯 Your Wordle average improved 15% to 3.2 tries this month!`;
+Return ONLY a single insight string, no JSON array, no markdown formatting, no backticks, no explanations. Example formats:
+🎯 Your Wordle average improved 15% to 3.2 tries this month!
+⏱️ Amazing Mini Crossword time of 2:34 - that's your fastest yet!`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
