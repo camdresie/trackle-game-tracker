@@ -16,7 +16,14 @@ export const InsightsCard = () => {
     hasEnoughData,
     totalScores,
     usageStats,
+    areInsightsStale,
+    shouldAutoGenerate,
   } = useInsights();
+
+  // Early return if there's an authentication issue or no data to show
+  if (!isLoading && !hasEnoughData && insights.length === 0 && totalScores === 0) {
+    return null; // Don't show the card if user isn't authenticated or has no data
+  }
 
   if (isLoading) {
     return (
@@ -97,16 +104,17 @@ export const InsightsCard = () => {
           disabled={!canGenerate || isGenerating}
           size="sm"
           className="shrink-0"
+          variant={areInsightsStale ? "default" : "outline"}
         >
           {isGenerating ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analyzing...
+              {shouldAutoGenerate ? 'Auto-generating...' : 'Analyzing...'}
             </>
           ) : (
             <>
               <TrendingUp className="h-4 w-4 mr-2" />
-              New Insights
+              {areInsightsStale ? 'Refresh Insights' : 'New Insights'}
             </>
           )}
         </Button>
@@ -115,8 +123,12 @@ export const InsightsCard = () => {
       <CardContent className="space-y-4">
         {/* Usage Stats */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>This month: {usageStats.requestsThisMonth} insights</span>
-          <span>Cost: ${usageStats.estimatedCost.toFixed(3)}</span>
+          <span>This month: {usageStats.requestsThisMonth} insights generated</span>
+          {areInsightsStale && insights.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              Insights are 24h+ old
+            </Badge>
+          )}
         </div>
 
         {/* Recent Insights */}

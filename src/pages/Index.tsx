@@ -56,18 +56,22 @@ const Index = () => {
             onShowConnections={() => setShowConnections(true)}
             gamesList={gamesList}
           />
-          
+        </section>
+
+        {/* AI Insights Section - Only show for authenticated users */}
+        {user && (
+          <section className="mb-8 animate-slide-up">
+            <InsightsCard />
+          </section>
+        )}
+
+        <section className="mb-8 animate-slide-up">
           <TodaysGames 
             isLoading={isLoading}
             todaysGames={todaysGames}
             gamesList={gamesList}
             onDeleteScore={handleDeleteScore}
           />
-        </section>
-
-        {/* AI Insights Section */}
-        <section className="mb-8 animate-slide-up">
-          <InsightsCard />
         </section>
         
         <div className="space-y-6">

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { generateInsights, canMakeRequest, getUsageStats } from '@/services/openaiService';
 import { generateAnalyticsData, type AnalyticsData } from '@/services/analyticsEngine';
@@ -21,7 +21,7 @@ export const useInsights = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch user's scores for analytics
-  const { data: userScores = [], isLoading: scoresLoading } = useQuery({
+  const { data: userScores = [], isLoading: scoresLoading, error: scoresError } = useQuery({
     queryKey: ['user-scores', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -36,26 +36,36 @@ export const useInsights = () => {
       return data || [];
     },
     enabled: !!user?.id,
+    retry: 2,
   });
 
-  // Fetch cached insights from localStorage for now (TODO: Add database table)
+  // Fetch cached insights from database
   const { data: cachedInsights = [], isLoading: insightsLoading } = useQuery({
     queryKey: ['user-insights', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      // Temporarily use localStorage until we create the database table
-      const stored = localStorage.getItem(`insights_${user.id}`);
-      if (!stored) return [];
-      
-      try {
-        const insights = JSON.parse(stored);
-        return Array.isArray(insights) ? insights : [];
-      } catch {
+      const { data, error } = await supabase
+        .from('user_insights')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching insights:', error);
         return [];
       }
+      
+      return data?.map(insight => ({
+        id: insight.id,
+        content: insight.content,
+        created_at: insight.created_at,
+        analytics_data: insight.analytics_data as AnalyticsData,
+      })) || [];
     },
     enabled: !!user?.id,
+    retry: 2,
   });
 
   // Generate new insights mutation
@@ -82,19 +92,28 @@ export const useInsights = () => {
       // Generate insights using OpenAI
       const insights = await generateInsights(analyticsData);
 
-      // Save insights to localStorage for now (TODO: Save to database)
-      const savedInsights = insights.map((insight, index) => ({
-        id: `insight_${Date.now()}_${index}`,
-        content: insight,
-        created_at: new Date().toISOString(),
-        analytics_data: analyticsData,
-      }));
+      // Save insights to database
+      const insertPromises = insights.map(async (insight) => {
+        const { data, error } = await supabase
+          .from('user_insights')
+          .insert({
+            user_id: user.id,
+            content: insight,
+            analytics_data: analyticsData,
+          })
+          .select()
+          .single();
 
-      // Get existing insights and prepend new ones
-      const existing = JSON.parse(localStorage.getItem(`insights_${user.id}`) || '[]');
-      const allInsights = [...savedInsights, ...existing].slice(0, 20); // Keep max 20 insights
-      localStorage.setItem(`insights_${user.id}`, JSON.stringify(allInsights));
+        if (error) throw error;
+        return {
+          id: data.id,
+          content: data.content,
+          created_at: data.created_at,
+          analytics_data: analyticsData,
+        };
+      });
 
+      const savedInsights = await Promise.all(insertPromises);
       return savedInsights;
     },
     onSuccess: (newInsights) => {
@@ -108,7 +127,35 @@ export const useInsights = () => {
     },
   });
 
-  // Generate insights with loading state
+  // Check if insights are stale (older than 24 hours)
+  const areInsightsStale = useCallback(() => {
+    if (cachedInsights.length === 0) return true;
+    
+    const latestInsight = cachedInsights[0];
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const insightDate = new Date(latestInsight.created_at);
+    
+    return insightDate < twentyFourHoursAgo;
+  }, [cachedInsights]);
+
+  // Auto-generate insights when needed
+  const shouldAutoGenerate = useCallback(() => {
+    return userScores.length >= 5 && areInsightsStale() && canMakeRequest().allowed;
+  }, [userScores.length, areInsightsStale]);
+
+  // Don't run effects if no user
+  const shouldSkipEffects = !user;
+
+  // Auto-generate insights effect
+  useEffect(() => {
+    if (shouldSkipEffects) return;
+    if (!scoresLoading && !insightsLoading && !isGenerating && shouldAutoGenerate()) {
+      console.log('Auto-generating insights...');
+      generateInsightsMutation.mutate();
+    }
+  }, [shouldSkipEffects, scoresLoading, insightsLoading, isGenerating, shouldAutoGenerate, generateInsightsMutation]);
+
+  // Generate insights with loading state (manual trigger)
   const generateNewInsights = useCallback(async () => {
     setIsGenerating(true);
     try {
@@ -143,6 +190,23 @@ export const useInsights = () => {
   // Get usage statistics
   const usageStats = getUsageStats();
 
+  // Early return for unauthenticated users (after all hooks are called)
+  if (!user) {
+    return {
+      insights: [],
+      analyticsData: null,
+      usageStats: { requestsThisMonth: 0, lastResetDate: new Date().toISOString(), estimatedCost: 0 },
+      isLoading: false,
+      isGenerating: false,
+      generateInsights: () => Promise.resolve(),
+      checkCanGenerate: () => ({ canGenerate: false, reason: 'Please log in first' }),
+      hasEnoughData: false,
+      totalScores: 0,
+      areInsightsStale: false,
+      shouldAutoGenerate: false,
+    };
+  }
+
   return {
     // Data
     insights: cachedInsights,
@@ -160,5 +224,7 @@ export const useInsights = () => {
     // Utility
     hasEnoughData: userScores.length >= 5,
     totalScores: userScores.length,
+    areInsightsStale: areInsightsStale(),
+    shouldAutoGenerate: shouldAutoGenerate(),
   };
 };

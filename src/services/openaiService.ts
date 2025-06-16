@@ -1,10 +1,22 @@
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Note: In production, this should be server-side
-});
+// Lazy-load OpenAI client to avoid initialization errors
+let openaiClient: OpenAI | null = null;
+
+const getOpenAIClient = () => {
+  if (!openaiClient) {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OpenAI API key not found. Please check your environment configuration.');
+    }
+    
+    openaiClient = new OpenAI({
+      apiKey,
+      dangerouslyAllowBrowser: true // Note: In production, this should be server-side
+    });
+  }
+  return openaiClient;
+};
 
 // Cost tracking interface
 interface UsageTracker {
@@ -14,7 +26,7 @@ interface UsageTracker {
 }
 
 // Rate limiting constants
-const MAX_REQUESTS_PER_WEEK = 5;
+const MAX_REQUESTS_PER_WEEK = 10; // Increased from 5 to 10 for testing
 const MAX_MONTHLY_COST = 10; // $10 limit
 
 // Get usage tracker from localStorage
@@ -63,12 +75,16 @@ export const canMakeRequest = (): { allowed: boolean; reason?: string } => {
     };
   }
   
-  // Check weekly rate limit (approximate)
-  const weeklyRequests = Math.floor(tracker.requestsThisMonth / 4);
-  if (weeklyRequests >= MAX_REQUESTS_PER_WEEK) {
+  // Check weekly rate limit (using actual days instead of approximation)
+  const now = new Date();
+  const daysInMonth = now.getDate();
+  const approximateWeeksElapsed = Math.max(1, Math.floor(daysInMonth / 7));
+  const weeklyAllowance = MAX_REQUESTS_PER_WEEK * approximateWeeksElapsed;
+  
+  if (tracker.requestsThisMonth >= weeklyAllowance) {
     return { 
       allowed: false, 
-      reason: `Weekly insight limit reached (${MAX_REQUESTS_PER_WEEK} per week). Try again next week!` 
+      reason: `Weekly insight limit reached (${tracker.requestsThisMonth}/${weeklyAllowance} used). Try again later!` 
     };
   }
   
@@ -83,6 +99,8 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
   }
   
   try {
+    const openai = getOpenAIClient();
+    
     const prompt = `Analyze this user's game performance data and generate 3 engaging, personalized insights. Be encouraging and specific with numbers. Use emojis and keep each insight to 1-2 sentences.
 
 Game Performance Data:
@@ -140,4 +158,12 @@ export const getUsageStats = (): UsageTracker => {
 // Reset usage (for testing purposes)
 export const resetUsage = () => {
   localStorage.removeItem('openai_usage_tracker');
+  console.log('OpenAI usage tracker reset');
+};
+
+// Debug function to check current usage
+export const debugUsage = () => {
+  const tracker = getUsageTracker();
+  console.log('Current usage:', tracker);
+  return tracker;
 };
