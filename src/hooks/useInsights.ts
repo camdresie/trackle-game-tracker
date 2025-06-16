@@ -127,21 +127,27 @@ export const useInsights = () => {
     },
   });
 
-  // Check if insights are stale (older than 24 hours)
-  const areInsightsStale = useCallback(() => {
+  // Check if we need a new daily insight (no insight generated today)
+  const needsDailyInsight = useCallback(() => {
     if (cachedInsights.length === 0) return true;
     
     const latestInsight = cachedInsights[0];
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const insightDate = new Date(latestInsight.created_at);
+    const today = new Date();
     
-    return insightDate < twentyFourHoursAgo;
+    // Check if latest insight was created today (same calendar day)
+    const isFromToday = 
+      insightDate.getFullYear() === today.getFullYear() &&
+      insightDate.getMonth() === today.getMonth() &&
+      insightDate.getDate() === today.getDate();
+    
+    return !isFromToday; // Need new insight if latest wasn't from today
   }, [cachedInsights]);
 
   // Auto-generate insights when needed
   const shouldAutoGenerate = useCallback(() => {
-    return userScores.length >= 5 && areInsightsStale() && canMakeRequest().allowed;
-  }, [userScores.length, areInsightsStale]);
+    return userScores.length >= 5 && needsDailyInsight() && canMakeRequest().allowed;
+  }, [userScores.length, needsDailyInsight]);
 
   // Don't run effects if no user
   const shouldSkipEffects = !user;
@@ -224,7 +230,7 @@ export const useInsights = () => {
     // Utility
     hasEnoughData: userScores.length >= 5,
     totalScores: userScores.length,
-    areInsightsStale: areInsightsStale(),
+    areInsightsStale: needsDailyInsight(),
     shouldAutoGenerate: shouldAutoGenerate(),
   };
 };
