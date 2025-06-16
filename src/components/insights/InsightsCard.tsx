@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, TrendingUp, BarChart3, Calendar, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, TrendingUp, BarChart3, Calendar, Loader2, ChevronLeft, ChevronRight, Trophy, Star } from 'lucide-react';
 import { useInsights } from '@/hooks/useInsights';
 import { toast } from 'sonner';
 import { useState } from 'react';
@@ -204,10 +204,12 @@ export const InsightsCard = () => {
             {/* Additional metrics row */}
             <div className="grid grid-cols-2 gap-4 text-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
               <div>
+                <Trophy className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Most-Played Game</p>
                 <p className="text-sm font-medium">{analyticsData.overallStats.favoriteGame || 'None yet'}</p>
               </div>
               <div>
+                <Star className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">Best Day</p>
                 <p className="text-sm font-medium">{analyticsData.playingPatterns.bestDayOfWeek}</p>
               </div>
