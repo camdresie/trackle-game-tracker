@@ -196,7 +196,7 @@ export const InsightsCard = () => {
               </div>
               <div>
                 <Sparkles className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Current Streak</p>
+                <p className="text-xs text-muted-foreground">Trackle Streak</p>
                 <p className="text-sm font-semibold">{analyticsData.playingPatterns.currentOverallStreak}</p>
               </div>
             </div>
@@ -204,7 +204,7 @@ export const InsightsCard = () => {
             {/* Additional metrics row */}
             <div className="grid grid-cols-2 gap-4 text-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
               <div>
-                <p className="text-xs text-muted-foreground">Favorite Game</p>
+                <p className="text-xs text-muted-foreground">Most-Played Game</p>
                 <p className="text-sm font-medium">{analyticsData.overallStats.favoriteGame || 'None yet'}</p>
               </div>
               <div>
