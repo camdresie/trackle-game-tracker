@@ -3,6 +3,9 @@ import OpenAI from 'openai';
 // Lazy-load OpenAI client to avoid initialization errors
 let openaiClient: OpenAI | null = null;
 
+// In-memory flag to prevent concurrent API calls (race condition protection)
+let isGeneratingInsight = false;
+
 const getOpenAIClient = () => {
   if (!openaiClient) {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -104,11 +107,18 @@ export const canMakeRequest = (): { allowed: boolean; reason?: string } => {
 
 // Generate insights using OpenAI
 export const generateInsights = async (analyticsData: any): Promise<string[]> => {
+  // Prevent concurrent API calls (race condition protection)
+  if (isGeneratingInsight) {
+    throw new Error('Another insight generation is already in progress. Please wait...');
+  }
+  
   const rateCheck = canMakeRequest();
   if (!rateCheck.allowed) {
     throw new Error(rateCheck.reason);
   }
   
+  // Set flag to prevent concurrent calls
+  isGeneratingInsight = true;
   console.log('🤖 Making OpenAI API call for daily insight generation...');
   
   try {
@@ -248,6 +258,9 @@ Return ONLY a single insight string, no JSON array, no markdown formatting, no b
   } catch (error) {
     console.error('Error generating insights:', error);
     throw error;
+  } finally {
+    // Always clear the flag when function completes
+    isGeneratingInsight = false;
   }
 };
 
@@ -279,6 +292,11 @@ export const hasCalledOpenAIToday = (): boolean => {
   const lastRequestDay = tracker.lastRequestDate.split('T')[0];
   
   return lastRequestDay === today;
+};
+
+// Check if insight generation is currently in progress
+export const isInsightGenerationInProgress = (): boolean => {
+  return isGeneratingInsight;
 };
 
 // Check if usage seems abnormally high

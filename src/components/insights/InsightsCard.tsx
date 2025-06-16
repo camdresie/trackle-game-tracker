@@ -109,15 +109,18 @@ export const InsightsCard = () => {
           <div className="space-y-4">
             {/* Navigation and Date */}
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={goToPrevious}
-                disabled={!canGoBack}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goToPrevious}
+                  disabled={!canGoBack}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground mt-1">Previous Insight</span>
+              </div>
               
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">
@@ -134,15 +137,18 @@ export const InsightsCard = () => {
                 )}
               </div>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={goToNext}
-                disabled={!canGoForward}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goToNext}
+                  disabled={!canGoForward}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground mt-1">Next Insight</span>
+              </div>
             </div>
 
             {/* Current Insight */}
