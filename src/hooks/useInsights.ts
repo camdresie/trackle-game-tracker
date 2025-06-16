@@ -120,10 +120,16 @@ export const useInsights = () => {
       // Invalidate and refetch insights
       queryClient.invalidateQueries({ queryKey: ['user-insights', user?.id] });
       toast.success(`Generated ${newInsights.length} new insights!`);
+      setIsGenerating(false); // Reset loading state on success
     },
     onError: (error) => {
       console.error('Error generating insights:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate insights');
+      setIsGenerating(false); // Reset loading state on error
+    },
+    onSettled: () => {
+      // Always reset loading state when mutation completes
+      setIsGenerating(false);
     },
   });
 
@@ -149,20 +155,23 @@ export const useInsights = () => {
     return userScores.length >= 5 && 
            needsDailyInsight() && 
            canMakeRequest().allowed && 
-           !hasCalledOpenAIToday(); // Double-check we haven't made API call today
-  }, [userScores.length, needsDailyInsight]);
+           !hasCalledOpenAIToday() &&
+           !isGenerating && // Prevent multiple calls while one is in progress
+           !generateInsightsMutation.isPending; // Prevent multiple calls during mutation
+  }, [userScores.length, needsDailyInsight, isGenerating, generateInsightsMutation.isPending]);
 
   // Don't run effects if no user
   const shouldSkipEffects = !user;
 
-  // Auto-generate daily insights effect
+  // Auto-generate daily insights effect (run only once when conditions are met)
   useEffect(() => {
     if (shouldSkipEffects) return;
     if (!scoresLoading && !insightsLoading && !isGenerating && shouldAutoGenerate()) {
       console.log('Auto-generating daily insight...');
+      setIsGenerating(true); // Set loading state immediately to prevent duplicate calls
       generateInsightsMutation.mutate();
     }
-  }, [shouldSkipEffects, scoresLoading, insightsLoading, isGenerating, shouldAutoGenerate, generateInsightsMutation]);
+  }, [shouldSkipEffects, scoresLoading, insightsLoading, isGenerating, shouldAutoGenerate]);
 
   // Generate insights with loading state (manual trigger)
   const generateNewInsights = useCallback(async () => {
