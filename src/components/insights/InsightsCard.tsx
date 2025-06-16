@@ -191,7 +191,7 @@ export const InsightsCard = () => {
               </div>
               <div>
                 <TrendingUp className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">This Week</p>
+                <p className="text-xs text-muted-foreground">Games This Week</p>
                 <p className="text-sm font-semibold">{analyticsData.overallStats.gamesThisWeek}</p>
               </div>
               <div>
