@@ -17,7 +17,7 @@
     "preview": "vite preview",
     "preview:staging": "vite preview --mode staging",
     "start": "vite preview --host --port $PORT",
-    "heroku-postbuild": "npm run build:staging",
+    "heroku-postbuild": "npm install --include=optional && npm run build:staging",
     "test": "vitest --config vitest.config.ts",
     "test:ui": "vitest --ui --config vitest.config.ts",
     "test:run": "vitest run --config vitest.config.ts",
@@ -110,5 +110,8 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vitest": "^3.2.3"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.27.4"
   }
 }
