@@ -23,10 +23,11 @@ interface UsageTracker {
   requestsThisMonth: number;
   lastResetDate: string;
   estimatedCost: number;
+  lastRequestDate?: string; // Track last API call date for daily limiting
 }
 
-// Rate limiting constants
-const MAX_REQUESTS_PER_WEEK = 10; // Increased from 5 to 10 for testing
+// Rate limiting constants - STRICT daily limits
+const MAX_REQUESTS_PER_DAY = 1; // Maximum 1 insight per user per day
 const MAX_MONTHLY_COST = 10; // $10 limit
 
 // Get usage tracker from localStorage
@@ -36,7 +37,8 @@ const getUsageTracker = (): UsageTracker => {
     return {
       requestsThisMonth: 0,
       lastResetDate: new Date().toISOString(),
-      estimatedCost: 0
+      estimatedCost: 0,
+      lastRequestDate: undefined
     };
   }
   
@@ -49,7 +51,8 @@ const getUsageTracker = (): UsageTracker => {
     return {
       requestsThisMonth: 0,
       lastResetDate: now.toISOString(),
-      estimatedCost: 0
+      estimatedCost: 0,
+      lastRequestDate: tracker.lastRequestDate
     };
   }
   
@@ -61,12 +64,19 @@ const updateUsageTracker = (cost: number) => {
   const tracker = getUsageTracker();
   tracker.requestsThisMonth += 1;
   tracker.estimatedCost += cost;
+  tracker.lastRequestDate = new Date().toISOString();
   localStorage.setItem('openai_usage_tracker', JSON.stringify(tracker));
 };
 
 // Check if user can make more requests
 export const canMakeRequest = (): { allowed: boolean; reason?: string } => {
   const tracker = getUsageTracker();
+  
+  // Auto-check for abnormal usage on each request check
+  const healthCheck = checkUsageHealth();
+  if (healthCheck.isHighUsage) {
+    console.warn('High usage detected during rate limit check');
+  }
   
   if (tracker.estimatedCost >= MAX_MONTHLY_COST) {
     return { 
@@ -75,17 +85,18 @@ export const canMakeRequest = (): { allowed: boolean; reason?: string } => {
     };
   }
   
-  // Check weekly rate limit (using actual days instead of approximation)
+  // Check daily rate limit - STRICT: max 1 request per day
   const now = new Date();
-  const daysInMonth = now.getDate();
-  const approximateWeeksElapsed = Math.max(1, Math.floor(daysInMonth / 7));
-  const weeklyAllowance = MAX_REQUESTS_PER_WEEK * approximateWeeksElapsed;
+  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
   
-  if (tracker.requestsThisMonth >= weeklyAllowance) {
-    return { 
-      allowed: false, 
-      reason: `Weekly insight limit reached (${tracker.requestsThisMonth}/${weeklyAllowance} used). Try again later!` 
-    };
+  if (tracker.lastRequestDate) {
+    const lastRequestDay = tracker.lastRequestDate.split('T')[0];
+    if (lastRequestDay === today) {
+      return { 
+        allowed: false, 
+        reason: `Daily insight already generated today. New insights available tomorrow!` 
+      };
+    }
   }
   
   return { allowed: true };
@@ -97,6 +108,8 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
   if (!rateCheck.allowed) {
     throw new Error(rateCheck.reason);
   }
+  
+  console.log('🤖 Making OpenAI API call for daily insight generation...');
   
   try {
     const openai = getOpenAIClient();
@@ -206,10 +219,12 @@ Return ONLY a single insight string, no JSON array, no markdown formatting, no b
       temperature: 0.7,
     });
 
-    // Only update usage tracker on successful completion
-    const inputTokens = prompt.length / 4; // Rough token estimation
-    const outputTokens = completion.usage?.completion_tokens || 100;
-    const estimatedCost = (inputTokens * 0.00000015) + (outputTokens * 0.0000006); // GPT-4o-mini pricing
+    // Only update usage tracker on successful completion using actual OpenAI usage data
+    const actualInputTokens = completion.usage?.prompt_tokens || 0;
+    const actualOutputTokens = completion.usage?.completion_tokens || 0;
+    const estimatedCost = (actualInputTokens * 0.00000015) + (actualOutputTokens * 0.0000006); // GPT-4o-mini pricing
+    
+    console.log(`OpenAI usage - Input: ${actualInputTokens} tokens, Output: ${actualOutputTokens} tokens, Cost: $${estimatedCost.toFixed(4)}`);
     
     updateUsageTracker(estimatedCost);
 
@@ -251,5 +266,35 @@ export const resetUsage = () => {
 export const debugUsage = () => {
   const tracker = getUsageTracker();
   console.log('Current usage:', tracker);
+  console.log(`Estimated tokens this month: ~${Math.round(tracker.estimatedCost / 0.0000006)} tokens`);
   return tracker;
+};
+
+// Check if we've already made an API call today
+export const hasCalledOpenAIToday = (): boolean => {
+  const tracker = getUsageTracker();
+  if (!tracker.lastRequestDate) return false;
+  
+  const today = new Date().toISOString().split('T')[0];
+  const lastRequestDay = tracker.lastRequestDate.split('T')[0];
+  
+  return lastRequestDay === today;
+};
+
+// Check if usage seems abnormally high
+export const checkUsageHealth = () => {
+  const tracker = getUsageTracker();
+  const estimatedTokens = Math.round(tracker.estimatedCost / 0.0000006);
+  
+  if (estimatedTokens > 100000) {
+    console.warn(`⚠️ HIGH TOKEN USAGE DETECTED: ~${estimatedTokens.toLocaleString()} tokens ($${tracker.estimatedCost.toFixed(2)})`);
+    console.warn('This seems abnormally high for normal usage. Consider resetting with resetUsage() if this is incorrect.');
+  }
+  
+  return {
+    tokens: estimatedTokens,
+    cost: tracker.estimatedCost,
+    requests: tracker.requestsThisMonth,
+    isHighUsage: estimatedTokens > 100000
+  };
 };

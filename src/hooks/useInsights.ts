@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { generateInsights, canMakeRequest, getUsageStats } from '@/services/openaiService';
+import { generateInsights, canMakeRequest, getUsageStats, hasCalledOpenAIToday } from '@/services/openaiService';
 import { generateAnalyticsData, type AnalyticsData } from '@/services/analyticsEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -144,9 +144,12 @@ export const useInsights = () => {
     return !isFromToday; // Need new insight if latest wasn't from today
   }, [cachedInsights]);
 
-  // Auto-generate insights when needed
+  // Auto-generate insights when needed (with strict daily API call limiting)
   const shouldAutoGenerate = useCallback(() => {
-    return userScores.length >= 5 && needsDailyInsight() && canMakeRequest().allowed;
+    return userScores.length >= 5 && 
+           needsDailyInsight() && 
+           canMakeRequest().allowed && 
+           !hasCalledOpenAIToday(); // Double-check we haven't made API call today
   }, [userScores.length, needsDailyInsight]);
 
   // Don't run effects if no user
