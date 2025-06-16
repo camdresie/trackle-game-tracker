@@ -125,7 +125,7 @@ const analyzeGamePerformance = (scores: ScoreData[], gameId: string): GameStats 
   };
 };
 
-// Calculate playing streaks
+// Calculate playing streaks (for individual games)
 const calculateStreaks = (sortedScores: ScoreData[]) => {
   if (sortedScores.length === 0) return { currentStreak: 0, longestStreak: 0 };
 
@@ -160,6 +160,39 @@ const calculateStreaks = (sortedScores: ScoreData[]) => {
   }
 
   return { currentStreak, longestStreak };
+};
+
+// Calculate daily Trackle streak (consecutive days with at least one score)
+const calculateDailyStreak = (sortedDayStrings: string[]): number => {
+  if (sortedDayStrings.length === 0) return 0;
+
+  const today = new Date();
+  const todayString = format(today, 'yyyy-MM-dd');
+  const yesterdayString = format(subDays(today, 1), 'yyyy-MM-dd');
+
+  // Check if user played today or yesterday (to maintain streak)
+  const mostRecentDay = sortedDayStrings[sortedDayStrings.length - 1];
+  if (mostRecentDay !== todayString && mostRecentDay !== yesterdayString) {
+    return 0; // Streak is broken
+  }
+
+  // Count consecutive days from the most recent day backwards
+  let streak = 1;
+  const sortedDates = sortedDayStrings.map(day => new Date(day)).sort((a, b) => b.getTime() - a.getTime());
+
+  for (let i = 1; i < sortedDates.length; i++) {
+    const prevDay = sortedDates[i - 1];
+    const currDay = sortedDates[i];
+    const daysBetween = differenceInDays(prevDay, currDay);
+
+    if (daysBetween === 1) {
+      streak++;
+    } else {
+      break; // Streak is broken
+    }
+  }
+
+  return streak;
 };
 
 // Analyze playing patterns
@@ -229,12 +262,8 @@ const analyzePlayingPatterns = (allScores: ScoreData[]): PlayingPatterns => {
   const totalPlayingDays = uniqueDays.size;
   const averageGamesPerDay = totalPlayingDays > 0 ? allScores.length / totalPlayingDays : 0;
 
-  // Calculate overall current streak
-  const sortedByDate = allScores.sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-  
-  const { currentStreak: currentOverallStreak } = calculateStreaks(sortedByDate.reverse());
+  // Calculate overall current streak (consecutive days with at least one score)
+  const currentOverallStreak = calculateDailyStreak(Array.from(uniqueDays).sort());
 
   return {
     bestDayOfWeek,
