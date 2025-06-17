@@ -111,7 +111,7 @@ const AddScoreModal = ({
       queryClient.invalidateQueries({ queryKey: ['game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-      toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
+      // Removed success toast - score appears immediately in chart
     } catch (error) {
       console.error('Error adding score:', error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'save'} score. Please try again.`);
