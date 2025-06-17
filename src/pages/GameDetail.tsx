@@ -86,32 +86,85 @@ const GameDetail = () => {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
 
-    // Invalidate queries to ensure server state is updated
-    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    // Optimistically update both all-scores and filtered-scores query data
+    if (gameId && user?.id) {
+      // Update all-scores cache
+      queryClient.setQueryData(
+        ['all-game-scores', gameId, user.id],
+        (oldData: Score[] | undefined) => {
+          if (!oldData) return [newScore];
+          const existingIndex = oldData.findIndex(s => s.id === newScore.id);
+          if (existingIndex >= 0) {
+            const updated = [...oldData];
+            updated[existingIndex] = newScore;
+            return updated;
+          }
+          return [newScore, ...oldData];
+        }
+      );
+
+      // Update filtered-scores cache (check if new score falls within current date range)
+      const currentQueryKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
+      queryClient.setQueryData(
+        currentQueryKey,
+        (oldData: Score[] | undefined) => {
+          // Check if new score falls within current date range
+          const scoreDate = newScore.date;
+          const isInRange = (!currentConfig?.startDate || scoreDate >= currentConfig.startDate) &&
+                           (!currentConfig?.endDate || scoreDate <= currentConfig.endDate);
+          
+          if (!isInRange) return oldData; // Don't add if outside current filter
+          
+          if (!oldData) return [newScore];
+          const existingIndex = oldData.findIndex(s => s.id === newScore.id);
+          if (existingIndex >= 0) {
+            const updated = [...oldData];
+            updated[existingIndex] = newScore;
+            return updated;
+          }
+          return [newScore, ...oldData];
+        }
+      );
+    }
+    
+    // Also invalidate to ensure server sync
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     
     // Trigger refresh for useGroupScores data (Today page)
     if (refreshFriends) refreshFriends();
     
-  }, [localScores, user, queryClient, gameId, refreshFriends]);
+  }, [localScores, user, queryClient, gameId, refreshFriends, currentConfig]);
   
   const handleScoreDeleted = useCallback((scoreId: string) => {
     // Create the updated array first
     const updatedScores = localScores.filter(score => score.id !== scoreId);
     setLocalScores(updatedScores);
     
+    // Optimistically update query caches
+    if (gameId && user?.id) {
+      // Update all-scores cache
+      queryClient.setQueryData(
+        ['all-game-scores', gameId, user.id],
+        (oldData: Score[] | undefined) => oldData?.filter(s => s.id !== scoreId) || []
+      );
+
+      // Update filtered-scores cache  
+      const currentQueryKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
+      queryClient.setQueryData(
+        currentQueryKey,
+        (oldData: Score[] | undefined) => oldData?.filter(s => s.id !== scoreId) || []
+      );
+    }
+    
     // Invalidate relevant queries to refresh the data
-    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     
     // Trigger refresh for useGroupScores data (Today page)
     if (refreshFriends) refreshFriends();
     
-  }, [localScores, user, queryClient, refreshFriends]);
+  }, [localScores, user, queryClient, refreshFriends, gameId, currentConfig]);
   
   // Calculate display values using useMemo for stability
   const displayScores = useMemo(() => localScores.length > 0 ? localScores : scores, [localScores, scores]);
