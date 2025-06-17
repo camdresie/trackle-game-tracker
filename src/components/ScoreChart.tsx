@@ -74,11 +74,43 @@ const ScoreChart = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     
-    // Format dates for display using consistent approach
+    // Determine date format based on data range
+    const getDateFormat = (scores: typeof sortedScores) => {
+      if (scores.length === 0) return 'short';
+      
+      const firstDate = new Date(scores[0].date);
+      const lastDate = new Date(scores[scores.length - 1].date);
+      const daysDiff = Math.abs((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff <= 7) return 'weekday'; // Mon, Tue, etc.
+      if (daysDiff <= 31) return 'short'; // Jan 15, etc.
+      if (daysDiff <= 90) return 'month-day'; // 1/15, etc.
+      return 'month-year'; // Jan '24, etc.
+    };
+    
+    const dateFormat = getDateFormat(sortedScores);
+    
+    // Format dates for display using intelligent formatting
     const formattedScores = sortedScores.map(score => {
       // Create date object from score date string
       const [year, month, day] = score.date.split('-').map(Number);
       const date = new Date(year, month - 1, day); // month is 0-indexed in JS
+      
+      // Format date based on data range
+      let displayDate: string;
+      switch (dateFormat) {
+        case 'weekday':
+          displayDate = date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+          break;
+        case 'month-day':
+          displayDate = `${month}/${day}`;
+          break;
+        case 'month-year':
+          displayDate = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          break;
+        default: // 'short'
+          displayDate = `${date.toLocaleString('default', { month: 'short' })} ${day}`;
+      }
       
       // Format value based on game type
       let formattedValue: string | number = score.value;
@@ -93,9 +125,7 @@ const ScoreChart = ({
       }
       
       return {
-        // Format date for display
-        date: `${date.toLocaleString('default', { month: 'short' })} ${day}`,
-        // Keep the original date string for tooltip
+        date: displayDate,
         originalDate: score.date,
         value: score.value,
         formattedValue
@@ -117,6 +147,16 @@ const ScoreChart = ({
   const values = chartData.map(point => point.value);
   const minValue = Math.max(0, Math.min(...values) - 1);
   const maxValue = Math.max(...values) + 1;
+  
+  // Calculate X-axis tick interval for better spacing
+  const getTickInterval = (dataLength: number) => {
+    if (dataLength <= 7) return 0; // Show all ticks for small datasets
+    if (dataLength <= 14) return 1; // Show every other tick
+    if (dataLength <= 30) return Math.ceil(dataLength / 7); // Show ~7 ticks
+    return Math.ceil(dataLength / 10); // Show ~10 ticks for larger datasets
+  };
+  
+  const tickInterval = getTickInterval(chartData.length);
   
   // Calculate average for reference line
   let averageValue = values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
@@ -149,7 +189,9 @@ const ScoreChart = ({
               tickLine={{ stroke: '#f0f0f0' }}
               axisLine={{ stroke: '#f0f0f0' }}
               height={20}
-              hide={chartData.length > 10}
+              interval={tickInterval}
+              angle={chartData.length > 20 ? -45 : 0}
+              textAnchor={chartData.length > 20 ? 'end' : 'middle'}
             >
               {!simplified && (
                 <Label value="Date Played" position="insideBottom" offset={-5} style={{ fontSize: '10px', fill: '#6b7280' }} />
@@ -210,9 +252,12 @@ const ScoreChart = ({
               tick={{ fontSize: 12 }}
               tickLine={{ stroke: '#f0f0f0' }}
               axisLine={{ stroke: '#f0f0f0' }}
-              height={30}
+              height={chartData.length > 20 ? 50 : 30}
+              interval={tickInterval}
+              angle={chartData.length > 20 ? -45 : 0}
+              textAnchor={chartData.length > 20 ? 'end' : 'middle'}
             >
-              <Label value="Date Played" position="insideBottom" offset={-10} style={{ fontSize: '12px', fill: '#6b7280' }} />
+              <Label value="Date Played" position="insideBottom" offset={chartData.length > 20 ? -25 : -10} style={{ fontSize: '12px', fill: '#6b7280' }} />
             </XAxis>
             <YAxis 
               domain={[minValue, maxValue]}
