@@ -23,6 +23,7 @@ export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
   const {
     game,
     scores,
+    allScores,
     isLoading,
     bestScore,
     averageScore
@@ -55,10 +56,11 @@ export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
           filter: `game_id=eq.${gameId}`
         },
         (payload) => {
-          // Invalidate the specific query used in useGameDetails
-          const currentUserId = queryClient.getQueryData<any>(['user'])?.id; // Attempt to get user id if needed
+          // Invalidate both filtered and all scores queries
+          const currentUserId = queryClient.getQueryData<any>(['user'])?.id;
           if (gameId && currentUserId) {
-             queryClient.invalidateQueries({ queryKey: ['game-scores', gameId, currentUserId] });
+             queryClient.invalidateQueries({ queryKey: ['filtered-game-scores', gameId, currentUserId] });
+             queryClient.invalidateQueries({ queryKey: ['all-game-scores', gameId, currentUserId] });
           }
           // Invalidate other relevant general queries
           queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
@@ -88,7 +90,8 @@ export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
       // Invalidate relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['friends'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
-      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['all-game-scores'] });
       
       // Then refresh the friends list
       await baseFriendsRefresh();
@@ -105,7 +108,8 @@ export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
 
   return {
     game,
-    scores,
+    scores, // Filtered scores for chart
+    allScores, // All scores for stats/counts
     isLoading,
     bestScore,
     averageScore,

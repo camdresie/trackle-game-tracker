@@ -42,7 +42,8 @@ const GameDetail = () => {
   
   const {
     game,
-    scores,
+    scores, // Filtered scores for chart
+    allScores, // All scores for stats
     isLoading,
     bestScore,
     friends,
@@ -57,15 +58,15 @@ const GameDetail = () => {
   
   useEffect(() => {
     // Only set initial state if localScores is empty and hook data is available
-    if (localScores.length === 0 && scores.length > 0) {
-      setLocalScores(scores);
+    if (localScores.length === 0 && allScores.length > 0) {
+      setLocalScores(allScores);
     }
     // Only set initial best score if not set locally and hook data is available
     if (localBestScore === null && bestScore !== null) {
         setLocalBestScore(bestScore);
     }
 
-  }, [scores, bestScore, user?.id]);
+  }, [allScores, bestScore, user?.id, localScores.length, localBestScore]);
   
   const handleAddScore = useCallback((newScore: Score) => {
     // Update local state for "Your Scores"
