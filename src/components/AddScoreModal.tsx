@@ -107,16 +107,20 @@ const AddScoreModal = ({
 
     try {
       const { stats, score: savedScore } = await addGameScore(scorePayload, isEditMode);
-      queryClient.invalidateQueries({ queryKey: ['game-data', 'scores'] });
-      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      
+      // Invalidate the correct query keys after successful DB save
+      console.log('[AddScoreModal] Score saved to DB, invalidating queries');
+      queryClient.invalidateQueries({ queryKey: ['all-game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-      toast.success(`Your ${game.name} score has been ${isEditMode ? 'updated' : 'saved'}.`);
+      // Removed success toast - score appears immediately in chart
     } catch (error) {
       console.error('Error adding score:', error);
       toast.error(`Failed to ${isEditMode ? 'update' : 'save'} score. Please try again.`);
-      queryClient.invalidateQueries({ queryKey: ['game-data', 'scores'] });
-      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      // Invalidate queries to ensure consistency after error
+      queryClient.invalidateQueries({ queryKey: ['all-game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-stats'] });
     } finally {

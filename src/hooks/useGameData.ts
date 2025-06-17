@@ -99,7 +99,7 @@ export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
       // Then fetch friend scores directly if we have a gameId
       if (gameId) {
         await fetchFriendScores();
-        toast.success("Friend data refreshed successfully");
+        // Removed success toast - data refreshes silently
       }
     } catch (error) {
       toast.error("Error refreshing friend data");

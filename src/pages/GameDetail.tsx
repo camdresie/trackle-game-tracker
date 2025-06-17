@@ -69,6 +69,8 @@ const GameDetail = () => {
   }, [allScores, bestScore, user?.id, localScores.length, localBestScore]);
   
   const handleAddScore = useCallback((newScore: Score) => {
+    console.log('[handleAddScore] Adding score:', newScore);
+    
     // Update local state for "Your Scores"
     let updatedScores = [...localScores];
     const existingScoreIndex = updatedScores.findIndex(s => s.id === newScore.id);
@@ -86,32 +88,49 @@ const GameDetail = () => {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
 
-    // Invalidate queries to ensure server state is updated
-    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+    // Don't invalidate queries here - this happens before DB save
+    // The AddScoreModal will handle invalidation after successful save
+    console.log('[handleAddScore] Score added optimistically, waiting for DB save to invalidate queries');
+    console.log('[handleAddScore] Current scores in component:', scores.length);
+    
+    // Also invalidate to ensure server sync
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     
     // Trigger refresh for useGroupScores data (Today page)
     if (refreshFriends) refreshFriends();
     
-  }, [localScores, user, queryClient, gameId, refreshFriends]);
+  }, [localScores, user, queryClient, gameId, refreshFriends, currentConfig]);
   
   const handleScoreDeleted = useCallback((scoreId: string) => {
     // Create the updated array first
     const updatedScores = localScores.filter(score => score.id !== scoreId);
     setLocalScores(updatedScores);
     
+    // Optimistically update query caches
+    if (gameId && user?.id) {
+      // Update all-scores cache
+      queryClient.setQueryData(
+        ['all-game-scores', gameId, user.id],
+        (oldData: Score[] | undefined) => oldData?.filter(s => s.id !== scoreId) || []
+      );
+
+      // Update filtered-scores cache  
+      const currentQueryKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
+      queryClient.setQueryData(
+        currentQueryKey,
+        (oldData: Score[] | undefined) => oldData?.filter(s => s.id !== scoreId) || []
+      );
+    }
+    
     // Invalidate relevant queries to refresh the data
-    queryClient.invalidateQueries({ queryKey: ['game-scores'] });
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
     queryClient.invalidateQueries({ queryKey: ['game-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['all-scores'] });
     
     // Trigger refresh for useGroupScores data (Today page)
     if (refreshFriends) refreshFriends();
     
-  }, [localScores, user, queryClient, refreshFriends]);
+  }, [localScores, user, queryClient, refreshFriends, gameId, currentConfig]);
   
   // Calculate display values using useMemo for stability
   const displayScores = useMemo(() => localScores.length > 0 ? localScores : scores, [localScores, scores]);
