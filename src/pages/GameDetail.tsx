@@ -88,30 +88,10 @@ const GameDetail = () => {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
 
-    // Immediately invalidate relevant queries to trigger fresh data fetch
-    console.log('[handleAddScore] Invalidating queries for immediate refresh');
+    // Don't invalidate queries here - this happens before DB save
+    // The AddScoreModal will handle invalidation after successful save
+    console.log('[handleAddScore] Score added optimistically, waiting for DB save to invalidate queries');
     console.log('[handleAddScore] Current scores in component:', scores.length);
-    
-    if (gameId && user?.id) {
-      // Invalidate both all-scores and filtered-scores queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['all-game-scores', gameId, user.id],
-        exact: true
-      });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['filtered-game-scores'],
-        exact: false // Invalidate all variants of filtered scores
-      });
-      
-      // Also try invalidating with the specific query key pattern
-      const specificKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
-      console.log('[handleAddScore] Also invalidating specific key:', specificKey);
-      queryClient.invalidateQueries({ 
-        queryKey: specificKey,
-        exact: true
-      });
-    }
     
     // Also invalidate to ensure server sync
     queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
