@@ -5,16 +5,18 @@ import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
+import { type DateRangeConfig } from './useChartDateRange';
 
 interface UseGameDataProps {
   gameId: string | undefined;
+  dateRangeConfig?: DateRangeConfig;
 }
 
 /**
  * Composite hook that combines game details, friends list, and friend scores
  * functionality for a comprehensive game data management solution
  */
-export const useGameData = ({ gameId }: UseGameDataProps) => {
+export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
   const queryClient = useQueryClient();
   
   // Get basic game details and player scores
@@ -24,7 +26,7 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
     isLoading,
     bestScore,
     averageScore
-  } = useGameDetails({ gameId });
+  } = useGameDetails({ gameId, dateRangeConfig });
   
   // Get friends list with optimized fetching
   const { friends, refreshFriends: baseFriendsRefresh } = useFriendsList();

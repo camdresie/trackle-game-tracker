@@ -3,16 +3,40 @@ import { Score, Game } from '@/utils/types';
 import { format } from 'date-fns';
 
 /**
- * Get scores for a specific game from a user
+ * Get scores for a specific game from a user with optional date filtering
  */
-export const getGameScores = async (gameId: string, userId: string): Promise<Score[]> => {
+export const getGameScores = async (
+  gameId: string, 
+  userId: string, 
+  options?: {
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<Score[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('scores')
       .select('*')
       .eq('game_id', gameId)
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
+      .eq('user_id', userId);
+    
+    // Add date filtering if provided
+    if (options?.startDate) {
+      query = query.gte('date', options.startDate);
+    }
+    if (options?.endDate) {
+      query = query.lte('date', options.endDate);
+    }
+    
+    // Add ordering and limit
+    query = query.order('date', { ascending: false });
+    
+    // Limit results (default to 100 for performance)
+    const limit = options?.limit ?? 100;
+    query = query.limit(limit);
+    
+    const { data, error } = await query;
       
     if (error) {
       console.error('[getGameScores] Error fetching game scores:', error);

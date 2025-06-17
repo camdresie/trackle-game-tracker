@@ -5,9 +5,11 @@ import { Game, Score } from '@/utils/types';
 import { getGameById, isLowerScoreBetter } from '@/utils/gameData';
 import { getGameScores } from '@/services/gameStatsService';
 import { useQuery } from '@tanstack/react-query';
+import { type DateRangeConfig } from './useChartDateRange';
 
 interface UseGameDetailsProps {
   gameId: string | undefined;
+  dateRangeConfig?: DateRangeConfig;
 }
 
 interface GameDetailsResult {
@@ -21,7 +23,7 @@ interface GameDetailsResult {
 /**
  * Hook for fetching basic game details and player scores using React Query
  */
-export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResult => {
+export const useGameDetails = ({ gameId, dateRangeConfig }: UseGameDetailsProps): GameDetailsResult => {
   const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [bestScore, setBestScore] = useState<number | null>(null);
@@ -50,10 +52,14 @@ export const useGameDetails = ({ gameId }: UseGameDetailsProps): GameDetailsResu
     isLoading: isLoadingScores, 
     error: scoresError 
   } = useQuery<Score[], Error>({
-    queryKey: ['game-scores', gameId, user?.id], // Unique key including game and user
+    queryKey: ['game-scores', gameId, user?.id, dateRangeConfig?.startDate, dateRangeConfig?.endDate, dateRangeConfig?.limit], // Include date range in cache key
     queryFn: () => {
       if (!gameId || !user) return Promise.resolve([]); // Return empty if no gameId or user
-      return getGameScores(gameId, user.id); 
+      return getGameScores(gameId, user.id, {
+        startDate: dateRangeConfig?.startDate,
+        endDate: dateRangeConfig?.endDate,
+        limit: dateRangeConfig?.limit
+      }); 
     },
     enabled: !!gameId && !!user, // Only run query if gameId and user exist
     staleTime: 5 * 60 * 1000, // Consider scores stale after 5 minutes
