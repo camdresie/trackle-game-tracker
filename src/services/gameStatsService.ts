@@ -32,15 +32,30 @@ export const getGameScores = async (
     // Add ordering and limit
     query = query.order('date', { ascending: false });
     
-    // Limit results (default to 100 for performance)
-    const limit = options?.limit ?? 100;
-    query = query.limit(limit);
+    // Apply limit if specified (for performance), but allow larger limit for "all time"
+    const limit = options?.limit;
+    if (limit) {
+      query = query.limit(limit);
+    } else {
+      // Safety limit for unlimited queries to prevent performance issues
+      query = query.limit(2000);
+    }
     
     const { data, error } = await query;
       
     if (error) {
       console.error('[getGameScores] Error fetching game scores:', error);
       throw error;
+    }
+    
+    // Debug logging for date range queries
+    if (options?.startDate || options?.endDate || !options?.limit) {
+      console.log(`[getGameScores] Fetched ${data?.length || 0} scores for game ${gameId}`, {
+        startDate: options?.startDate,
+        endDate: options?.endDate,
+        limit: limit || 'unlimited (2000 max)',
+        resultCount: data?.length || 0
+      });
     }
     
     // Transform the data to match our Score type

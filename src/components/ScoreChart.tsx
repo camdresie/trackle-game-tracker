@@ -67,7 +67,15 @@ const ScoreChart = ({
   const isAscending = ['wordle', 'mini-crossword', 'quordle'].includes(effectiveGameId || '');
   
   useEffect(() => {
-    if (!scores.length) return;
+    if (!scores.length) {
+      console.log('[ScoreChart] No scores provided to chart component');
+      return;
+    }
+    
+    console.log(`[ScoreChart] Processing ${scores.length} scores for chart`, {
+      gameId: effectiveGameId,
+      dateRange: scores.length > 0 ? `${scores[0].date} to ${scores[scores.length - 1].date}` : 'empty'
+    });
     
     // Sort scores by date
     const sortedScores = [...scores].sort(

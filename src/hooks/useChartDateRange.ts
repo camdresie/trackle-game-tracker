@@ -30,8 +30,8 @@ export const dateRangeConfigs: Record<DateRangeOption, DateRangeConfig> = {
     limit: 200
   },
   'all': {
-    label: 'All time',
-    limit: 500 // Maximum for performance
+    label: 'All time'
+    // No limit - fetch all scores for true all-time view
   }
 };
 
