@@ -182,13 +182,13 @@ const GameDetail = () => {
                 </div>
                 <div className="h-60">
                   <ScoreChart 
-                    scores={displayScores} 
+                    scores={scores} 
                     gameId={game.id} 
                     color={game.color.replace('bg-', '')}
                   />
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground text-center">
-                  Showing {displayScores.length} scores • {currentConfig.label}
+                  Showing {scores.length} scores • {currentConfig.label}
                 </div>
               </div>
             )}
