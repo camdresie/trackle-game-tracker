@@ -10,8 +10,10 @@ import GameStatCards from '@/components/game/GameStatCards';
 import ScoreList from '@/components/game/ScoreList';
 import FriendScoresList from '@/components/game/FriendScoresList';
 import ConnectionsModal from '@/components/ConnectionsModal';
+import { ChartDateRangeSelector } from '@/components/ChartDateRangeSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGameData } from '@/hooks/useGameData';
+import { useChartDateRange } from '@/hooks/useChartDateRange';
 import { Score } from '@/utils/types';
 import { Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -31,9 +33,17 @@ const GameDetail = () => {
   const [activeTab, setActiveTab] = useState('friends');
   const queryClient = useQueryClient();
   
+  // Chart date range management
+  const { 
+    selectedRange, 
+    setSelectedRange, 
+    currentConfig 
+  } = useChartDateRange('30d'); // Default to 30 days
+  
   const {
     game,
-    scores,
+    scores, // Filtered scores for chart
+    allScores, // All scores for stats
     isLoading,
     bestScore,
     friends,
@@ -41,22 +51,22 @@ const GameDetail = () => {
     friendScoresLoading,
     refreshFriends,
     averageScore
-  } = useGameData({ gameId });
+  } = useGameData({ gameId, dateRangeConfig: currentConfig });
   
   const [localScores, setLocalScores] = useState<Score[]>([]);
   const [localBestScore, setLocalBestScore] = useState<number | null>(null);
   
   useEffect(() => {
     // Only set initial state if localScores is empty and hook data is available
-    if (localScores.length === 0 && scores.length > 0) {
-      setLocalScores(scores);
+    if (localScores.length === 0 && allScores.length > 0) {
+      setLocalScores(allScores);
     }
     // Only set initial best score if not set locally and hook data is available
     if (localBestScore === null && bestScore !== null) {
         setLocalBestScore(bestScore);
     }
 
-  }, [scores, bestScore, user?.id]);
+  }, [allScores, bestScore, user?.id, localScores.length, localBestScore]);
   
   const handleAddScore = useCallback((newScore: Score) => {
     // Update local state for "Your Scores"
@@ -163,13 +173,22 @@ const GameDetail = () => {
             
             {displayScores.length > 0 && (
               <div className="glass-card rounded-xl p-4 mb-8 overflow-hidden">
-                <h2 className="text-xl font-semibold mb-4">Score History</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Score History</h2>
+                  <ChartDateRangeSelector
+                    selectedRange={selectedRange}
+                    onRangeChange={setSelectedRange}
+                  />
+                </div>
                 <div className="h-60">
                   <ScoreChart 
-                    scores={displayScores.slice(-30)} 
+                    scores={scores} 
                     gameId={game.id} 
                     color={game.color.replace('bg-', '')}
                   />
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground text-center">
+                  Showing {scores.length} scores • {currentConfig.label}
                 </div>
               </div>
             )}

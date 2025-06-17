@@ -3,20 +3,59 @@ import { Score, Game } from '@/utils/types';
 import { format } from 'date-fns';
 
 /**
- * Get scores for a specific game from a user
+ * Get scores for a specific game from a user with optional date filtering
  */
-export const getGameScores = async (gameId: string, userId: string): Promise<Score[]> => {
+export const getGameScores = async (
+  gameId: string, 
+  userId: string, 
+  options?: {
+    limit?: number;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<Score[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('scores')
       .select('*')
       .eq('game_id', gameId)
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
+      .eq('user_id', userId);
+    
+    // Add date filtering if provided
+    if (options?.startDate) {
+      query = query.gte('date', options.startDate);
+    }
+    if (options?.endDate) {
+      query = query.lte('date', options.endDate);
+    }
+    
+    // Add ordering and limit
+    query = query.order('date', { ascending: false });
+    
+    // Apply limit if specified (for performance), but allow larger limit for "all time"
+    const limit = options?.limit;
+    if (limit) {
+      query = query.limit(limit);
+    } else {
+      // Safety limit for unlimited queries to prevent performance issues
+      query = query.limit(2000);
+    }
+    
+    const { data, error } = await query;
       
     if (error) {
       console.error('[getGameScores] Error fetching game scores:', error);
       throw error;
+    }
+    
+    // Debug logging for date range queries
+    if (options?.startDate || options?.endDate || !options?.limit) {
+      console.log(`[getGameScores] Fetched ${data?.length || 0} scores for game ${gameId}`, {
+        startDate: options?.startDate,
+        endDate: options?.endDate,
+        limit: limit || 'unlimited (2000 max)',
+        resultCount: data?.length || 0
+      });
     }
     
     // Transform the data to match our Score type

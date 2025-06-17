@@ -5,26 +5,29 @@ import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
+import { type DateRangeConfig } from './useChartDateRange';
 
 interface UseGameDataProps {
   gameId: string | undefined;
+  dateRangeConfig?: DateRangeConfig;
 }
 
 /**
  * Composite hook that combines game details, friends list, and friend scores
  * functionality for a comprehensive game data management solution
  */
-export const useGameData = ({ gameId }: UseGameDataProps) => {
+export const useGameData = ({ gameId, dateRangeConfig }: UseGameDataProps) => {
   const queryClient = useQueryClient();
   
   // Get basic game details and player scores
   const {
     game,
     scores,
+    allScores,
     isLoading,
     bestScore,
     averageScore
-  } = useGameDetails({ gameId });
+  } = useGameDetails({ gameId, dateRangeConfig });
   
   // Get friends list with optimized fetching
   const { friends, refreshFriends: baseFriendsRefresh } = useFriendsList();
@@ -53,10 +56,11 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
           filter: `game_id=eq.${gameId}`
         },
         (payload) => {
-          // Invalidate the specific query used in useGameDetails
-          const currentUserId = queryClient.getQueryData<any>(['user'])?.id; // Attempt to get user id if needed
+          // Invalidate both filtered and all scores queries
+          const currentUserId = queryClient.getQueryData<any>(['user'])?.id;
           if (gameId && currentUserId) {
-             queryClient.invalidateQueries({ queryKey: ['game-scores', gameId, currentUserId] });
+             queryClient.invalidateQueries({ queryKey: ['filtered-game-scores', gameId, currentUserId] });
+             queryClient.invalidateQueries({ queryKey: ['all-game-scores', gameId, currentUserId] });
           }
           // Invalidate other relevant general queries
           queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
@@ -86,7 +90,8 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
       // Invalidate relevant queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['friends'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
-      queryClient.invalidateQueries({ queryKey: ['game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['all-game-scores'] });
       
       // Then refresh the friends list
       await baseFriendsRefresh();
@@ -103,7 +108,8 @@ export const useGameData = ({ gameId }: UseGameDataProps) => {
 
   return {
     game,
-    scores,
+    scores, // Filtered scores for chart
+    allScores, // All scores for stats/counts
     isLoading,
     bestScore,
     averageScore,
