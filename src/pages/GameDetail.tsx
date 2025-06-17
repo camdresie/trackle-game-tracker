@@ -69,6 +69,8 @@ const GameDetail = () => {
   }, [allScores, bestScore, user?.id, localScores.length, localBestScore]);
   
   const handleAddScore = useCallback((newScore: Score) => {
+    console.log('[handleAddScore] Adding score:', newScore);
+    
     // Update local state for "Your Scores"
     let updatedScores = [...localScores];
     const existingScoreIndex = updatedScores.findIndex(s => s.id === newScore.id);
@@ -86,45 +88,29 @@ const GameDetail = () => {
       setLocalBestScore(prev => prev === null ? newScore.value : Math.max(prev ?? -Infinity, newScore.value));
     }
 
-    // Optimistically update both all-scores and filtered-scores query data
+    // Immediately invalidate relevant queries to trigger fresh data fetch
+    console.log('[handleAddScore] Invalidating queries for immediate refresh');
+    console.log('[handleAddScore] Current scores in component:', scores.length);
+    
     if (gameId && user?.id) {
-      // Update all-scores cache
-      queryClient.setQueryData(
-        ['all-game-scores', gameId, user.id],
-        (oldData: Score[] | undefined) => {
-          if (!oldData) return [newScore];
-          const existingIndex = oldData.findIndex(s => s.id === newScore.id);
-          if (existingIndex >= 0) {
-            const updated = [...oldData];
-            updated[existingIndex] = newScore;
-            return updated;
-          }
-          return [newScore, ...oldData];
-        }
-      );
-
-      // Update filtered-scores cache (check if new score falls within current date range)
-      const currentQueryKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
-      queryClient.setQueryData(
-        currentQueryKey,
-        (oldData: Score[] | undefined) => {
-          // Check if new score falls within current date range
-          const scoreDate = newScore.date;
-          const isInRange = (!currentConfig?.startDate || scoreDate >= currentConfig.startDate) &&
-                           (!currentConfig?.endDate || scoreDate <= currentConfig.endDate);
-          
-          if (!isInRange) return oldData; // Don't add if outside current filter
-          
-          if (!oldData) return [newScore];
-          const existingIndex = oldData.findIndex(s => s.id === newScore.id);
-          if (existingIndex >= 0) {
-            const updated = [...oldData];
-            updated[existingIndex] = newScore;
-            return updated;
-          }
-          return [newScore, ...oldData];
-        }
-      );
+      // Invalidate both all-scores and filtered-scores queries
+      queryClient.invalidateQueries({ 
+        queryKey: ['all-game-scores', gameId, user.id],
+        exact: true
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: ['filtered-game-scores'],
+        exact: false // Invalidate all variants of filtered scores
+      });
+      
+      // Also try invalidating with the specific query key pattern
+      const specificKey = ['filtered-game-scores', gameId, user.id, currentConfig?.startDate, currentConfig?.endDate, currentConfig?.limit];
+      console.log('[handleAddScore] Also invalidating specific key:', specificKey);
+      queryClient.invalidateQueries({ 
+        queryKey: specificKey,
+        exact: true
+      });
     }
     
     // Also invalidate to ensure server sync
