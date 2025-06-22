@@ -192,7 +192,9 @@ export const generateInsights = async (analyticsData: any): Promise<string[]> =>
     const dataString = JSON.stringify(optimizedData);
     console.log(`Sending ${dataString.length} characters to OpenAI (≈${Math.ceil(dataString.length / 4)} tokens)`);
     
-    const prompt = `Analyze this user's comprehensive game performance data and generate 1 engaging, personalized daily insight. Be encouraging, specific with numbers, and mention actual game names. Use emojis and keep it to 1-2 sentences.
+    const prompt = `You are an expert game performance analyst. Analyze this user's comprehensive gaming data and generate 1 engaging, personalized insight that reveals something genuinely interesting about their playing patterns, psychology, or achievements. Be encouraging yet insightful, specific with numbers, and mention actual game names. Use emojis thoughtfully and keep it to 2-3 sentences maximum.
+
+Current Date Context: ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
 
 User Performance Data:
 ${dataString}
@@ -203,15 +205,33 @@ IMPORTANT: Game score formats:
 - Mini Crossword: Times are in MM:SS format (e.g., "3:45" means 3 minutes 45 seconds)
 - Other games: Numbers are tries/attempts (e.g., "4" means 4 tries)
 
-Focus on the most interesting or encouraging aspect from:
-- Recent improvements or trends with exact percentages
-- Playing patterns with days/times and streak information  
-- Cross-game comparisons or notable achievements
-- Current streaks or consistency patterns
+Generate insights from these sophisticated categories (choose the most compelling one):
 
-Return ONLY a single insight string, no JSON array, no markdown formatting, no backticks, no explanations. Example formats:
-🎯 Your Wordle average improved 15% to 3.2 tries this month!
-⏱️ Amazing Mini Crossword time of 2:34 - that's your fastest yet!`;
+🧠 **Psychological Patterns**: Playing habits, consistency, comfort zones, risk-taking
+🎯 **Performance Psychology**: Momentum, streaks, bounce-back ability, clutch performance
+📊 **Behavioral Analysis**: Time preferences, day-of-week patterns, gaming rhythm
+🚀 **Growth & Development**: Skill progression, breakthrough moments, learning curves
+🏆 **Competitive Edge**: Comparative performance, standout achievements, unique strengths
+⚡ **Momentum & Streaks**: Current form, hot streaks, consistency patterns
+🎮 **Cross-Game Mastery**: Multi-game skills, transferable abilities, diverse talents
+📈 **Predictive Insights**: Trend analysis, potential breakthroughs, optimization opportunities
+🎭 **Personality Insights**: Gaming persona, preferred challenges, individual style
+🌟 **Milestone Moments**: Celebrations, achievements, significant improvements
+
+Advanced Analysis Techniques:
+- Look for non-obvious correlations (e.g., "Your Mini Crossword times are 20% faster on days you play Wordle first")
+- Identify personality traits through data ("You're a perfectionist - your score distribution shows you rarely accept 'good enough'")
+- Spot comeback stories ("After that rough patch last week, you bounced back with your best 3-day streak ever")
+- Recognize unique patterns ("You're a Tuesday specialist - your solve rates jump 25% mid-week")
+- Celebrate hidden achievements ("You've quietly built a 12-day consistency streak across all games")
+- Provide encouraging predictions ("Your upward trend suggests you're 2-3 games away from your next breakthrough")
+
+Return ONLY a single insight string with NO JSON formatting, markdown, backticks, or explanations. Make it feel like a friend who really understands their gaming journey is sharing an observation.
+
+Example Advanced Formats:
+🧠 You're a momentum player - when you nail Wordle in 3 tries, your Mini Crossword times drop by an average of 45 seconds that same day!
+📊 Fascinating pattern: your Connections success rate is 30% higher on weekends, suggesting you solve better when relaxed rather than rushed.
+🚀 You've quietly entered beast mode - your last 7 Mini Crossword attempts averaged 2:15, crushing your previous 3:20 average!`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
