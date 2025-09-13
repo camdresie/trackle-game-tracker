@@ -11,7 +11,6 @@ import HomeHeader from '@/components/home/HomeHeader';
 import TodaysGames from '@/components/home/TodaysGames';
 import GamesGrid from '@/components/home/GamesGrid';
 import MyGamesGrid from '@/components/home/MyGamesGrid';
-import { InsightsCard } from '@/components/insights/InsightsCard';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Game } from '@/utils/types';
 import { cn } from '@/lib/utils';
@@ -58,12 +57,6 @@ const Index = () => {
           />
         </section>
 
-        {/* AI Insights Section - Only show for authenticated users */}
-        {user && (
-          <section className="mb-8 animate-slide-up">
-            <InsightsCard />
-          </section>
-        )}
 
         <section className="mb-8 animate-slide-up">
           <TodaysGames 
