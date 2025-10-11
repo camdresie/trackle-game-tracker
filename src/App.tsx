@@ -15,6 +15,7 @@ import Messages from "./pages/Messages";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import { useEffect } from "react";
 
@@ -143,6 +144,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <Contact />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/analytics" 
+        element={
+          <ProtectedRoute>
+            <Analytics />
           </ProtectedRoute>
         } 
       />
