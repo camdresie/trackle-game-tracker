@@ -251,3 +251,39 @@ export const addGameScore = async (scoreData: {
     throw error;
   }
 };
+export const getUserRankByTotalGamesPlayed = async (userId: string): Promise<{ rank: number, totalUsers: number }> => {
+  try {
+    const { data, error } = await supabase
+      .from('game_stats')
+      .select('user_id, total_plays');
+      
+    if (error) {
+      console.error('[getUserRank] Error fetching game stats for ranking:', error);
+      throw error;
+    }
+    
+    const userTotalPlays = new Map<string, number>();
+    
+    data.forEach(stat => {
+      const currentUserId = stat.user_id;
+      const currentTotalPlays = stat.total_plays || 0;
+      
+      if (userTotalPlays.has(currentUserId)) {
+        userTotalPlays.set(currentUserId, userTotalPlays.get(currentUserId)! + currentTotalPlays);
+      } else {
+        userTotalPlays.set(currentUserId, currentTotalPlays);
+      }
+    });
+    
+    const sortedUsers = Array.from(userTotalPlays.entries())
+      .sort((a, b) => b[1] - a[1]);
+    
+    const userIndex = sortedUsers.findIndex(([id]) => id === userId);
+    const rank = userIndex !== -1 ? userIndex + 1 : sortedUsers.length;
+    
+    return { rank, totalUsers: sortedUsers.length };
+  } catch (error) {
+    console.error('[getUserRank] Exception in getUserRank:', error);
+    return { rank: 1, totalUsers: 1 };
+  }
+};
