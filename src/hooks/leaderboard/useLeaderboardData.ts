@@ -75,15 +75,6 @@ export const useLeaderboardData = (userId: string | undefined) => {
     selectedGroupMemberIds
   );
   
-  // Debug - check today's scores in processed data
-  useEffect(() => {
-    const playersWithTodayScores = leaderboardData.filter(p => p.today_score !== null);
-    
-    if (timeFilter === 'today') {
-      const playersInTodayView = filteredAndSortedPlayers.filter(p => p.today_score !== null);
-    }
-  }, [leaderboardData, filteredAndSortedPlayers, timeFilter]);
-  
   const isLoading = isLoadingGameStats || isLoadingScores;
   
   return {
