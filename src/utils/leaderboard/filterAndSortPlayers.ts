@@ -62,9 +62,9 @@ export const filterAndSortPlayers = (
   // Friends filter - optimize by pre-processing IDs for lookup
   if (showFriendsOnly) {
     // Convert IDs to Sets for faster lookup
-    const friendIdsSet = new Set(friendIds.map(id => id.toString()));
-    const selectedFriendIdsSet = new Set(selectedFriendIds.map(id => id.toString()));
-    const groupMemberIdsSet = new Set(selectedGroupMemberIds.map(id => id.toString()));
+    const friendIdsSet = new Set(friendIds);
+    const selectedFriendIdsSet = new Set(selectedFriendIds);
+    const groupMemberIdsSet = new Set(selectedGroupMemberIds);
     const userIdStr = userId ? userId.toString() : '';
     
     if (includeAllFriends) {

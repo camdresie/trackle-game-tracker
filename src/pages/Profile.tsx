@@ -35,7 +35,7 @@ import { getPlayerAchievements, getAchievementsByCategory } from '@/utils/achiev
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserGameStats, getPlayedGames, getUserRankByTotalGamesPlayed } from '@/services/statsService';
+import { getUserGameStats, getPlayedGames, getUserRankByTotalGamesPlayed } from '@/services/gameStatsService';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useFriendsList } from '@/hooks/useFriendsList';

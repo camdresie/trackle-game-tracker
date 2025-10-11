@@ -56,15 +56,13 @@ export const processLeaderboardData = (
   // Process all unique scores for each user by deduplicating dates
   const userUniqueScores = new Map<string, Map<string, any>>();
   
-  // First, sort scores by created_at date (newest first) - sort in place to avoid copying
-  const sortedScores = gameScores.slice(0);
-  sortedScores.sort((a, b) => 
+  gameScores.sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   
   // Group scores by user and date, keeping only the newest for each day
-  for (let i = 0; i < sortedScores.length; i++) {
-    const score = sortedScores[i];
+  for (let i = 0; i < gameScores.length; i++) {
+    const score = gameScores[i];
     const userId = score.user_id;
     const date = score.date;
     const dateKey = `${date}`;
