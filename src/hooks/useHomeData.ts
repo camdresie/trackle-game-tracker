@@ -3,10 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Game, Score } from '@/utils/types';
 import { games } from '@/utils/gameData';
-import { getGameScores } from '@/services/gameStatsService';
 import { getTodaysGames } from '@/services/todayService';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTodayInEasternTime } from '@/utils/dateUtils';
+import { supabase } from '@/lib/supabase';
 
 export interface HomeDataResult {
   isLoading: boolean;
@@ -51,12 +51,25 @@ export const useHomeData = (): HomeDataResult => {
         setTodaysGames(todayScores);
         
         // Fetch all user scores for stats
-        const allUserScores: Score[] = [];
+        const { data: allScoresData, error: scoresError } = await supabase
+          .from('scores')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false });
         
-        for (const game of gamesList) {
-          const gameScores = await getGameScores(game.id, user.id);
-          allUserScores.push(...gameScores);
+        if (scoresError) {
+          throw scoresError;
         }
+        
+        const allUserScores: Score[] = (allScoresData || []).map(score => ({
+          id: score.id,
+          gameId: score.game_id,
+          playerId: score.user_id,
+          value: score.value,
+          date: score.date,
+          notes: score.notes || '',
+          createdAt: score.created_at
+        }));
         
         setScores(allUserScores);
       } catch (error: any) {
