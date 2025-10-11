@@ -15,12 +15,13 @@ export const PerformanceChartsSection = ({ allScores }: PerformanceChartsSection
   const { selectedRange, setSelectedRange, currentConfig } = useChartDateRange('30d');
   const [currentGameIndex, setCurrentGameIndex] = useState(0);
 
-  const playedGames = useMemo(() => {
-    const gameIds = new Set(allScores.map(s => s.gameId));
-    return games.filter(g => gameIds.has(g.id));
+  const allGames = games;
+  
+  const gameIdsWithScores = useMemo(() => {
+    return new Set(allScores.map(s => s.gameId));
   }, [allScores]);
 
-  const currentGame = playedGames[currentGameIndex];
+  const currentGame = allGames[currentGameIndex];
 
   const filteredScores = useMemo(() => {
     if (!currentGame) return [];
@@ -42,13 +43,13 @@ export const PerformanceChartsSection = ({ allScores }: PerformanceChartsSection
   };
 
   const goToNext = () => {
-    setCurrentGameIndex(prev => Math.min(playedGames.length - 1, prev + 1));
+    setCurrentGameIndex(prev => Math.min(allGames.length - 1, prev + 1));
   };
 
-  if (playedGames.length === 0) {
+  if (allGames.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        No game data available yet. Start playing games to see your performance trends!
+        No games available in the catalog.
       </div>
     );
   }
@@ -74,7 +75,7 @@ export const PerformanceChartsSection = ({ allScores }: PerformanceChartsSection
             variant="ghost"
             size="sm"
             onClick={goToNext}
-            disabled={currentGameIndex === playedGames.length - 1}
+            disabled={currentGameIndex === allGames.length - 1}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -100,23 +101,29 @@ export const PerformanceChartsSection = ({ allScores }: PerformanceChartsSection
           </p>
         </>
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          No scores in this date range
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-lg mb-2">No data yet for {currentGame.name}</p>
+          <p className="text-sm">Start playing this game to see your performance trends!</p>
         </div>
       )}
       
       <div className="flex flex-wrap gap-2 justify-center">
-        {playedGames.map((game, index) => (
-          <Button
-            key={game.id}
-            variant={index === currentGameIndex ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setCurrentGameIndex(index)}
-            className="text-xs"
-          >
-            {game.name}
-          </Button>
-        ))}
+        {allGames.map((game, index) => {
+          const hasData = gameIdsWithScores.has(game.id);
+          return (
+            <Button
+              key={game.id}
+              variant={index === currentGameIndex ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setCurrentGameIndex(index)}
+              className="text-xs"
+              title={hasData ? `${game.name} (has data)` : `${game.name} (no data yet)`}
+            >
+              {game.name}
+              {!hasData && <span className="ml-1 opacity-50">•</span>}
+            </Button>
+          );
+        })}
       </div>
     </div>
   );

@@ -14,12 +14,12 @@ export const ComparativeAnalyticsSection = ({ allScores, friends }: ComparativeA
     return new Set(allScores.map(s => s.gameId));
   }, [allScores]);
 
-  const playedGames = games.filter(g => playedGameIds.has(g.id));
+  const allGames = games;
 
   const userAverages = useMemo(() => {
     const averages = new Map<string, number>();
     
-    playedGames.forEach(game => {
+    allGames.forEach(game => {
       const gameScores = allScores.filter(s => s.gameId === game.id);
       if (gameScores.length > 0) {
         const avg = gameScores.reduce((sum, s) => sum + s.value, 0) / gameScores.length;
@@ -28,31 +28,24 @@ export const ComparativeAnalyticsSection = ({ allScores, friends }: ComparativeA
     });
     
     return averages;
-  }, [allScores, playedGames]);
+  }, [allScores]);
 
   const chartData = useMemo(() => {
-    return playedGames.slice(0, 8).map(game => {
-      const userAvg = userAverages.get(game.id) || 0;
+    return allGames.slice(0, 10).map(game => {
+      const userAvg = userAverages.get(game.id);
       
       return {
         game: game.name.length > 15 ? game.name.substring(0, 12) + '...' : game.name,
-        You: Math.round(userAvg * 10) / 10,
+        You: userAvg ? Math.round(userAvg * 10) / 10 : 0,
+        hasData: userAvg !== undefined,
       };
     });
-  }, [playedGames, userAverages]);
-
-  if (chartData.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No comparison data available yet
-      </div>
-    );
-  }
+  }, [userAverages]);
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        View your average scores across different games
+        View your average scores across all games (showing first 10)
       </p>
       
       <ResponsiveContainer width="100%" height={300}>
@@ -79,8 +72,12 @@ export const ComparativeAnalyticsSection = ({ allScores, friends }: ComparativeA
         </BarChart>
       </ResponsiveContainer>
       
+      <p className="text-xs text-muted-foreground text-center">
+        Games showing "0" indicate no scores recorded yet. Play those games to see your averages!
+      </p>
+      
       {friends.length === 0 && (
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-xs text-muted-foreground text-center mt-2">
           Add friends to unlock friend comparison features in the future
         </p>
       )}
