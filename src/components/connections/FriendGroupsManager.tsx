@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  PlusCircle, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  UserPlus, 
-  Users, 
-  MessageCircle,
+import {
+  PlusCircle,
+  MoreVertical,
+  Edit,
+  Trash2,
+  UserPlus,
+  Users,
   Clock,
   UsersRound,
   LogOut
@@ -29,7 +28,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import FriendGroupModal from './FriendGroupModal';
 import AddFriendsToGroupModal from './AddFriendsToGroupModal';
-import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import { useFriendGroups } from '@/hooks/useFriendGroups';
 import { useConnections } from '@/hooks/connections/useConnections';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
@@ -47,7 +45,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addFriendsModalOpen, setAddFriendsModalOpen] = useState(false);
-  const [messagesModalOpen, setMessagesModalOpen] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<any | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [groupToLeave, setGroupToLeave] = useState<string | null>(null);
@@ -227,7 +224,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         if (state) {
           setEditModalOpen(false);
           setAddFriendsModalOpen(false);
-          setMessagesModalOpen(false);
         }
         break;
       case 'edit':
@@ -235,7 +231,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         if (state) {
           setCreateModalOpen(false);
           setAddFriendsModalOpen(false);
-          setMessagesModalOpen(false);
         }
         break;
       case 'addFriends':
@@ -243,15 +238,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         if (state) {
           setCreateModalOpen(false);
           setEditModalOpen(false);
-          setMessagesModalOpen(false);
-        }
-        break;
-      case 'messages':
-        setMessagesModalOpen(state);
-        if (state) {
-          setCreateModalOpen(false);
-          setEditModalOpen(false);
-          setAddFriendsModalOpen(false);
         }
         break;
     }
@@ -271,11 +257,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
     
     setCurrentGroup(group);
     handleModalStateChange('addFriends', true);
-  }, [handleModalStateChange]);
-
-  const handleOpenMessages = useCallback((group: any) => {
-    setCurrentGroup(group);
-    handleModalStateChange('messages', true);
   }, [handleModalStateChange]);
 
   const handleDeleteGroup = (groupId: string) => {
@@ -477,10 +458,6 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent side="right" align="start" forceMount>
-                        <DropdownMenuItem onClick={() => handleOpenMessages(group)}>
-                          <MessageCircle className="mr-2 h-4 w-4" />
-                          Messages
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAddFriendsToGroup(group)}>
                           <UserPlus className="mr-2 h-4 w-4" />
                           Add Friends
@@ -527,18 +504,9 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
                 </CardContent>
                 <CardFooter>
                   <div className="flex w-full gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1" 
-                      onClick={() => handleOpenMessages(group)}
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      Messages
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="flex-1"
                       onClick={() => handleAddFriendsToGroup(group)}
                     >
@@ -576,15 +544,7 @@ const FriendGroupsManager = ({ currentPlayerId, open }: FriendGroupsManagerProps
         availableFriends={getFriendsNotInGroup(currentGroup?.id)}
         onAddFriend={(friendId) => addFriendToGroup({ groupId: currentGroup?.id, friendId })}
       />
-      
-      {/* Group Messages Modal */}
-      <GroupMessagesModal
-        open={messagesModalOpen}
-        onOpenChange={(open) => handleModalStateChange('messages', open)}
-        groupId={currentGroup?.id}
-        groupName={currentGroup?.name}
-      />
-      
+
       {/* Delete Group Confirmation Dialog */}
       <AlertDialog open={!!groupToDelete} onOpenChange={(open) => !open && setGroupToDelete(null)}>
         <AlertDialogContent>

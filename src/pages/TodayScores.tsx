@@ -9,14 +9,13 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  GamepadIcon, 
-  Users, 
-  Trophy, 
-  ChevronRight, 
-  CalendarDays, 
-  MessageCircle, 
-  InfoIcon, 
+import {
+  GamepadIcon,
+  Users,
+  Trophy,
+  ChevronRight,
+  CalendarDays,
+  InfoIcon,
   Share2,
   Loader2,
   RefreshCw,
@@ -25,7 +24,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { games } from '@/utils/gameData';
-import GroupMessagesModal from '@/components/messages/GroupMessagesModal';
 import GroupInvitationsList from '@/components/connections/GroupInvitationsList';
 import { getFormattedTodayInEasternTime } from '@/utils/dateUtils';
 import GroupScoresShare from '@/components/groups/GroupScoresShare';
@@ -240,8 +238,6 @@ const TodayScores = () => {
   
   // Changed default active tab to 'friends' instead of 'groups'
   const [activeTab, setActiveTab] = useState<'friends' | 'groups'>('friends');
-  const [showMessages, setShowMessages] = useState(false);
-  const [selectedGroupForMessages, setSelectedGroupForMessages] = useState<{id: string, name: string} | null>(null);
   const isMobile = useIsMobile();
   
   
@@ -274,10 +270,6 @@ const TodayScores = () => {
   }, [sortedGames, setSelectedGame]);
 
   // Functions to handle opening modals with useCallback
-  const handleOpenMessages = useCallback((groupId: string, groupName: string) => {
-    setSelectedGroupForMessages({ id: groupId, name: groupName });
-    setShowMessages(true);
-  }, []);
   
   
   // Get today's date in Eastern Time for consistency
@@ -781,16 +773,6 @@ const TodayScores = () => {
                                           <span className={cn(isMobile ? "sr-only" : "")}>Share</span>
                                         </Button>
                                       </GroupScoresShare>
-                                      
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleOpenMessages(group.groupId, group.groupName)}
-                                        className="flex items-center justify-center gap-1"
-                                      >
-                                        <MessageCircle className="w-4 h-4" />
-                                        <span className={cn(isMobile ? "sr-only" : "")}>Message</span>
-                                      </Button>
                                     </div>
                                   </div>
                                   
@@ -880,15 +862,7 @@ const TodayScores = () => {
           </div>
         )}
       </main>
-      
-      {/* Group Messages Modal */}
-      <GroupMessagesModal
-        open={showMessages}
-        onOpenChange={setShowMessages}
-        groupId={selectedGroupForMessages?.id || ''}
-        groupName={selectedGroupForMessages?.name || ''}
-      />
-      
+
       {/* Connections Modal for managing friends and groups */}
       <ConnectionsModal
         open={connectionsModalOpen}

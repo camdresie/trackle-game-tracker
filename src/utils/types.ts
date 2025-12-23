@@ -96,17 +96,3 @@ export interface FriendGroup {
   isOwner?: boolean;
   status?: 'pending' | 'accepted' | 'rejected' | 'left';
 }
-
-// Group Message
-export interface GroupMessage {
-  id: string;
-  group_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  sender?: {
-    username: string;
-    avatar_url?: string;
-    id: string;
-  };
-}
