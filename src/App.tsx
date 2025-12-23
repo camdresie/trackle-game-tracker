@@ -11,10 +11,10 @@ import Leaderboard from "./pages/Leaderboard";
 import TodayScores from "./pages/TodayScores";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
-import Messages from "./pages/Messages";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import { useEffect } from "react";
 
@@ -106,29 +106,21 @@ const AppRoutes = () => (
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/today" 
+      <Route
+        path="/today"
         element={
           <ProtectedRoute>
             <TodayScores />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/messages" 
-        element={
-          <ProtectedRoute>
-            <Messages />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/profile" 
+      <Route
+        path="/profile"
         element={
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
-        } 
+        }
       />
       <Route 
         path="/settings" 
@@ -143,6 +135,14 @@ const AppRoutes = () => (
         element={
           <ProtectedRoute>
             <Contact />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/analytics" 
+        element={
+          <ProtectedRoute>
+            <Analytics />
           </ProtectedRoute>
         } 
       />

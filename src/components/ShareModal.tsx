@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Copy, Send, CheckCircle2 } from 'lucide-react';
+import { Copy, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-import GroupDropdownSelector from './messages/GroupDropdownSelector';
-import GroupMessagesModal from './messages/GroupMessagesModal';
-import { useGroupMessages } from '@/hooks/useGroupMessages';
-import { useFriendGroups } from '@/hooks/useFriendGroups';
 
 interface ShareModalProps {
   open: boolean;
@@ -23,44 +19,7 @@ interface ShareModalProps {
 }
 
 const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: ShareModalProps) => {
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('');
-  const [selectedGroupName, setSelectedGroupName] = useState<string>('');
-  const [showGroupMessagesModal, setShowGroupMessagesModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  
-  // Fetch user's friend groups
-  const { friendGroups } = useFriendGroups([]);
-  
-  // Use the group messages hook for sending messages
-  const { sendMessage } = useGroupMessages(selectedGroupId);
-
-  // Remove the link for preview display
-  const getDisplayContent = () => {
-    // Split the text by the link line and take only the content part
-    const parts = shareText.split('\n\nI\'m tracking game scores on Trackle!');
-    return parts[0]; // Return just the content without the link
-  };
-
-  // Remove the link for group messages
-  const getMessageContentForGroup = () => {
-    // Split the text by any variation of the link text to ensure we capture all possible forms
-    const linkPatterns = [
-      '\n\nI\'m tracking game scores on Trackle!',
-      '\n\nI\'m tracking our scores on Trackle!',
-      '\n\nI\'m keeping my stats on Trackle!'
-    ];
-    
-    let content = shareText;
-    for (const pattern of linkPatterns) {
-      if (content.includes(pattern)) {
-        content = content.split(pattern)[0];
-        break;
-      }
-    }
-    
-    return content; // Return content without any link
-  };
 
   const handleCopyToClipboard = async () => {
     try {
@@ -93,31 +52,6 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
     }
   };
 
-  const handleGroupSelected = (groupId: string, groupName: string) => {
-    setSelectedGroupId(groupId);
-    setSelectedGroupName(groupName);
-  };
-
-  const handleSendToGroup = async () => {
-    if (!selectedGroupId) {
-      toast.error('Please select a group first');
-      return;
-    }
-    
-    try {
-      setIsSending(true);
-      // Send the message without the link for group messages
-      await sendMessage(getMessageContentForGroup());
-      toast.success(`Message sent to ${selectedGroupName}`);
-      setShowGroupMessagesModal(true);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -131,31 +65,7 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
           
           <div className="mt-2">
             <div className="bg-secondary/30 rounded-md p-4 my-4 whitespace-pre-wrap font-mono text-sm overflow-auto max-h-[300px]">
-              {getDisplayContent()}
-            </div>
-            
-            <div className="space-y-4 my-4">
-              <div>
-                <p className="text-sm mb-2 font-medium">Share in a group:</p>
-                <div className="flex flex-col gap-2">
-                  <GroupDropdownSelector 
-                    selectedGroupId={selectedGroupId} 
-                    onSelectGroup={handleGroupSelected}
-                    className="w-full"
-                    groups={friendGroups}
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleSendToGroup}
-                    disabled={!selectedGroupId || isSending}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isSending ? 'Sending...' : 'Send to Group'}
-                  </Button>
-                </div>
-              </div>
+              {shareText}
             </div>
           </div>
           
@@ -181,15 +91,6 @@ const ShareModal = ({ open, onOpenChange, shareText, title = 'Share Stats' }: Sh
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {showGroupMessagesModal && selectedGroupId && (
-        <GroupMessagesModal
-          open={showGroupMessagesModal}
-          onOpenChange={setShowGroupMessagesModal}
-          groupId={selectedGroupId}
-          groupName={selectedGroupName}
-        />
-      )}
     </>
   );
 };
