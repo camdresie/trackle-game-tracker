@@ -16,10 +16,11 @@ export const useAnalyticsData = () => {
     queryKey: ['analytics-all-scores', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
+
       const allScores: Score[] = [];
       for (const game of games) {
-        const scores = await getGameScores(game.id, user.id, { limit: 365 });
+        // Fetch all scores without limit for true all-time analytics
+        const scores = await getGameScores(game.id, user.id);
         allScores.push(...scores);
       }
       return allScores;
