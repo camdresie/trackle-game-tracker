@@ -114,6 +114,8 @@ const AddScoreModal = ({
       queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-all-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-game-stats'] });
       // Removed success toast - score appears immediately in chart
     } catch (error) {
       console.error('Error adding score:', error);
@@ -123,6 +125,8 @@ const AddScoreModal = ({
       queryClient.invalidateQueries({ queryKey: ['filtered-game-scores'] });
       queryClient.invalidateQueries({ queryKey: ['friend-scores'] });
       queryClient.invalidateQueries({ queryKey: ['game-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-all-scores'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics-game-stats'] });
     } finally {
       setIsSubmitting(false);
     }
