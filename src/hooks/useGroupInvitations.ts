@@ -12,16 +12,6 @@ export interface GroupInvitation {
   status: string;
 }
 
-interface DirectQueryResult {
-  id: string;
-  group_id: string;
-  friend_id: string;
-  status: string;
-  group_name: string;
-  owner_id: string;
-  owner_username: string;
-}
-
 export const useGroupInvitations = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -39,49 +29,32 @@ export const useGroupInvitations = () => {
       if (!user) return [];
       
       try {
-        // Use the direct_sql_query function to get pending invitations
-        const directQuery = `
-          SELECT 
-            fgm.id, 
-            fgm.group_id, 
-            fgm.friend_id,
-            fgm.status,
-            fg.name as group_name,
-            fg.user_id as owner_id,
-            p.username as owner_username
-          FROM 
-            friend_group_members fgm
-          JOIN 
-            friend_groups fg ON fgm.group_id = fg.id
-          LEFT JOIN 
-            profiles p ON fg.user_id = p.id
-          WHERE 
-            fgm.friend_id = '${user.id}' 
-            AND fgm.status = 'pending'
-        `;
-        
-        const { data: directResults, error: directQueryError } = await supabase.rpc('direct_sql_query', { 
-          sql_query: directQuery 
-        });
-        
-        if (directQueryError) {
-          console.error('Error fetching invitations:', directQueryError);
-          throw directQueryError;
+        // Fetch pending invitations. RLS lets the invitee read their own
+        // membership rows and the groups (and owner profiles) they reference.
+        const { data: rows, error: fetchError } = await supabase
+          .from('friend_group_members')
+          .select('id, group_id, status, friend_groups(name, user_id, profiles:user_id(username))')
+          .eq('friend_id', user.id)
+          .eq('status', 'pending');
+
+        if (fetchError) {
+          console.error('Error fetching invitations:', fetchError);
+          throw fetchError;
         }
-        
-        if (!directResults || !Array.isArray(directResults) || directResults.length === 0) {
+
+        if (!rows || rows.length === 0) {
           return [];
         }
-        
-        // Format the invitations from the direct query results
-        const invitationsData: GroupInvitation[] = (directResults as unknown as DirectQueryResult[]).map(item => ({
+
+        // Format the invitations from the query results
+        const invitationsData: GroupInvitation[] = rows.map((item: any) => ({
           id: item.id,
           groupId: item.group_id,
-          groupName: item.group_name || 'Unknown Group',
-          groupOwner: item.owner_username || 'Unknown User',
+          groupName: item.friend_groups?.name || 'Unknown Group',
+          groupOwner: item.friend_groups?.profiles?.username || 'Unknown User',
           status: item.status
         }));
-        
+
         return invitationsData;
       } catch (err) {
         console.error('Error loading invitations:', err);
@@ -118,29 +91,25 @@ export const useGroupInvitations = () => {
         }
         
         const groupId = invitation.groupId;
-        
-        // Use RPC to ensure the update works reliably
-        const updateQuery = `
-          UPDATE friend_group_members 
-          SET status = 'accepted' 
-          WHERE id = '${invitationId}'
-          RETURNING id, status
-        `;
-        
-        const { data: updateResult, error: updateError } = await supabase.rpc('direct_sql_query', {
-          sql_query: updateQuery
-        });
-        
+
+        // RLS lets the invitee update their own membership row to 'accepted'.
+        const { data: updateResult, error: updateError } = await supabase
+          .from('friend_group_members')
+          .update({ status: 'accepted' })
+          .eq('id', invitationId)
+          .eq('friend_id', user.id)
+          .select('id, status');
+
         if (updateError) {
           console.error('Error accepting invitation:', updateError);
           throw updateError;
         }
-        
-        if (!updateResult || !Array.isArray(updateResult) || updateResult.length === 0) {
+
+        if (!updateResult || updateResult.length === 0) {
           console.error('No rows updated - invitation may not exist');
           throw new Error('Failed to update invitation - record may have been deleted');
         }
-        
+
         return { invitationId, groupId };
       } catch (error) {
         console.error('Error in acceptInvitationMutation:', error);

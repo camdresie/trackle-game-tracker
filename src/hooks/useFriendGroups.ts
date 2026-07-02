@@ -71,51 +71,7 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           console.error('Error fetching member groups:', memberError);
           throw memberError;
         }
-        
-        
-        // If no member groups found, try a direct SQL query to debug
-        if (!memberGroups || memberGroups.length === 0) {
-          
-          // Use direct SQL query to check if there are any accepted memberships
-          const directQuery = `
-            SELECT fg.id as group_id, fg.name, fg.created_at, fg.updated_at, fg.user_id, fg.description
-            FROM friend_group_members fgm
-            JOIN friend_groups fg ON fgm.group_id = fg.id
-            WHERE fgm.friend_id = '${user.id}' 
-            AND fgm.status = 'accepted'
-          `;
-          
-          const { data: directResults, error: directQueryError } = await supabase.rpc('direct_sql_query', { 
-            sql_query: directQuery 
-          });
-          
-          if (directQueryError) {
-            console.error('Error with direct SQL query:', directQueryError);
-          } else if (directResults && Array.isArray(directResults) && directResults.length > 0) {
-            
-            // The direct query now returns the full group data, so we can use it directly
-            const memberGroupData = directResults.map((group: any) => ({
-              id: group.group_id,
-              name: group.name,
-              created_at: group.created_at,
-              updated_at: group.updated_at || group.created_at,
-              user_id: group.user_id,
-              description: group.description || ''
-            }));
-            
-            
-            // Combine owned groups and groups the user is a member of
-            const allGroups = [...(ownedGroups || []), ...memberGroupData];
-            
-            // Remove any duplicates based on group ID
-            const uniqueGroups = Array.from(
-              new Map(allGroups.map(group => [group.id, group])).values()
-            );
-            
-            return uniqueGroups;
-          } 
-        }
-        
+
         if (memberGroups && memberGroups.length > 0) {
           // Get the group IDs from the member groups
           const groupIds = memberGroups.map(m => m.group_id);
@@ -384,83 +340,23 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
     if (!user) return false;
     
     try {
-      // First verify that the group exists and the user is the owner or a member
-      let groupData;
-      let groupError;
-      let isMember = false;
-      
-      // Try standard query first
-      const result = await supabase
+      // Verify that the group exists and is visible to the user. RLS makes the
+      // group readable to its owner, accepted members, and pending invitees.
+      const { data: groupData, error: groupError } = await supabase
         .from('friend_groups')
         .select('id, name, user_id')
         .eq('id', params.groupId)
         .single();
-      
-      groupData = result.data;
-      groupError = result.error;
-      
-      // If standard query fails, try direct SQL approach
-      if (groupError) {
-        console.log('Standard group lookup failed, trying direct SQL query instead');
-        
-        // Use direct SQL query to verify group and membership
-        const directQuery = `
-          SELECT 
-            fg.id, 
-            fg.name, 
-            fg.user_id
-          FROM 
-            friend_groups fg
-          JOIN 
-            friend_group_members fgm ON fg.id = fgm.group_id
-          WHERE 
-            fg.id = '${params.groupId}'
-            AND fgm.friend_id = '${user.id}'
-            AND fgm.status = 'accepted'
-          LIMIT 1
-        `;
-        
-        const { data: directResults, error: directQueryError } = await supabase.rpc('direct_sql_query', { 
-          sql_query: directQuery 
-        });
-        
-        if (directQueryError) {
-          console.error('Error with direct SQL query for group verification:', directQueryError);
-          toast.error('Group not found');
-          return false;
-        }
-        
-        if (!directResults || !Array.isArray(directResults) || directResults.length === 0) {
-          console.error('Group not found or user is not a member');
-          toast.error('Group not found or you don\'t have access');
-          return false;
-        }
-        
-        // Use the first result as group data
-        const firstResult = directResults[0] as any;
-        groupData = {
-          id: firstResult.id,
-          name: firstResult.name,
-          user_id: firstResult.user_id
-        };
-        
-        groupError = null;
-        // If the direct query succeeded, the user is definitely a member
-        isMember = true;
-      }
-      
-      if (!groupData) {
+
+      if (groupError || !groupData) {
         console.error('Error finding group:', groupError);
-        toast.error('Group not found');
+        toast.error('Group not found or you don\'t have access');
         return false;
       }
-      
-      // Check if the logged-in user is the owner or has permission
+
+      // Only the owner or an accepted member may invite others.
       const isOwner = groupData.user_id === user.id;
-      
-      // Skip the additional member check if we already confirmed membership via direct SQL query
-      if (!isOwner && !isMember) {
-        // Check if the user is a member of the group
+      if (!isOwner) {
         const { data: memberData, error: memberError } = await supabase
           .from('friend_group_members')
           .select()
@@ -468,7 +364,7 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
           .eq('friend_id', user.id)
           .eq('status', 'accepted')
           .single();
-          
+
         if (memberError || !memberData) {
           console.error('User is not authorized to add members to this group:', memberError);
           toast.error('You do not have permission to add members to this group');
@@ -503,20 +399,17 @@ export const useFriendGroups = (friends: Player[] = [], { enabled = true }: UseF
         return false;
       }
       
-      // Use direct SQL query with proper escaping to bypass RLS issues
-      // This is a workaround until we can fix the RLS policies completely
-      const insertQuery = `
-        INSERT INTO friend_group_members (id, group_id, friend_id, status)
-        VALUES (gen_random_uuid(), '${params.groupId.replace(/'/g, "''")}', '${params.friendId.replace(/'/g, "''")}', 'pending')
-        RETURNING id
-      `;
-      
-      const { data: insertResult, error: insertError } = await supabase.rpc('direct_sql_query', {
-        sql_query: insertQuery
-      });
-      
+      // RLS allows the group owner or an accepted member to insert an invite.
+      const { error: insertError } = await supabase
+        .from('friend_group_members')
+        .insert({
+          group_id: params.groupId,
+          friend_id: params.friendId,
+          status: 'pending'
+        });
+
       if (insertError) {
-        console.error('Error with direct insert:', insertError);
+        console.error('Error inserting group invitation:', insertError);
         toast.error('Failed to send invitation');
         return false;
       }
