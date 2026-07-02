@@ -30,10 +30,12 @@ export const useGroupInvitations = () => {
       
       try {
         // Fetch pending invitations. RLS lets the invitee read their own
-        // membership rows and the groups (and owner profiles) they reference.
+        // membership rows and the groups they reference.
+        // (friend_groups.user_id references auth.users, not profiles, so the
+        // owner's profile can't be embedded here and is fetched separately.)
         const { data: rows, error: fetchError } = await supabase
           .from('friend_group_members')
-          .select('id, group_id, status, friend_groups(name, user_id, profiles:user_id(username))')
+          .select('id, group_id, status, friend_groups(name, user_id)')
           .eq('friend_id', user.id)
           .eq('status', 'pending');
 
@@ -46,12 +48,28 @@ export const useGroupInvitations = () => {
           return [];
         }
 
+        // Fetch the owners' usernames (profiles are publicly readable).
+        const ownerIds = [...new Set(rows.map((item: any) => item.friend_groups?.user_id).filter(Boolean))];
+        const usernamesById: Record<string, string> = {};
+        if (ownerIds.length > 0) {
+          const { data: ownerProfiles, error: ownerError } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .in('id', ownerIds);
+
+          if (ownerError) {
+            console.error('Error fetching group owner profiles:', ownerError);
+          } else {
+            ownerProfiles?.forEach(p => { usernamesById[p.id] = p.username; });
+          }
+        }
+
         // Format the invitations from the query results
         const invitationsData: GroupInvitation[] = rows.map((item: any) => ({
           id: item.id,
           groupId: item.group_id,
           groupName: item.friend_groups?.name || 'Unknown Group',
-          groupOwner: item.friend_groups?.profiles?.username || 'Unknown User',
+          groupOwner: usernamesById[item.friend_groups?.user_id] || 'Unknown User',
           status: item.status
         }));
 
