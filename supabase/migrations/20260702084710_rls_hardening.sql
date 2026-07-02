@@ -53,8 +53,11 @@ as $$
     or exists (select 1 from friend_group_members where group_id = p_group_id and friend_id = p_user_id);
 $$;
 
-revoke all on function public.is_group_owner_or_member(uuid, uuid) from public;
-grant execute on function public.is_group_owner_or_member(uuid, uuid) to authenticated;
+-- Supabase's default privileges grant EXECUTE to anon/authenticated on new
+-- public functions; revoke everything and grant back only to authenticated
+-- (the sole role subject to the policy that calls this) + service_role.
+revoke all on function public.is_group_owner_or_member(uuid, uuid) from public, anon, authenticated, service_role;
+grant execute on function public.is_group_owner_or_member(uuid, uuid) to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. scores: single "authenticated can read" SELECT policy; owner-only writes.
