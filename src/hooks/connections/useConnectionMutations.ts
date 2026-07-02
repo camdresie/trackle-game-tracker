@@ -118,14 +118,15 @@ export const useConnectionMutations = (currentPlayerId: string, onFriendRemoved?
       if (!connectionId) {
         throw new Error('Invalid connection ID');
       }
-      
-      // Use the RPC function to ensure proper deletion
-      const { error } = await supabase.rpc('force_delete_connection', {
-        connection_id: connectionId
-      });
-      
+
+      // RLS allows either party to delete the connection row.
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('id', connectionId);
+
       if (error) throw new Error('Failed to remove connection');
-      
+
       return connectionId;
     },
     onSuccess: () => {

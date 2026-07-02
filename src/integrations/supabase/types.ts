@@ -257,33 +257,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_friend_test_scores: {
-        Args: {
-          p_game_id: string
-          p_friend_id: string
-          p_requester_id: string
-          p_today_date: string
-          p_yesterday_date: string
-          p_two_days_ago_date: string
-        }
-        Returns: Json
-      }
       can_user_access_group: {
         Args: {
           p_group_id: string
           p_user_id: string
-        }
-        Returns: boolean
-      }
-      direct_sql_query: {
-        Args: {
-          sql_query: string
-        }
-        Returns: Json
-      }
-      force_delete_connection: {
-        Args: {
-          connection_id: string
         }
         Returns: boolean
       }

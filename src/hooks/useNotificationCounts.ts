@@ -8,16 +8,6 @@ interface NotificationCounts {
   total: number;
 }
 
-interface GroupInviteResult {
-  id: string;
-  group_id: string;
-  friend_id: string;
-  status: string;
-  group_name: string;
-  owner_id: string;
-  owner_username: string;
-}
-
 export const useNotificationCounts = () => {
   const { user } = useAuth();
 
@@ -40,30 +30,13 @@ export const useNotificationCounts = () => {
           throw friendError;
         }
 
-        // Get group invite count using the same query structure as useGroupInvitations
-        const directQuery = `
-          SELECT 
-            fgm.id, 
-            fgm.group_id, 
-            fgm.friend_id,
-            fgm.status,
-            fg.name as group_name,
-            fg.user_id as owner_id,
-            p.username as owner_username
-          FROM 
-            friend_group_members fgm
-          JOIN 
-            friend_groups fg ON fgm.group_id = fg.id
-          LEFT JOIN 
-            profiles p ON fg.user_id = p.id
-          WHERE 
-            fgm.friend_id = '${user.id}' 
-            AND fgm.status = 'pending'
-        `;
-        
-        const { data: groupInvites, error: groupError } = await supabase.rpc('direct_sql_query', { 
-          sql_query: directQuery 
-        });
+        // Get pending group invite count. RLS lets a user read their own
+        // membership rows, so a direct query on friend_group_members suffices.
+        const { data: groupInvites, error: groupError } = await supabase
+          .from('friend_group_members')
+          .select('id')
+          .eq('friend_id', user.id)
+          .eq('status', 'pending');
 
         if (groupError) {
           throw groupError;
